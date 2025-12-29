@@ -15,12 +15,11 @@
 name: Test
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
       - main
-      - master
-  workflow_dispatch:
 
 concurrency:
   group: test-${{ github.head_ref || github.run_id }}
