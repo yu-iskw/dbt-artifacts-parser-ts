@@ -42,12 +42,12 @@ jobs:
         with:
           egress-policy: audit
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.1.0
         with:
           node-version-file: .node-version
           cache: pnpm
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4.2.0
         with:
           version: 10
       - name: Install dependencies
