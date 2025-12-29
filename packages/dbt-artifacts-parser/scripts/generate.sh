@@ -39,8 +39,8 @@ echo -e "${BLUE}Cleaning src directory...${NC}"
 # Clean generated files but preserve tests
 for dir in catalog manifest run_results sources semantic_manifest; do
 	mkdir -p "${SRC_DIR}/${dir}"
-	# Delete all .ts files except .test.ts files
-	find "${SRC_DIR}/${dir}" -maxdepth 1 -type f -name "*.ts" ! -name "*.test.ts" -delete 2>/dev/null || true
+	# Delete all .ts files except .test.ts and index.ts files
+	find "${SRC_DIR}/${dir}" -maxdepth 1 -type f -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" -delete 2>/dev/null || true
 done
 
 # Function to process a category
