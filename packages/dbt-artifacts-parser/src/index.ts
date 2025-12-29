@@ -20,6 +20,10 @@
 //   import { CatalogArtifact } from 'dbt-artifacts-parser/catalog'
 //   import { RunResultsArtifact } from 'dbt-artifacts-parser/run_results'
 //   import { FreshnessExecutionResultArtifact } from 'dbt-artifacts-parser/sources'
+//   import { catalog, manifest, run_results, sources } from 'dbt-artifacts-parser' (namespaced imports)
 
-// Re-export catalog (latest version)
-export * from "./catalog";
+// Re-export all categories (latest versions)
+export * as catalog from "./catalog";
+export * as manifest from "./manifest";
+export * as run_results from "./run_results";
+export * as sources from "./sources";
