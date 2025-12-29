@@ -33,9 +33,8 @@ lint:
     - markdownlint@0.47.0
     - prettier@3.7.4
 actions:
-  disabled:
+  enabled:
+    - trunk-upgrade-available
     - trunk-announce
     - trunk-check-pre-push
     - trunk-fmt-pre-commit
-  enabled:
-    - trunk-upgrade-available
