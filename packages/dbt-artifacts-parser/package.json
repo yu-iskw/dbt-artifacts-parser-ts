@@ -1,6 +1,6 @@
 {
   "name": "dbt-artifacts-parser",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "TypeScript library for parsing dbt artifacts",
   "keywords": [],
   "license": "ISC",
