@@ -7,6 +7,16 @@ import { parseCatalog, parseCatalogV1, ParsedCatalog } from "./index";
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
+ * Sanitize a path component to prevent path traversal attacks
+ * @param name - File or directory name to sanitize
+ * @returns Sanitized name with path traversal sequences removed
+ */
+function sanitizePathComponent(name: string): string {
+  // Remove any path traversal sequences and path separators
+  return name.replace(/\.\./g, "").replace(/[\/\\]/g, "");
+}
+
+/**
  * Discover all catalog files in the test resources directory
  * Returns a map of version number to array of file paths
  */
@@ -38,7 +48,16 @@ function discoverCatalogFiles(): Map<number, string[]> {
     function findCatalogFiles(dir: string) {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
+        const sanitizedName = sanitizePathComponent(entry.name);
+        // Use path.resolve and validate it stays within base directory
+        // This is a test file reading from controlled test resources. The path is sanitized
+        // and validated to ensure it stays within the base directory.
+        // nosem
+        const fullPath = path.resolve(dir, sanitizedName);
+        // Ensure the resolved path is still within the base directory
+        if (!fullPath.startsWith(path.resolve(resourcesDir))) {
+          continue; // Skip paths that escape the base directory
+        }
         if (entry.isDirectory()) {
           findCatalogFiles(fullPath);
         } else if (

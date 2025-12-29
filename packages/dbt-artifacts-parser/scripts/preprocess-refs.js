@@ -67,7 +67,8 @@ async function preprocessSchema() {
 
     process.exit(0);
   } catch (error) {
-    console.error(`Error pre-processing ${inputFile}:`, error.message);
+    console.error("Error pre-processing file:", inputFile);
+    console.error("Error message:", error.message);
     process.exit(1);
   }
 }
