@@ -11,12 +11,15 @@
     "build": "pnpm --recursive build",
     "format": "trunk fmt",
     "format:all": "trunk fmt --all",
+    "json2ts": "./node_modules/.bin/json2ts",
     "lint": "trunk check",
     "lint:all": "trunk check --all",
     "lint:security": "trunk check --all --scope security",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^15.1.3",
+    "json-schema-to-typescript": "^15.0.4",
     "typescript": "^5.9.3"
   }
 }
