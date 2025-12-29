@@ -48,6 +48,7 @@ jobs:
         with:
           node-version-file: .node-version
           registry-url: https://registry.npmjs.org
+          scope: "@yu-iskw"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
         with:
@@ -62,7 +63,5 @@ jobs:
         run: |
           pnpm --filter dbt-artifacts-parser test
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}"
         run: |
           pnpm publish --filter dbt-artifacts-parser --no-git-checks --access public

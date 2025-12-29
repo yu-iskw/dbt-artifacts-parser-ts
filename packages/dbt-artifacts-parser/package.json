@@ -1,5 +1,5 @@
 {
-  "name": "dbt-artifacts-parser",
+  "name": "@yu-iskw/dbt-artifacts-parser",
   "version": "0.1.0",
   "description": "TypeScript library for parsing dbt artifacts",
   "keywords": [],
@@ -16,5 +16,8 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "vitest": "^1.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
