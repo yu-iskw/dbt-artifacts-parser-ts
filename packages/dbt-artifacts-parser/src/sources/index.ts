@@ -29,33 +29,44 @@ function getSourcesVersion(dbtSchemaVersion: string): number {
 }
 
 /**
+ * Validate sources structure and extract version
+ * @param sources - Parsed sources.json object
+ * @param expectedVersion - Optional expected version for version-specific parsers
+ * @returns Version number as integer
+ * @throws Error if sources is invalid or version doesn't match expected
+ */
+function validateSourcesAndGetVersion(
+  sources: Record<string, unknown>,
+  expectedVersion?: number,
+): number {
+  if (!sources || typeof sources !== "object" || !("metadata" in sources)) {
+    throw new Error("Not a sources.json");
+  }
+
+  const metadata = sources.metadata as any;
+  if (
+    !metadata ||
+    typeof metadata !== "object" ||
+    typeof metadata.dbt_schema_version !== "string"
+  ) {
+    throw new Error("Not a sources.json");
+  }
+
+  const version = getSourcesVersion(metadata.dbt_schema_version);
+  if (expectedVersion !== undefined && version !== expectedVersion) {
+    throw new Error(`Not a sources.json v${expectedVersion}`);
+  }
+  return version;
+}
+
+/**
  * Parse sources.json object and return appropriately typed sources based on version
  * @param sources - Parsed sources.json object
  * @returns Typed sources object
  * @throws Error if sources is invalid or version is unsupported
  */
 export function parseSources(sources: Record<string, unknown>): ParsedSources {
-  // Validate input structure
-  if (!sources || typeof sources !== "object" || !("metadata" in sources)) {
-    throw new Error("Not a sources.json");
-  }
-
-  const metadata = sources.metadata;
-  if (
-    !metadata ||
-    typeof metadata !== "object" ||
-    !("dbt_schema_version" in metadata)
-  ) {
-    throw new Error("Not a sources.json");
-  }
-
-  // Extract and parse version
-  const dbtSchemaVersion = (metadata as any).dbt_schema_version;
-  if (typeof dbtSchemaVersion !== "string") {
-    throw new Error("Not a sources.json");
-  }
-
-  const version = getSourcesVersion(dbtSchemaVersion);
+  const version = validateSourcesAndGetVersion(sources);
 
   // Return appropriately typed sources based on version
   switch (version) {
@@ -78,12 +89,7 @@ export function parseSources(sources: Record<string, unknown>): ParsedSources {
 export function parseSourcesV1(
   sources: Record<string, unknown>,
 ): SourcesV1Type {
-  const version = getSourcesVersion(
-    (sources.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 1) {
-    throw new Error("Not a sources.json v1");
-  }
+  validateSourcesAndGetVersion(sources, 1);
   return sources as unknown as SourcesV1Type;
 }
 
@@ -95,12 +101,7 @@ export function parseSourcesV1(
 export function parseSourcesV2(
   sources: Record<string, unknown>,
 ): SourcesV2Type {
-  const version = getSourcesVersion(
-    (sources.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 2) {
-    throw new Error("Not a sources.json v2");
-  }
+  validateSourcesAndGetVersion(sources, 2);
   return sources as unknown as SourcesV2Type;
 }
 
@@ -110,11 +111,6 @@ export function parseSourcesV2(
  * @returns FreshnessExecutionResultArtifactV3
  */
 export function parseSourcesV3(sources: Record<string, unknown>): SourceV3Type {
-  const version = getSourcesVersion(
-    (sources.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 3) {
-    throw new Error("Not a sources.json v3");
-  }
+  validateSourcesAndGetVersion(sources, 3);
   return sources as unknown as SourceV3Type;
 }

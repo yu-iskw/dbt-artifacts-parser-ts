@@ -59,6 +59,37 @@ function getManifestVersion(dbtSchemaVersion: string): number {
 }
 
 /**
+ * Validate manifest structure and extract version
+ * @param manifest - Parsed manifest.json object
+ * @param expectedVersion - Optional expected version for version-specific parsers
+ * @returns Version number as integer
+ * @throws Error if manifest is invalid or version doesn't match expected
+ */
+function validateManifestAndGetVersion(
+  manifest: Record<string, unknown>,
+  expectedVersion?: number,
+): number {
+  if (!manifest || typeof manifest !== "object" || !("metadata" in manifest)) {
+    throw new Error("Not a manifest.json");
+  }
+
+  const metadata = manifest.metadata as any;
+  if (
+    !metadata ||
+    typeof metadata !== "object" ||
+    typeof metadata.dbt_schema_version !== "string"
+  ) {
+    throw new Error("Not a manifest.json");
+  }
+
+  const version = getManifestVersion(metadata.dbt_schema_version);
+  if (expectedVersion !== undefined && version !== expectedVersion) {
+    throw new Error(`Not a manifest.json v${expectedVersion}`);
+  }
+  return version;
+}
+
+/**
  * Parse manifest.json object and return appropriately typed manifest based on version
  * @param manifest - Parsed manifest.json object
  * @returns Typed manifest object
@@ -67,27 +98,7 @@ function getManifestVersion(dbtSchemaVersion: string): number {
 export function parseManifest(
   manifest: Record<string, unknown>,
 ): ParsedManifest {
-  // Validate input structure
-  if (!manifest || typeof manifest !== "object" || !("metadata" in manifest)) {
-    throw new Error("Not a manifest.json");
-  }
-
-  const metadata = manifest.metadata;
-  if (
-    !metadata ||
-    typeof metadata !== "object" ||
-    !("dbt_schema_version" in metadata)
-  ) {
-    throw new Error("Not a manifest.json");
-  }
-
-  // Extract and parse version
-  const dbtSchemaVersion = (metadata as any).dbt_schema_version;
-  if (typeof dbtSchemaVersion !== "string") {
-    throw new Error("Not a manifest.json");
-  }
-
-  const version = getManifestVersion(dbtSchemaVersion);
+  const version = validateManifestAndGetVersion(manifest);
 
   // Return appropriately typed manifest based on version
   switch (version) {
@@ -128,12 +139,7 @@ export function parseManifest(
 export function parseManifestV1(
   manifest: Record<string, unknown>,
 ): ManifestV1Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 1) {
-    throw new Error("Not a manifest.json v1");
-  }
+  validateManifestAndGetVersion(manifest, 1);
   return manifest as unknown as ManifestV1Type;
 }
 
@@ -145,12 +151,7 @@ export function parseManifestV1(
 export function parseManifestV2(
   manifest: Record<string, unknown>,
 ): ManifestV2Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 2) {
-    throw new Error("Not a manifest.json v2");
-  }
+  validateManifestAndGetVersion(manifest, 2);
   return manifest as unknown as ManifestV2Type;
 }
 
@@ -162,12 +163,7 @@ export function parseManifestV2(
 export function parseManifestV3(
   manifest: Record<string, unknown>,
 ): ManifestV3Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 3) {
-    throw new Error("Not a manifest.json v3");
-  }
+  validateManifestAndGetVersion(manifest, 3);
   return manifest as unknown as ManifestV3Type;
 }
 
@@ -179,12 +175,7 @@ export function parseManifestV3(
 export function parseManifestV4(
   manifest: Record<string, unknown>,
 ): ManifestV4Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 4) {
-    throw new Error("Not a manifest.json v4");
-  }
+  validateManifestAndGetVersion(manifest, 4);
   return manifest as unknown as ManifestV4Type;
 }
 
@@ -196,12 +187,7 @@ export function parseManifestV4(
 export function parseManifestV5(
   manifest: Record<string, unknown>,
 ): ManifestV5Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 5) {
-    throw new Error("Not a manifest.json v5");
-  }
+  validateManifestAndGetVersion(manifest, 5);
   return manifest as unknown as ManifestV5Type;
 }
 
@@ -213,12 +199,7 @@ export function parseManifestV5(
 export function parseManifestV6(
   manifest: Record<string, unknown>,
 ): ManifestV6Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 6) {
-    throw new Error("Not a manifest.json v6");
-  }
+  validateManifestAndGetVersion(manifest, 6);
   return manifest as unknown as ManifestV6Type;
 }
 
@@ -230,12 +211,7 @@ export function parseManifestV6(
 export function parseManifestV7(
   manifest: Record<string, unknown>,
 ): ManifestV7Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 7) {
-    throw new Error("Not a manifest.json v7");
-  }
+  validateManifestAndGetVersion(manifest, 7);
   return manifest as unknown as ManifestV7Type;
 }
 
@@ -247,12 +223,7 @@ export function parseManifestV7(
 export function parseManifestV8(
   manifest: Record<string, unknown>,
 ): ManifestV8Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 8) {
-    throw new Error("Not a manifest.json v8");
-  }
+  validateManifestAndGetVersion(manifest, 8);
   return manifest as unknown as ManifestV8Type;
 }
 
@@ -264,12 +235,7 @@ export function parseManifestV8(
 export function parseManifestV9(
   manifest: Record<string, unknown>,
 ): ManifestV9Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 9) {
-    throw new Error("Not a manifest.json v9");
-  }
+  validateManifestAndGetVersion(manifest, 9);
   return manifest as unknown as ManifestV9Type;
 }
 
@@ -281,12 +247,7 @@ export function parseManifestV9(
 export function parseManifestV10(
   manifest: Record<string, unknown>,
 ): ManifestV10Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 10) {
-    throw new Error("Not a manifest.json v10");
-  }
+  validateManifestAndGetVersion(manifest, 10);
   return manifest as unknown as ManifestV10Type;
 }
 
@@ -298,12 +259,7 @@ export function parseManifestV10(
 export function parseManifestV11(
   manifest: Record<string, unknown>,
 ): ManifestV11Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 11) {
-    throw new Error("Not a manifest.json v11");
-  }
+  validateManifestAndGetVersion(manifest, 11);
   return manifest as unknown as ManifestV11Type;
 }
 
@@ -315,11 +271,6 @@ export function parseManifestV11(
 export function parseManifestV12(
   manifest: Record<string, unknown>,
 ): ManifestV12Type {
-  const version = getManifestVersion(
-    (manifest.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 12) {
-    throw new Error("Not a manifest.json v12");
-  }
+  validateManifestAndGetVersion(manifest, 12);
   return manifest as unknown as ManifestV12Type;
 }
