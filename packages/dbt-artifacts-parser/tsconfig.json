@@ -12,7 +12,12 @@
     "types": ["node", "vitest/globals"]
   },
   "include": ["src"],
-  "exclude": ["resources/**/*.json", "src/tests/**/*.json"],
+  "exclude": [
+    "resources/**/*.json",
+    "src/tests",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ],
   "ts-node": {
     "esm": true
   }
