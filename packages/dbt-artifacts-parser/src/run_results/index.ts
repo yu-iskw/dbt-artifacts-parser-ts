@@ -41,15 +41,16 @@ function getRunResultsVersion(dbtSchemaVersion: string): number {
 }
 
 /**
- * Parse run-results.json object and return appropriately typed run results based on version
+ * Validate run results structure and extract version
  * @param runResults - Parsed run-results.json object
- * @returns Typed run results object
- * @throws Error if run results is invalid or version is unsupported
+ * @param expectedVersion - Optional expected version for version-specific parsers
+ * @returns Version number as integer
+ * @throws Error if run results is invalid or version doesn't match expected
  */
-export function parseRunResults(
+function validateRunResultsAndGetVersion(
   runResults: Record<string, unknown>,
-): ParsedRunResults {
-  // Validate input structure
+  expectedVersion?: number,
+): number {
   if (
     !runResults ||
     typeof runResults !== "object" ||
@@ -58,22 +59,32 @@ export function parseRunResults(
     throw new Error("Not a run-results.json");
   }
 
-  const metadata = runResults.metadata;
+  const metadata = runResults.metadata as any;
   if (
     !metadata ||
     typeof metadata !== "object" ||
-    !("dbt_schema_version" in metadata)
+    typeof metadata.dbt_schema_version !== "string"
   ) {
     throw new Error("Not a run-results.json");
   }
 
-  // Extract and parse version
-  const dbtSchemaVersion = (metadata as any).dbt_schema_version;
-  if (typeof dbtSchemaVersion !== "string") {
-    throw new Error("Not a run-results.json");
+  const version = getRunResultsVersion(metadata.dbt_schema_version);
+  if (expectedVersion !== undefined && version !== expectedVersion) {
+    throw new Error(`Not a run-results.json v${expectedVersion}`);
   }
+  return version;
+}
 
-  const version = getRunResultsVersion(dbtSchemaVersion);
+/**
+ * Parse run-results.json object and return appropriately typed run results based on version
+ * @param runResults - Parsed run-results.json object
+ * @returns Typed run results object
+ * @throws Error if run results is invalid or version is unsupported
+ */
+export function parseRunResults(
+  runResults: Record<string, unknown>,
+): ParsedRunResults {
+  const version = validateRunResultsAndGetVersion(runResults);
 
   // Return appropriately typed run results based on version
   switch (version) {
@@ -102,12 +113,7 @@ export function parseRunResults(
 export function parseRunResultsV1(
   runResults: Record<string, unknown>,
 ): RunResultsV1Type {
-  const version = getRunResultsVersion(
-    (runResults.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 1) {
-    throw new Error("Not a run-results.json v1");
-  }
+  validateRunResultsAndGetVersion(runResults, 1);
   return runResults as unknown as RunResultsV1Type;
 }
 
@@ -119,12 +125,7 @@ export function parseRunResultsV1(
 export function parseRunResultsV2(
   runResults: Record<string, unknown>,
 ): RunResultsV2Type {
-  const version = getRunResultsVersion(
-    (runResults.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 2) {
-    throw new Error("Not a run-results.json v2");
-  }
+  validateRunResultsAndGetVersion(runResults, 2);
   return runResults as unknown as RunResultsV2Type;
 }
 
@@ -136,12 +137,7 @@ export function parseRunResultsV2(
 export function parseRunResultsV3(
   runResults: Record<string, unknown>,
 ): RunResultsV3Type {
-  const version = getRunResultsVersion(
-    (runResults.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 3) {
-    throw new Error("Not a run-results.json v3");
-  }
+  validateRunResultsAndGetVersion(runResults, 3);
   return runResults as unknown as RunResultsV3Type;
 }
 
@@ -153,12 +149,7 @@ export function parseRunResultsV3(
 export function parseRunResultsV4(
   runResults: Record<string, unknown>,
 ): RunResultsV4Type {
-  const version = getRunResultsVersion(
-    (runResults.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 4) {
-    throw new Error("Not a run-results.json v4");
-  }
+  validateRunResultsAndGetVersion(runResults, 4);
   return runResults as unknown as RunResultsV4Type;
 }
 
@@ -170,12 +161,7 @@ export function parseRunResultsV4(
 export function parseRunResultsV5(
   runResults: Record<string, unknown>,
 ): RunResultsV5Type {
-  const version = getRunResultsVersion(
-    (runResults.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 5) {
-    throw new Error("Not a run-results.json v5");
-  }
+  validateRunResultsAndGetVersion(runResults, 5);
   return runResults as unknown as RunResultsV5Type;
 }
 
@@ -187,11 +173,6 @@ export function parseRunResultsV5(
 export function parseRunResultsV6(
   runResults: Record<string, unknown>,
 ): RunResultsV6Type {
-  const version = getRunResultsVersion(
-    (runResults.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 6) {
-    throw new Error("Not a run-results.json v6");
-  }
+  validateRunResultsAndGetVersion(runResults, 6);
   return runResults as unknown as RunResultsV6Type;
 }

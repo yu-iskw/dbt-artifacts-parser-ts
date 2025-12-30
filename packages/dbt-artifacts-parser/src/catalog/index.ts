@@ -25,33 +25,44 @@ function getCatalogVersion(dbtSchemaVersion: string): number {
 }
 
 /**
+ * Validate catalog structure and extract version
+ * @param catalog - Parsed catalog.json object
+ * @param expectedVersion - Optional expected version for version-specific parsers
+ * @returns Version number as integer
+ * @throws Error if catalog is invalid or version doesn't match expected
+ */
+function validateCatalogAndGetVersion(
+  catalog: Record<string, unknown>,
+  expectedVersion?: number,
+): number {
+  if (!catalog || typeof catalog !== "object" || !("metadata" in catalog)) {
+    throw new Error("Not a catalog.json");
+  }
+
+  const metadata = catalog.metadata as any;
+  if (
+    !metadata ||
+    typeof metadata !== "object" ||
+    typeof metadata.dbt_schema_version !== "string"
+  ) {
+    throw new Error("Not a catalog.json");
+  }
+
+  const version = getCatalogVersion(metadata.dbt_schema_version);
+  if (expectedVersion !== undefined && version !== expectedVersion) {
+    throw new Error(`Not a catalog.json v${expectedVersion}`);
+  }
+  return version;
+}
+
+/**
  * Parse catalog.json object and return appropriately typed catalog based on version
  * @param catalog - Parsed catalog.json object
  * @returns Typed catalog object
  * @throws Error if catalog is invalid or version is unsupported
  */
 export function parseCatalog(catalog: Record<string, unknown>): ParsedCatalog {
-  // Validate input structure
-  if (!catalog || typeof catalog !== "object" || !("metadata" in catalog)) {
-    throw new Error("Not a catalog.json");
-  }
-
-  const metadata = catalog.metadata;
-  if (
-    !metadata ||
-    typeof metadata !== "object" ||
-    !("dbt_schema_version" in metadata)
-  ) {
-    throw new Error("Not a catalog.json");
-  }
-
-  // Extract and parse version
-  const dbtSchemaVersion = (metadata as any).dbt_schema_version;
-  if (typeof dbtSchemaVersion !== "string") {
-    throw new Error("Not a catalog.json");
-  }
-
-  const version = getCatalogVersion(dbtSchemaVersion);
+  const version = validateCatalogAndGetVersion(catalog);
 
   // Return appropriately typed catalog based on version
   switch (version) {
@@ -70,11 +81,6 @@ export function parseCatalog(catalog: Record<string, unknown>): ParsedCatalog {
 export function parseCatalogV1(
   catalog: Record<string, unknown>,
 ): CatalogArtifactV1Type {
-  const version = getCatalogVersion(
-    (catalog.metadata as any)?.dbt_schema_version,
-  );
-  if (version !== 1) {
-    throw new Error("Not a catalog.json v1");
-  }
+  validateCatalogAndGetVersion(catalog, 1);
   return catalog as unknown as CatalogArtifactV1Type;
 }
