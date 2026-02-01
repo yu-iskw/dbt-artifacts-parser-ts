@@ -23,15 +23,15 @@ lint:
   enabled:
     - shellcheck@0.11.0
     - shfmt@3.6.0
-    - sort-package-json@3.6.0
-    - actionlint@1.7.8
+    - sort-package-json@3.6.1
+    - actionlint@1.7.10
     - pre-commit-hooks@5.0.0
-    - trivy@0.68.2
-    - osv-scanner@2.3.1
-    - yamllint@1.37.1
+    - trivy@0.69.0
+    - osv-scanner@2.3.2
+    - yamllint@1.38.0
     - git-diff-check
     - markdownlint@0.47.0
-    - prettier@3.7.4
+    - prettier@3.8.1
 actions:
   enabled:
     - trunk-upgrade-available
