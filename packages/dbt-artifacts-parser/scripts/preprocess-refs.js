@@ -3,7 +3,7 @@
  * Pre-processes JSON schema files that have root-level $ref patterns
  * by expanding all $ref references using json-schema-ref-parser.
  *
- * Usage: node preprocess-refs.js <input-file> <output-file> [cwd]
+ * Usage: node preprocess-refs.js <input-file> <output-file>
  *
  * If the input file has a root-level $ref, it will be dereferenced and written to output-file.
  * If not, the input file will be copied to output-file as-is.
@@ -14,7 +14,6 @@ const path = require("path");
 
 const inputFile = process.argv[2];
 const outputFile = process.argv[3];
-const cwd = process.argv[4] || path.dirname(inputFile);
 
 if (!inputFile || !outputFile) {
   console.error(
