@@ -11,7 +11,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const $RefParser = require("@apidevtools/json-schema-ref-parser");
 
 const inputFile = process.argv[2];
 const outputFile = process.argv[3];
@@ -26,6 +25,10 @@ if (!inputFile || !outputFile) {
 
 async function preprocessSchema() {
   try {
+    // ESM package: load with dynamic import (required for @apidevtools/json-schema-ref-parser)
+    const { default: $RefParser } =
+      await import("@apidevtools/json-schema-ref-parser");
+
     // Read the input JSON file
     const inputPath = path.resolve(inputFile);
     const schema = JSON.parse(fs.readFileSync(inputPath, "utf8"));
