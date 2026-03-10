@@ -2,13 +2,16 @@
 
 import { Command } from "commander";
 import * as fs from "fs";
-import * as path from "path";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { parseManifest } from "dbt-artifacts-parser/manifest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { parseRunResults } from "dbt-artifacts-parser/run_results";
-import { ManifestGraph } from "@dbt-tools/core";
-import { ExecutionAnalyzer } from "@dbt-tools/core";
+import {
+  ManifestGraph,
+  ExecutionAnalyzer,
+  ArtifactLoader,
+  InputValidator,
+  OutputFormatter,
+  ErrorHandler,
+  DependencyService,
+  SchemaGenerator,
+} from "@dbt-tools/core";
 
 const program = new Command();
 
@@ -18,20 +21,20 @@ program
   .version("0.1.0");
 
 /**
- * Load and parse a JSON file
+ * Handle errors with proper formatting
  */
-function loadJsonFile<T>(filePath: string): T {
-  const fullPath = path.resolve(filePath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`File not found: ${fullPath}`);
-  }
+function handleError(error: unknown, isTTY: boolean): void {
+  const formatted = ErrorHandler.formatError(
+    error instanceof Error ? error : new Error(String(error)),
+    isTTY,
+  );
 
-  const content = fs.readFileSync(fullPath, "utf-8");
-  try {
-    return JSON.parse(content) as T;
-  } catch (error) {
-    throw new Error(`Failed to parse JSON file ${fullPath}: ${error}`);
+  if (typeof formatted === "string") {
+    console.error(formatted);
+  } else {
+    console.error(JSON.stringify(formatted, null, 2));
   }
+  process.exit(1);
 }
 
 /**
@@ -40,35 +43,53 @@ function loadJsonFile<T>(filePath: string): T {
 program
   .command("analyze")
   .description("Analyze dbt manifest and provide summary statistics")
-  .argument("<manifest-path>", "Path to manifest.json file")
-  .option("--json", "Output results as JSON")
-  .action((manifestPath: string, options: { json?: boolean }) => {
-    try {
-      const manifestJson = loadJsonFile<Record<string, unknown>>(manifestPath);
-      const manifest = parseManifest(manifestJson);
-      const graph = new ManifestGraph(manifest);
-      const summary = graph.getSummary();
+  .argument(
+    "[manifest-path]",
+    "Path to manifest.json file (defaults to ./target/manifest.json)",
+  )
+  .option(
+    "--target-dir <dir>",
+    "Custom target directory (defaults to ./target)",
+  )
+  .option("--json", "Force JSON output")
+  .option("--no-json", "Force human-readable output")
+  .action(
+    (
+      manifestPath: string | undefined,
+      options: { targetDir?: string; json?: boolean; noJson?: boolean },
+    ) => {
+      try {
+        // Resolve artifact paths
+        const paths = ArtifactLoader.resolveArtifactPaths(
+          manifestPath,
+          undefined,
+          options.targetDir,
+        );
 
-      if (options.json) {
-        console.log(JSON.stringify(summary, null, 2));
-      } else {
-        console.log("dbt Project Analysis");
-        console.log("====================");
-        console.log(`Total Nodes: ${summary.total_nodes}`);
-        console.log(`Total Edges: ${summary.total_edges}`);
-        console.log(`Has Cycles: ${summary.has_cycles ? "Yes" : "No"}`);
-        console.log("\nNodes by Type:");
-        for (const [type, count] of Object.entries(summary.nodes_by_type)) {
-          console.log(`  ${type}: ${count}`);
+        // Validate path
+        InputValidator.validateSafePath(paths.manifest);
+
+        // Load manifest
+        const manifest = ArtifactLoader.loadManifest(paths.manifest);
+        const graph = new ManifestGraph(manifest);
+        const summary = graph.getSummary();
+
+        // Format output
+        const useJson = OutputFormatter.shouldOutputJSON(
+          options.json,
+          options.noJson,
+        );
+
+        if (useJson) {
+          console.log(OutputFormatter.formatOutput(summary, true));
+        } else {
+          console.log(OutputFormatter.formatAnalyze(summary));
         }
+      } catch (error) {
+        handleError(error, OutputFormatter.isTTY());
       }
-    } catch (error) {
-      console.error(
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      process.exit(1);
-    }
-  });
+    },
+  );
 
 /**
  * Graph export command: Export graph in various formats
@@ -76,15 +97,37 @@ program
 program
   .command("graph")
   .description("Export dependency graph")
-  .argument("<manifest-path>", "Path to manifest.json file")
+  .argument(
+    "[manifest-path]",
+    "Path to manifest.json file (defaults to ./target/manifest.json)",
+  )
   .option("--format <format>", "Export format: json, dot, gexf", "json")
   .option("--output <path>", "Output file path (default: stdout)")
+  .option(
+    "--target-dir <dir>",
+    "Custom target directory (defaults to ./target)",
+  )
   .action(
-    (manifestPath: string, options: { format?: string; output?: string }) => {
+    (
+      manifestPath: string | undefined,
+      options: { format?: string; output?: string; targetDir?: string },
+    ) => {
       try {
-        const manifestJson =
-          loadJsonFile<Record<string, unknown>>(manifestPath);
-        const manifest = parseManifest(manifestJson);
+        // Resolve artifact paths
+        const paths = ArtifactLoader.resolveArtifactPaths(
+          manifestPath,
+          undefined,
+          options.targetDir,
+        );
+
+        // Validate path
+        InputValidator.validateSafePath(paths.manifest);
+        if (options.output) {
+          InputValidator.validateSafePath(options.output);
+        }
+
+        // Load manifest
+        const manifest = ArtifactLoader.loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
         const graphologyGraph = graph.getGraph();
 
@@ -179,10 +222,7 @@ ${edges.map((e, i) => `      <edge id="${i}" source="${e.source}" target="${e.ta
           console.log(output);
         }
       } catch (error) {
-        console.error(
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        process.exit(1);
+        handleError(error, OutputFormatter.isTTY());
       }
     },
   );
@@ -193,28 +233,46 @@ ${edges.map((e, i) => `      <edge id="${i}" source="${e.source}" target="${e.ta
 program
   .command("run-report")
   .description("Generate execution report from run_results.json")
-  .argument("<run-results-path>", "Path to run_results.json file")
+  .argument(
+    "[run-results-path]",
+    "Path to run_results.json file (defaults to ./target/run_results.json)",
+  )
   .argument(
     "[manifest-path]",
     "Path to manifest.json file (optional, for critical path)",
   )
-  .option("--json", "Output results as JSON")
+  .option(
+    "--target-dir <dir>",
+    "Custom target directory (defaults to ./target)",
+  )
+  .option("--json", "Force JSON output")
+  .option("--no-json", "Force human-readable output")
   .action(
     (
-      runResultsPath: string,
+      runResultsPath: string | undefined,
       manifestPath: string | undefined,
-      options: { json?: boolean },
+      options: { targetDir?: string; json?: boolean; noJson?: boolean },
     ) => {
       try {
-        const runResultsJson =
-          loadJsonFile<Record<string, unknown>>(runResultsPath);
-        const runResults = parseRunResults(runResultsJson);
+        // Resolve artifact paths
+        const paths = ArtifactLoader.resolveArtifactPaths(
+          manifestPath,
+          runResultsPath,
+          options.targetDir,
+        );
+
+        // Validate paths
+        InputValidator.validateSafePath(paths.manifest);
+        if (paths.runResults) {
+          InputValidator.validateSafePath(paths.runResults);
+        }
+
+        // Load run results
+        const runResults = ArtifactLoader.loadRunResults(paths.runResults!);
 
         let analyzer: ExecutionAnalyzer | undefined;
-        if (manifestPath) {
-          const manifestJson =
-            loadJsonFile<Record<string, unknown>>(manifestPath);
-          const manifest = parseManifest(manifestJson);
+        if (paths.manifest) {
+          const manifest = ArtifactLoader.loadManifest(paths.manifest);
           const graph = new ManifestGraph(manifest);
           analyzer = new ExecutionAnalyzer(runResults, graph);
         }
@@ -242,38 +300,140 @@ program
           summary.nodes_by_status = nodesByStatus;
         }
 
-        if (options.json) {
-          console.log(JSON.stringify(summary, null, 2));
-        } else {
-          console.log("dbt Execution Report");
-          console.log("===================");
-          console.log(
-            `Total Execution Time: ${summary.total_execution_time.toFixed(2)}s`,
-          );
-          console.log(`Total Nodes: ${summary.total_nodes}`);
-          console.log("\nNodes by Status:");
-          for (const [status, count] of Object.entries(
-            summary.nodes_by_status,
-          )) {
-            console.log(`  ${status}: ${count}`);
-          }
+        // Format output
+        const useJson = OutputFormatter.shouldOutputJSON(
+          options.json,
+          options.noJson,
+        );
 
-          if (analyzer && "critical_path" in summary && summary.critical_path) {
-            console.log("\nCritical Path:");
-            console.log(`  Path: ${summary.critical_path.path.join(" -> ")}`);
-            console.log(
-              `  Total Time: ${summary.critical_path.total_time.toFixed(2)}s`,
-            );
-          }
+        if (useJson) {
+          console.log(OutputFormatter.formatOutput(summary, true));
+        } else {
+          console.log(OutputFormatter.formatRunReport(summary));
         }
       } catch (error) {
-        console.error(
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        process.exit(1);
+        handleError(error, OutputFormatter.isTTY());
       }
     },
   );
+
+/**
+ * Deps command: Get upstream or downstream dependencies
+ */
+program
+  .command("deps")
+  .description("Get upstream or downstream dependencies for a dbt resource")
+  .argument(
+    "<resource-id>",
+    "Unique ID of the dbt resource (e.g., model.my_project.customers)",
+  )
+  .option(
+    "--direction <direction>",
+    "Direction: upstream or downstream",
+    "downstream",
+  )
+  .option("--manifest-path <path>", "Path to manifest.json file")
+  .option(
+    "--target-dir <dir>",
+    "Custom target directory (defaults to ./target)",
+  )
+  .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option("--json", "Force JSON output")
+  .option("--no-json", "Force human-readable output")
+  .action(
+    (
+      resourceId: string,
+      options: {
+        direction?: string;
+        manifestPath?: string;
+        targetDir?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) => {
+      try {
+        // Validate resource ID
+        InputValidator.validateResourceId(resourceId);
+
+        // Validate direction
+        const direction = options.direction?.toLowerCase();
+        if (direction !== "upstream" && direction !== "downstream") {
+          throw new Error(
+            `Invalid direction: ${options.direction}. Must be 'upstream' or 'downstream'`,
+          );
+        }
+
+        // Resolve artifact paths
+        const paths = ArtifactLoader.resolveArtifactPaths(
+          options.manifestPath,
+          undefined,
+          options.targetDir,
+        );
+
+        // Validate path
+        InputValidator.validateSafePath(paths.manifest);
+
+        // Load manifest and create graph
+        const manifest = ArtifactLoader.loadManifest(paths.manifest);
+        const graph = new ManifestGraph(manifest);
+
+        // Get dependencies
+        const result = DependencyService.getDependencies(
+          graph,
+          resourceId,
+          direction as "upstream" | "downstream",
+          options.fields,
+        );
+
+        // Format output
+        const useJson = OutputFormatter.shouldOutputJSON(
+          options.json,
+          options.noJson,
+        );
+
+        if (useJson) {
+          console.log(OutputFormatter.formatOutput(result, true));
+        } else {
+          console.log(OutputFormatter.formatDeps(result));
+        }
+      } catch (error) {
+        handleError(error, OutputFormatter.isTTY());
+      }
+    },
+  );
+
+/**
+ * Schema command: Get command schema for introspection
+ */
+program
+  .command("schema")
+  .description("Get machine-readable schema for a command")
+  .argument(
+    "[command]",
+    "Command name (if omitted, returns all command schemas)",
+  )
+  .option("--json", "Force JSON output (always JSON by default)")
+  .action((command: string | undefined, _options: { json?: boolean }) => {
+    try {
+      let result: unknown;
+
+      if (command) {
+        const schema = SchemaGenerator.getCommandSchema(command);
+        if (!schema) {
+          throw new Error(`Unknown command: ${command}`);
+        }
+        result = schema;
+      } else {
+        result = SchemaGenerator.getAllSchemas();
+      }
+
+      // Schema command always outputs JSON
+      console.log(OutputFormatter.formatOutput(result, true));
+    } catch (error) {
+      handleError(error, OutputFormatter.isTTY());
+    }
+  });
 
 // Parse command line arguments
 program.parse();

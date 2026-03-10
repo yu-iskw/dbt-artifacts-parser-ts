@@ -7,12 +7,12 @@ import type {
   GraphEdgeAttributes,
   GraphSummary,
   DbtResourceType,
-} from "./types";
+} from "../types";
 import {
   isSupportedVersion,
   getVersionInfo,
   MIN_SUPPORTED_SCHEMA_VERSION,
-} from "./version";
+} from "../version";
 
 /**
  * ManifestGraph builds and manages a directed graph from a dbt manifest.

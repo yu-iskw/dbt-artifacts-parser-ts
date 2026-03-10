@@ -5,9 +5,7 @@ import path from "path";
 // We need to handle both build-time (dist/) and source-time (src/) contexts
 let baseDir: string;
 try {
-  // @ts-expect-error - __dirname is available in CommonJS
   if (typeof __dirname !== "undefined") {
-    // @ts-expect-error - __dirname is available in CommonJS
     baseDir = path.resolve(__dirname, "..", "src");
   } else {
     throw new Error("__dirname not available");
