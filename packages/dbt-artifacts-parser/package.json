@@ -1,5 +1,5 @@
 {
-  "name": "@yu-iskw/dbt-artifacts-parser",
+  "name": "dbt-artifacts-parser",
   "version": "0.2.0",
   "description": "TypeScript library for parsing dbt artifacts",
   "keywords": [],
