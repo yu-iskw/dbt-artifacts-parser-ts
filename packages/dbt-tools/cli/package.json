@@ -1,0 +1,38 @@
+{
+  "name": "@dbt-tools/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for dbt artifact analysis",
+  "keywords": [
+    "dbt",
+    "cli",
+    "analysis"
+  ],
+  "license": "Apache-2.0",
+  "author": "yu-iskw",
+  "bin": {
+    "dbt-tools": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@dbt-tools/core": "workspace:*",
+    "commander": "^12.1.0",
+    "dbt-artifacts-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

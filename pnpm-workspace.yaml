@@ -1,2 +1,3 @@
 packages:
-  - packages/*
+  - packages/dbt-artifacts-parser
+  - packages/dbt-tools/*
