@@ -83,7 +83,7 @@ process_category() {
 		# This handles root-level $ref patterns that json2ts can't process
 		local temp_json_file
 		temp_json_file="${TEMP_DIR}/$(basename "${json_file}")"
-		if ! node "${PREPROCESS_REFs}" "${json_file}" "${temp_json_file}" "${resource_dir}" >/dev/null 2>&1; then
+		if ! node "${PREPROCESS_REFs}" "${json_file}" "${temp_json_file}" "${resource_dir}" >/dev/null; then
 			echo -e "  Error: Failed to pre-process ${json_file}, skipping"
 			continue
 		fi

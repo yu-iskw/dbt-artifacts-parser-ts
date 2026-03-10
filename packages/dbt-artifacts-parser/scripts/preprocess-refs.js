@@ -3,7 +3,7 @@
  * Pre-processes JSON schema files that have root-level $ref patterns
  * by expanding all $ref references using json-schema-ref-parser.
  *
- * Usage: node preprocess-refs.js <input-file> <output-file> [cwd]
+ * Usage: node preprocess-refs.js <input-file> <output-file>
  *
  * If the input file has a root-level $ref, it will be dereferenced and written to output-file.
  * If not, the input file will be copied to output-file as-is.
@@ -11,11 +11,9 @@
 
 const fs = require("fs");
 const path = require("path");
-const $RefParser = require("@apidevtools/json-schema-ref-parser");
 
 const inputFile = process.argv[2];
 const outputFile = process.argv[3];
-const cwd = process.argv[4] || path.dirname(inputFile);
 
 if (!inputFile || !outputFile) {
   console.error(
@@ -26,6 +24,10 @@ if (!inputFile || !outputFile) {
 
 async function preprocessSchema() {
   try {
+    // ESM package: load with dynamic import (required for @apidevtools/json-schema-ref-parser)
+    const { default: $RefParser } =
+      await import("@apidevtools/json-schema-ref-parser");
+
     // Read the input JSON file
     const inputPath = path.resolve(inputFile);
     const schema = JSON.parse(fs.readFileSync(inputPath, "utf8"));
