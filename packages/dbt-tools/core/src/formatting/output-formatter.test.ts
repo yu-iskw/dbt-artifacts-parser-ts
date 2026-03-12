@@ -3,7 +3,7 @@ import {
   isTTY,
   shouldOutputJSON,
   formatOutput,
-  formatAnalyze,
+  formatSummary,
   formatDeps,
   formatRunReport,
   formatHumanReadable,
@@ -126,16 +126,16 @@ describe("OutputFormatter", () => {
     });
   });
 
-  describe("formatAnalyze", () => {
-    it("should format analyze output correctly", () => {
+  describe("formatSummary", () => {
+    it("should format summary output correctly", () => {
       const summary = {
         total_nodes: 10,
         total_edges: 15,
         has_cycles: false,
         nodes_by_type: { model: 8, test: 2 },
       };
-      const output = formatAnalyze(summary);
-      expect(output).toContain("dbt Project Analysis");
+      const output = formatSummary(summary);
+      expect(output).toContain("dbt Project Summary");
       expect(output).toContain("Total Nodes: 10");
       expect(output).toContain("Total Edges: 15");
       expect(output).toContain("Has Cycles: No");
@@ -280,15 +280,15 @@ describe("OutputFormatter", () => {
   });
 
   describe("formatHumanReadable", () => {
-    it("should format analyze output", () => {
+    it("should format summary output", () => {
       const data = {
         total_nodes: 10,
         total_edges: 15,
         has_cycles: false,
         nodes_by_type: { model: 8 },
       };
-      const output = formatHumanReadable(data, "analyze");
-      expect(output).toContain("dbt Project Analysis");
+      const output = formatHumanReadable(data, "summary");
+      expect(output).toContain("dbt Project Summary");
     });
 
     it("should format deps output", () => {

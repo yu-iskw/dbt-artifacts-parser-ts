@@ -32,15 +32,17 @@ const DESC_MANIFEST_PATH =
 const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
 const DESC_FORCE_JSON = "Force JSON output";
 const DESC_FORCE_HUMAN = "Force human-readable output";
+const DESC_FIELDS =
+  "Comma-separated list of fields to include in response (e.g., unique_id,name)";
 const DESC_RUN_RESULTS_PATH =
   "Path to run_results.json file (defaults to ./target/run_results.json)";
 const DESC_MANIFEST_OPTIONAL =
   "Path to manifest.json file (optional, for critical path analysis)";
 
-function getAnalyzeSchema(): CommandSchema {
+function getSummarySchema(): CommandSchema {
   return {
-    command: "analyze",
-    description: "Analyze dbt manifest and provide summary statistics",
+    command: "summary",
+    description: "Provide summary statistics for dbt manifest",
     arguments: [
       {
         name: ARG_MANIFEST_PATH,
@@ -55,6 +57,11 @@ function getAnalyzeSchema(): CommandSchema {
         description: DESC_TARGET_DIR,
       },
       {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      {
         name: OPT_JSON,
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,
@@ -66,7 +73,7 @@ function getAnalyzeSchema(): CommandSchema {
       },
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools analyze",
+    example: "dbt-tools summary",
   };
 }
 
@@ -128,6 +135,11 @@ function getRunReportSchema(): CommandSchema {
         description: DESC_TARGET_DIR,
       },
       {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      {
         name: OPT_JSON,
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,
@@ -174,8 +186,7 @@ function getDepsSchemaOptions(): SchemaOption[] {
     {
       name: "--fields",
       type: TYPE_STRING,
-      description:
-        "Comma-separated list of fields to include in response (e.g., unique_id,name)",
+      description: DESC_FIELDS,
     },
     {
       name: "--depth",
@@ -189,6 +200,12 @@ function getDepsSchemaOptions(): SchemaOption[] {
       values: ["flat", "tree"],
       default: "tree",
       description: "Output structure: flat list or nested tree",
+    },
+    {
+      name: "--build-order",
+      type: TYPE_BOOLEAN,
+      description:
+        "Output upstream dependencies in topological build order (only with --direction upstream)",
     },
     { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
     { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
@@ -249,7 +266,7 @@ export function getCommandSchema(command: string): CommandSchema | null {
  */
 export function getAllSchemas(): Record<string, CommandSchema> {
   return {
-    analyze: getAnalyzeSchema(),
+    summary: getSummarySchema(),
     graph: getGraphSchema(),
     "run-report": getRunReportSchema(),
     deps: getDepsSchema(),

@@ -13,9 +13,10 @@ import {
   isTTY,
   shouldOutputJSON,
   formatOutput,
-  formatAnalyze,
+  formatSummary,
   formatDeps,
   formatRunReport,
+  FieldFilter,
   ErrorHandler,
   DependencyService,
   getCommandSchema,
@@ -47,11 +48,11 @@ function handleError(error: unknown, isTTY: boolean): void {
 }
 
 /**
- * Analyze command: Basic summary of project structure
+ * Summary command: Basic summary of project structure
  */
 program
-  .command("analyze")
-  .description("Analyze dbt manifest and provide summary statistics")
+  .command("summary")
+  .description("Provide summary statistics for dbt manifest")
   .argument(
     "[manifest-path]",
     "Path to manifest.json file (defaults to ./target/manifest.json)",
@@ -65,7 +66,12 @@ program
   .action(
     (
       manifestPath: string | undefined,
-      options: { targetDir?: string; json?: boolean; noJson?: boolean },
+      options: {
+        targetDir?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
     ) => {
       try {
         // Resolve artifact paths
@@ -81,7 +87,15 @@ program
         // Load manifest
         const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
-        const summary = graph.getSummary();
+        let summary = graph.getSummary();
+
+        // Apply field filtering if requested
+        if (options.fields) {
+          summary = FieldFilter.filterFields(
+            summary,
+            options.fields,
+          ) as typeof summary;
+        }
 
         // Format output
         const useJson = shouldOutputJSON(options.json, options.noJson);
@@ -89,7 +103,7 @@ program
         if (useJson) {
           console.log(formatOutput(summary, true));
         } else {
-          console.log(formatAnalyze(summary));
+          console.log(formatSummary(summary));
         }
       } catch (error) {
         handleError(error, isTTY());
@@ -113,10 +127,16 @@ program
     "--target-dir <dir>",
     "Custom target directory (defaults to ./target)",
   )
+  .option("--fields <fields>", "Comma-separated list of fields to include")
   .action(
     (
       manifestPath: string | undefined,
-      options: { format?: string; output?: string; targetDir?: string },
+      options: {
+        format?: string;
+        output?: string;
+        targetDir?: string;
+        fields?: string;
+      },
     ) => {
       try {
         // Resolve artifact paths
@@ -150,7 +170,14 @@ program
             }> = [];
 
             graphologyGraph.forEachNode((nodeId, attributes) => {
-              nodes.push({ id: nodeId, attributes });
+              let filteredAttrs: unknown = attributes;
+              if (options.fields) {
+                filteredAttrs = FieldFilter.filterFields(
+                  attributes,
+                  options.fields,
+                );
+              }
+              nodes.push({ id: nodeId, attributes: filteredAttrs });
             });
 
             graphologyGraph.forEachEdge(
@@ -251,13 +278,19 @@ program
     "--target-dir <dir>",
     "Custom target directory (defaults to ./target)",
   )
+  .option("--fields <fields>", "Comma-separated list of fields to include")
   .option("--json", "Force JSON output")
   .option("--no-json", "Force human-readable output")
   .action(
     (
       runResultsPath: string | undefined,
       manifestPath: string | undefined,
-      options: { targetDir?: string; json?: boolean; noJson?: boolean },
+      options: {
+        targetDir?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
     ) => {
       try {
         // Resolve artifact paths
@@ -283,7 +316,7 @@ program
           analyzer = new ExecutionAnalyzer(runResults, graph);
         }
 
-        const summary = analyzer
+        let summary = analyzer
           ? analyzer.getSummary()
           : {
               total_execution_time: runResults.elapsed_time || 0,
@@ -304,6 +337,14 @@ program
             nodesByStatus[status] = (nodesByStatus[status] || 0) + 1;
           }
           summary.nodes_by_status = nodesByStatus;
+        }
+
+        // Apply field filtering if requested
+        if (options.fields) {
+          summary = FieldFilter.filterFields(
+            summary,
+            options.fields,
+          ) as typeof summary;
         }
 
         // Format output

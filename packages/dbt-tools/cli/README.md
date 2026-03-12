@@ -19,28 +19,32 @@ pnpm add -g @dbt-tools/cli
 
 ## Commands
 
-### analyze
+### summary
 
-Analyze dbt manifest and provide summary statistics.
+Provide summary statistics for dbt manifest.
 
 ```bash
 # Uses ./target/manifest.json by default
-dbt-tools analyze
+dbt-tools summary
 
 # Custom target directory
-dbt-tools analyze --target-dir ./custom-target
+dbt-tools summary --target-dir ./custom-target
 
 # Explicit path
-dbt-tools analyze path/to/manifest.json
+dbt-tools summary path/to/manifest.json
+
+# Field filtering to reduce context window usage
+dbt-tools summary --fields "total_nodes,total_edges"
 
 # JSON output
-dbt-tools analyze --json
+dbt-tools summary --json
 ```
 
 **Options:**
 
 - `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
 - `--target-dir <dir>` - Custom target directory
+- `--fields <fields>` - Comma-separated list of fields to include
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 
@@ -58,6 +62,9 @@ dbt-tools graph --format dot --output graph.dot
 # Export as GEXF format
 dbt-tools graph --format gexf --output graph.gexf
 
+# With field filtering (only affects JSON format)
+dbt-tools graph --format json --fields "name,resource_type"
+
 # Custom target directory
 dbt-tools graph --target-dir ./custom-target
 ```
@@ -68,6 +75,7 @@ dbt-tools graph --target-dir ./custom-target
 - `--format <format>` - Export format: `json`, `dot`, or `gexf` (default: `json`)
 - `--output <path>` - Output file path (default: stdout)
 - `--target-dir <dir>` - Custom target directory
+- `--fields <fields>` - Comma-separated list of fields to include (affects JSON nodes)
 
 ### run-report
 
@@ -79,6 +87,9 @@ dbt-tools run-report
 
 # With critical path analysis
 dbt-tools run-report
+
+# Field filtering
+dbt-tools run-report --fields "total_execution_time,critical_path"
 
 # Custom paths
 dbt-tools run-report ./custom/run_results.json ./custom/manifest.json
@@ -92,10 +103,11 @@ dbt-tools run-report --json
 - `[run-results-path]` - Path to run_results.json (defaults to `./target/run_results.json`)
 - `[manifest-path]` - Path to manifest.json (optional, for critical path analysis)
 - `--target-dir <dir>` - Custom target directory
+- `--fields <fields>` - Comma-separated list of fields to include
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 
-### deps (NEW)
+### deps
 
 Get upstream or downstream dependencies for a dbt resource.
 
@@ -105,6 +117,15 @@ dbt-tools deps model.my_project.customers
 
 # Get upstream dependencies
 dbt-tools deps model.my_project.customers --direction upstream
+
+# Get immediate neighbors only
+dbt-tools deps model.my_project.customers --depth 1
+
+# Output as a flat list
+dbt-tools deps model.my_project.customers --format flat
+
+# Get upstream dependencies in build order
+dbt-tools deps model.my_project.customers --direction upstream --build-order
 
 # With field filtering to reduce output size
 dbt-tools deps model.my_project.customers --fields "unique_id,name"
@@ -120,6 +141,9 @@ dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
 - `--manifest-path <path>` - Path to manifest.json (defaults to `./target/manifest.json`)
 - `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include (e.g., `unique_id,name`)
+- `--depth <number>` - Max traversal depth; 1 = immediate neighbors, omit for all levels
+- `--format <format>` - Output structure: `flat` or `tree` (default: `tree`)
+- `--build-order` - Output upstream dependencies in topological build order
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 
@@ -141,7 +165,7 @@ dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
 }
 ```
 
-### schema (NEW)
+### schema
 
 Get machine-readable schema for commands (runtime introspection).
 
@@ -187,7 +211,7 @@ The CLI automatically outputs JSON when stdout is not a TTY (non-interactive env
 
 ## Field Filtering
 
-Use `--fields` to limit response size and reduce context window usage:
+Use `--fields` to limit response size and reduce context window usage. This is supported in `summary`, `deps`, `graph` (JSON), and `run-report`.
 
 ```bash
 # Only return specific fields
@@ -202,15 +226,53 @@ dbt-tools deps model.my_project.customers --fields "unique_id,name,attributes.re
 The CLI validates all inputs to prevent common mistakes:
 
 - **Path traversals**: Rejects `../` and `..\\` patterns
-- **Control characters**: Rejects invisible characters
-- **Resource IDs**: Rejects embedded query params (`?`, `#`) and URL-encoded strings
-- **Pre-encoded URLs**: Rejects patterns like `%2e%2e`
+- **Control characters**: Rejects invisible characters (< 0x20 except `\n`, `\r`, `\t`)
+- **Resource IDs**: Rejects embedded query params (`?`, `#`) and URL-encoded strings (`%`)
+- **Pre-encoded URLs**: Rejects patterns like `%2e%2e` (encoded `..`)
+
+**Common mistakes to avoid:**
+
+- ❌ `model.x?fields=name` (embedded query param)
+- ❌ `model%2ex` (pre-encoded)
+- ❌ `../../.ssh` (path traversal)
+- ✅ `model.my_project.customers` (correct)
+
+## Error Handling
+
+Errors are formatted as JSON in non-TTY environments:
+
+```json
+{
+  "error": "ValidationError",
+  "code": "VALIDATION_ERROR",
+  "message": "Resource ID contains invalid characters",
+  "details": {
+    "field": "resource_id"
+  }
+}
+```
+
+**Common Error Codes:**
+
+- `VALIDATION_ERROR`: Input validation failed
+- `FILE_NOT_FOUND`: Artifact file not found
+- `PARSE_ERROR`: Failed to parse JSON
+- `UNSUPPORTED_VERSION`: Unsupported dbt version
+- `UNKNOWN_ERROR`: Other errors
+
+## Best Practices for AI Agents
+
+1. **Always use field filtering** for dependency queries and analysis to reduce context window usage.
+2. **Use default `./target` directory** unless you have a specific reason not to.
+3. **Validate resource IDs** before querying (use schema introspection if unsure).
+4. **Handle errors programmatically** using error codes in non-interactive environments.
+5. **Use schema introspection** to discover command capabilities at runtime.
 
 ## Examples
 
 ```bash
-# Basic analysis (uses ./target/manifest.json)
-dbt-tools analyze
+# Basic summary (uses ./target/manifest.json)
+dbt-tools summary
 
 # Find downstream dependencies
 dbt-tools deps model.my_project.customers
@@ -227,16 +289,6 @@ dbt-tools run-report
 # Get command schema
 dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 ```
-
-## Agent Usage
-
-For AI agents, see [CONTEXT.md](./CONTEXT.md) for detailed guidance on:
-
-- Default artifact locations
-- Field filtering best practices
-- Input validation expectations
-- Common patterns and examples
-- Error handling
 
 ## Environment Variables
 

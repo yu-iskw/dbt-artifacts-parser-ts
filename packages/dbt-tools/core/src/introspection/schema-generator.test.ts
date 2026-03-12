@@ -3,10 +3,10 @@ import { getCommandSchema, getAllSchemas } from "./schema-generator";
 
 describe("SchemaGenerator", () => {
   describe("getCommandSchema", () => {
-    it("should return schema for analyze command", () => {
-      const schema = getCommandSchema("analyze");
+    it("should return schema for summary command", () => {
+      const schema = getCommandSchema("summary");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("analyze");
+      expect(schema?.command).toBe("summary");
       expect(schema?.arguments).toBeInstanceOf(Array);
       expect(schema?.options).toBeInstanceOf(Array);
     });
@@ -48,7 +48,7 @@ describe("SchemaGenerator", () => {
   describe("getAllSchemas", () => {
     it("should return all command schemas", () => {
       const schemas = getAllSchemas();
-      expect(schemas).toHaveProperty("analyze");
+      expect(schemas).toHaveProperty("summary");
       expect(schemas).toHaveProperty("deps");
       expect(schemas).toHaveProperty("graph");
       expect(schemas).toHaveProperty("run-report");

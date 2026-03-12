@@ -96,17 +96,17 @@ export function formatOutput(
 }
 
 /**
- * Format analyze command output
+ * Format summary command output
  */
-export function formatAnalyze(summary: {
+export function formatSummary(summary: {
   total_nodes: number;
   total_edges: number;
   has_cycles: boolean;
   nodes_by_type: Record<string, number>;
 }): string {
   const lines: string[] = [];
-  lines.push("dbt Project Analysis");
-  lines.push("====================");
+  lines.push("dbt Project Summary");
+  lines.push("===================");
   lines.push(`Total Nodes: ${summary.total_nodes}`);
   lines.push(`Total Edges: ${summary.total_edges}`);
   lines.push(`Has Cycles: ${summary.has_cycles ? "Yes" : "No"}`);
@@ -200,11 +200,11 @@ export function formatRunReport(summary: {
  */
 export function formatHumanReadable(
   data: unknown,
-  format: "analyze" | "deps" | "run-report",
+  format: "summary" | "deps" | "run-report",
 ): string {
   switch (format) {
-    case "analyze":
-      return formatAnalyze(data as Parameters<typeof formatAnalyze>[0]);
+    case "summary":
+      return formatSummary(data as Parameters<typeof formatSummary>[0]);
     case "deps":
       return formatDeps(data as Parameters<typeof formatDeps>[0]);
     case "run-report":

@@ -5,7 +5,7 @@ import {
   isTTY,
   formatOutput,
   formatDeps,
-  formatAnalyze,
+  formatSummary,
   getCommandSchema,
   getAllSchemas,
 } from "@dbt-tools/core";
@@ -31,7 +31,7 @@ describe("CLI Integration", () => {
   describe("Command schema validation", () => {
     it("should have schema for all commands", () => {
       const schemas = getAllSchemas();
-      expect(schemas).toHaveProperty("analyze");
+      expect(schemas).toHaveProperty("summary");
       expect(schemas).toHaveProperty("deps");
       expect(schemas).toHaveProperty("graph");
       expect(schemas).toHaveProperty("run-report");
@@ -95,7 +95,7 @@ describe("CLI Integration", () => {
       expect(output).toContain("model.test.dep");
     });
 
-    it("should format analyze output correctly", () => {
+    it("should format summary output correctly", () => {
       const summary = {
         total_nodes: 10,
         total_edges: 15,
@@ -103,8 +103,8 @@ describe("CLI Integration", () => {
         nodes_by_type: { model: 8, test: 2 },
       };
 
-      const output = formatAnalyze(summary);
-      expect(output).toContain("dbt Project Analysis");
+      const output = formatSummary(summary);
+      expect(output).toContain("dbt Project Summary");
       expect(output).toContain("Total Nodes: 10");
     });
   });
