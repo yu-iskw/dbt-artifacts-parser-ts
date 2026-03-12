@@ -64,6 +64,21 @@ describe("FieldFilter", () => {
       const result = FieldFilter.filterFields(data, " a , b ");
       expect(result).toEqual({ a: 1, b: 2 });
     });
+
+    it("should not pollute Object.prototype when given dangerous path segments", () => {
+      const data = { a: 1, __proto__: { foo: "malicious" }, safe: 2 };
+      const result = FieldFilter.filterFields(data, "__proto__.foo");
+      expect(Object.prototype).not.toHaveProperty("foo");
+      expect((Object.prototype as Record<string, unknown>).foo).toBeUndefined();
+      expect(result).toEqual({});
+    });
+
+    it("should not pollute Object.prototype with constructor.prototype path", () => {
+      const data = { a: 1 };
+      const result = FieldFilter.filterFields(data, "constructor.prototype");
+      expect(Object.prototype).not.toHaveProperty("polluted");
+      expect(result).toEqual({});
+    });
   });
 
   describe("filterArrayFields", () => {
