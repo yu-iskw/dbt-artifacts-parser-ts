@@ -9,6 +9,9 @@
   "main": "index.js",
   "scripts": {
     "build": "pnpm --recursive build",
+    "codeql": "pnpm codeql:db && pnpm codeql:analyze",
+    "codeql:analyze": "node scripts/codeql-check.mjs && codeql database analyze ./codeql-db codeql/javascript-queries --download --format=sarif-latest --output=codeql-results.sarif",
+    "codeql:db": "node scripts/codeql-check.mjs && rm -rf ./codeql-db && codeql database create ./codeql-db --language=javascript --source-root=.",
     "format": "pnpm format:trunk",
     "format:all": "pnpm format:trunk-all",
     "format:eslint": "eslint . --fix",
@@ -19,6 +22,7 @@
     "lint": "pnpm lint:trunk && pnpm lint:eslint",
     "lint:all": "pnpm lint:trunk-all",
     "lint:eslint": "eslint .",
+    "lint:report": "node scripts/eslint-score.mjs",
     "lint:security": "trunk check --all --scope security -y",
     "lint:semgrep": "semgrep ci",
     "lint:trunk": "trunk check -y",
@@ -30,12 +34,15 @@
     "@typescript-eslint/eslint-plugin": "^8.57.0",
     "@typescript-eslint/parser": "^8.57.0",
     "eslint": "^10.0.3",
+    "eslint-for-ai": "^1.0.12",
+    "eslint-plugin-sonarjs": "^4.0.2",
     "json-schema-to-typescript": "^15.0.4",
     "typescript": "^5.9.3"
   },
   "pnpm": {
     "overrides": {
-      "esbuild": "^0.27.2"
+      "esbuild": "^0.27.2",
+      "lodash": "^4.17.23"
     }
   }
 }
