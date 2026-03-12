@@ -28,7 +28,7 @@ function sanitizePathComponent(name: string): string {
  * Note: Currently no sources test resources exist, so this returns empty map
  */
 function discoverSourcesFiles(): Map<number, string[]> {
-  const resourcesDir = path.join(__dirname, "../tests/resources/sources");
+  const resourcesDir = path.join(__dirname, "../../resources/sources");
   const versionMap = new Map<number, string[]>();
 
   if (!fs.existsSync(resourcesDir)) {

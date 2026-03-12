@@ -30,7 +30,7 @@ function sanitizePathComponent(name: string): string {
  * Returns a map of version number to array of file paths
  */
 function discoverRunResultsFiles(): Map<number, string[]> {
-  const resourcesDir = path.join(__dirname, "../tests/resources/run_results");
+  const resourcesDir = path.join(__dirname, "../../resources/run_results");
   const versionMap = new Map<number, string[]>();
 
   if (!fs.existsSync(resourcesDir)) {
@@ -93,7 +93,7 @@ describe("run_results parser", () => {
     it("should parse run results v6 correctly", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v6/jaffle_shop/run_results.json",
+        "../../resources/run_results/v6/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -132,7 +132,7 @@ describe("run_results parser", () => {
     it("should parse run results v1 with parseRunResultsV1", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v1/jaffle_shop/run_results.json",
+        "../../resources/run_results/v1/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -147,7 +147,7 @@ describe("run_results parser", () => {
     it("should parse run results v2 with parseRunResultsV2", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v2/jaffle_shop/run_results.json",
+        "../../resources/run_results/v2/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -162,7 +162,7 @@ describe("run_results parser", () => {
     it("should parse run results v3 with parseRunResultsV3", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v3/jaffle_shop/run_results.json",
+        "../../resources/run_results/v3/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -177,7 +177,7 @@ describe("run_results parser", () => {
     it("should parse run results v4 with parseRunResultsV4", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v4/jaffle_shop/run_results.json",
+        "../../resources/run_results/v4/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -192,7 +192,7 @@ describe("run_results parser", () => {
     it("should parse run results v5 with parseRunResultsV5", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v5/jaffle_shop/run_results.json",
+        "../../resources/run_results/v5/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -207,7 +207,7 @@ describe("run_results parser", () => {
     it("should parse run results v6 with parseRunResultsV6", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v6/jaffle_shop/run_results.json",
+        "../../resources/run_results/v6/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -222,7 +222,7 @@ describe("run_results parser", () => {
     it("should throw error when version doesn't match", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v1/jaffle_shop/run_results.json",
+        "../../resources/run_results/v1/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -237,7 +237,7 @@ describe("run_results parser", () => {
     it("should accept different run results versions", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/run_results/v6/jaffle_shop/run_results.json",
+        "../../resources/run_results/v6/jaffle_shop/run_results.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -302,5 +302,71 @@ describe("run_results parser", () => {
         }
       });
     }
+  });
+
+  describe("cross-version rejection", () => {
+    it("should throw when v1 run_results is parsed with parseRunResultsV6", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/run_results/v1/jaffle_shop/run_results.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+
+      expect(() => parseRunResultsV6(parsed)).toThrow(
+        "Not a run-results.json v6",
+      );
+    });
+
+    it("should throw when v6 run_results is parsed with parseRunResultsV1", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/run_results/v6/jaffle_shop/run_results.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+
+      expect(() => parseRunResultsV1(parsed)).toThrow(
+        "Not a run-results.json v1",
+      );
+    });
+  });
+
+  describe("invalid data", () => {
+    it("should throw when metadata is null", () => {
+      expect(() => parseRunResults({ metadata: null })).toThrow(
+        "Not a run-results.json",
+      );
+    });
+
+    it("should throw when dbt_schema_version is missing from metadata", () => {
+      expect(() => parseRunResults({ metadata: { foo: "bar" } })).toThrow(
+        "Not a run-results.json",
+      );
+    });
+  });
+
+  describe("semantic assertions", () => {
+    it("v6 jaffle_shop run_results.json should have expected structure", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/run_results/v6/jaffle_shop/run_results.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+      const runResults = parseRunResults(parsed);
+
+      expect(runResults.results).toBeDefined();
+      expect(Array.isArray(runResults.results)).toBe(true);
+      expect(runResults.results.length).toBeGreaterThan(0);
+
+      const firstResult = runResults.results[0];
+      expect(firstResult).toBeDefined();
+      expect(firstResult.unique_id).toBeDefined();
+      expect(firstResult.status).toBeDefined();
+      expect(["success", "error", "skipped", "pass", "fail", "warn"]).toContain(
+        firstResult.status,
+      );
+    });
   });
 });

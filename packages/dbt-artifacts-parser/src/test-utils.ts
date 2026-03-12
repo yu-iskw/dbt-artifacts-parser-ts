@@ -27,53 +27,106 @@ export type ArtifactType = "manifest" | "run_results" | "sources" | "catalog";
 export type ResourceLocation = "tests" | "resources";
 
 /**
+ * Root resources directory: packages/dbt-artifacts-parser/resources/
+ * Single source of truth for test fixtures.
+ */
+const resourcesDir = path.resolve(baseDir, "..", "resources");
+
+/**
  * Get the path to a test resource file
  *
  * @param type - Type of artifact (manifest, run_results, etc.)
  * @param version - Schema version (e.g., "v12", "10")
- * @param location - Where to look: "tests" (src/tests/resources) or "resources" (root resources/)
- * @param project - Project name (e.g., "jaffle_shop"), required for "tests" location
- * @param filename - Filename (e.g., "manifest_1.10.json"), required for "tests" location
+ * @param location - Where to look: "tests" or "resources" (both point to root resources/)
+ * @param project - Project name (e.g., "jaffle_shop"), required for structured paths
+ * @param filename - Filename (e.g., "manifest_1.10.json"), required for structured paths
  * @returns Absolute path to the resource file
  */
 export function getTestResourcePath(
   type: ArtifactType,
   version: string,
-  location: ResourceLocation = "tests",
+  location: ResourceLocation = "resources",
   project?: string,
   filename?: string,
 ): string {
   // Normalize version (remove 'v' prefix if present, add it back consistently)
   const normalizedVersion = version.startsWith("v") ? version : `v${version}`;
 
-  if (location === "tests") {
+  if (location === "tests" || location === "resources") {
     if (!project || !filename) {
       throw new Error(
-        `Project and filename are required when location is "tests"`,
+        `Project and filename are required when location is "${location}"`,
       );
     }
-    // Path: packages/dbt-artifacts-parser/src/tests/resources/{type}/{version}/{project}/{filename}
-    return path.join(
-      baseDir,
-      "tests",
-      "resources",
-      type,
-      normalizedVersion,
-      project,
-      filename,
-    );
-  } else {
-    // Path: packages/dbt-artifacts-parser/resources/{type}/{type}_v{version}.json
-    // Note: version should be numeric (e.g., "10", "11", "12") for resources location
-    const numericVersion = normalizedVersion.replace(/^v/, "");
-    return path.join(
-      baseDir,
-      "..",
-      "resources",
-      type,
-      `${type}_v${numericVersion}.json`,
-    );
+    // Path: packages/dbt-artifacts-parser/resources/{type}/{version}/{project}/{filename}
+    return path.join(resourcesDir, type, normalizedVersion, project, filename);
   }
+
+  throw new Error(`Unknown location: ${location}`);
+}
+
+/** Sanitize path component to prevent traversal */
+function sanitizePathComponent(name: string): string {
+  return name.replace(/\.\./g, "").replace(/[\/\\]/g, "");
+}
+
+/** Recursively find JSON files matching a name pattern under a directory */
+function findArtifactFiles(
+  dir: string,
+  baseDir: string,
+  nameIncludes: string,
+): string[] {
+  const files: string[] = [];
+  if (!fs.existsSync(dir)) return files;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const sanitizedName = sanitizePathComponent(entry.name);
+    const fullPath = path.resolve(dir, sanitizedName);
+    if (!fullPath.startsWith(path.resolve(baseDir))) continue;
+    if (entry.isDirectory()) {
+      files.push(...findArtifactFiles(fullPath, baseDir, nameIncludes));
+    } else if (
+      entry.isFile() &&
+      entry.name.includes(nameIncludes) &&
+      entry.name.endsWith(".json")
+    ) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+/**
+ * Discover all manifest fixture files in resources/
+ * Returns absolute paths (same logic as manifest/index.test.ts)
+ */
+export function discoverManifestFiles(): string[] {
+  const manifestDir = path.join(resourcesDir, "manifest");
+  return findArtifactFiles(manifestDir, resourcesDir, "manifest");
+}
+
+/**
+ * Discover all run_results fixture files in resources/
+ */
+export function discoverRunResultsFiles(): string[] {
+  const runResultsDir = path.join(resourcesDir, "run_results");
+  return findArtifactFiles(runResultsDir, resourcesDir, "run_results");
+}
+
+/**
+ * Discover all catalog fixture files in resources/
+ */
+export function discoverCatalogFiles(): string[] {
+  const catalogDir = path.join(resourcesDir, "catalog");
+  return findArtifactFiles(catalogDir, resourcesDir, "catalog");
+}
+
+/**
+ * Discover all sources fixture files in resources/
+ */
+export function discoverSourcesFiles(): string[] {
+  const sourcesDir = path.join(resourcesDir, "sources");
+  return findArtifactFiles(sourcesDir, resourcesDir, "sources");
 }
 
 /**

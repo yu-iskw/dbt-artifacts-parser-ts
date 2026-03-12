@@ -3,16 +3,17 @@ import fs from "fs";
 import path from "path";
 // @ts-ignore - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-import { Manifest } from "./v1";
+import { parseManifestV1 } from "./index";
 
 describe("manifest v1", () => {
   it("should parse manifest.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/manifest/v1/jaffle_shop/manifest.json",
+      "../../resources/manifest/v1/jaffle_shop/manifest.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(jsonContent) as Manifest;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseManifestV1(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();
