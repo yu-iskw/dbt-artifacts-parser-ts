@@ -50,5 +50,7 @@ jobs:
           version: 10
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build dependencies
+        run: pnpm build
       - name: Run tests
         run: pnpm --filter dbt-artifacts-parser test
