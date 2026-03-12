@@ -24,7 +24,8 @@
   "dependencies": {
     "dbt-artifacts-parser": "workspace:*",
     "graphology": "^0.25.4",
-    "graphology-dag": "^0.4.1"
+    "graphology-dag": "^0.4.1",
+    "node-sql-parser": "^5.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

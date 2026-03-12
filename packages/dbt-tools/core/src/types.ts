@@ -13,6 +13,7 @@ export type DbtResourceType =
   | "metric"
   | "semantic_model"
   | "unit_test"
+  | "field"
   | "function";
 
 /**
@@ -27,6 +28,7 @@ export interface GraphNodeAttributes {
   original_file_path?: string;
   tags?: string[];
   description?: string;
+  parent_id?: string;
   [key: string]: unknown;
 }
 
@@ -34,7 +36,7 @@ export interface GraphNodeAttributes {
  * Edge attributes stored in the graph
  */
 export interface GraphEdgeAttributes {
-  dependency_type: "node" | "macro" | "source";
+  dependency_type: "node" | "macro" | "source" | "field" | "internal";
   [key: string]: unknown;
 }
 

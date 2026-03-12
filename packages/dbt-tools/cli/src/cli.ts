@@ -8,6 +8,7 @@ import {
   resolveArtifactPaths,
   loadManifest,
   loadRunResults,
+  loadCatalog,
   validateSafePath,
   validateResourceId,
   isTTY,
@@ -19,8 +20,10 @@ import {
   FieldFilter,
   ErrorHandler,
   DependencyService,
+  SQLAnalyzer,
   getCommandSchema,
   getAllSchemas,
+  detectBottlenecks,
 } from "@dbt-tools/core";
 
 const program = new Command();
@@ -128,6 +131,8 @@ program
     "Custom target directory (defaults to ./target)",
   )
   .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option("--field-level", "Include field-level (column-level) lineage")
+  .option("--catalog-path <path>", "Path to catalog.json file")
   .action(
     (
       manifestPath: string | undefined,
@@ -136,6 +141,8 @@ program
         output?: string;
         targetDir?: string;
         fields?: string;
+        fieldLevel?: boolean;
+        catalogPath?: string;
       },
     ) => {
       try {
@@ -144,6 +151,7 @@ program
           manifestPath,
           undefined,
           options.targetDir,
+          options.catalogPath,
         );
 
         // Validate path
@@ -155,6 +163,36 @@ program
         // Load manifest
         const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
+
+        // Enhance with field-level lineage if requested
+        if (options.fieldLevel) {
+          if (paths.catalog) {
+            validateSafePath(paths.catalog);
+            const catalog = loadCatalog(paths.catalog);
+            graph.addFieldNodes(catalog);
+
+            // Analyze SQL for each node
+            const analyzer = new SQLAnalyzer();
+            // TODO: Determine dialect from manifest adapter type
+            const adapterType =
+              (manifest.metadata as any)?.adapter_type || "mysql";
+
+            if (manifest.nodes) {
+              for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
+                const compiledCode = (node as any).compiled_code;
+                if (compiledCode) {
+                  const fieldDeps = analyzer.analyze(compiledCode, adapterType);
+                  graph.addFieldEdges(uniqueId, fieldDeps);
+                }
+              }
+            }
+          } else {
+            console.warn(
+              "Warning: --field-level requires catalog.json, but it was not found.",
+            );
+          }
+        }
+
         const graphologyGraph = graph.getGraph();
 
         let output: string;
@@ -197,14 +235,54 @@ program
           case "dot": {
             // Export as Graphviz DOT format
             const lines: string[] = ["digraph DbtGraph {"];
+            lines.push("  compound=true;");
+            lines.push("  node [shape=box, style=filled, fillcolor=white];");
+
+            const resourceNodes: string[] = [];
+            const fieldNodesByParent: Record<string, string[]> = {};
+
             graphologyGraph.forEachNode((nodeId, attributes) => {
-              const name = (attributes.name as string) || nodeId;
-              const label = `"${name}"`;
-              lines.push(`  "${nodeId}" [label=${label}];`);
+              if (attributes.resource_type === "field") {
+                const parentId = attributes.parent_id as string;
+                if (!fieldNodesByParent[parentId]) {
+                  fieldNodesByParent[parentId] = [];
+                }
+                fieldNodesByParent[parentId].push(nodeId);
+              } else {
+                resourceNodes.push(nodeId);
+              }
             });
+
+            // Add clusters for resources with fields
+            for (const nodeId of resourceNodes) {
+              const attributes = graphologyGraph.getNodeAttributes(nodeId);
+              const name = (attributes.name as string) || nodeId;
+              const fields = fieldNodesByParent[nodeId];
+
+              if (fields && fields.length > 0) {
+                lines.push(`  subgraph "cluster_${nodeId}" {`);
+                lines.push(`    label = "${name}";`);
+                lines.push("    style = filled;");
+                lines.push("    fillcolor = lightgrey;");
+                for (const fieldId of fields) {
+                  const fieldAttr = graphologyGraph.getNodeAttributes(fieldId);
+                  lines.push(
+                    `    "${fieldId}" [label="${fieldAttr.name}", fillcolor=white];`,
+                  );
+                }
+                lines.push("  }");
+              } else {
+                lines.push(`  "${nodeId}" [label="${name}"];`);
+              }
+            }
+
             graphologyGraph.forEachEdge(
               (edgeId, attributes, source, target) => {
-                lines.push(`  "${source}" -> "${target}";`);
+                // Only show non-internal edges, or show all?
+                // For field-level, internal edges are mostly for clusters.
+                if (attributes.dependency_type !== "internal") {
+                  lines.push(`  "${source}" -> "${target}";`);
+                }
               },
             );
             lines.push("}");
@@ -279,6 +357,17 @@ program
     "Custom target directory (defaults to ./target)",
   )
   .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option("--bottlenecks", "Include bottleneck section in report")
+  .option(
+    "--bottlenecks-top <n>",
+    "Top N slowest nodes (default: 10 when --bottlenecks)",
+    parseInt,
+  )
+  .option(
+    "--bottlenecks-threshold <s>",
+    "Nodes exceeding s seconds (alternative to top-N)",
+    parseFloat,
+  )
   .option("--json", "Force JSON output")
   .option("--no-json", "Force human-readable output")
   .action(
@@ -288,6 +377,9 @@ program
       options: {
         targetDir?: string;
         fields?: string;
+        bottlenecks?: boolean;
+        bottlenecksTop?: number;
+        bottlenecksThreshold?: number;
         json?: boolean;
         noJson?: boolean;
       },
@@ -310,9 +402,10 @@ program
         const runResults = loadRunResults(paths.runResults!);
 
         let analyzer: ExecutionAnalyzer | undefined;
+        let graph: ManifestGraph | undefined;
         if (paths.manifest) {
           const manifest = loadManifest(paths.manifest);
-          const graph = new ManifestGraph(manifest);
+          graph = new ManifestGraph(manifest);
           analyzer = new ExecutionAnalyzer(runResults, graph);
         }
 
@@ -339,6 +432,53 @@ program
           summary.nodes_by_status = nodesByStatus;
         }
 
+        // Bottleneck detection
+        let bottlenecks:
+          | {
+              nodes: Array<{
+                unique_id: string;
+                name?: string;
+                execution_time: number;
+                rank: number;
+                pct_of_total: number;
+                status: string;
+              }>;
+              total_execution_time: number;
+              criteria_used: "top_n" | "threshold";
+            }
+          | undefined;
+        let bottlenecksTopLabel: string | undefined;
+
+        if (options.bottlenecks && summary.node_executions?.length) {
+          const topN = options.bottlenecksTop ?? 10;
+          const threshold = options.bottlenecksThreshold;
+
+          if (
+            options.bottlenecksTop !== undefined &&
+            options.bottlenecksThreshold !== undefined
+          ) {
+            throw new Error(
+              "Cannot use both --bottlenecks-top and --bottlenecks-threshold; choose one",
+            );
+          }
+
+          if (threshold !== undefined && threshold > 0) {
+            bottlenecks = detectBottlenecks(summary.node_executions, {
+              mode: "threshold",
+              min_seconds: threshold,
+              graph,
+            });
+            bottlenecksTopLabel = `>= ${threshold}s`;
+          } else {
+            bottlenecks = detectBottlenecks(summary.node_executions, {
+              mode: "top_n",
+              top: topN > 0 ? topN : 10,
+              graph,
+            });
+            bottlenecksTopLabel = `top ${topN}`;
+          }
+        }
+
         // Apply field filtering if requested
         if (options.fields) {
           summary = FieldFilter.filterFields(
@@ -351,9 +491,17 @@ program
         const useJson = shouldOutputJSON(options.json, options.noJson);
 
         if (useJson) {
-          console.log(formatOutput(summary, true));
+          const report: Record<string, unknown> = {
+            ...summary,
+          };
+          if (bottlenecks) {
+            report.bottlenecks = bottlenecks;
+          }
+          console.log(formatOutput(report, true));
         } else {
-          console.log(formatRunReport(summary));
+          console.log(
+            formatRunReport(summary, bottlenecks, bottlenecksTopLabel),
+          );
         }
       } catch (error) {
         handleError(error, isTTY());
@@ -382,6 +530,8 @@ program
     "Custom target directory (defaults to ./target)",
   )
   .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option("--field <name>", "Specific field (column) to trace dependencies for")
+  .option("--catalog-path <path>", "Path to catalog.json file")
   .option(
     "--depth <number>",
     "Max traversal depth; 1 = immediate neighbors, omit for all levels",
@@ -406,6 +556,8 @@ program
         manifestPath?: string;
         targetDir?: string;
         fields?: string;
+        field?: string;
+        catalogPath?: string;
         depth?: number;
         format?: string;
         buildOrder?: boolean;
@@ -453,6 +605,7 @@ program
           options.manifestPath,
           undefined,
           options.targetDir,
+          options.catalogPath,
         );
 
         // Validate path
@@ -462,10 +615,43 @@ program
         const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
 
+        let targetId = resourceId;
+
+        // If field-level trace is requested
+        if (options.field) {
+          if (paths.catalog) {
+            validateSafePath(paths.catalog);
+            const catalog = loadCatalog(paths.catalog);
+            graph.addFieldNodes(catalog);
+
+            // Analyze SQL for involved nodes
+            const analyzer = new SQLAnalyzer();
+            const adapterType =
+              (manifest.metadata as any)?.adapter_type || "mysql";
+
+            // We need to analyze all nodes to build the full field lineage
+            // Alternatively, we could do it lazily, but for now, let's do all
+            if (manifest.nodes) {
+              for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
+                const compiledCode = (node as any).compiled_code;
+                if (compiledCode) {
+                  const fieldDeps = analyzer.analyze(compiledCode, adapterType);
+                  graph.addFieldEdges(uniqueId, fieldDeps);
+                }
+              }
+            }
+            targetId = `${resourceId}#${options.field}`;
+          } else {
+            console.warn(
+              "Warning: --field requires catalog.json, but it was not found. Falling back to resource-level lineage.",
+            );
+          }
+        }
+
         // Get dependencies
         const result = DependencyService.getDependencies(
           graph,
-          resourceId,
+          targetId,
           direction as "upstream" | "downstream",
           options.fields,
           options.depth,

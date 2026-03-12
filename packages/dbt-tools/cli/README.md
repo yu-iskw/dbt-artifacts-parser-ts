@@ -88,6 +88,15 @@ dbt-tools run-report
 # With critical path analysis
 dbt-tools run-report
 
+# Include bottleneck section (top 10 slowest nodes by default)
+dbt-tools run-report --bottlenecks
+
+# Top 5 slowest nodes
+dbt-tools run-report --bottlenecks --bottlenecks-top 5
+
+# Nodes exceeding 10 seconds
+dbt-tools run-report --bottlenecks --bottlenecks-threshold 10
+
 # Field filtering
 dbt-tools run-report --fields "total_execution_time,critical_path"
 
@@ -104,6 +113,9 @@ dbt-tools run-report --json
 - `[manifest-path]` - Path to manifest.json (optional, for critical path analysis)
 - `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include
+- `--bottlenecks` - Include bottleneck section in report
+- `--bottlenecks-top <n>` - Top N slowest nodes (default: 10 when --bottlenecks)
+- `--bottlenecks-threshold <s>` - Nodes exceeding s seconds (alternative to top-N; cannot use with --bottlenecks-top)
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 

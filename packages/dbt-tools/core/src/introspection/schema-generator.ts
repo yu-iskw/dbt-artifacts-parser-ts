@@ -106,6 +106,21 @@ function getGraphSchema(): CommandSchema {
         type: TYPE_STRING,
         description: DESC_TARGET_DIR,
       },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      {
+        name: "--field-level",
+        type: TYPE_BOOLEAN,
+        description: "Include field-level (column-level) lineage",
+      },
+      {
+        name: "--catalog-path",
+        type: TYPE_STRING,
+        description: "Path to catalog.json file",
+      },
     ],
     output_format: "json, dot, or gexf",
     example: "dbt-tools graph --format dot --output graph.dot",
@@ -140,6 +155,22 @@ function getRunReportSchema(): CommandSchema {
         description: DESC_FIELDS,
       },
       {
+        name: "--bottlenecks",
+        type: TYPE_BOOLEAN,
+        description: "Include bottleneck section in report",
+      },
+      {
+        name: "--bottlenecks-top",
+        type: "number",
+        default: "10",
+        description: "Top N slowest nodes (default: 10 when --bottlenecks)",
+      },
+      {
+        name: "--bottlenecks-threshold",
+        type: "number",
+        description: "Nodes exceeding N seconds (alternative to top-N)",
+      },
+      {
         name: OPT_JSON,
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,
@@ -151,7 +182,7 @@ function getRunReportSchema(): CommandSchema {
       },
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools run-report",
+    example: "dbt-tools run-report --bottlenecks",
   };
 }
 
@@ -187,6 +218,16 @@ function getDepsSchemaOptions(): SchemaOption[] {
       name: "--fields",
       type: TYPE_STRING,
       description: DESC_FIELDS,
+    },
+    {
+      name: "--field",
+      type: TYPE_STRING,
+      description: "Specific field (column) to trace dependencies for",
+    },
+    {
+      name: "--catalog-path",
+      type: TYPE_STRING,
+      description: "Path to catalog.json file",
     },
     {
       name: "--depth",

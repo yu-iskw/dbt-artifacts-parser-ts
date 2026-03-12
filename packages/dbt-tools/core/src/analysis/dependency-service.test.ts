@@ -271,4 +271,59 @@ describe("DependencyService", () => {
       checkEdge(rootId, treeResult.dependencies);
     });
   });
+
+  describe("field-level lineage", () => {
+    it("should get dependencies for a specific field", () => {
+      // Mock catalog data
+      const catalog = {
+        nodes: {
+          "model.jaffle_shop.customers": {
+            columns: {
+              id: { type: "integer" },
+              name: { type: "string" },
+            },
+          },
+          "model.jaffle_shop.stg_customers": {
+            columns: {
+              id: { type: "integer" },
+            },
+          },
+        },
+      };
+
+      graph.addFieldNodes(catalog as any);
+
+      // Add field edge
+      const dependencies = {
+        id: [
+          {
+            sourceTable: "model.jaffle_shop.stg_customers",
+            sourceColumn: "id",
+          },
+        ],
+      };
+      // For this test, relationMap lookup would be needed, but we can mock it
+      // Actually, ManifestGraph.addFieldEdges uses relationMap.
+      // Let's manually add the edge for simplicity in this unit test
+      const graphologyGraph = graph.getGraph();
+      graphologyGraph.addDirectedEdge(
+        "model.jaffle_shop.stg_customers#id",
+        "model.jaffle_shop.customers#id",
+        { dependency_type: "field" },
+      );
+
+      const result = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.customers#id",
+        "upstream",
+      );
+
+      expect(result.resource_id).toBe("model.jaffle_shop.customers#id");
+      expect(result.count).toBeGreaterThan(0);
+
+      const depIds = result.dependencies.map((d) => d.unique_id);
+      expect(depIds).toContain("model.jaffle_shop.stg_customers#id");
+      expect(depIds).toContain("model.jaffle_shop.customers"); // Internal dependency
+    });
+  });
 });

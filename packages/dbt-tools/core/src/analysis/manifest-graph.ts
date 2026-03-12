@@ -2,6 +2,8 @@ import { DirectedGraph } from "graphology";
 import { hasCycle, topologicalSort } from "graphology-dag";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
+// @ts-expect-error - workspace package, TypeScript resolves via package.json
+import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import type {
   GraphNodeAttributes,
   GraphEdgeAttributes,
@@ -13,6 +15,7 @@ import {
   getVersionInfo,
   MIN_SUPPORTED_SCHEMA_VERSION,
 } from "../version";
+import { ColumnDependencyMap } from "./sql-analyzer";
 
 /**
  * ManifestGraph builds and manages a directed graph from a dbt manifest.
@@ -22,6 +25,7 @@ import {
  */
 export class ManifestGraph {
   private graph: DirectedGraph<GraphNodeAttributes, GraphEdgeAttributes>;
+  private relationMap: Map<string, string> = new Map(); // relation_name -> unique_id
 
   constructor(manifest: ParsedManifest) {
     if (!isSupportedVersion(manifest)) {
@@ -70,6 +74,13 @@ export class ManifestGraph {
           tags: (nodeAny.tags as string[]) || undefined,
           description: (nodeAny.description as string) || undefined,
         });
+
+        if (nodeAny.relation_name) {
+          this.relationMap.set(
+            (nodeAny.relation_name as string).toLowerCase(),
+            uniqueId,
+          );
+        }
       }
     }
 
@@ -88,6 +99,13 @@ export class ManifestGraph {
           tags: (sourceAny.tags as string[]) || undefined,
           description: (sourceAny.description as string) || undefined,
         });
+
+        if (sourceAny.relation_name) {
+          this.relationMap.set(
+            (sourceAny.relation_name as string).toLowerCase(),
+            uniqueId,
+          );
+        }
       }
     }
 
@@ -578,5 +596,133 @@ export class ManifestGraph {
     }
 
     return result;
+  }
+
+  /**
+   * Add field nodes from catalog metadata
+   */
+  public addFieldNodes(catalog: ParsedCatalog): void {
+    if (catalog.nodes) {
+      for (const [uniqueId, node] of Object.entries(catalog.nodes)) {
+        if (this.graph.hasNode(uniqueId)) {
+          this.processCatalogColumns(uniqueId, (node as any).columns);
+        }
+      }
+    }
+
+    if (catalog.sources) {
+      for (const [uniqueId, source] of Object.entries(catalog.sources)) {
+        if (this.graph.hasNode(uniqueId)) {
+          this.processCatalogColumns(uniqueId, (source as any).columns);
+        }
+      }
+    }
+  }
+
+  private processCatalogColumns(
+    parentUniqueId: string,
+    columns: Record<string, any>,
+  ): void {
+    if (!columns) return;
+
+    const parentNode = this.graph.getNodeAttributes(parentUniqueId);
+
+    for (const [colName, colAttr] of Object.entries(columns)) {
+      const fieldUniqueId = `${parentUniqueId}#${colName}`;
+
+      // Add field node if it doesn't exist
+      if (!this.graph.hasNode(fieldUniqueId)) {
+        this.graph.addNode(fieldUniqueId, {
+          unique_id: fieldUniqueId,
+          resource_type: "field",
+          name: colName,
+          package_name: parentNode.package_name,
+          parent_id: parentUniqueId,
+          description: (colAttr as any).comment || (colAttr as any).description,
+        });
+
+        // Add internal edge from parent to field
+        this.graph.addEdge(parentUniqueId, fieldUniqueId, {
+          dependency_type: "internal",
+        });
+      }
+    }
+  }
+
+  /**
+   * Add field-to-field edges based on SQL analysis
+   */
+  public addFieldEdges(
+    childNodeId: string,
+    dependencies: ColumnDependencyMap,
+  ): void {
+    if (!this.graph.hasNode(childNodeId)) return;
+
+    for (const [targetCol, sourceCols] of Object.entries(dependencies)) {
+      const targetFieldId = `${childNodeId}#${targetCol}`;
+
+      // Ensure target field node exists
+      this.ensureFieldNode(childNodeId, targetCol);
+
+      for (const source of sourceCols) {
+        // Resolve source table name/relation name to unique ID
+        const sourceNodeId = this.resolveRelationToUniqueId(source.sourceTable);
+        if (!sourceNodeId) continue;
+
+        const sourceFieldId = `${sourceNodeId}#${source.sourceColumn}`;
+        this.ensureFieldNode(sourceNodeId, source.sourceColumn);
+
+        // Add field edge from source field to target field
+        if (!this.graph.hasEdge(sourceFieldId, targetFieldId)) {
+          this.graph.addEdge(sourceFieldId, targetFieldId, {
+            dependency_type: "field",
+          });
+        }
+      }
+    }
+  }
+
+  private ensureFieldNode(parentNodeId: string, colName: string): string {
+    const fieldId = `${parentNodeId}#${colName}`;
+    if (!this.graph.hasNode(fieldId)) {
+      const parentAttr = this.graph.getNodeAttributes(parentNodeId);
+      this.graph.addNode(fieldId, {
+        unique_id: fieldId,
+        resource_type: "field",
+        name: colName,
+        package_name: parentAttr.package_name,
+        parent_id: parentNodeId,
+      });
+      // Add internal edge
+      this.graph.addEdge(parentNodeId, fieldId, {
+        dependency_type: "internal",
+      });
+    }
+    return fieldId;
+  }
+
+  private resolveRelationToUniqueId(relationName: string): string | undefined {
+    // Try exact match
+    const normalized = relationName.toLowerCase();
+    if (this.relationMap.has(normalized)) {
+      return this.relationMap.get(normalized);
+    }
+
+    // Try stripping quotes if any
+    const unquoted = normalized.replace(/["`]/g, "");
+    if (this.relationMap.has(unquoted)) {
+      return this.relationMap.get(unquoted);
+    }
+
+    // Try partial match if it's just the table name (alias)
+    // We also strip quotes from the mapped relations for comparison
+    for (const [rel, uid] of this.relationMap.entries()) {
+      const relUnquoted = rel.replace(/["`]/g, "");
+      if (relUnquoted.endsWith(`.${unquoted}`) || relUnquoted === unquoted) {
+        return uid;
+      }
+    }
+
+    return undefined;
   }
 }

@@ -541,4 +541,94 @@ describe("ManifestGraph", () => {
       expect(typeof graphologyGraph.size).toBe("number");
     });
   });
+
+  describe("field-level lineage", () => {
+    it("should add field nodes from catalog", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const catalog = {
+        nodes: {
+          "model.jaffle_shop.customers": {
+            columns: {
+              id: { type: "integer", comment: "Primary key" },
+              name: { type: "string" },
+            },
+          },
+        },
+        sources: {},
+      };
+
+      graph.addFieldNodes(catalog as any);
+      const graphologyGraph = graph.getGraph();
+
+      expect(graphologyGraph.hasNode("model.jaffle_shop.customers#id")).toBe(
+        true,
+      );
+      expect(graphologyGraph.hasNode("model.jaffle_shop.customers#name")).toBe(
+        true,
+      );
+
+      const idAttr = graphologyGraph.getNodeAttributes(
+        "model.jaffle_shop.customers#id",
+      );
+      expect(idAttr.resource_type).toBe("field");
+      expect(idAttr.parent_id).toBe("model.jaffle_shop.customers");
+
+      expect(
+        graphologyGraph.hasEdge(
+          "model.jaffle_shop.customers",
+          "model.jaffle_shop.customers#id",
+        ),
+      ).toBe(true);
+      const edgeAttr = graphologyGraph.getEdgeAttributes(
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.customers#id",
+      );
+      expect(edgeAttr.dependency_type).toBe("internal");
+    });
+
+    it("should add field-to-field edges and resolve relation names", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      // Add relation_name to a node for testing resolution
+      const rawManifest = manifestJson as any;
+      rawManifest.nodes["model.jaffle_shop.stg_customers"].relation_name =
+        '"analytics"."core"."stg_customers"';
+
+      const manifest = parseManifest(rawManifest);
+      const graph = new ManifestGraph(manifest);
+
+      const dependencies = {
+        customer_id: [
+          {
+            sourceTable: '"analytics"."core"."stg_customers"',
+            sourceColumn: "id",
+          },
+        ],
+      };
+
+      graph.addFieldEdges("model.jaffle_shop.customers", dependencies);
+      const graphologyGraph = graph.getGraph();
+
+      expect(
+        graphologyGraph.hasNode("model.jaffle_shop.customers#customer_id"),
+      ).toBe(true);
+      expect(
+        graphologyGraph.hasNode("model.jaffle_shop.stg_customers#id"),
+      ).toBe(true);
+
+      expect(
+        graphologyGraph.hasEdge(
+          "model.jaffle_shop.stg_customers#id",
+          "model.jaffle_shop.customers#customer_id",
+        ),
+      ).toBe(true);
+      const edgeAttr = graphologyGraph.getEdgeAttributes(
+        "model.jaffle_shop.stg_customers#id",
+        "model.jaffle_shop.customers#customer_id",
+      );
+      expect(edgeAttr.dependency_type).toBe("field");
+    });
+  });
 });

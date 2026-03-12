@@ -6,6 +6,7 @@ import {
   formatSummary,
   formatDeps,
   formatRunReport,
+  formatBottlenecks,
   formatHumanReadable,
 } from "./output-formatter";
 
@@ -276,6 +277,81 @@ describe("OutputFormatter", () => {
       expect(output).toContain("Critical Path:");
       expect(output).toContain("model.a -> model.b -> model.c");
       expect(output).toContain("Total Time: 50.00s");
+    });
+
+    it("should include bottlenecks section when provided", () => {
+      const summary = {
+        total_execution_time: 100,
+        total_nodes: 5,
+        nodes_by_status: { success: 5 },
+      };
+      const bottlenecks = {
+        nodes: [
+          {
+            unique_id: "model.jaffle_shop.fct_orders",
+            name: "fct_orders",
+            execution_time: 27.2,
+            rank: 1,
+            pct_of_total: 27.2,
+            status: "success",
+          },
+          {
+            unique_id: "model.jaffle_shop.dim_customers",
+            name: "dim_customers",
+            execution_time: 19.7,
+            rank: 2,
+            pct_of_total: 19.7,
+            status: "success",
+          },
+        ],
+        total_execution_time: 100,
+        criteria_used: "top_n" as const,
+      };
+      const output = formatRunReport(summary, bottlenecks, "top 10");
+      expect(output).toContain("Bottlenecks (top 10 by execution time):");
+      expect(output).toContain("Rank");
+      expect(output).toContain("fct_orders");
+      expect(output).toContain("27.2");
+      expect(output).toContain("dim_customers");
+      expect(output).toContain("19.7");
+    });
+  });
+
+  describe("formatBottlenecks", () => {
+    it("should format bottleneck nodes with rank, time, and pct", () => {
+      const bottlenecks = {
+        nodes: [
+          {
+            unique_id: "model.a.slow",
+            name: "slow",
+            execution_time: 12.34,
+            rank: 1,
+            pct_of_total: 27.2,
+            status: "success",
+          },
+        ],
+        total_execution_time: 45.32,
+        criteria_used: "top_n" as const,
+      };
+      const output = formatBottlenecks(bottlenecks, "top 10");
+      expect(output).toContain("Bottlenecks (top 10 by execution time):");
+      expect(output).toContain("Rank");
+      expect(output).toContain("Node");
+      expect(output).toContain("Time (s)");
+      expect(output).toContain("% of Total");
+      expect(output).toContain("slow");
+      expect(output).toContain("12.34");
+      expect(output).toContain("27.2%");
+    });
+
+    it("should show (none) when nodes array is empty", () => {
+      const bottlenecks = {
+        nodes: [],
+        total_execution_time: 100,
+        criteria_used: "threshold" as const,
+      };
+      const output = formatBottlenecks(bottlenecks);
+      expect(output).toContain("Bottlenecks: (none)");
     });
   });
 

@@ -2,6 +2,8 @@
 export * from "./analysis/manifest-graph";
 export * from "./analysis/execution-analyzer";
 export * from "./analysis/dependency-service";
+export * from "./analysis/sql-analyzer";
+export * from "./analysis/run-results-search";
 
 // I/O exports
 export * from "./io/artifact-loader";

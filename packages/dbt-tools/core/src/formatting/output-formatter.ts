@@ -163,17 +163,73 @@ export function formatDeps(
 }
 
 /**
+ * Bottleneck node for formatting
+ */
+export interface BottleneckNodeForFormat {
+  unique_id: string;
+  name?: string;
+  execution_time: number;
+  rank: number;
+  pct_of_total: number;
+  status: string;
+}
+
+/**
+ * Format bottleneck section for human-readable output
+ */
+export function formatBottlenecks(
+  bottlenecks: {
+    nodes: BottleneckNodeForFormat[];
+    total_execution_time: number;
+    criteria_used: "top_n" | "threshold";
+  },
+  topLabel?: string,
+): string {
+  if (bottlenecks.nodes.length === 0) {
+    return "\nBottlenecks: (none)\n";
+  }
+
+  const criteriaLabel =
+    topLabel ?? (bottlenecks.criteria_used === "top_n" ? "top N" : "threshold");
+  const lines: string[] = [];
+  lines.push(`\nBottlenecks (${criteriaLabel} by execution time):`);
+  lines.push("  Rank  Node                              Time (s)  % of Total");
+
+  const maxIdLen = 34;
+  for (const node of bottlenecks.nodes) {
+    const label = node.name ?? node.unique_id;
+    const idDisplay =
+      label.length > maxIdLen ? label.slice(0, maxIdLen - 3) + "..." : label;
+    const padded = idDisplay.padEnd(maxIdLen);
+    const timeStr = node.execution_time.toFixed(2).padStart(8);
+    lines.push(
+      `  ${String(node.rank).padStart(2)}     ${padded}  ${timeStr}    ${node.pct_of_total.toFixed(1)}%`,
+    );
+  }
+
+  return lines.join("\n") + "\n";
+}
+
+/**
  * Format run-report command output
  */
-export function formatRunReport(summary: {
-  total_execution_time: number;
-  total_nodes: number;
-  nodes_by_status: Record<string, number>;
-  critical_path?: {
-    path: string[];
-    total_time: number;
-  };
-}): string {
+export function formatRunReport(
+  summary: {
+    total_execution_time: number;
+    total_nodes: number;
+    nodes_by_status: Record<string, number>;
+    critical_path?: {
+      path: string[];
+      total_time: number;
+    };
+  },
+  bottlenecks?: {
+    nodes: BottleneckNodeForFormat[];
+    total_execution_time: number;
+    criteria_used: "top_n" | "threshold";
+  },
+  bottlenecksTopLabel?: string,
+): string {
   const lines: string[] = [];
   lines.push("dbt Execution Report");
   lines.push("===================");
@@ -190,6 +246,10 @@ export function formatRunReport(summary: {
     lines.push("\nCritical Path:");
     lines.push(`  Path: ${summary.critical_path.path.join(" -> ")}`);
     lines.push(`  Total Time: ${summary.critical_path.total_time.toFixed(2)}s`);
+  }
+
+  if (bottlenecks) {
+    lines.push(formatBottlenecks(bottlenecks, bottlenecksTopLabel));
   }
 
   return lines.join("\n");

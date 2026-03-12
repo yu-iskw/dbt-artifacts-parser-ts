@@ -81,6 +81,9 @@ importers:
       graphology-dag:
         specifier: ^0.4.1
         version: 0.4.1(graphology-types@0.24.8)
+      node-sql-parser:
+        specifier: ^5.4.0
+        version: 5.4.0
     devDependencies:
       "@types/node":
         specifier: ^22.0.0
@@ -891,6 +894,12 @@ packages:
         integrity: sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA==,
       }
 
+  "@types/pegjs@0.10.6":
+    resolution:
+      {
+        integrity: sha512-eLYXDbZWXh2uxf+w8sXS8d6KSoXTswfps6fvCUuVAGN8eRpfe7h9eSRydxiSJvo9Bf+GzifsDOr9TMQlmJdmkw==,
+      }
+
   "@typescript-eslint/eslint-plugin@8.57.0":
     resolution:
       {
@@ -1300,6 +1309,13 @@ packages:
       }
     engines: { node: ">=6.0.0" }
     hasBin: true
+
+  big-integer@1.6.52:
+    resolution:
+      {
+        integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==,
+      }
+    engines: { node: ">=0.6" }
 
   birecord@0.1.1:
     resolution:
@@ -2471,6 +2487,13 @@ packages:
         integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==,
       }
 
+  node-sql-parser@5.4.0:
+    resolution:
+      {
+        integrity: sha512-jVe6Z61gPcPjCElPZ6j8llB3wnqGcuQzefim1ERsqIakxnEy5JlzV7XKdO1KmacRG5TKwPc4vJTgSRQ0LfkbFw==,
+      }
+    engines: { node: ">=8" }
+
   object-assign@4.1.1:
     resolution:
       {
@@ -3634,6 +3657,8 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  "@types/pegjs@0.10.6": {}
+
   "@typescript-eslint/eslint-plugin@8.57.0(@typescript-eslint/parser@8.57.0(eslint@10.0.3)(typescript@5.9.3))(eslint@10.0.3)(typescript@5.9.3)":
     dependencies:
       "@eslint-community/regexpp": 4.12.2
@@ -3908,6 +3933,8 @@ snapshots:
   balanced-match@4.0.4: {}
 
   baseline-browser-mapping@2.10.0: {}
+
+  big-integer@1.6.52: {}
 
   birecord@0.1.1: {}
 
@@ -4806,6 +4833,11 @@ snapshots:
       semver: 6.3.1
 
   node-releases@2.0.36: {}
+
+  node-sql-parser@5.4.0:
+    dependencies:
+      "@types/pegjs": 0.10.6
+      big-integer: 1.6.52
 
   object-assign@4.1.1: {}
 

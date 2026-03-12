@@ -45,6 +45,7 @@ describe("CLI Integration", () => {
       expect(schema?.arguments.length).toBeGreaterThan(0);
       expect(schema?.arguments[0]?.name).toBe("resource-id");
       expect(schema?.arguments[0]?.required).toBe(true);
+
       const depthOpt = schema?.options?.find((o) => o.name === "--depth");
       expect(depthOpt).toBeDefined();
       expect(depthOpt?.type).toBe("number");
@@ -54,6 +55,52 @@ describe("CLI Integration", () => {
       expect(formatOpt?.type).toBe("enum");
       expect(formatOpt?.values).toContain("flat");
       expect(formatOpt?.values).toContain("tree");
+
+      const fieldOpt = schema?.options?.find((o) => o.name === "--field");
+      expect(fieldOpt).toBeDefined();
+      expect(fieldOpt?.type).toBe("string");
+    });
+
+    it("should have correct graph command schema with field-level", () => {
+      const schema = getCommandSchema("graph");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("graph");
+
+      const fieldLevelOpt = schema?.options?.find(
+        (o) => o.name === "--field-level",
+      );
+      expect(fieldLevelOpt).toBeDefined();
+      expect(fieldLevelOpt?.type).toBe("boolean");
+
+      const catalogOpt = schema?.options?.find(
+        (o) => o.name === "--catalog-path",
+      );
+      expect(catalogOpt).toBeDefined();
+      expect(catalogOpt?.type).toBe("string");
+    });
+
+    it("should have run-report schema with bottleneck options", () => {
+      const schema = getCommandSchema("run-report");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("run-report");
+
+      const bottlenecksOpt = schema?.options?.find(
+        (o) => o.name === "--bottlenecks",
+      );
+      expect(bottlenecksOpt).toBeDefined();
+      expect(bottlenecksOpt?.type).toBe("boolean");
+
+      const topOpt = schema?.options?.find(
+        (o) => o.name === "--bottlenecks-top",
+      );
+      expect(topOpt).toBeDefined();
+      expect(topOpt?.type).toBe("number");
+
+      const thresholdOpt = schema?.options?.find(
+        (o) => o.name === "--bottlenecks-threshold",
+      );
+      expect(thresholdOpt).toBeDefined();
+      expect(thresholdOpt?.type).toBe("number");
     });
   });
 
