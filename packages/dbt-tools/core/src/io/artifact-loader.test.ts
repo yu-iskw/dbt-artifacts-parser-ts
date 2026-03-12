@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { ArtifactLoader } from "./artifact-loader";
+import {
+  resolveArtifactPaths,
+  loadManifest,
+  loadRunResults,
+} from "./artifact-loader";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import {
   loadTestManifest,
@@ -33,49 +37,41 @@ describe("ArtifactLoader", () => {
 
   describe("resolveArtifactPaths", () => {
     it("should default to ./target directory", () => {
-      const result = ArtifactLoader.resolveArtifactPaths();
+      const result = resolveArtifactPaths();
       expect(result.manifest).toContain("target");
       expect(result.manifest).toContain("manifest.json");
     });
 
     it("should use custom target directory", () => {
-      const result = ArtifactLoader.resolveArtifactPaths(
-        undefined,
-        undefined,
-        tempDir,
-      );
+      const result = resolveArtifactPaths(undefined, undefined, tempDir);
       expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
     });
 
     it("should use DBT_TARGET_DIR environment variable", () => {
       process.env.DBT_TARGET_DIR = tempDir;
-      const result = ArtifactLoader.resolveArtifactPaths();
+      const result = resolveArtifactPaths();
       expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
     });
 
     it("should handle explicit manifest path", () => {
       const manifestPath = path.join(tempDir, "custom-manifest.json");
-      const result = ArtifactLoader.resolveArtifactPaths(manifestPath);
+      const result = resolveArtifactPaths(manifestPath);
       expect(result.manifest).toBe(path.resolve(manifestPath));
     });
 
     it("should handle directory path for manifest", () => {
-      const result = ArtifactLoader.resolveArtifactPaths(tempDir);
+      const result = resolveArtifactPaths(tempDir);
       expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
     });
 
     it("should resolve run results path", () => {
-      const result = ArtifactLoader.resolveArtifactPaths(
-        undefined,
-        tempDir,
-        undefined,
-      );
+      const result = resolveArtifactPaths(undefined, tempDir, undefined);
       expect(result.runResults).toBe(path.join(tempDir, "run_results.json"));
     });
 
     it("should handle absolute paths", () => {
       const absPath = path.resolve(tempDir, "manifest.json");
-      const result = ArtifactLoader.resolveArtifactPaths(absPath);
+      const result = resolveArtifactPaths(absPath);
       expect(result.manifest).toBe(absPath);
     });
   });
@@ -86,14 +82,14 @@ describe("ArtifactLoader", () => {
       const manifestPath = path.join(tempDir, "manifest.json");
       fs.writeFileSync(manifestPath, JSON.stringify(manifestJson), "utf-8");
 
-      const manifest = ArtifactLoader.loadManifest(manifestPath);
+      const manifest = loadManifest(manifestPath);
       expect(manifest).toBeDefined();
       expect(manifest.metadata).toBeDefined();
     });
 
     it("should throw error for missing file", () => {
       const missingPath = path.join(tempDir, "nonexistent.json");
-      expect(() => ArtifactLoader.loadManifest(missingPath)).toThrow(
+      expect(() => loadManifest(missingPath)).toThrow(
         "Manifest file not found",
       );
     });
@@ -102,7 +98,7 @@ describe("ArtifactLoader", () => {
       const invalidPath = path.join(tempDir, "manifest.json");
       fs.writeFileSync(invalidPath, "invalid json", "utf-8");
 
-      expect(() => ArtifactLoader.loadManifest(invalidPath)).toThrow(
+      expect(() => loadManifest(invalidPath)).toThrow(
         "Failed to parse manifest file",
       );
     });
@@ -114,14 +110,14 @@ describe("ArtifactLoader", () => {
       const runResultsPath = path.join(tempDir, "run_results.json");
       fs.writeFileSync(runResultsPath, JSON.stringify(runResultsJson), "utf-8");
 
-      const parsed = ArtifactLoader.loadRunResults(runResultsPath);
+      const parsed = loadRunResults(runResultsPath);
       expect(parsed).toBeDefined();
       expect(parsed.metadata).toBeDefined();
     });
 
     it("should throw error for missing file", () => {
       const missingPath = path.join(tempDir, "nonexistent.json");
-      expect(() => ArtifactLoader.loadRunResults(missingPath)).toThrow(
+      expect(() => loadRunResults(missingPath)).toThrow(
         "Run results file not found",
       );
     });
@@ -130,7 +126,7 @@ describe("ArtifactLoader", () => {
       const invalidPath = path.join(tempDir, "run_results.json");
       fs.writeFileSync(invalidPath, "invalid json", "utf-8");
 
-      expect(() => ArtifactLoader.loadRunResults(invalidPath)).toThrow(
+      expect(() => loadRunResults(invalidPath)).toThrow(
         "Failed to parse run results file",
       );
     });

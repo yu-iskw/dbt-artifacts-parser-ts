@@ -20,210 +20,239 @@ export interface CommandSchema {
   example: string;
 }
 
-/**
- * SchemaGenerator provides runtime command introspection for agents
- */
-export class SchemaGenerator {
-  /**
-   * Get schema for a specific command
-   */
-  static getCommandSchema(command: string): CommandSchema | null {
-    const schemas = this.getAllSchemas();
-    return schemas[command] || null;
-  }
+const ARG_MANIFEST_PATH = "manifest-path";
+const OPT_TARGET_DIR = "--target-dir";
+const OPT_JSON = "--json";
+const OPT_NO_JSON = "--no-json";
+const TYPE_STRING = "string";
+const TYPE_BOOLEAN = "boolean";
+const OUTPUT_JSON_OR_HUMAN = "json or human-readable";
+const DESC_MANIFEST_PATH =
+  "Path to manifest.json file (defaults to ./target/manifest.json)";
+const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
+const DESC_FORCE_JSON = "Force JSON output";
+const DESC_FORCE_HUMAN = "Force human-readable output";
+const DESC_RUN_RESULTS_PATH =
+  "Path to run_results.json file (defaults to ./target/run_results.json)";
+const DESC_MANIFEST_OPTIONAL =
+  "Path to manifest.json file (optional, for critical path analysis)";
 
-  /**
-   * Get all command schemas
-   */
-  static getAllSchemas(): Record<string, CommandSchema> {
-    return {
-      analyze: {
-        command: "analyze",
-        description: "Analyze dbt manifest and provide summary statistics",
-        arguments: [
-          {
-            name: "manifest-path",
-            required: false,
-            description:
-              "Path to manifest.json file (defaults to ./target/manifest.json)",
-          },
-        ],
-        options: [
-          {
-            name: "--target-dir",
-            type: "string",
-            description: "Custom target directory (defaults to ./target)",
-          },
-          {
-            name: "--json",
-            type: "boolean",
-            description: "Force JSON output",
-          },
-          {
-            name: "--no-json",
-            type: "boolean",
-            description: "Force human-readable output",
-          },
-        ],
-        output_format: "json or human-readable",
-        example: "dbt-tools analyze",
+function getAnalyzeSchema(): CommandSchema {
+  return {
+    command: "analyze",
+    description: "Analyze dbt manifest and provide summary statistics",
+    arguments: [
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_PATH,
       },
-      graph: {
-        command: "graph",
-        description: "Export dependency graph in various formats",
-        arguments: [
-          {
-            name: "manifest-path",
-            required: false,
-            description:
-              "Path to manifest.json file (defaults to ./target/manifest.json)",
-          },
-        ],
-        options: [
-          {
-            name: "--format",
-            type: "enum",
-            values: ["json", "dot", "gexf"],
-            default: "json",
-            description: "Export format",
-          },
-          {
-            name: "--output",
-            type: "string",
-            description: "Output file path (default: stdout)",
-          },
-          {
-            name: "--target-dir",
-            type: "string",
-            description: "Custom target directory (defaults to ./target)",
-          },
-        ],
-        output_format: "json, dot, or gexf",
-        example: "dbt-tools graph --format dot --output graph.dot",
+    ],
+    options: [
+      {
+        name: OPT_TARGET_DIR,
+        type: TYPE_STRING,
+        description: DESC_TARGET_DIR,
       },
-      "run-report": {
-        command: "run-report",
-        description: "Generate execution report from run_results.json",
-        arguments: [
-          {
-            name: "run-results-path",
-            required: false,
-            description:
-              "Path to run_results.json file (defaults to ./target/run_results.json)",
-          },
-          {
-            name: "manifest-path",
-            required: false,
-            description:
-              "Path to manifest.json file (optional, for critical path analysis)",
-          },
-        ],
-        options: [
-          {
-            name: "--target-dir",
-            type: "string",
-            description: "Custom target directory (defaults to ./target)",
-          },
-          {
-            name: "--json",
-            type: "boolean",
-            description: "Force JSON output",
-          },
-          {
-            name: "--no-json",
-            type: "boolean",
-            description: "Force human-readable output",
-          },
-        ],
-        output_format: "json or human-readable",
-        example: "dbt-tools run-report",
+      {
+        name: OPT_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_JSON,
       },
-      deps: {
-        command: "deps",
+      {
+        name: OPT_NO_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_HUMAN,
+      },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools analyze",
+  };
+}
+
+function getGraphSchema(): CommandSchema {
+  return {
+    command: "graph",
+    description: "Export dependency graph in various formats",
+    arguments: [
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_PATH,
+      },
+    ],
+    options: [
+      {
+        name: "--format",
+        type: "enum",
+        values: ["json", "dot", "gexf"],
+        default: "json",
+        description: "Export format",
+      },
+      {
+        name: "--output",
+        type: TYPE_STRING,
+        description: "Output file path (default: stdout)",
+      },
+      {
+        name: OPT_TARGET_DIR,
+        type: TYPE_STRING,
+        description: DESC_TARGET_DIR,
+      },
+    ],
+    output_format: "json, dot, or gexf",
+    example: "dbt-tools graph --format dot --output graph.dot",
+  };
+}
+
+function getRunReportSchema(): CommandSchema {
+  return {
+    command: "run-report",
+    description: "Generate execution report from run_results.json",
+    arguments: [
+      {
+        name: "run-results-path",
+        required: false,
+        description: DESC_RUN_RESULTS_PATH,
+      },
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_OPTIONAL,
+      },
+    ],
+    options: [
+      {
+        name: OPT_TARGET_DIR,
+        type: TYPE_STRING,
+        description: DESC_TARGET_DIR,
+      },
+      {
+        name: OPT_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_JSON,
+      },
+      {
+        name: OPT_NO_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_HUMAN,
+      },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools run-report",
+  };
+}
+
+type SchemaOption = {
+  name: string;
+  type: string;
+  values?: string[];
+  default?: string;
+  description: string;
+};
+
+function getDepsSchemaOptions(): SchemaOption[] {
+  return [
+    {
+      name: "--direction",
+      type: "enum",
+      values: ["upstream", "downstream"],
+      default: "downstream",
+      description: "Direction of dependency traversal",
+    },
+    {
+      name: "--manifest-path",
+      type: TYPE_STRING,
+      default: "./target/manifest.json",
+      description: "Path to manifest.json file",
+    },
+    {
+      name: OPT_TARGET_DIR,
+      type: TYPE_STRING,
+      description: DESC_TARGET_DIR,
+    },
+    {
+      name: "--fields",
+      type: TYPE_STRING,
+      description:
+        "Comma-separated list of fields to include in response (e.g., unique_id,name)",
+    },
+    {
+      name: "--depth",
+      type: "number",
+      description:
+        "Max traversal depth; 1 = immediate neighbors, omit for all levels",
+    },
+    {
+      name: "--format",
+      type: "enum",
+      values: ["flat", "tree"],
+      default: "tree",
+      description: "Output structure: flat list or nested tree",
+    },
+    { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+    { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+  ];
+}
+
+function getDepsSchema(): CommandSchema {
+  return {
+    command: "deps",
+    description: "Get upstream or downstream dependencies for a dbt resource",
+    arguments: [
+      {
+        name: "resource-id",
+        required: true,
         description:
-          "Get upstream or downstream dependencies for a dbt resource",
-        arguments: [
-          {
-            name: "resource-id",
-            required: true,
-            description:
-              "Unique ID of the dbt resource (e.g., model.my_project.customers)",
-          },
-        ],
-        options: [
-          {
-            name: "--direction",
-            type: "enum",
-            values: ["upstream", "downstream"],
-            default: "downstream",
-            description: "Direction of dependency traversal",
-          },
-          {
-            name: "--manifest-path",
-            type: "string",
-            default: "./target/manifest.json",
-            description: "Path to manifest.json file",
-          },
-          {
-            name: "--target-dir",
-            type: "string",
-            description: "Custom target directory (defaults to ./target)",
-          },
-          {
-            name: "--fields",
-            type: "string",
-            description:
-              "Comma-separated list of fields to include in response (e.g., unique_id,name)",
-          },
-          {
-            name: "--depth",
-            type: "number",
-            description:
-              "Max traversal depth; 1 = immediate neighbors, omit for all levels",
-          },
-          {
-            name: "--format",
-            type: "enum",
-            values: ["flat", "tree"],
-            default: "tree",
-            description: "Output structure: flat list or nested tree",
-          },
-          {
-            name: "--json",
-            type: "boolean",
-            description: "Force JSON output",
-          },
-          {
-            name: "--no-json",
-            type: "boolean",
-            description: "Force human-readable output",
-          },
-        ],
-        output_format: "json or human-readable",
-        example:
-          "dbt-tools deps model.my_project.customers --direction downstream",
+          "Unique ID of the dbt resource (e.g., model.my_project.customers)",
       },
-      schema: {
-        command: "schema",
-        description: "Get machine-readable schema for a command",
-        arguments: [
-          {
-            name: "command",
-            required: false,
-            description:
-              "Command name (if omitted, returns all command schemas)",
-          },
-        ],
-        options: [
-          {
-            name: "--json",
-            type: "boolean",
-            description: "Force JSON output (always JSON by default)",
-          },
-        ],
-        output_format: "json",
-        example: "dbt-tools schema deps",
+    ],
+    options: getDepsSchemaOptions(),
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools deps model.my_project.customers --direction downstream",
+  };
+}
+
+function getSchemaCommandSchema(): CommandSchema {
+  return {
+    command: "schema",
+    description: "Get machine-readable schema for a command",
+    arguments: [
+      {
+        name: "command",
+        required: false,
+        description: "Command name (if omitted, returns all command schemas)",
       },
-    };
-  }
+    ],
+    options: [
+      {
+        name: OPT_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_JSON,
+      },
+    ],
+    output_format: "json",
+    example: "dbt-tools schema deps",
+  };
+}
+
+/**
+ * Get schema for a specific command
+ */
+export function getCommandSchema(command: string): CommandSchema | null {
+  const schemas = getAllSchemas();
+  return schemas[command] || null;
+}
+
+/**
+ * Get all command schemas
+ */
+export function getAllSchemas(): Record<string, CommandSchema> {
+  return {
+    analyze: getAnalyzeSchema(),
+    graph: getGraphSchema(),
+    "run-report": getRunReportSchema(),
+    deps: getDepsSchema(),
+    schema: getSchemaCommandSchema(),
+  };
 }

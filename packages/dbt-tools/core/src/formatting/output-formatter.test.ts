@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { OutputFormatter } from "./output-formatter";
+import {
+  isTTY,
+  shouldOutputJSON,
+  formatOutput,
+  formatAnalyze,
+  formatDeps,
+  formatRunReport,
+  formatHumanReadable,
+} from "./output-formatter";
 
 describe("OutputFormatter", () => {
   const originalIsTTY = process.stdout.isTTY;
@@ -28,7 +36,7 @@ describe("OutputFormatter", () => {
         writable: true,
         configurable: true,
       });
-      expect(OutputFormatter.isTTY()).toBe(true);
+      expect(isTTY()).toBe(true);
     });
 
     it("should detect non-TTY when stdout is not TTY", () => {
@@ -37,7 +45,7 @@ describe("OutputFormatter", () => {
         writable: true,
         configurable: true,
       });
-      expect(OutputFormatter.isTTY()).toBe(false);
+      expect(isTTY()).toBe(false);
     });
   });
 
@@ -48,7 +56,7 @@ describe("OutputFormatter", () => {
         writable: true,
         configurable: true,
       });
-      expect(OutputFormatter.shouldOutputJSON()).toBe(false);
+      expect(shouldOutputJSON()).toBe(false);
     });
 
     it("should return true for non-TTY when no flags", () => {
@@ -57,7 +65,7 @@ describe("OutputFormatter", () => {
         writable: true,
         configurable: true,
       });
-      expect(OutputFormatter.shouldOutputJSON()).toBe(true);
+      expect(shouldOutputJSON()).toBe(true);
     });
 
     it("should respect --json flag", () => {
@@ -66,7 +74,7 @@ describe("OutputFormatter", () => {
         writable: true,
         configurable: true,
       });
-      expect(OutputFormatter.shouldOutputJSON(true)).toBe(true);
+      expect(shouldOutputJSON(true)).toBe(true);
     });
 
     it("should respect --no-json flag", () => {
@@ -75,11 +83,11 @@ describe("OutputFormatter", () => {
         writable: true,
         configurable: true,
       });
-      expect(OutputFormatter.shouldOutputJSON(undefined, true)).toBe(false);
+      expect(shouldOutputJSON(undefined, true)).toBe(false);
     });
 
     it("should prioritize --no-json over --json", () => {
-      expect(OutputFormatter.shouldOutputJSON(true, true)).toBe(false);
+      expect(shouldOutputJSON(true, true)).toBe(false);
     });
   });
 
@@ -91,7 +99,7 @@ describe("OutputFormatter", () => {
         configurable: true,
       });
       const data = { test: "value" };
-      const output = OutputFormatter.formatOutput(data);
+      const output = formatOutput(data);
       expect(output).toBe(JSON.stringify(data, null, 2));
     });
 
@@ -102,7 +110,7 @@ describe("OutputFormatter", () => {
         configurable: true,
       });
       const data = { test: "value" };
-      const output = OutputFormatter.formatOutput(data);
+      const output = formatOutput(data);
       expect(typeof output).toBe("string");
     });
 
@@ -113,7 +121,7 @@ describe("OutputFormatter", () => {
         configurable: true,
       });
       const data = { test: "value" };
-      const output = OutputFormatter.formatOutput(data, true);
+      const output = formatOutput(data, true);
       expect(output).toBe(JSON.stringify(data, null, 2));
     });
   });
@@ -126,7 +134,7 @@ describe("OutputFormatter", () => {
         has_cycles: false,
         nodes_by_type: { model: 8, test: 2 },
       };
-      const output = OutputFormatter.formatAnalyze(summary);
+      const output = formatAnalyze(summary);
       expect(output).toContain("dbt Project Analysis");
       expect(output).toContain("Total Nodes: 10");
       expect(output).toContain("Total Edges: 15");
@@ -151,7 +159,7 @@ describe("OutputFormatter", () => {
         ],
         count: 1,
       };
-      const output = OutputFormatter.formatDeps(result);
+      const output = formatDeps(result);
       expect(output).toContain("Dependencies for model.my_project.customers");
       expect(output).toContain("Direction: downstream");
       expect(output).toContain("Count: 1");
@@ -165,7 +173,7 @@ describe("OutputFormatter", () => {
         dependencies: [],
         count: 0,
       };
-      const output = OutputFormatter.formatDeps(result);
+      const output = formatDeps(result);
       expect(output).toContain("(none)");
     });
 
@@ -192,7 +200,7 @@ describe("OutputFormatter", () => {
         ],
         count: 2,
       };
-      const output = OutputFormatter.formatDeps(result, "tree");
+      const output = formatDeps(result, "tree");
       expect(output).toContain("stg_customers");
       expect(output).toContain("downstream");
       expect(output).toContain("model.jaffle_shop.customers");
@@ -209,7 +217,7 @@ describe("OutputFormatter", () => {
         dependencies: [],
         count: 0,
       };
-      const output = OutputFormatter.formatDeps(result, "tree");
+      const output = formatDeps(result, "tree");
       expect(output).toContain("leaf");
       expect(output).toContain("downstream");
       expect(output).toContain("Count: 0");
@@ -231,7 +239,7 @@ describe("OutputFormatter", () => {
         ],
         count: 1,
       };
-      const output = OutputFormatter.formatDeps(result, "tree");
+      const output = formatDeps(result, "tree");
       expect(output).toContain("root");
       expect(output).toContain("model.test.only_child");
       expect(output).toContain("[depth 1]");
@@ -246,7 +254,7 @@ describe("OutputFormatter", () => {
         total_nodes: 10,
         nodes_by_status: { success: 8, error: 2 },
       };
-      const output = OutputFormatter.formatRunReport(summary);
+      const output = formatRunReport(summary);
       expect(output).toContain("dbt Execution Report");
       expect(output).toContain("Total Execution Time: 123.45s");
       expect(output).toContain("Total Nodes: 10");
@@ -264,7 +272,7 @@ describe("OutputFormatter", () => {
           total_time: 50.0,
         },
       };
-      const output = OutputFormatter.formatRunReport(summary);
+      const output = formatRunReport(summary);
       expect(output).toContain("Critical Path:");
       expect(output).toContain("model.a -> model.b -> model.c");
       expect(output).toContain("Total Time: 50.00s");
@@ -279,7 +287,7 @@ describe("OutputFormatter", () => {
         has_cycles: false,
         nodes_by_type: { model: 8 },
       };
-      const output = OutputFormatter.formatHumanReadable(data, "analyze");
+      const output = formatHumanReadable(data, "analyze");
       expect(output).toContain("dbt Project Analysis");
     });
 
@@ -290,7 +298,7 @@ describe("OutputFormatter", () => {
         dependencies: [],
         count: 0,
       };
-      const output = OutputFormatter.formatHumanReadable(data, "deps");
+      const output = formatHumanReadable(data, "deps");
       expect(output).toContain("Dependencies for model.x");
     });
 
@@ -300,7 +308,7 @@ describe("OutputFormatter", () => {
         total_nodes: 5,
         nodes_by_status: {},
       };
-      const output = OutputFormatter.formatHumanReadable(data, "run-report");
+      const output = formatHumanReadable(data, "run-report");
       expect(output).toContain("dbt Execution Report");
     });
   });

@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { SchemaGenerator } from "./schema-generator";
+import { getCommandSchema, getAllSchemas } from "./schema-generator";
 
 describe("SchemaGenerator", () => {
   describe("getCommandSchema", () => {
     it("should return schema for analyze command", () => {
-      const schema = SchemaGenerator.getCommandSchema("analyze");
+      const schema = getCommandSchema("analyze");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("analyze");
       expect(schema?.arguments).toBeInstanceOf(Array);
@@ -12,7 +12,7 @@ describe("SchemaGenerator", () => {
     });
 
     it("should return schema for deps command", () => {
-      const schema = SchemaGenerator.getCommandSchema("deps");
+      const schema = getCommandSchema("deps");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("deps");
       expect(schema?.arguments).toBeInstanceOf(Array);
@@ -22,32 +22,32 @@ describe("SchemaGenerator", () => {
     });
 
     it("should return schema for graph command", () => {
-      const schema = SchemaGenerator.getCommandSchema("graph");
+      const schema = getCommandSchema("graph");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("graph");
     });
 
     it("should return schema for run-report command", () => {
-      const schema = SchemaGenerator.getCommandSchema("run-report");
+      const schema = getCommandSchema("run-report");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("run-report");
     });
 
     it("should return schema for schema command", () => {
-      const schema = SchemaGenerator.getCommandSchema("schema");
+      const schema = getCommandSchema("schema");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("schema");
     });
 
     it("should return null for invalid command", () => {
-      const schema = SchemaGenerator.getCommandSchema("invalid-command");
+      const schema = getCommandSchema("invalid-command");
       expect(schema).toBeNull();
     });
   });
 
   describe("getAllSchemas", () => {
     it("should return all command schemas", () => {
-      const schemas = SchemaGenerator.getAllSchemas();
+      const schemas = getAllSchemas();
       expect(schemas).toHaveProperty("analyze");
       expect(schemas).toHaveProperty("deps");
       expect(schemas).toHaveProperty("graph");
@@ -56,7 +56,7 @@ describe("SchemaGenerator", () => {
     });
 
     it("should have complete schema structure for all commands", () => {
-      const schemas = SchemaGenerator.getAllSchemas();
+      const schemas = getAllSchemas();
       for (const [command, schema] of Object.entries(schemas)) {
         expect(schema.command).toBe(command);
         expect(schema.description).toBeTruthy();
@@ -68,7 +68,7 @@ describe("SchemaGenerator", () => {
     });
 
     it("should have correct argument structure", () => {
-      const schemas = SchemaGenerator.getAllSchemas();
+      const schemas = getAllSchemas();
       for (const schema of Object.values(schemas)) {
         for (const arg of schema.arguments) {
           expect(arg).toHaveProperty("name");
@@ -82,7 +82,7 @@ describe("SchemaGenerator", () => {
     });
 
     it("should have correct option structure", () => {
-      const schemas = SchemaGenerator.getAllSchemas();
+      const schemas = getAllSchemas();
       for (const schema of Object.values(schemas)) {
         for (const option of schema.options) {
           expect(option).toHaveProperty("name");
@@ -96,7 +96,7 @@ describe("SchemaGenerator", () => {
     });
 
     it("should have enum values for enum type options", () => {
-      const depsSchema = SchemaGenerator.getCommandSchema("deps");
+      const depsSchema = getCommandSchema("deps");
       const directionOption = depsSchema?.options.find(
         (opt) => opt.name === "--direction",
       );
@@ -105,7 +105,7 @@ describe("SchemaGenerator", () => {
     });
 
     it("should have --format option for deps with flat and tree values", () => {
-      const depsSchema = SchemaGenerator.getCommandSchema("deps");
+      const depsSchema = getCommandSchema("deps");
       const formatOption = depsSchema?.options.find(
         (opt) => opt.name === "--format",
       );

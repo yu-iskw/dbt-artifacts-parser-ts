@@ -1,34 +1,36 @@
 import { describe, it, expect } from "vitest";
 import {
-  InputValidator,
-  OutputFormatter,
-  SchemaGenerator,
+  validateResourceId,
+  validateSafePath,
+  isTTY,
+  formatOutput,
+  formatDeps,
+  formatAnalyze,
+  getCommandSchema,
+  getAllSchemas,
 } from "@dbt-tools/core";
 
 describe("CLI Integration", () => {
   describe("Core service integration", () => {
-    it("should have InputValidator available", () => {
-      expect(InputValidator).toBeDefined();
-      expect(typeof InputValidator.validateResourceId).toBe("function");
-      expect(typeof InputValidator.validateSafePath).toBe("function");
+    it("should have input validation functions available", () => {
+      expect(typeof validateResourceId).toBe("function");
+      expect(typeof validateSafePath).toBe("function");
     });
 
-    it("should have OutputFormatter available", () => {
-      expect(OutputFormatter).toBeDefined();
-      expect(typeof OutputFormatter.isTTY).toBe("function");
-      expect(typeof OutputFormatter.formatOutput).toBe("function");
+    it("should have output formatting functions available", () => {
+      expect(typeof isTTY).toBe("function");
+      expect(typeof formatOutput).toBe("function");
     });
 
-    it("should have SchemaGenerator available", () => {
-      expect(SchemaGenerator).toBeDefined();
-      expect(typeof SchemaGenerator.getCommandSchema).toBe("function");
-      expect(typeof SchemaGenerator.getAllSchemas).toBe("function");
+    it("should have schema introspection functions available", () => {
+      expect(typeof getCommandSchema).toBe("function");
+      expect(typeof getAllSchemas).toBe("function");
     });
   });
 
   describe("Command schema validation", () => {
     it("should have schema for all commands", () => {
-      const schemas = SchemaGenerator.getAllSchemas();
+      const schemas = getAllSchemas();
       expect(schemas).toHaveProperty("analyze");
       expect(schemas).toHaveProperty("deps");
       expect(schemas).toHaveProperty("graph");
@@ -37,7 +39,7 @@ describe("CLI Integration", () => {
     });
 
     it("should have correct deps command schema", () => {
-      const schema = SchemaGenerator.getCommandSchema("deps");
+      const schema = getCommandSchema("deps");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("deps");
       expect(schema?.arguments.length).toBeGreaterThan(0);
@@ -58,19 +60,15 @@ describe("CLI Integration", () => {
   describe("Input validation patterns", () => {
     it("should validate resource IDs correctly", () => {
       expect(() =>
-        InputValidator.validateResourceId("model.my_project.customers"),
+        validateResourceId("model.my_project.customers"),
       ).not.toThrow();
-      expect(() =>
-        InputValidator.validateResourceId("model.x?fields=name"),
-      ).toThrow();
-      expect(() => InputValidator.validateResourceId("model%2ex")).toThrow();
+      expect(() => validateResourceId("model.x?fields=name")).toThrow();
+      expect(() => validateResourceId("model%2ex")).toThrow();
     });
 
     it("should validate paths correctly", () => {
-      expect(() =>
-        InputValidator.validateSafePath("./target/manifest.json"),
-      ).not.toThrow();
-      expect(() => InputValidator.validateSafePath("../../.ssh")).toThrow();
+      expect(() => validateSafePath("./target/manifest.json")).not.toThrow();
+      expect(() => validateSafePath("../../.ssh")).toThrow();
     });
   });
 
@@ -91,7 +89,7 @@ describe("CLI Integration", () => {
         count: 1,
       };
 
-      const output = OutputFormatter.formatDeps(result);
+      const output = formatDeps(result);
       expect(output).toContain("Dependencies for model.test.example");
       expect(output).toContain("downstream");
       expect(output).toContain("model.test.dep");
@@ -105,7 +103,7 @@ describe("CLI Integration", () => {
         nodes_by_type: { model: 8, test: 2 },
       };
 
-      const output = OutputFormatter.formatAnalyze(summary);
+      const output = formatAnalyze(summary);
       expect(output).toContain("dbt Project Analysis");
       expect(output).toContain("Total Nodes: 10");
     });

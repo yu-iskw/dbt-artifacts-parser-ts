@@ -5,12 +5,21 @@ import * as fs from "fs";
 import {
   ManifestGraph,
   ExecutionAnalyzer,
-  ArtifactLoader,
-  InputValidator,
-  OutputFormatter,
+  resolveArtifactPaths,
+  loadManifest,
+  loadRunResults,
+  validateSafePath,
+  validateResourceId,
+  isTTY,
+  shouldOutputJSON,
+  formatOutput,
+  formatAnalyze,
+  formatDeps,
+  formatRunReport,
   ErrorHandler,
   DependencyService,
-  SchemaGenerator,
+  getCommandSchema,
+  getAllSchemas,
 } from "@dbt-tools/core";
 
 const program = new Command();
@@ -60,33 +69,30 @@ program
     ) => {
       try {
         // Resolve artifact paths
-        const paths = ArtifactLoader.resolveArtifactPaths(
+        const paths = resolveArtifactPaths(
           manifestPath,
           undefined,
           options.targetDir,
         );
 
         // Validate path
-        InputValidator.validateSafePath(paths.manifest);
+        validateSafePath(paths.manifest);
 
         // Load manifest
-        const manifest = ArtifactLoader.loadManifest(paths.manifest);
+        const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
         const summary = graph.getSummary();
 
         // Format output
-        const useJson = OutputFormatter.shouldOutputJSON(
-          options.json,
-          options.noJson,
-        );
+        const useJson = shouldOutputJSON(options.json, options.noJson);
 
         if (useJson) {
-          console.log(OutputFormatter.formatOutput(summary, true));
+          console.log(formatOutput(summary, true));
         } else {
-          console.log(OutputFormatter.formatAnalyze(summary));
+          console.log(formatAnalyze(summary));
         }
       } catch (error) {
-        handleError(error, OutputFormatter.isTTY());
+        handleError(error, isTTY());
       }
     },
   );
@@ -114,20 +120,20 @@ program
     ) => {
       try {
         // Resolve artifact paths
-        const paths = ArtifactLoader.resolveArtifactPaths(
+        const paths = resolveArtifactPaths(
           manifestPath,
           undefined,
           options.targetDir,
         );
 
         // Validate path
-        InputValidator.validateSafePath(paths.manifest);
+        validateSafePath(paths.manifest);
         if (options.output) {
-          InputValidator.validateSafePath(options.output);
+          validateSafePath(options.output);
         }
 
         // Load manifest
-        const manifest = ArtifactLoader.loadManifest(paths.manifest);
+        const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
         const graphologyGraph = graph.getGraph();
 
@@ -222,7 +228,7 @@ ${edges.map((e, i) => `      <edge id="${i}" source="${e.source}" target="${e.ta
           console.log(output);
         }
       } catch (error) {
-        handleError(error, OutputFormatter.isTTY());
+        handleError(error, isTTY());
       }
     },
   );
@@ -255,24 +261,24 @@ program
     ) => {
       try {
         // Resolve artifact paths
-        const paths = ArtifactLoader.resolveArtifactPaths(
+        const paths = resolveArtifactPaths(
           manifestPath,
           runResultsPath,
           options.targetDir,
         );
 
         // Validate paths
-        InputValidator.validateSafePath(paths.manifest);
+        validateSafePath(paths.manifest);
         if (paths.runResults) {
-          InputValidator.validateSafePath(paths.runResults);
+          validateSafePath(paths.runResults);
         }
 
         // Load run results
-        const runResults = ArtifactLoader.loadRunResults(paths.runResults!);
+        const runResults = loadRunResults(paths.runResults!);
 
         let analyzer: ExecutionAnalyzer | undefined;
         if (paths.manifest) {
-          const manifest = ArtifactLoader.loadManifest(paths.manifest);
+          const manifest = loadManifest(paths.manifest);
           const graph = new ManifestGraph(manifest);
           analyzer = new ExecutionAnalyzer(runResults, graph);
         }
@@ -301,18 +307,15 @@ program
         }
 
         // Format output
-        const useJson = OutputFormatter.shouldOutputJSON(
-          options.json,
-          options.noJson,
-        );
+        const useJson = shouldOutputJSON(options.json, options.noJson);
 
         if (useJson) {
-          console.log(OutputFormatter.formatOutput(summary, true));
+          console.log(formatOutput(summary, true));
         } else {
-          console.log(OutputFormatter.formatRunReport(summary));
+          console.log(formatRunReport(summary));
         }
       } catch (error) {
-        handleError(error, OutputFormatter.isTTY());
+        handleError(error, isTTY());
       }
     },
   );
@@ -371,7 +374,7 @@ program
     ) => {
       try {
         // Validate resource ID
-        InputValidator.validateResourceId(resourceId);
+        validateResourceId(resourceId);
 
         // Validate direction
         const direction = options.direction?.toLowerCase();
@@ -405,17 +408,17 @@ program
         }
 
         // Resolve artifact paths
-        const paths = ArtifactLoader.resolveArtifactPaths(
+        const paths = resolveArtifactPaths(
           options.manifestPath,
           undefined,
           options.targetDir,
         );
 
         // Validate path
-        InputValidator.validateSafePath(paths.manifest);
+        validateSafePath(paths.manifest);
 
         // Load manifest and create graph
-        const manifest = ArtifactLoader.loadManifest(paths.manifest);
+        const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
 
         // Get dependencies
@@ -430,18 +433,15 @@ program
         );
 
         // Format output
-        const useJson = OutputFormatter.shouldOutputJSON(
-          options.json,
-          options.noJson,
-        );
+        const useJson = shouldOutputJSON(options.json, options.noJson);
 
         if (useJson) {
-          console.log(OutputFormatter.formatOutput(result, true));
+          console.log(formatOutput(result, true));
         } else {
-          console.log(OutputFormatter.formatDeps(result, format));
+          console.log(formatDeps(result, format));
         }
       } catch (error) {
-        handleError(error, OutputFormatter.isTTY());
+        handleError(error, isTTY());
       }
     },
   );
@@ -462,19 +462,19 @@ program
       let result: unknown;
 
       if (command) {
-        const schema = SchemaGenerator.getCommandSchema(command);
+        const schema = getCommandSchema(command);
         if (!schema) {
           throw new Error(`Unknown command: ${command}`);
         }
         result = schema;
       } else {
-        result = SchemaGenerator.getAllSchemas();
+        result = getAllSchemas();
       }
 
       // Schema command always outputs JSON
-      console.log(OutputFormatter.formatOutput(result, true));
+      console.log(formatOutput(result, true));
     } catch (error) {
-      handleError(error, OutputFormatter.isTTY());
+      handleError(error, isTTY());
     }
   });
 
