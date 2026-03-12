@@ -197,9 +197,13 @@ describe("ManifestGraph", () => {
         expect(Array.isArray(upstream)).toBe(true);
         expect(upstream.length).toBeGreaterThan(0);
 
-        // Verify all upstream nodes exist in the graph
-        for (const nodeId of upstream) {
-          expect(graphologyGraph.hasNode(nodeId)).toBe(true);
+        // Verify format: { nodeId, depth }
+        for (const entry of upstream) {
+          expect(entry).toHaveProperty("nodeId");
+          expect(entry).toHaveProperty("depth");
+          expect(typeof entry.depth).toBe("number");
+          expect(entry.depth).toBeGreaterThanOrEqual(1);
+          expect(graphologyGraph.hasNode(entry.nodeId)).toBe(true);
         }
       }
     });
@@ -258,9 +262,13 @@ describe("ManifestGraph", () => {
         expect(Array.isArray(downstream)).toBe(true);
         expect(downstream.length).toBeGreaterThan(0);
 
-        // Verify all downstream nodes exist in the graph
-        for (const nodeId of downstream) {
-          expect(graphologyGraph.hasNode(nodeId)).toBe(true);
+        // Verify format: { nodeId, depth }
+        for (const entry of downstream) {
+          expect(entry).toHaveProperty("nodeId");
+          expect(entry).toHaveProperty("depth");
+          expect(typeof entry.depth).toBe("number");
+          expect(entry.depth).toBeGreaterThanOrEqual(1);
+          expect(graphologyGraph.hasNode(entry.nodeId)).toBe(true);
         }
       }
     });
@@ -294,6 +302,230 @@ describe("ManifestGraph", () => {
         const downstream = graph.getDownstream(leafNodeId);
         expect(downstream).toEqual([]);
       }
+    });
+
+    it("should limit downstream by depth when maxDepth is specified", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const graphologyGraph = graph.getGraph();
+      let testNodeId: string | null = null;
+
+      graphologyGraph.forEachNode((nodeId) => {
+        const outbound = graphologyGraph.outboundNeighbors(nodeId);
+        if (outbound.length > 0 && !testNodeId) {
+          testNodeId = nodeId;
+        }
+      });
+
+      if (testNodeId) {
+        const full = graph.getDownstream(testNodeId);
+        const depth1 = graph.getDownstream(testNodeId, 1);
+
+        expect(depth1.length).toBeLessThanOrEqual(full.length);
+        depth1.forEach((entry) => {
+          expect(entry.depth).toBe(1);
+        });
+      }
+    });
+
+    it("should limit upstream by depth when maxDepth is specified", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const graphologyGraph = graph.getGraph();
+      let testNodeId: string | null = null;
+
+      graphologyGraph.forEachNode((nodeId) => {
+        const inbound = graphologyGraph.inboundNeighbors(nodeId);
+        if (inbound.length > 0 && !testNodeId) {
+          testNodeId = nodeId;
+        }
+      });
+
+      if (testNodeId) {
+        const full = graph.getUpstream(testNodeId);
+        const depth1 = graph.getUpstream(testNodeId, 1);
+
+        expect(depth1.length).toBeLessThanOrEqual(full.length);
+        depth1.forEach((entry) => {
+          expect(entry.depth).toBe(1);
+        });
+      }
+    });
+  });
+
+  describe("getUpstreamWithParents", () => {
+    it("should return parentId for each upstream node", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const graphologyGraph = graph.getGraph();
+      let testNodeId: string | null = null;
+
+      graphologyGraph.forEachNode((nodeId) => {
+        const inbound = graphologyGraph.inboundNeighbors(nodeId);
+        if (inbound.length > 0 && !testNodeId) {
+          testNodeId = nodeId;
+        }
+      });
+
+      if (testNodeId) {
+        const result = graph.getUpstreamWithParents(testNodeId!);
+        expect(result.length).toBeGreaterThan(0);
+        for (const { nodeId, depth, parentId } of result) {
+          expect(typeof nodeId).toBe("string");
+          expect(typeof depth).toBe("number");
+          expect(typeof parentId).toBe("string");
+          expect(graphologyGraph.hasNode(parentId)).toBe(true);
+        }
+      }
+    });
+
+    it("should return empty array for non-existent node", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      expect(graph.getUpstreamWithParents("non.existent.node")).toEqual([]);
+    });
+
+    it("should return empty array for root node (no inbound)", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+      const graphologyGraph = graph.getGraph();
+
+      let rootNodeId: string | null = null;
+      graphologyGraph.forEachNode((nodeId) => {
+        if (
+          graphologyGraph.inboundNeighbors(nodeId).length === 0 &&
+          !rootNodeId
+        ) {
+          rootNodeId = nodeId;
+        }
+      });
+
+      if (rootNodeId) {
+        expect(graph.getUpstreamWithParents(rootNodeId)).toEqual([]);
+      }
+    });
+
+    it("should limit by maxDepth when specified", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const full = graph.getUpstreamWithParents("model.jaffle_shop.customers");
+      const depth1 = graph.getUpstreamWithParents(
+        "model.jaffle_shop.customers",
+        1,
+      );
+      expect(depth1.length).toBeLessThanOrEqual(full.length);
+      depth1.forEach(({ depth }) => expect(depth).toBe(1));
+    });
+
+    it("should have parentId equal to root for depth-1 nodes", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+      const rootId = "model.jaffle_shop.customers";
+
+      const result = graph.getUpstreamWithParents(rootId);
+      const depth1Entries = result.filter((e) => e.depth === 1);
+      depth1Entries.forEach(({ parentId }) => {
+        expect(parentId).toBe(rootId);
+      });
+    });
+  });
+
+  describe("getDownstreamWithParents", () => {
+    it("should return parentId for each downstream node", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const graphologyGraph = graph.getGraph();
+      let testNodeId: string | null = null;
+
+      graphologyGraph.forEachNode((nodeId) => {
+        const outbound = graphologyGraph.outboundNeighbors(nodeId);
+        if (outbound.length > 0 && !testNodeId) {
+          testNodeId = nodeId;
+        }
+      });
+
+      if (testNodeId) {
+        const result = graph.getDownstreamWithParents(testNodeId!);
+        expect(result.length).toBeGreaterThan(0);
+        for (const { nodeId, depth, parentId } of result) {
+          expect(typeof nodeId).toBe("string");
+          expect(typeof depth).toBe("number");
+          expect(typeof parentId).toBe("string");
+          expect(graphologyGraph.hasNode(parentId)).toBe(true);
+        }
+      }
+    });
+
+    it("should return empty array for non-existent node", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      expect(graph.getDownstreamWithParents("non.existent.node")).toEqual([]);
+    });
+
+    it("should return empty array for leaf node (no outbound)", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+      const graphologyGraph = graph.getGraph();
+
+      let leafNodeId: string | null = null;
+      graphologyGraph.forEachNode((nodeId) => {
+        if (
+          graphologyGraph.outboundNeighbors(nodeId).length === 0 &&
+          !leafNodeId
+        ) {
+          leafNodeId = nodeId;
+        }
+      });
+
+      if (leafNodeId) {
+        expect(graph.getDownstreamWithParents(leafNodeId)).toEqual([]);
+      }
+    });
+
+    it("should limit by maxDepth when specified", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const full = graph.getDownstreamWithParents(
+        "model.jaffle_shop.stg_customers",
+      );
+      const depth1 = graph.getDownstreamWithParents(
+        "model.jaffle_shop.stg_customers",
+        1,
+      );
+      expect(depth1.length).toBeLessThanOrEqual(full.length);
+      depth1.forEach(({ depth }) => expect(depth).toBe(1));
+    });
+
+    it("should have parentId equal to root for depth-1 nodes", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+      const rootId = "model.jaffle_shop.stg_customers";
+
+      const result = graph.getDownstreamWithParents(rootId);
+      const depth1Entries = result.filter((e) => e.depth === 1);
+      depth1Entries.forEach(({ parentId }) => {
+        expect(parentId).toBe(rootId);
+      });
     });
   });
 

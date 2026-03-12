@@ -6,6 +6,8 @@ Date: 2026-03-10
 
 Accepted
 
+Extended by [4. Use Topological Sort for Upstream Build Order](0004-use-topological-sort-for-upstream-build-order.md)
+
 ## Context
 
 The `@dbt-tools/core` package needs to manage dependency graphs from dbt artifacts (manifest.json) that can contain hundreds of thousands of nodes and edges. We need a high-performance graph library that:

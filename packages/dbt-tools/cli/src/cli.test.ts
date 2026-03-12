@@ -43,6 +43,15 @@ describe("CLI Integration", () => {
       expect(schema?.arguments.length).toBeGreaterThan(0);
       expect(schema?.arguments[0]?.name).toBe("resource-id");
       expect(schema?.arguments[0]?.required).toBe(true);
+      const depthOpt = schema?.options?.find((o) => o.name === "--depth");
+      expect(depthOpt).toBeDefined();
+      expect(depthOpt?.type).toBe("number");
+
+      const formatOpt = schema?.options?.find((o) => o.name === "--format");
+      expect(formatOpt).toBeDefined();
+      expect(formatOpt?.type).toBe("enum");
+      expect(formatOpt?.values).toContain("flat");
+      expect(formatOpt?.values).toContain("tree");
     });
   });
 
@@ -76,6 +85,7 @@ describe("CLI Integration", () => {
             resource_type: "model",
             name: "dep",
             package_name: "test",
+            depth: 1,
           },
         ],
         count: 1,

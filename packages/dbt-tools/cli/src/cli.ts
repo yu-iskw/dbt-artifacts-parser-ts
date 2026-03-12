@@ -338,6 +338,20 @@ program
     "Custom target directory (defaults to ./target)",
   )
   .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option(
+    "--depth <number>",
+    "Max traversal depth; 1 = immediate neighbors, omit for all levels",
+    parseInt,
+  )
+  .option(
+    "--format <format>",
+    "Output structure: flat list or nested tree",
+    "tree",
+  )
+  .option(
+    "--build-order",
+    "Output upstream dependencies in topological build order (only with --direction upstream)",
+  )
   .option("--json", "Force JSON output")
   .option("--no-json", "Force human-readable output")
   .action(
@@ -348,6 +362,9 @@ program
         manifestPath?: string;
         targetDir?: string;
         fields?: string;
+        depth?: number;
+        format?: string;
+        buildOrder?: boolean;
         json?: boolean;
         noJson?: boolean;
       },
@@ -361,6 +378,29 @@ program
         if (direction !== "upstream" && direction !== "downstream") {
           throw new Error(
             `Invalid direction: ${options.direction}. Must be 'upstream' or 'downstream'`,
+          );
+        }
+
+        // Validate depth if provided
+        const depth = options.depth;
+        if (depth !== undefined && (typeof depth !== "number" || depth < 1)) {
+          throw new Error(
+            `Invalid depth: ${options.depth}. Must be a positive integer`,
+          );
+        }
+
+        // Validate format
+        const format = (options.format ?? "tree").toLowerCase();
+        if (format !== "flat" && format !== "tree") {
+          throw new Error(
+            `Invalid format: ${options.format}. Must be 'flat' or 'tree'`,
+          );
+        }
+
+        // Validate build-order: only valid with upstream
+        if (options.buildOrder && direction !== "upstream") {
+          throw new Error(
+            `--build-order is only valid with --direction upstream`,
           );
         }
 
@@ -384,6 +424,9 @@ program
           resourceId,
           direction as "upstream" | "downstream",
           options.fields,
+          options.depth,
+          format as "flat" | "tree",
+          options.buildOrder,
         );
 
         // Format output
@@ -395,7 +438,7 @@ program
         if (useJson) {
           console.log(OutputFormatter.formatOutput(result, true));
         } else {
-          console.log(OutputFormatter.formatDeps(result));
+          console.log(OutputFormatter.formatDeps(result, format));
         }
       } catch (error) {
         handleError(error, OutputFormatter.isTTY());

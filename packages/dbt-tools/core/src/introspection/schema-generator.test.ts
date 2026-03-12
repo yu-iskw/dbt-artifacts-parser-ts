@@ -103,5 +103,16 @@ describe("SchemaGenerator", () => {
       expect(directionOption?.type).toBe("enum");
       expect(directionOption?.values).toEqual(["upstream", "downstream"]);
     });
+
+    it("should have --format option for deps with flat and tree values", () => {
+      const depsSchema = SchemaGenerator.getCommandSchema("deps");
+      const formatOption = depsSchema?.options.find(
+        (opt) => opt.name === "--format",
+      );
+      expect(formatOption).toBeDefined();
+      expect(formatOption?.type).toBe("enum");
+      expect(formatOption?.values).toEqual(["flat", "tree"]);
+      expect(formatOption?.default).toBe("tree");
+    });
   });
 });

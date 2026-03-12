@@ -1,5 +1,5 @@
 import { DirectedGraph } from "graphology";
-import { hasCycle } from "graphology-dag";
+import { hasCycle, topologicalSort } from "graphology-dag";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type {
@@ -356,60 +356,227 @@ export class ManifestGraph {
   }
 
   /**
-   * Get all upstream dependencies of a node
+   * Get all upstream dependencies of a node using BFS.
+   * @param nodeId - The node to find upstream dependencies for
+   * @param maxDepth - Optional limit; 1 = immediate neighbors only, undefined = all levels
+   * @returns Array of { nodeId, depth } where depth is the shortest distance from the node
    */
-  getUpstream(nodeId: string): string[] {
+  getUpstream(
+    nodeId: string,
+    maxDepth?: number,
+  ): Array<{ nodeId: string; depth: number }> {
     if (!this.graph.hasNode(nodeId)) {
       return [];
     }
 
-    const upstream: string[] = [];
+    const result: Array<{ nodeId: string; depth: number }> = [];
     const visited = new Set<string>();
+    const queue: Array<{ id: string; depth: number }> = [];
 
-    const traverse = (currentId: string) => {
-      if (visited.has(currentId)) {
-        return;
-      }
-      visited.add(currentId);
-
-      this.graph.inboundNeighbors(currentId).forEach((neighborId) => {
-        if (!upstream.includes(neighborId)) {
-          upstream.push(neighborId);
+    for (const neighborId of this.graph.inboundNeighbors(nodeId)) {
+      if (!visited.has(neighborId)) {
+        visited.add(neighborId);
+        result.push({ nodeId: neighborId, depth: 1 });
+        if (maxDepth === undefined || 1 < maxDepth) {
+          queue.push({ id: neighborId, depth: 1 });
         }
-        traverse(neighborId);
-      });
-    };
+      }
+    }
 
-    traverse(nodeId);
-    return upstream;
+    while (queue.length > 0) {
+      const { id, depth } = queue.shift()!;
+      const nextDepth = depth + 1;
+      for (const neighborId of this.graph.inboundNeighbors(id)) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          result.push({ nodeId: neighborId, depth: nextDepth });
+          if (maxDepth === undefined || nextDepth < maxDepth) {
+            queue.push({ id: neighborId, depth: nextDepth });
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
-   * Get all downstream dependents of a node
+   * Get all downstream dependents of a node using BFS.
+   * @param nodeId - The node to find downstream dependents for
+   * @param maxDepth - Optional limit; 1 = immediate neighbors only, undefined = all levels
+   * @returns Array of { nodeId, depth } where depth is the shortest distance from the node
    */
-  getDownstream(nodeId: string): string[] {
+  getDownstream(
+    nodeId: string,
+    maxDepth?: number,
+  ): Array<{ nodeId: string; depth: number }> {
     if (!this.graph.hasNode(nodeId)) {
       return [];
     }
 
-    const downstream: string[] = [];
+    const result: Array<{ nodeId: string; depth: number }> = [];
     const visited = new Set<string>();
+    const queue: Array<{ id: string; depth: number }> = [];
 
-    const traverse = (currentId: string) => {
-      if (visited.has(currentId)) {
-        return;
-      }
-      visited.add(currentId);
-
-      this.graph.outboundNeighbors(currentId).forEach((neighborId) => {
-        if (!downstream.includes(neighborId)) {
-          downstream.push(neighborId);
+    for (const neighborId of this.graph.outboundNeighbors(nodeId)) {
+      if (!visited.has(neighborId)) {
+        visited.add(neighborId);
+        result.push({ nodeId: neighborId, depth: 1 });
+        if (maxDepth === undefined || 1 < maxDepth) {
+          queue.push({ id: neighborId, depth: 1 });
         }
-        traverse(neighborId);
-      });
-    };
+      }
+    }
 
-    traverse(nodeId);
-    return downstream;
+    while (queue.length > 0) {
+      const { id, depth } = queue.shift()!;
+      const nextDepth = depth + 1;
+      for (const neighborId of this.graph.outboundNeighbors(id)) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          result.push({ nodeId: neighborId, depth: nextDepth });
+          if (maxDepth === undefined || nextDepth < maxDepth) {
+            queue.push({ id: neighborId, depth: nextDepth });
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Get upstream dependencies with parent info for tree construction.
+   * @returns Array of { nodeId, depth, parentId } where parentId is the BFS predecessor
+   */
+  getUpstreamWithParents(
+    nodeId: string,
+    maxDepth?: number,
+  ): Array<{ nodeId: string; depth: number; parentId: string }> {
+    if (!this.graph.hasNode(nodeId)) {
+      return [];
+    }
+
+    const result: Array<{
+      nodeId: string;
+      depth: number;
+      parentId: string;
+    }> = [];
+    const visited = new Set<string>();
+    const queue: Array<{ id: string; depth: number; parentId: string }> = [];
+
+    for (const neighborId of this.graph.inboundNeighbors(nodeId)) {
+      if (!visited.has(neighborId)) {
+        visited.add(neighborId);
+        result.push({ nodeId: neighborId, depth: 1, parentId: nodeId });
+        if (maxDepth === undefined || 1 < maxDepth) {
+          queue.push({ id: neighborId, depth: 1, parentId: nodeId });
+        }
+      }
+    }
+
+    while (queue.length > 0) {
+      const { id, depth } = queue.shift()!;
+      const nextDepth = depth + 1;
+      for (const neighborId of this.graph.inboundNeighbors(id)) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          result.push({ nodeId: neighborId, depth: nextDepth, parentId: id });
+          if (maxDepth === undefined || nextDepth < maxDepth) {
+            queue.push({ id: neighborId, depth: nextDepth, parentId: id });
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Get upstream dependencies in build order (topological sort).
+   * Sources and root models first, then models that depend on them.
+   * @param nodeId - The node to find upstream dependencies for
+   * @param maxDepth - Optional limit; 1 = immediate neighbors only, undefined = all levels
+   * @returns Array of { nodeId, depth } in build order
+   */
+  getUpstreamBuildOrder(
+    nodeId: string,
+    maxDepth?: number,
+  ): Array<{ nodeId: string; depth: number }> {
+    const entries = this.getUpstream(nodeId, maxDepth);
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const nodeIds = new Set(entries.map((e) => e.nodeId));
+    const depthByNode = new Map(entries.map((e) => [e.nodeId, e.depth]));
+
+    const subgraph = new DirectedGraph<
+      GraphNodeAttributes,
+      GraphEdgeAttributes
+    >();
+    for (const nid of nodeIds) {
+      subgraph.addNode(nid, this.graph.getNodeAttributes(nid));
+    }
+    this.graph.forEachEdge((_edge, attr, source, target) => {
+      if (nodeIds.has(source) && nodeIds.has(target)) {
+        if (!subgraph.hasEdge(source, target)) {
+          subgraph.addEdge(source, target, attr);
+        }
+      }
+    });
+
+    const orderedIds = topologicalSort(subgraph);
+    return orderedIds.map((nid) => ({
+      nodeId: nid,
+      depth: depthByNode.get(nid) ?? 0,
+    }));
+  }
+
+  /**
+   * Get downstream dependents with parent info for tree construction.
+   * @returns Array of { nodeId, depth, parentId } where parentId is the BFS predecessor
+   */
+  getDownstreamWithParents(
+    nodeId: string,
+    maxDepth?: number,
+  ): Array<{ nodeId: string; depth: number; parentId: string }> {
+    if (!this.graph.hasNode(nodeId)) {
+      return [];
+    }
+
+    const result: Array<{
+      nodeId: string;
+      depth: number;
+      parentId: string;
+    }> = [];
+    const visited = new Set<string>();
+    const queue: Array<{ id: string; depth: number; parentId: string }> = [];
+
+    for (const neighborId of this.graph.outboundNeighbors(nodeId)) {
+      if (!visited.has(neighborId)) {
+        visited.add(neighborId);
+        result.push({ nodeId: neighborId, depth: 1, parentId: nodeId });
+        if (maxDepth === undefined || 1 < maxDepth) {
+          queue.push({ id: neighborId, depth: 1, parentId: nodeId });
+        }
+      }
+    }
+
+    while (queue.length > 0) {
+      const { id, depth } = queue.shift()!;
+      const nextDepth = depth + 1;
+      for (const neighborId of this.graph.outboundNeighbors(id)) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          result.push({ nodeId: neighborId, depth: nextDepth, parentId: id });
+          if (maxDepth === undefined || nextDepth < maxDepth) {
+            queue.push({ id: neighborId, depth: nextDepth, parentId: id });
+          }
+        }
+      }
+    }
+
+    return result;
   }
 }

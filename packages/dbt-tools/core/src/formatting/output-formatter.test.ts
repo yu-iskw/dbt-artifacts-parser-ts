@@ -168,6 +168,75 @@ describe("OutputFormatter", () => {
       const output = OutputFormatter.formatDeps(result);
       expect(output).toContain("(none)");
     });
+
+    it("should format tree output when format is tree", () => {
+      const result = {
+        resource_id: "model.jaffle_shop.stg_customers",
+        direction: "downstream" as const,
+        dependencies: [
+          {
+            unique_id: "model.jaffle_shop.customers",
+            resource_type: "model",
+            name: "customers",
+            depth: 1,
+            dependencies: [
+              {
+                unique_id: "test.jaffle_shop.not_null_customers",
+                resource_type: "test",
+                name: "not_null_customers",
+                depth: 2,
+                dependencies: [],
+              },
+            ],
+          },
+        ],
+        count: 2,
+      };
+      const output = OutputFormatter.formatDeps(result, "tree");
+      expect(output).toContain("stg_customers");
+      expect(output).toContain("downstream");
+      expect(output).toContain("model.jaffle_shop.customers");
+      expect(output).toContain("test.jaffle_shop.not_null_customers");
+      expect(output).toContain("[depth 1]");
+      expect(output).toContain("[depth 2]");
+      expect(output).toMatch(/├──|└──/);
+    });
+
+    it("should format empty tree when format is tree and no dependencies", () => {
+      const result = {
+        resource_id: "model.test.leaf",
+        direction: "downstream" as const,
+        dependencies: [],
+        count: 0,
+      };
+      const output = OutputFormatter.formatDeps(result, "tree");
+      expect(output).toContain("leaf");
+      expect(output).toContain("downstream");
+      expect(output).toContain("Count: 0");
+      expect(output).not.toMatch(/├──|└──/);
+    });
+
+    it("should format tree with single root-level node (no children)", () => {
+      const result = {
+        resource_id: "model.test.root",
+        direction: "downstream" as const,
+        dependencies: [
+          {
+            unique_id: "model.test.only_child",
+            resource_type: "model",
+            name: "only_child",
+            depth: 1,
+            dependencies: [],
+          },
+        ],
+        count: 1,
+      };
+      const output = OutputFormatter.formatDeps(result, "tree");
+      expect(output).toContain("root");
+      expect(output).toContain("model.test.only_child");
+      expect(output).toContain("[depth 1]");
+      expect(output).toMatch(/└──/);
+    });
   });
 
   describe("formatRunReport", () => {

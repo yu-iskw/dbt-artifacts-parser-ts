@@ -176,6 +176,19 @@ export class SchemaGenerator {
               "Comma-separated list of fields to include in response (e.g., unique_id,name)",
           },
           {
+            name: "--depth",
+            type: "number",
+            description:
+              "Max traversal depth; 1 = immediate neighbors, omit for all levels",
+          },
+          {
+            name: "--format",
+            type: "enum",
+            values: ["flat", "tree"],
+            default: "tree",
+            description: "Output structure: flat list or nested tree",
+          },
+          {
             name: "--json",
             type: "boolean",
             description: "Force JSON output",

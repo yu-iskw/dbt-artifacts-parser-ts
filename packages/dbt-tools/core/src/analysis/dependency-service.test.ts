@@ -129,7 +129,146 @@ describe("DependencyService", () => {
         expect(firstDep).toHaveProperty("resource_type");
         expect(firstDep).toHaveProperty("name");
         expect(firstDep).toHaveProperty("package_name");
+        expect(firstDep).toHaveProperty("depth");
       }
+    });
+
+    it("should limit traversal depth when depth option is provided", () => {
+      const resultAll = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+      );
+      const resultDepth1 = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+        undefined,
+        1,
+      );
+      expect(resultDepth1.count).toBeLessThanOrEqual(resultAll.count);
+      expect(resultDepth1.dependencies.every((d) => d.depth === 1)).toBe(true);
+    });
+
+    it("should return nested tree when format is tree", () => {
+      const result = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+        undefined,
+        undefined,
+        "tree",
+      );
+      expect(result.resource_id).toBe("model.jaffle_shop.stg_customers");
+      expect(result.direction).toBe("downstream");
+      expect(result.dependencies).toBeInstanceOf(Array);
+      expect(result.dependencies.length).toBeGreaterThan(0);
+      expect(result.count).toBeGreaterThan(0);
+
+      const firstDep = result.dependencies[0];
+      expect(firstDep).toHaveProperty("dependencies");
+      expect(Array.isArray(firstDep.dependencies)).toBe(true);
+      expect(firstDep).toHaveProperty("unique_id");
+      expect(firstDep).toHaveProperty("depth");
+    });
+
+    it("should match count between flat and tree format", () => {
+      const flatResult = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+      );
+      const treeResult = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+        undefined,
+        undefined,
+        "tree",
+      );
+      expect(treeResult.count).toBe(flatResult.count);
+    });
+
+    it("should return empty tree for non-existent resource when format is tree", () => {
+      const result = DependencyService.getDependencies(
+        graph,
+        "non.existent.resource",
+        "downstream",
+        undefined,
+        undefined,
+        "tree",
+      );
+      expect(result.resource_id).toBe("non.existent.resource");
+      expect(result.dependencies).toEqual([]);
+      expect(result.count).toBe(0);
+    });
+
+    it("should return nested tree for upstream when format is tree", () => {
+      const result = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.customers",
+        "upstream",
+        undefined,
+        undefined,
+        "tree",
+      );
+      expect(result.direction).toBe("upstream");
+      expect(result.dependencies).toBeInstanceOf(Array);
+      result.dependencies.forEach((node) => {
+        expect(node).toHaveProperty("dependencies");
+        expect(Array.isArray(node.dependencies)).toBe(true);
+      });
+    });
+
+    it("should respect depth limit in tree format", () => {
+      const resultAll = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+        undefined,
+        undefined,
+        "tree",
+      );
+      const resultDepth1 = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+        undefined,
+        1,
+        "tree",
+      );
+      expect(resultDepth1.count).toBeLessThanOrEqual(resultAll.count);
+      const allHaveDepth1 = (
+        nodes: typeof resultDepth1.dependencies,
+      ): boolean =>
+        nodes.every((n) => {
+          if (n.depth !== 1) return false;
+          return n.dependencies.every((c) => allHaveDepth1([c]));
+        });
+      expect(allHaveDepth1(resultDepth1.dependencies)).toBe(true);
+    });
+
+    it("should have parent-child edges consistent with graph in tree format", () => {
+      const graphologyGraph = graph.getGraph();
+      const treeResult = DependencyService.getDependencies(
+        graph,
+        "model.jaffle_shop.stg_customers",
+        "downstream",
+        undefined,
+        undefined,
+        "tree",
+      );
+      const rootId = "model.jaffle_shop.stg_customers";
+      const checkEdge = (
+        parentId: string,
+        nodes: typeof treeResult.dependencies,
+      ): void => {
+        for (const node of nodes) {
+          expect(graphologyGraph.hasEdge(parentId, node.unique_id)).toBe(true);
+          checkEdge(node.unique_id, node.dependencies);
+        }
+      };
+      checkEdge(rootId, treeResult.dependencies);
     });
   });
 });

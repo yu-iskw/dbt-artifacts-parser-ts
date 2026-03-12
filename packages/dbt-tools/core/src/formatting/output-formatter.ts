@@ -68,20 +68,29 @@ export class OutputFormatter {
   }
 
   /**
-   * Format deps command output
+   * Format deps command output (flat or tree)
    */
-  static formatDeps(result: {
-    resource_id: string;
-    direction: "upstream" | "downstream";
-    dependencies: Array<{
-      unique_id: string;
-      resource_type: string;
-      name: string;
-      package_name: string;
-      [key: string]: unknown;
-    }>;
-    count: number;
-  }): string {
+  static formatDeps(
+    result: {
+      resource_id: string;
+      direction: "upstream" | "downstream";
+      dependencies: Array<{
+        unique_id: string;
+        resource_type: string;
+        name: string;
+        package_name: string;
+        depth?: number;
+        dependencies?: unknown[];
+        [key: string]: unknown;
+      }>;
+      count: number;
+    },
+    format?: "flat" | "tree",
+  ): string {
+    if (format === "tree") {
+      return this.formatDepsTree(result);
+    }
+
     const lines: string[] = [];
     lines.push(`Dependencies for ${result.resource_id}`);
     lines.push(`Direction: ${result.direction}`);
@@ -92,8 +101,76 @@ export class OutputFormatter {
       lines.push("  (none)");
     } else {
       for (const dep of result.dependencies) {
-        lines.push(`  - ${dep.unique_id} (${dep.resource_type}) - ${dep.name}`);
+        const depthStr =
+          typeof dep.depth === "number" ? ` [depth ${dep.depth}]` : "";
+        lines.push(
+          `  - ${dep.unique_id} (${dep.resource_type}) - ${dep.name}${depthStr}`,
+        );
       }
+    }
+
+    return lines.join("\n");
+  }
+
+  /**
+   * Format deps command output as an indented tree
+   */
+  private static formatDepsTree(result: {
+    resource_id: string;
+    direction: "upstream" | "downstream";
+    dependencies: Array<{
+      unique_id: string;
+      resource_type: string;
+      name: string;
+      depth?: number;
+      dependencies?: unknown[];
+      [key: string]: unknown;
+    }>;
+    count: number;
+  }): string {
+    const rootName = result.resource_id.split(".").pop() ?? result.resource_id;
+    const lines: string[] = [];
+    lines.push(`${rootName} (${result.direction})`);
+    lines.push(`Count: ${result.count}`);
+    lines.push("");
+
+    const formatNode = (
+      node: {
+        unique_id: string;
+        resource_type: string;
+        name: string;
+        depth?: number;
+        dependencies?: unknown[];
+      },
+      prefix: string,
+      isLast: boolean,
+    ): void => {
+      const depthStr =
+        typeof node.depth === "number" ? ` [depth ${node.depth}]` : "";
+      const connector = isLast ? "└── " : "├── ";
+      lines.push(
+        `${prefix}${connector}${node.unique_id} (${node.resource_type}) - ${node.name}${depthStr}`,
+      );
+
+      const children = (node.dependencies ?? []) as Array<{
+        unique_id: string;
+        resource_type: string;
+        name: string;
+        depth?: number;
+        dependencies?: unknown[];
+      }>;
+      const childPrefix = prefix + (isLast ? "    " : "│   ");
+      for (let i = 0; i < children.length; i++) {
+        formatNode(children[i], childPrefix, i === children.length - 1);
+      }
+    };
+
+    for (let i = 0; i < result.dependencies.length; i++) {
+      formatNode(
+        result.dependencies[i],
+        "",
+        i === result.dependencies.length - 1,
+      );
     }
 
     return lines.join("\n");
