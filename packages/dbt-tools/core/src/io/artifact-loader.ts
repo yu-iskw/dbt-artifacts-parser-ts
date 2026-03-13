@@ -88,11 +88,8 @@ export function resolveArtifactPaths(
   const resolved: ArtifactPaths = {
     manifest: resolveManifestPath(manifestPath, effectiveTargetDir),
     runResults: resolveRunResultsPath(runResultsPath, effectiveTargetDir),
+    catalog: resolveCatalogPath(catalogPath, effectiveTargetDir),
   };
-
-  if (catalogPath !== undefined) {
-    resolved.catalog = resolveCatalogPath(catalogPath, effectiveTargetDir);
-  }
 
   return resolved;
 }

@@ -127,14 +127,16 @@ export function runReportAction(
       options.targetDir,
     );
 
-    validateSafePath(paths.manifest);
     validateSafePath(paths.runResults);
+    if (manifestPath) {
+      validateSafePath(paths.manifest);
+    }
 
     const runResults = loadRunResults(paths.runResults);
 
     let analyzer: ExecutionAnalyzer | undefined;
     let graph: ManifestGraph | undefined;
-    if (paths.manifest) {
+    if (manifestPath) {
       const manifest = loadManifest(paths.manifest);
       graph = new ManifestGraph(manifest);
       analyzer = new ExecutionAnalyzer(runResults, graph);

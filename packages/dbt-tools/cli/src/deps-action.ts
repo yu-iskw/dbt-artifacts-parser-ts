@@ -45,28 +45,35 @@ function addFieldLevelLineage(
     return resourceId;
   }
 
-  validateSafePath(paths.catalog);
-  const catalog = loadCatalog(paths.catalog);
-  graph.addFieldNodes(catalog);
+  try {
+    validateSafePath(paths.catalog);
+    const catalog = loadCatalog(paths.catalog);
+    graph.addFieldNodes(catalog);
 
-  const analyzer = new SQLAnalyzer();
-  const adapterType =
-    (manifest.metadata as { adapter_type?: string })?.adapter_type || "mysql";
+    const analyzer = new SQLAnalyzer();
+    const adapterType =
+      (manifest.metadata as { adapter_type?: string })?.adapter_type || "mysql";
 
-  const nodes = manifest.nodes as
-    | Record<string, Record<string, unknown>>
-    | undefined;
-  if (nodes) {
-    for (const [uniqueId, node] of Object.entries(nodes)) {
-      const compiledCode = node.compiled_code;
-      if (typeof compiledCode === "string") {
-        const fieldDeps = analyzer.analyze(compiledCode, adapterType);
-        graph.addFieldEdges(uniqueId, fieldDeps);
+    const nodes = manifest.nodes as
+      | Record<string, Record<string, unknown>>
+      | undefined;
+    if (nodes) {
+      for (const [uniqueId, node] of Object.entries(nodes)) {
+        const compiledCode = node.compiled_code;
+        if (typeof compiledCode === "string") {
+          const fieldDeps = analyzer.analyze(compiledCode, adapterType);
+          graph.addFieldEdges(uniqueId, fieldDeps);
+        }
       }
     }
-  }
 
-  return `${resourceId}#${fieldName}`;
+    return `${resourceId}#${fieldName}`;
+  } catch {
+    console.warn(
+      "Warning: --field requires catalog.json, but it was not found. Falling back to resource-level lineage.",
+    );
+    return resourceId;
+  }
 }
 
 /**

@@ -21,6 +21,34 @@ describe("runReportAction", () => {
     consoleLogSpy.mockRestore();
   });
 
+  it("outputs minimal execution summary without manifest when only run_results provided", () => {
+    const runResultsPath = getTestResourcePath(
+      "run_results",
+      "v6",
+      "resources",
+      "jaffle_shop",
+      "run_results.json",
+    );
+
+    runReportAction(
+      runResultsPath,
+      undefined,
+      { json: true },
+      handleError,
+      isTTY,
+    );
+
+    expect(consoleLogSpy).toHaveBeenCalled();
+    const output = consoleLogSpy.mock.calls[0][0] as string;
+    const parsed = JSON.parse(output) as Record<string, unknown>;
+    expect(parsed).toHaveProperty("total_execution_time");
+    expect(parsed).toHaveProperty("total_nodes");
+    expect(parsed).toHaveProperty("nodes_by_status");
+    expect(parsed).toHaveProperty("node_executions");
+    expect(Array.isArray(parsed.node_executions)).toBe(true);
+    expect((parsed.node_executions as unknown[]).length).toBe(0);
+  });
+
   it("outputs execution summary with manifest and run_results fixtures", () => {
     const manifestPath = getTestResourcePath(
       "manifest",
@@ -41,7 +69,6 @@ describe("runReportAction", () => {
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
-    // When isTTY is false, output defaults to JSON
     expect(output).toContain("total_execution_time");
     expect(output).toContain("nodes_by_status");
     expect(output).toContain("node_executions");

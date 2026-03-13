@@ -77,6 +77,22 @@ describe("ArtifactLoader", () => {
       const result = resolveArtifactPaths(absPath);
       expect(result.manifest).toBe(absPath);
     });
+
+    it("should default catalog to target/catalog.json when catalogPath omitted", () => {
+      const result = resolveArtifactPaths(undefined, undefined, tempDir);
+      expect(result.catalog).toBe(path.join(tempDir, "catalog.json"));
+    });
+
+    it("should use explicit catalog path when provided", () => {
+      const catalogPath = path.join(tempDir, "custom-catalog.json");
+      const result = resolveArtifactPaths(
+        undefined,
+        undefined,
+        undefined,
+        catalogPath,
+      );
+      expect(result.catalog).toBe(path.resolve(catalogPath));
+    });
   });
 
   describe("loadManifest", () => {

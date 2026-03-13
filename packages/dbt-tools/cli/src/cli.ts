@@ -163,8 +163,8 @@ program
         const graph = new ManifestGraph(manifest);
 
         // Enhance with field-level lineage if requested
-        if (options.fieldLevel) {
-          if (paths.catalog) {
+        if (options.fieldLevel && paths.catalog) {
+          try {
             validateSafePath(paths.catalog);
             const catalog = loadCatalog(paths.catalog);
             graph.addFieldNodes(catalog);
@@ -186,9 +186,9 @@ program
                 }
               }
             }
-          } else {
+          } catch {
             console.warn(
-              "Warning: --field-level requires catalog.json, but it was not found.",
+              "Warning: --field-level requires catalog.json, but it was not found. Falling back to resource-level lineage.",
             );
           }
         }
