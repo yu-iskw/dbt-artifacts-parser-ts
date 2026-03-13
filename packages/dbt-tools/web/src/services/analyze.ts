@@ -1,4 +1,4 @@
-import type { AnalysisState } from "./types";
+import type { AnalysisState } from "../types";
 
 /**
  * Parses manifest and run_results JSON, runs analysis, and returns AnalysisState.

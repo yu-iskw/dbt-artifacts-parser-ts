@@ -28,3 +28,16 @@ DBT_DEBUG=1 DBT_TARGET=~/path/to/target pnpm dev
 ```
 
 Then open `http://localhost:5173/?debug=1` (or the port Vite prints).
+
+### Auto-reload when artifacts change
+
+When `DBT_TARGET` is set, the app automatically reloads and re-analyzes when `manifest.json` or `run_results.json` change on disk (e.g. after running `dbt run`). Configuration:
+
+- **`DBT_WATCH`**: `1` (default) = enable file watch and auto-reload; `0` = disable.
+- **`DBT_RELOAD_DEBOUNCE_MS`**: Debounce in ms for rapid file writes (default: 300).
+
+Example:
+
+```bash
+DBT_WATCH=0 DBT_TARGET=./target pnpm dev
+```

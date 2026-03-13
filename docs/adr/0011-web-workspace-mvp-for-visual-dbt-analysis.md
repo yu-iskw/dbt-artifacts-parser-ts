@@ -10,6 +10,8 @@ Depends-on [6. Artifact-first agent-first positioning of dbt-tools](0006-artifac
 
 Extends web workspace MVP [12. Optional default dbt target directory for web dev server](0012-optional-default-dbt-target-directory-for-web-dev-server.md)
 
+Layers web app structure [15. MVC-style layering for web app](0015-mvc-style-layering-for-web-app.md)
+
 ## Context
 
 ADR-0006 defines artifact-first, agent-first positioning and Tier 2 features (Gantt-style execution data, bottlenecks). `@dbt-tools/core` already provides `ExecutionAnalyzer.getGanttData()`, `ManifestGraph`, and `detectBottlenecks`. The CLI uses this core. We needed a web app for interactive visual dbt analysis while sharing logic across CLI, web, and future MCP.

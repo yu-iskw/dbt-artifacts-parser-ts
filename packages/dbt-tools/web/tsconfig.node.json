@@ -7,5 +7,5 @@
     "allowSyntheticDefaultImports": true,
     "strict": true
   },
-  "include": ["vite.config.ts", "dbt-target-plugin.ts"]
+  "include": ["vite.config.ts", "src/dbt-target-plugin.ts"]
 }

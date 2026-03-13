@@ -8,6 +8,8 @@ Accepted
 
 Depends-on [12. Optional default dbt target directory for web dev server](0012-optional-default-dbt-target-directory-for-web-dev-server.md)
 
+Uses preload UX [15. MVC-style layering for web app](0015-mvc-style-layering-for-web-app.md)
+
 ## Context
 
 When DBT_TARGET is set and artifacts exist, the app must start with analysis loaded. The upload UI should not be the primary path—users should not need to specify or upload anything. ADR-0012 added preload from `DBT_TARGET`, but the UI still showed the upload form prominently even when analysis was already loaded, conflating both flows.

@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { dbtTargetPlugin } from "./dbt-target-plugin";
+import { dbtTargetPlugin } from "./src/dbt-target-plugin";
 
 export default defineConfig({
   plugins: [dbtTargetPlugin(), react()],

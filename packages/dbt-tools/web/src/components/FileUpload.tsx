@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { analyzeArtifacts } from "../analyze";
+import { analyzeArtifacts } from "../services/analyze";
 import type { AnalysisState } from "../types";
 
 interface FileUploadProps {

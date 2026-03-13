@@ -3,7 +3,7 @@ import {
   loadTestManifest,
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
-import { analyzeArtifacts } from "./analyze";
+import { analyzeArtifacts } from "./services/analyze";
 
 describe("analyzeArtifacts", () => {
   it("returns AnalysisState for valid manifest and run_results", async () => {
