@@ -155,3 +155,8 @@ vite.config.ts.timestamp-*
 TODO.md
 
 codeql-db/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

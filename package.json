@@ -13,6 +13,7 @@
     "codeql:analyze": "node scripts/codeql-check.mjs && codeql database analyze ./codeql-db codeql/javascript-queries --download --format=sarif-latest --output=codeql-results.sarif",
     "codeql:db": "node scripts/codeql-check.mjs && rm -rf ./codeql-db && codeql database create ./codeql-db --language=javascript --source-root=.",
     "coverage:report": "node scripts/coverage-score.mjs",
+    "dev:web": "pnpm --filter @dbt-tools/web dev",
     "format": "pnpm format:trunk",
     "format:all": "pnpm format:trunk-all",
     "format:eslint": "eslint . --fix",
@@ -29,7 +30,8 @@
     "lint:trunk": "trunk check -y",
     "lint:trunk-all": "trunk check --all -y",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm --filter @dbt-tools/web test:e2e"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^15.3.1",
