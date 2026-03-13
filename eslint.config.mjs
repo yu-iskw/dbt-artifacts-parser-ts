@@ -15,6 +15,8 @@ export default [
       ".trunk/**",
       "**/*.generated.ts",
       "packages/dbt-artifacts-parser/resources/**/*.json",
+      "**/playwright-report/**",
+      "**/test-results/**",
     ],
   },
   {
@@ -29,6 +31,9 @@ export default [
           "./packages/dbt-artifacts-parser/tsconfig.json",
           "./packages/dbt-tools/core/tsconfig.json",
           "./packages/dbt-tools/cli/tsconfig.json",
+          "./packages/dbt-tools/web/tsconfig.json",
+          "./packages/dbt-tools/web/tsconfig.node.json",
+          "./packages/dbt-tools/web/tsconfig.e2e.json",
         ],
       },
     },
