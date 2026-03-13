@@ -28,15 +28,7 @@ function getStatusColor(status: string): string {
 export function GanttChart({ data }: GanttChartProps) {
   if (data.length === 0) {
     return (
-      <div
-        style={{
-          padding: "2rem",
-          textAlign: "center",
-          color: "#666",
-          background: "#f8fafc",
-          borderRadius: 8,
-        }}
-      >
+      <div className="empty-state empty-state--chart">
         No Gantt data (run_results may lack timing info)
       </div>
     );
@@ -51,43 +43,40 @@ export function GanttChart({ data }: GanttChartProps) {
   }));
 
   return (
-    <section style={{ marginTop: "2rem" }}>
-      <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem" }}>
-        Execution Timeline
-      </h2>
-      <div style={{ height: Math.max(300, data.length * 24), minHeight: 300 }}>
+    <section className="chart-frame">
+      <div
+        className="chart-frame__viewport"
+        style={{ height: Math.max(320, data.length * 24) }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+            margin={{ top: 4, right: 20, left: 120, bottom: 4 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#d9dde4" />
             <XAxis
               type="number"
               tickFormatter={(v) => `${(v / 1000).toFixed(1)}s`}
               domain={[0, maxEnd]}
+              tick={{ fill: "#566171", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
             />
             <YAxis
               type="category"
               dataKey="name"
               width={110}
-              tick={{ fontSize: 11 }}
+              tick={{ fill: "#394251", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
             />
             <Tooltip
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div
-                    style={{
-                      background: "white",
-                      padding: "0.5rem 0.75rem",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 6,
-                      fontSize: 12,
-                    }}
-                  >
+                  <div className="chart-tooltip">
                     <div>
                       <strong>{d.name}</strong>
                     </div>

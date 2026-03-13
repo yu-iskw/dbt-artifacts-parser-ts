@@ -5,6 +5,7 @@ import type { AnalysisState } from "../types";
 
 export interface UseAnalysisPageResult {
   analysis: AnalysisState | null;
+  analysisSource: "preload" | "upload" | null;
   error: string | null;
   preloadLoading: boolean;
   onLoadDifferent: () => void;
@@ -34,6 +35,7 @@ export function useAnalysisPage(): UseAnalysisPageResult {
 
   return {
     analysis,
+    analysisSource,
     error,
     preloadLoading,
     onLoadDifferent: () => {

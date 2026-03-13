@@ -25,6 +25,14 @@ describe("analyzeArtifacts", () => {
     expect(result.bottlenecks).toBeDefined();
     expect(result.summary.total_execution_time).toBeGreaterThanOrEqual(0);
     expect(result.summary.total_nodes).toBeGreaterThanOrEqual(0);
+    expect(result.graphSummary.totalNodes).toBeGreaterThan(0);
+    expect(result.resources.length).toBeGreaterThan(0);
+    expect(result.resourceGroups.length).toBeGreaterThan(0);
+    expect(result.executions.length).toBe(result.summary.total_nodes);
+    expect(result.statusBreakdown.length).toBeGreaterThan(0);
+    expect(result.threadStats.length).toBeGreaterThan(0);
+    expect(result.selectedResourceId).not.toBeNull();
+    expect(result.dependencyIndex[result.selectedResourceId!]).toBeDefined();
   });
 
   it("throws for invalid manifest JSON", async () => {

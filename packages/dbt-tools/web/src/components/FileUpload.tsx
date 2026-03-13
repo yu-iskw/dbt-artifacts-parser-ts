@@ -21,25 +21,15 @@ interface FileInputRowProps {
 
 function FileInputRow({ id, label, file, onFileChange }: FileInputRowProps) {
   return (
-    <div>
-      <label
-        htmlFor={id}
-        style={{ display: "block", marginBottom: "0.25rem", fontSize: 14 }}
-      >
-        {label}
-      </label>
+    <div className="file-input-card">
+      <label htmlFor={id}>{label}</label>
       <input
         id={id}
         type="file"
         accept=".json"
         onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-        style={{ fontSize: 14 }}
       />
-      {file && (
-        <span style={{ marginLeft: "0.5rem", fontSize: 12, color: "#666" }}>
-          {file.name}
-        </span>
-      )}
+      {file && <span className="file-input-card__filename">{file.name}</span>}
     </div>
   );
 }
@@ -75,34 +65,42 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   const canAnalyze = manifestFile && runResultsFile && !loading;
 
   return (
-    <div style={{ marginBottom: "2rem" }}>
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-        <FileInputRow
-          id="manifest-input"
-          label="manifest.json"
-          file={manifestFile}
-          onFileChange={setManifestFile}
-        />
-        <FileInputRow
-          id="run-results-input"
-          label="run_results.json"
-          file={runResultsFile}
-          onFileChange={setRunResultsFile}
-        />
+    <section className="upload-hero">
+      <div className="upload-hero__copy">
+        <p className="eyebrow">Bring your artifacts</p>
+        <h2>Open a polished run workspace from local dbt outputs.</h2>
+        <p>
+          Load a matching <code>manifest.json</code> and{" "}
+          <code>run_results.json</code> pair to inspect execution health,
+          bottlenecks, dependencies, and timing in one place.
+        </p>
       </div>
-      <button
-        type="button"
-        onClick={handleAnalyze}
-        disabled={!canAnalyze}
-        style={{
-          padding: "0.5rem 1rem",
-          fontSize: 14,
-          cursor: canAnalyze ? "pointer" : "not-allowed",
-          opacity: canAnalyze ? 1 : 0.6,
-        }}
-      >
-        {loading ? "Analyzing…" : "Analyze"}
-      </button>
-    </div>
+
+      <div className="upload-panel">
+        <div className="upload-panel__inputs">
+          <FileInputRow
+            id="manifest-input"
+            label="manifest.json"
+            file={manifestFile}
+            onFileChange={setManifestFile}
+          />
+          <FileInputRow
+            id="run-results-input"
+            label="run_results.json"
+            file={runResultsFile}
+            onFileChange={setRunResultsFile}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAnalyze}
+          disabled={!canAnalyze}
+          className="primary-action"
+        >
+          {loading ? "Analyzing…" : "Analyze artifacts"}
+        </button>
+      </div>
+    </section>
   );
 }
