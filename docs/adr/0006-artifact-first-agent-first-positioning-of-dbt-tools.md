@@ -10,6 +10,8 @@ Depends-on [5. Field-level lineage inference via AST parsing](0005-field-level-l
 
 Depends-on [5. Field-level lineage inference via AST parsing](0005-field-level-lineage-inference-via-ast-parsing.md)
 
+Supports [10. Per-package coverage breakdown and fixture-based CLI tests for agent feedback](0010-per-package-coverage-breakdown-and-fixture-based-cli-tests-for-agent-feedback.md)
+
 ## Context
 
 Official dbt tools already exist and provide rich capabilities:

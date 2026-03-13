@@ -53,6 +53,10 @@ After editing files to fix reported failures:
 pnpm test
 ```
 
+## Verifier integration
+
+When used by the verifier agent, the verifier also runs `pnpm coverage:report` after tests pass. If `coverage:report` fails (belowThreshold or test failures), add or improve tests per this skill's fixer loop and re-run `pnpm coverage:report` until it exits 0.
+
 ## Other projects
 
 If the project uses a different package manager or test command, run the equivalent from the repo root (e.g. `npm test`, `yarn test`, `pnpm test`, `cargo test`). Use the same fixer loop: run tests → read failures → fix → re-run.

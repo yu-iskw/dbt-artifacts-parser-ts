@@ -25,6 +25,15 @@ export function validateSafePath(pathInput: string): void {
 }
 
 /**
+ * Validate path and resolve to absolute. Use instead of path.resolve for user-controlled paths.
+ * Satisfies path-traversal audit: validation and resolve are coupled.
+ */
+export function resolveSafePath(pathInput: string): string {
+  validateSafePath(pathInput);
+  return path.resolve(pathInput);
+}
+
+/**
  * Ensure a resolved path is under a base directory (e.g. cwd).
  * Call this after path.resolve() to prevent escaping the base via absolute paths or traversal.
  */
@@ -32,6 +41,7 @@ export function assertPathUnderBase(
   resolvedPath: string,
   baseDir: string,
 ): void {
+  validateSafePath(resolvedPath);
   const absPath = path.resolve(resolvedPath);
   const baseAbs = path.resolve(baseDir);
   const relative = path.relative(baseAbs, absPath);

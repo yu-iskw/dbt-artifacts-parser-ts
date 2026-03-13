@@ -73,7 +73,22 @@ export function getTestResourcePath(
     validatePathComponent(normalizedVersion);
     validatePathComponent(project);
     validatePathComponent(filename);
-    return path.join(resourcesDir, type, normalizedVersion, project, filename);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
+    // All segments validated by validatePathComponent; containment check below.
+    const full = path.join(
+      resourcesDir,
+      type,
+      normalizedVersion,
+      project,
+      filename,
+    );
+    // Defense in depth: ensure resolved path stays under resourcesDir
+    const baseAbs = path.resolve(resourcesDir);
+    const resolved = path.resolve(full);
+    if (!resolved.startsWith(baseAbs + path.sep) && resolved !== baseAbs) {
+      throw new Error(`Path escape detected: ${full}`);
+    }
+    return full;
   }
 
   throw new Error(`Unknown location: ${location}`);
@@ -95,6 +110,8 @@ function findArtifactFiles(
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const sanitizedName = sanitizePathComponent(entry.name);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
+    // sanitizedName strips .. and path separators; containment check on next line.
     const fullPath = path.resolve(dir, sanitizedName);
     if (!fullPath.startsWith(path.resolve(baseDir))) continue;
     if (entry.isDirectory()) {

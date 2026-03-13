@@ -8,6 +8,8 @@ Accepted
 
 Replaces dependency approach [9. Replace eslint-for-ai with popular ESLint plugins](0009-replace-eslint-for-ai-with-popular-eslint-plugins.md)
 
+Supports [10. Per-package coverage breakdown and fixture-based CLI tests for agent feedback](0010-per-package-coverage-breakdown-and-fixture-based-cli-tests-for-agent-feedback.md)
+
 ## Context
 
 AI coding agents can implement complicated code; warnings are often ignored. We need deterministic, blocking feedback on complexity so agents refactor before proceeding. This aligns with our agent-first positioning (see [ADR-0006](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)).

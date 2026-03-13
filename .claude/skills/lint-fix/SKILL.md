@@ -49,6 +49,10 @@ Full fix (all formatters and lint-with-fix):
 pnpm format && pnpm format:eslint && pnpm format:prettier && pnpm lint:trunk
 ```
 
+## Verifier integration
+
+When used by the verifier agent, the sequence ends with `pnpm lint:report`. The agent must re-run `pnpm lint:report` after applying fixes to confirm exit 0 before proceeding to the next verification step.
+
 ## Other projects
 
 If the project uses different package managers or scripts, run the equivalent from repo root, e.g. `npm run format`, `npm run lint:fix`, `eslint . --fix`, `prettier --write .`. Prefer the project's existing format and lint scripts when they exist.

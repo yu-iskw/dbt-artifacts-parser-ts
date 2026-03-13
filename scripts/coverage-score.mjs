@@ -101,6 +101,56 @@ function run() {
     });
   }
 
+  // Per-package breakdown: group file entries by package prefix
+  const packagePrefixes = [
+    "packages/dbt-artifacts-parser/",
+    "packages/dbt-tools/core/",
+    "packages/dbt-tools/cli/",
+  ];
+  const packageNames = {
+    "packages/dbt-artifacts-parser/": "dbt-artifacts-parser",
+    "packages/dbt-tools/core/": "dbt-tools/core",
+    "packages/dbt-tools/cli/": "dbt-tools/cli",
+  };
+  const byPackage = {};
+  for (const [filePath, data] of Object.entries(summary)) {
+    if (filePath === "total" || !data || typeof data !== "object") continue;
+    const normalizedPath = filePath.replace(/^\.\//, "").replace(/\\/g, "/");
+    let pkg = null;
+    for (const prefix of packagePrefixes) {
+      if (normalizedPath.includes(prefix)) {
+        pkg = packageNames[prefix];
+        break;
+      }
+    }
+    if (!pkg) continue;
+    if (!byPackage[pkg]) {
+      byPackage[pkg] = {
+        lines: { total: 0, covered: 0 },
+        branches: { total: 0, covered: 0 },
+        functions: { total: 0, covered: 0 },
+        statements: { total: 0, covered: 0 },
+      };
+    }
+    const b = byPackage[pkg];
+    for (const metric of ["lines", "branches", "functions", "statements"]) {
+      const m = data[metric];
+      if (m && typeof m.total === "number" && typeof m.covered === "number") {
+        b[metric].total += m.total;
+        b[metric].covered += m.covered;
+      }
+    }
+  }
+  const byPackageFormatted = {};
+  for (const [pkg, agg] of Object.entries(byPackage)) {
+    byPackageFormatted[pkg] = {};
+    for (const metric of ["lines", "branches", "functions", "statements"]) {
+      const { total, covered } = agg[metric];
+      const pct = total > 0 ? (covered / total) * 100 : 0;
+      byPackageFormatted[pkg][metric] = pct;
+    }
+  }
+
   const report = {
     score,
     belowThreshold,
@@ -109,6 +159,7 @@ function run() {
     functions: metrics.functions,
     statements: metrics.statements,
     violations,
+    byPackage: byPackageFormatted,
   };
 
   const reportPath = join(projectRoot, "coverage-report.json");
@@ -117,6 +168,23 @@ function run() {
   console.log(
     `Coverage report written to coverage-report.json: score=${score}, belowThreshold=${belowThreshold}, violations=${violations.length}`,
   );
+  if (belowThreshold && Object.keys(byPackageFormatted).length > 0) {
+    console.log("Per-package coverage:");
+    for (const [pkg, pct] of Object.entries(byPackageFormatted)) {
+      console.log(
+        `  ${pkg}: lines=${pct.lines?.toFixed(1)}% branches=${pct.branches?.toFixed(1)}% functions=${pct.functions?.toFixed(1)}% statements=${pct.statements?.toFixed(1)}%`,
+      );
+    }
+  }
+
+  if (belowThreshold && Object.keys(byPackageFormatted).length > 0) {
+    console.log("Per-package coverage:");
+    for (const [pkg, pct] of Object.entries(byPackageFormatted)) {
+      console.log(
+        `  ${pkg}: lines=${pct.lines.toFixed(1)}% branches=${pct.branches.toFixed(1)}% functions=${pct.functions.toFixed(1)}% statements=${pct.statements.toFixed(1)}%`,
+      );
+    }
+  }
 
   process.exit(belowThreshold ? 1 : 0);
 }
