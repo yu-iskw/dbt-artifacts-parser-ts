@@ -7,6 +7,121 @@ import { ErrorBanner } from "./components/ErrorBanner";
 import { FileUpload } from "./components/FileUpload";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
 
+const navigationItems: Array<{
+  view: WorkspaceView;
+  label: string;
+  description: string;
+  abbr: string;
+}> = [
+  {
+    view: "overview",
+    label: "Overview",
+    description: "Run health and bottlenecks",
+    abbr: "Ov",
+  },
+  {
+    view: "assets",
+    label: "Assets",
+    description: "Manifest resource explorer",
+    abbr: "As",
+  },
+  {
+    view: "results",
+    label: "Results",
+    description: "Execution log and statuses",
+    abbr: "Re",
+  },
+  {
+    view: "timeline",
+    label: "Timeline",
+    description: "Runtime sequencing",
+    abbr: "Ti",
+  },
+];
+
+function AppSidebar({
+  activeView,
+  setActiveView,
+  sidebarCollapsed,
+  setSidebarCollapsed,
+  analysis,
+  analysisSource,
+}: {
+  activeView: WorkspaceView;
+  setActiveView: (v: WorkspaceView) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (fn: (c: boolean) => boolean) => void;
+  analysis: { summary: { total_nodes: number } } | null;
+  analysisSource: "preload" | "upload" | null;
+}) {
+  return (
+    <aside
+      className={`app-sidebar${sidebarCollapsed ? " app-sidebar--collapsed" : ""}`}
+    >
+      <button
+        type="button"
+        className="app-sidebar__brand-link"
+        onClick={() => setActiveView("overview")}
+        title="Go to overview"
+      >
+        <div className="brand-mark">db</div>
+        {!sidebarCollapsed && (
+          <div>
+            <strong>dbt-tools</strong>
+            <span>Visual run workspace</span>
+          </div>
+        )}
+      </button>
+      <nav className="app-sidebar__nav" aria-label="Workspace sections">
+        {navigationItems.map((item) => {
+          const disabled = !analysis;
+          const active = activeView === item.view;
+          return (
+            <button
+              key={item.view}
+              type="button"
+              className={
+                active ? "sidebar-link sidebar-link--active" : "sidebar-link"
+              }
+              disabled={disabled}
+              onClick={() => setActiveView(item.view)}
+              title={sidebarCollapsed ? item.label : undefined}
+            >
+              <span className="sidebar-link__abbr" aria-hidden="true">
+                {item.abbr}
+              </span>
+              <strong>{item.label}</strong>
+              <span>{item.description}</span>
+            </button>
+          );
+        })}
+      </nav>
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={() => setSidebarCollapsed((c) => !c)}
+        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {sidebarCollapsed ? "›" : "‹"}
+      </button>
+      {!sidebarCollapsed && (
+        <div className="app-sidebar__footer">
+          <p className="eyebrow">Session</p>
+          <strong>
+            {analysisSource === "preload" ? "Live target" : "Local upload"}
+            {analysisSource === null && " (loading…)"}
+          </strong>
+          <span>
+            {analysis
+              ? `${analysis.summary.total_nodes} executions analyzed`
+              : "Waiting for artifacts"}
+          </span>
+        </div>
+      )}
+    </aside>
+  );
+}
+
 function App() {
   const {
     analysis,
@@ -18,39 +133,11 @@ function App() {
     onError,
   } = useAnalysisPage();
   const [activeView, setActiveView] = useState<WorkspaceView>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    if (!analysis) {
-      setActiveView("overview");
-    }
+    if (!analysis) setActiveView("overview");
   }, [analysis]);
-
-  const navigationItems: Array<{
-    view: WorkspaceView;
-    label: string;
-    description: string;
-  }> = [
-    {
-      view: "overview",
-      label: "Overview",
-      description: "Run health and bottlenecks",
-    },
-    {
-      view: "assets",
-      label: "Assets",
-      description: "Manifest resource explorer",
-    },
-    {
-      view: "results",
-      label: "Results",
-      description: "Execution log and statuses",
-    },
-    {
-      view: "timeline",
-      label: "Timeline",
-      description: "Runtime sequencing",
-    },
-  ];
 
   const workspaceTitle =
     activeView === "overview"
@@ -66,49 +153,14 @@ function App() {
 
   return (
     <div className="app-frame">
-      <aside className="app-sidebar">
-        <div className="app-sidebar__brand">
-          <div className="brand-mark">db</div>
-          <div>
-            <strong>dbt-tools</strong>
-            <span>Visual run workspace</span>
-          </div>
-        </div>
-
-        <nav className="app-sidebar__nav" aria-label="Workspace sections">
-          {navigationItems.map((item) => {
-            const disabled = !analysis;
-            const active = activeView === item.view;
-            return (
-              <button
-                key={item.view}
-                type="button"
-                className={
-                  active ? "sidebar-link sidebar-link--active" : "sidebar-link"
-                }
-                disabled={disabled}
-                onClick={() => setActiveView(item.view)}
-              >
-                <strong>{item.label}</strong>
-                <span>{item.description}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="app-sidebar__footer">
-          <p className="eyebrow">Session</p>
-          <strong>
-            {analysisSource === "preload" ? "Live target" : "Local upload"}
-          </strong>
-          <span>
-            {analysis
-              ? `${analysis.summary.total_nodes} executions analyzed`
-              : "Waiting for artifacts"}
-          </span>
-        </div>
-      </aside>
-
+      <AppSidebar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        analysis={analysis}
+        analysisSource={analysisSource}
+      />
       <main className="app-main">
         <header className="app-header">
           <div>

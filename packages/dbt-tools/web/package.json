@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@dbt-tools/core": "workspace:*",
+    "@tanstack/react-virtual": "^3.13.22",
     "dbt-artifacts-parser": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

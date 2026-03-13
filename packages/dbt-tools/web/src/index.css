@@ -70,9 +70,10 @@ code {
   min-height: 100vh;
 }
 
+/* Flex layout: the sidebar's own width transition drives the layout —
+   no grid-template-columns tricks needed. */
 .app-frame {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  display: flex;
   min-height: 100vh;
 }
 
@@ -81,12 +82,26 @@ code {
   top: 0;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 1.5rem;
-  min-height: 100vh;
+  height: 100vh;
+  width: 280px;
   padding: 1.4rem;
   backdrop-filter: blur(18px);
   background: rgba(246, 248, 251, 0.8);
   border-right: 1px solid rgba(35, 42, 52, 0.08);
+  overflow: hidden;
+  transition:
+    width 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    gap 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-sidebar--collapsed {
+  width: 52px;
+  padding: 1rem 0.35rem;
+  gap: 0.6rem;
+  align-items: center;
 }
 
 .app-sidebar__brand {
@@ -94,6 +109,11 @@ code {
   align-items: center;
   gap: 0.9rem;
   padding: 0.6rem;
+}
+
+.app-sidebar--collapsed .app-sidebar__brand {
+  padding: 0.3rem 0;
+  justify-content: center;
 }
 
 .brand-mark {
@@ -108,6 +128,148 @@ code {
   font-family: "Space Grotesk", "Avenir Next", sans-serif;
   font-weight: 700;
   letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+/* Brand link — clickable area for "go home" */
+.app-sidebar__brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: background 160ms ease;
+}
+
+.app-sidebar__brand-link:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.app-sidebar--collapsed .app-sidebar__brand-link {
+  padding: 0.3rem 0;
+  justify-content: center;
+}
+
+/* Gantt display mode toggle */
+.gantt-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.gantt-mode-toggle {
+  display: inline-flex;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(35, 42, 52, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.gantt-mode-toggle button {
+  padding: 0.38rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.gantt-mode-toggle button.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Health chart view toggle */
+.health-toggle {
+  display: inline-flex;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(35, 42, 52, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.health-toggle button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.health-toggle button.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Resource type breakdown list in health card */
+.type-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.type-breakdown__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid rgba(35, 42, 52, 0.06);
+}
+
+.type-breakdown__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  margin-top: 0.3rem;
+  overflow: hidden;
+}
+
+.type-breakdown__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* Result sub-tabs (Models / Tests) */
+.result-tabs {
+  display: inline-flex;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(35, 42, 52, 0.1);
+  background: rgba(255, 255, 255, 0.72);
+  margin-bottom: 0.75rem;
+}
+
+.result-tabs button {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+  white-space: nowrap;
+}
+
+.result-tabs button.active {
+  background: var(--accent);
+  color: white;
 }
 
 .app-sidebar__brand strong,
@@ -145,6 +307,7 @@ code {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.28rem;
+  width: 100%;
   padding: 0.95rem 1rem;
   border-radius: var(--radius-md);
   background: transparent;
@@ -157,11 +320,20 @@ code {
     color 160ms ease;
 }
 
+/* Abbreviated icon — hidden in expanded mode */
+.sidebar-link__abbr {
+  display: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .sidebar-link strong {
   font-size: 1rem;
 }
 
-.sidebar-link span {
+.sidebar-link span:not(.sidebar-link__abbr) {
   color: var(--text-soft);
   font-size: 0.9rem;
 }
@@ -176,6 +348,51 @@ code {
 .sidebar-link:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+/* Collapsed sidebar nav items */
+.app-sidebar--collapsed .sidebar-link {
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.5rem;
+  transform: none !important;
+}
+
+.app-sidebar--collapsed .sidebar-link__abbr {
+  display: block;
+}
+
+.app-sidebar--collapsed .sidebar-link strong,
+.app-sidebar--collapsed .sidebar-link span:not(.sidebar-link__abbr) {
+  display: none;
+}
+
+/* Sidebar collapse toggle button */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+}
+
+.app-sidebar--collapsed .sidebar-toggle {
+  width: auto;
+  padding: 0.55rem;
 }
 
 .app-sidebar__footer {
@@ -204,6 +421,8 @@ code {
 .app-main {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0; /* prevent flex child from overflowing */
   gap: 1.1rem;
   padding: 1.4rem;
 }
@@ -440,8 +659,14 @@ code {
 
 .workspace-layout {
   display: grid;
-  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+  /* Wider explorer pane: min 360px, max 420px */
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
   gap: 1rem;
+}
+
+/* Single-column layout when the explorer pane is not shown */
+.workspace-layout--full {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .explorer-pane,
@@ -819,6 +1044,22 @@ code {
   font-weight: 600;
 }
 
+/* Filter control rows inside views */
+.results-controls,
+.timeline-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-filter-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+  color: var(--text-soft);
+}
+
 .results-table {
   display: flex;
   flex-direction: column;
@@ -841,9 +1082,8 @@ code {
 }
 
 .results-table__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  /* Now a virtualized scroll container — layout is managed by @tanstack/react-virtual */
+  overflow-y: auto;
 }
 
 .results-table__row {
@@ -903,13 +1143,15 @@ code {
 }
 
 @media (max-width: 1180px) {
+  /* Stack sidebar above main on narrow viewports when not collapsed */
   .app-frame {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
-  .app-sidebar {
+  .app-sidebar:not(.app-sidebar--collapsed) {
     position: static;
-    min-height: auto;
+    width: 100%;
+    height: auto;
   }
 
   .workspace-layout,

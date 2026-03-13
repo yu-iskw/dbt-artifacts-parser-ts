@@ -215,6 +215,22 @@ export class ExecutionAnalyzer {
   }
 
   /**
+   * Returns the absolute epoch-ms timestamp of the earliest executed node,
+   * or null if no timing data is available. Useful for converting relative
+   * Gantt offsets to wall-clock timestamps.
+   */
+  getRunStartedAt(): number | null {
+    const executions = this.getNodeExecutions();
+    const timestamps = executions
+      .map((exec) =>
+        exec.started_at ? new Date(exec.started_at).getTime() : null,
+      )
+      .filter((t): t is number => t !== null);
+    if (timestamps.length === 0) return null;
+    return Math.min(...timestamps);
+  }
+
+  /**
    * Get Gantt chart data for visualization
    */
   getGanttData(): Array<{

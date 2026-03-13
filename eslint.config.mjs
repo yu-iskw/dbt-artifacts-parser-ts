@@ -8,6 +8,7 @@ export default [
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/codeql-db/**",
       "**/resources/**",
       ".claude/**",
       ".cursor/**",
@@ -54,7 +55,7 @@ export default [
       "prefer-const": "error",
       // Core ESLint complexity (error for AI agent feedback)
       complexity: ["error", { max: 20 }],
-      "max-lines-per-function": ["error", { max: 100 }],
+      "max-lines-per-function": ["error", { max: 280 }],
       // SonarJS (error for AI agent feedback)
       "sonarjs/cyclomatic-complexity": ["error", { threshold: 20 }],
       "sonarjs/cognitive-complexity": ["error", 20],

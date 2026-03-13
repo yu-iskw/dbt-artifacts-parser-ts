@@ -87,6 +87,8 @@ export interface ResourceConnectionSummary {
 
 export interface AnalysisState {
   summary: ExecutionSummary;
+  /** Absolute epoch-ms of the earliest executed node. Null when no timing data. */
+  runStartedAt: number | null;
   ganttData: GanttItem[];
   bottlenecks: BottleneckResult | undefined;
   graphSummary: GraphSnapshot;

@@ -63,6 +63,159 @@ function sortResources(
   return a.name.localeCompare(b.name);
 }
 
+type GraphLike = {
+  getGraph: () => {
+    forEachNode: (
+      fn: (id: string, attrs: Record<string, unknown>) => void,
+    ) => void;
+    getNodeAttributes: (id: string) => Record<string, unknown> | undefined;
+    hasNode: (id: string) => boolean;
+  };
+  getUpstream: (id: string) => Array<{ nodeId: string; depth: number }>;
+  getDownstream: (id: string) => Array<{ nodeId: string; depth: number }>;
+};
+
+function buildResourcesAndDependencyIndex(
+  graph: GraphLike,
+  executionById: Map<
+    string,
+    { status?: string; execution_time?: number; thread_id?: string }
+  >,
+): {
+  resources: AnalysisState["resources"];
+  dependencyIndex: AnalysisState["dependencyIndex"];
+} {
+  const resources: AnalysisState["resources"] = [];
+  const dependencyIndex: AnalysisState["dependencyIndex"] = {};
+  const graphologyGraph = graph.getGraph();
+
+  graphologyGraph.forEachNode(
+    (uniqueId: string, attributes: Record<string, unknown>) => {
+      const execution = executionById.get(uniqueId);
+      resources.push({
+        uniqueId,
+        name: String(attributes.name || uniqueId),
+        resourceType: String(attributes.resource_type || "unknown"),
+        packageName: String(attributes.package_name || ""),
+        path: typeof attributes.path === "string" ? attributes.path : null,
+        originalFilePath:
+          typeof attributes.original_file_path === "string"
+            ? attributes.original_file_path
+            : null,
+        description:
+          typeof attributes.description === "string"
+            ? attributes.description
+            : null,
+        status: execution?.status ? statusLabel(execution.status) : null,
+        statusTone: statusTone(execution?.status),
+        executionTime:
+          typeof execution?.execution_time === "number"
+            ? execution.execution_time
+            : null,
+        threadId:
+          typeof execution?.thread_id === "string" ? execution.thread_id : null,
+      });
+
+      const upstream = graph.getUpstream(uniqueId);
+      const downstream = graph.getDownstream(uniqueId);
+      dependencyIndex[uniqueId] = {
+        upstreamCount: upstream.length,
+        downstreamCount: downstream.length,
+        upstream: upstream.slice(0, 8).map((entry) => {
+          const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
+          return {
+            uniqueId: entry.nodeId,
+            name: String(attrs?.name || entry.nodeId),
+            resourceType: String(attrs?.resource_type || "unknown"),
+            depth: entry.depth,
+          };
+        }),
+        downstream: downstream.slice(0, 8).map((entry) => {
+          const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
+          return {
+            uniqueId: entry.nodeId,
+            name: String(attrs?.name || entry.nodeId),
+            resourceType: String(attrs?.resource_type || "unknown"),
+            depth: entry.depth,
+          };
+        }),
+      };
+    },
+  );
+
+  resources.sort(sortResources);
+  return { resources, dependencyIndex };
+}
+
+function buildResourceGroups(resources: AnalysisState["resources"]) {
+  const groupedResources = new Map<string, AnalysisState["resources"]>();
+  for (const resource of resources) {
+    const current = groupedResources.get(resource.resourceType) ?? [];
+    current.push(resource);
+    groupedResources.set(resource.resourceType, current);
+  }
+  return [...groupedResources.entries()]
+    .sort(([a], [b]) => sortByResourceType(a, b))
+    .map(([resourceType, grouped]) => ({
+      resourceType,
+      label: resourceTypeLabel(resourceType),
+      count: grouped.length,
+      attentionCount: grouped.filter(
+        (r) => r.statusTone === "danger" || r.statusTone === "warning",
+      ).length,
+      resources: grouped,
+    }));
+}
+
+function buildStatusBreakdown(
+  summary: { nodes_by_status: Record<string, number>; total_nodes: number },
+  nodeExecutions: Array<{ status?: string; execution_time?: number }>,
+) {
+  const durationByStatus = new Map<string, number>();
+  for (const execution of nodeExecutions) {
+    const status = statusLabel(execution.status);
+    durationByStatus.set(
+      status,
+      (durationByStatus.get(status) ?? 0) + (execution.execution_time ?? 0),
+    );
+  }
+  return Object.entries(summary.nodes_by_status)
+    .map(([status, count]) => ({
+      status: statusLabel(status),
+      count,
+      duration: durationByStatus.get(statusLabel(status)) ?? 0,
+      share: summary.total_nodes > 0 ? count / summary.total_nodes : 0,
+      tone: statusTone(status),
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+function buildThreadStats(
+  executions: Array<{ threadId: string | null; executionTime: number }>,
+) {
+  const threadAggregation = new Map<
+    string,
+    { count: number; totalExecutionTime: number }
+  >();
+  for (const execution of executions) {
+    const threadId = execution.threadId ?? "unknown";
+    const current = threadAggregation.get(threadId) ?? {
+      count: 0,
+      totalExecutionTime: 0,
+    };
+    current.count += 1;
+    current.totalExecutionTime += execution.executionTime;
+    threadAggregation.set(threadId, current);
+  }
+  return [...threadAggregation.entries()]
+    .map(([threadId, value]) => ({
+      threadId,
+      count: value.count,
+      totalExecutionTime: value.totalExecutionTime,
+    }))
+    .sort((a, b) => b.totalExecutionTime - a.totalExecutionTime);
+}
+
 /**
  * Parses manifest and run_results JSON, runs analysis, and returns AnalysisState.
  * Shared by both file upload and API preload paths.
@@ -86,6 +239,16 @@ export async function analyzeArtifacts(
   const summary = analyzer.getSummary();
   const ganttData = analyzer.getGanttData();
   const nodeExecutions = analyzer.getNodeExecutions();
+
+  // Compute the wall-clock anchor for the Gantt timeline. We derive this
+  // directly from nodeExecutions so there is no dependency on the compiled
+  // dist of @dbt-tools/core (which could be stale in Vite's dep-bundle cache).
+  const startTimestamps = nodeExecutions
+    .map((e) => (e.started_at ? new Date(e.started_at).getTime() : null))
+    .filter((t): t is number => t !== null);
+  const runStartedAt: number | null =
+    startTimestamps.length > 0 ? Math.min(...startTimestamps) : null;
+
   const bottlenecks = detectBottlenecks(summary.node_executions, {
     mode: "top_n",
     top: 5,
@@ -93,88 +256,14 @@ export async function analyzeArtifacts(
   });
   const graphSummary = graph.getSummary();
   const ganttById = new Map(ganttData.map((item) => [item.unique_id, item]));
-  const executionById = new Map(
-    nodeExecutions.map((execution) => [execution.unique_id, execution]),
+  const executionById = new Map(nodeExecutions.map((e) => [e.unique_id, e]));
+
+  const { resources, dependencyIndex } = buildResourcesAndDependencyIndex(
+    graph as unknown as GraphLike,
+    executionById,
   );
 
-  const resources: AnalysisState["resources"] = [];
-  const dependencyIndex: AnalysisState["dependencyIndex"] = {};
-
   const graphologyGraph = graph.getGraph();
-  graphologyGraph.forEachNode((uniqueId, attributes) => {
-    const execution = executionById.get(uniqueId);
-    resources.push({
-      uniqueId,
-      name: String(attributes.name || uniqueId),
-      resourceType: String(attributes.resource_type || "unknown"),
-      packageName: String(attributes.package_name || ""),
-      path: typeof attributes.path === "string" ? attributes.path : null,
-      originalFilePath:
-        typeof attributes.original_file_path === "string"
-          ? attributes.original_file_path
-          : null,
-      description:
-        typeof attributes.description === "string"
-          ? attributes.description
-          : null,
-      status: execution?.status ? statusLabel(execution.status) : null,
-      statusTone: statusTone(execution?.status),
-      executionTime:
-        typeof execution?.execution_time === "number"
-          ? execution.execution_time
-          : null,
-      threadId:
-        typeof execution?.thread_id === "string" ? execution.thread_id : null,
-    });
-
-    const upstream = graph.getUpstream(uniqueId);
-    const downstream = graph.getDownstream(uniqueId);
-    dependencyIndex[uniqueId] = {
-      upstreamCount: upstream.length,
-      downstreamCount: downstream.length,
-      upstream: upstream.slice(0, 8).map((entry) => {
-        const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
-        return {
-          uniqueId: entry.nodeId,
-          name: String(attrs?.name || entry.nodeId),
-          resourceType: String(attrs?.resource_type || "unknown"),
-          depth: entry.depth,
-        };
-      }),
-      downstream: downstream.slice(0, 8).map((entry) => {
-        const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
-        return {
-          uniqueId: entry.nodeId,
-          name: String(attrs?.name || entry.nodeId),
-          resourceType: String(attrs?.resource_type || "unknown"),
-          depth: entry.depth,
-        };
-      }),
-    };
-  });
-
-  resources.sort(sortResources);
-
-  const groupedResources = new Map<string, AnalysisState["resources"]>();
-  for (const resource of resources) {
-    const current = groupedResources.get(resource.resourceType) ?? [];
-    current.push(resource);
-    groupedResources.set(resource.resourceType, current);
-  }
-
-  const resourceGroups = [...groupedResources.entries()]
-    .sort(([a], [b]) => sortByResourceType(a, b))
-    .map(([resourceType, grouped]) => ({
-      resourceType,
-      label: resourceTypeLabel(resourceType),
-      count: grouped.length,
-      attentionCount: grouped.filter(
-        (resource) =>
-          resource.statusTone === "danger" || resource.statusTone === "warning",
-      ).length,
-      resources: grouped,
-    }));
-
   const executions = nodeExecutions
     .map((execution) => {
       const attrs = graphologyGraph.hasNode(execution.unique_id)
@@ -203,55 +292,18 @@ export async function analyzeArtifacts(
     })
     .sort((a, b) => b.executionTime - a.executionTime);
 
-  const durationByStatus = new Map<string, number>();
-  for (const execution of nodeExecutions) {
-    const status = statusLabel(execution.status);
-    durationByStatus.set(
-      status,
-      (durationByStatus.get(status) ?? 0) + (execution.execution_time ?? 0),
-    );
-  }
-
-  const statusBreakdown = Object.entries(summary.nodes_by_status)
-    .map(([status, count]) => ({
-      status: statusLabel(status),
-      count,
-      duration: durationByStatus.get(statusLabel(status)) ?? 0,
-      share: summary.total_nodes > 0 ? count / summary.total_nodes : 0,
-      tone: statusTone(status),
-    }))
-    .sort((a, b) => b.count - a.count);
-
-  const threadAggregation = new Map<
-    string,
-    { count: number; totalExecutionTime: number }
-  >();
-  for (const execution of executions) {
-    const threadId = execution.threadId ?? "unknown";
-    const current = threadAggregation.get(threadId) ?? {
-      count: 0,
-      totalExecutionTime: 0,
-    };
-    current.count += 1;
-    current.totalExecutionTime += execution.executionTime;
-    threadAggregation.set(threadId, current);
-  }
-
-  const threadStats = [...threadAggregation.entries()]
-    .map(([threadId, value]) => ({
-      threadId,
-      count: value.count,
-      totalExecutionTime: value.totalExecutionTime,
-    }))
-    .sort((a, b) => b.totalExecutionTime - a.totalExecutionTime);
+  const resourceGroups = buildResourceGroups(resources);
+  const statusBreakdown = buildStatusBreakdown(summary, nodeExecutions);
+  const threadStats = buildThreadStats(executions);
 
   const selectedResourceId =
-    resources.find((resource) => resource.resourceType === "model")?.uniqueId ??
+    resources.find((r) => r.resourceType === "model")?.uniqueId ??
     resources[0]?.uniqueId ??
     null;
 
   return {
     summary,
+    runStartedAt,
     ganttData,
     bottlenecks,
     graphSummary: {
