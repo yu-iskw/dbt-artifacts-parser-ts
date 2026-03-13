@@ -22,6 +22,8 @@ Run the test suite; if it fails, read the output, apply minimal fixes, and re-ru
 Run from the **repository root**.
 
 - **Test:** `pnpm test` (runs `pnpm --recursive test`; the package uses `vitest run`).
+- **Test with coverage:** `pnpm test:coverage` (runs Vitest with coverage across workspace).
+- **Coverage report:** `pnpm coverage:report` — runs tests with coverage, writes `coverage-report.json`, exits 1 if below thresholds. Use when verifying test coverage before completion.
 
 ## Fixer loop
 

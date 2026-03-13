@@ -40,11 +40,14 @@ describe("ArtifactLoader", () => {
       const result = resolveArtifactPaths();
       expect(result.manifest).toContain("target");
       expect(result.manifest).toContain("manifest.json");
+      expect(result.runResults).toContain("target");
+      expect(result.runResults).toContain("run_results.json");
     });
 
     it("should use custom target directory", () => {
       const result = resolveArtifactPaths(undefined, undefined, tempDir);
       expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
+      expect(result.runResults).toBe(path.join(tempDir, "run_results.json"));
     });
 
     it("should use DBT_TARGET_DIR environment variable", () => {

@@ -1,7 +1,6 @@
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ManifestGraph } from "./manifest-graph";
-
 /**
  * Execution timing information for a single node
  */

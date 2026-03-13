@@ -31,6 +31,8 @@ export type ParsedManifest =
   | ManifestV11
   | ManifestV12;
 
+const ERR_NOT_MANIFEST = "Not a manifest.json";
+
 /**
  * Extract version number from dbt_schema_version URL
  */
@@ -246,51 +248,33 @@ export function parseManifestV12(parsed: Record<string, unknown>): ManifestV12 {
   return parsed as unknown as ManifestV12;
 }
 
+const MANIFEST_PARSERS = [
+  parseManifestV1,
+  parseManifestV2,
+  parseManifestV3,
+  parseManifestV4,
+  parseManifestV5,
+  parseManifestV6,
+  parseManifestV7,
+  parseManifestV8,
+  parseManifestV9,
+  parseManifestV10,
+  parseManifestV11,
+  parseManifestV12,
+] as const;
+
 /**
  * Parse manifest.json with automatic version detection
  */
 export function parseManifest(parsed: Record<string, unknown>): ParsedManifest {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a manifest.json");
-  }
-
+  if (!metadata) throw new Error(ERR_NOT_MANIFEST);
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/manifest/v")) {
-    throw new Error("Not a manifest.json");
-  }
-
+  if (!schemaVersion || !schemaVersion.includes("/manifest/v"))
+    throw new Error(ERR_NOT_MANIFEST);
   const version = extractVersion(schemaVersion);
-  if (version === null) {
-    throw new Error("Not a manifest.json");
-  }
-
-  switch (version) {
-    case 1:
-      return parseManifestV1(parsed);
-    case 2:
-      return parseManifestV2(parsed);
-    case 3:
-      return parseManifestV3(parsed);
-    case 4:
-      return parseManifestV4(parsed);
-    case 5:
-      return parseManifestV5(parsed);
-    case 6:
-      return parseManifestV6(parsed);
-    case 7:
-      return parseManifestV7(parsed);
-    case 8:
-      return parseManifestV8(parsed);
-    case 9:
-      return parseManifestV9(parsed);
-    case 10:
-      return parseManifestV10(parsed);
-    case 11:
-      return parseManifestV11(parsed);
-    case 12:
-      return parseManifestV12(parsed);
-    default:
-      throw new Error(`Unsupported manifest version: ${version}`);
-  }
+  if (version === null) throw new Error(ERR_NOT_MANIFEST);
+  const parser = MANIFEST_PARSERS[version - 1];
+  if (!parser) throw new Error(`Unsupported manifest version: ${version}`);
+  return parser(parsed);
 }

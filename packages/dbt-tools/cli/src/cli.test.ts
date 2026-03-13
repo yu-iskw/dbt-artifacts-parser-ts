@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   validateResourceId,
   validateSafePath,
+  validateDepth,
   isTTY,
   formatOutput,
   formatDeps,
@@ -116,6 +117,15 @@ describe("CLI Integration", () => {
     it("should validate paths correctly", () => {
       expect(() => validateSafePath("./target/manifest.json")).not.toThrow();
       expect(() => validateSafePath("../../.ssh")).toThrow();
+    });
+
+    it("should reject invalid depth (NaN / non-integer) for deps", () => {
+      expect(() => validateDepth(undefined)).not.toThrow();
+      expect(() => validateDepth(1)).not.toThrow();
+      expect(() => validateDepth(Number.NaN)).toThrow("Invalid depth");
+      expect(() => validateDepth("abc" as unknown as number)).toThrow(
+        "Invalid depth",
+      );
     });
   });
 

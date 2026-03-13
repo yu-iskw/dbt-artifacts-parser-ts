@@ -14,6 +14,7 @@ export * from "./validation/input-validator";
 // Formatting exports
 export * from "./formatting/output-formatter";
 export * from "./formatting/field-filter";
+export * from "./formatting/graph-export";
 
 // Error handling exports
 export * from "./errors/error-handler";

@@ -19,6 +19,8 @@ export type ParsedRunResults =
   | RunResultsV5
   | RunResultsV6;
 
+const ERR_NOT_RUN_RESULTS = "Not a run-results.json";
+
 /**
  * Extract version number from dbt_schema_version URL
  */
@@ -144,6 +146,15 @@ export function parseRunResultsV6(
   return parsed as unknown as RunResultsV6;
 }
 
+const RUN_RESULTS_PARSERS = [
+  parseRunResultsV1,
+  parseRunResultsV2,
+  parseRunResultsV3,
+  parseRunResultsV4,
+  parseRunResultsV5,
+  parseRunResultsV6,
+] as const;
+
 /**
  * Parse run-results.json with automatic version detection
  */
@@ -151,34 +162,13 @@ export function parseRunResults(
   parsed: Record<string, unknown>,
 ): ParsedRunResults {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json");
-  }
-
+  if (!metadata) throw new Error(ERR_NOT_RUN_RESULTS);
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v")) {
-    throw new Error("Not a run-results.json");
-  }
-
+  if (!schemaVersion || !schemaVersion.includes("/run-results/v"))
+    throw new Error(ERR_NOT_RUN_RESULTS);
   const version = extractVersion(schemaVersion);
-  if (version === null) {
-    throw new Error("Not a run-results.json");
-  }
-
-  switch (version) {
-    case 1:
-      return parseRunResultsV1(parsed);
-    case 2:
-      return parseRunResultsV2(parsed);
-    case 3:
-      return parseRunResultsV3(parsed);
-    case 4:
-      return parseRunResultsV4(parsed);
-    case 5:
-      return parseRunResultsV5(parsed);
-    case 6:
-      return parseRunResultsV6(parsed);
-    default:
-      throw new Error(`Unsupported run-results version: ${version}`);
-  }
+  if (version === null) throw new Error(ERR_NOT_RUN_RESULTS);
+  const parser = RUN_RESULTS_PARSERS[version - 1];
+  if (!parser) throw new Error(`Unsupported run-results version: ${version}`);
+  return parser(parsed);
 }

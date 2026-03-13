@@ -16,7 +16,6 @@ import {
   MIN_SUPPORTED_SCHEMA_VERSION,
 } from "../version";
 import { ColumnDependencyMap } from "./sql-analyzer";
-
 /**
  * ManifestGraph builds and manages a directed graph from a dbt manifest.
  *
@@ -56,136 +55,149 @@ export class ManifestGraph {
    * Add nodes from manifest to the graph
    */
   private addNodes(manifest: ParsedManifest): void {
-    // Add nodes
-    if (manifest.nodes) {
-      for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
-        const nodeAny = node as Record<string, unknown>;
-        const resourceType = this.extractResourceType(
-          (nodeAny.resource_type as string) || "model",
+    this.addNodeEntries(manifest.nodes);
+    this.addSourceEntries(manifest.sources);
+    this.addMacroEntries(manifest.macros);
+    this.addExposureEntries(manifest.exposures);
+    this.addMetricEntries(manifest.metrics);
+    this.addSemanticModelEntries(manifest.semantic_models);
+    this.addUnitTestEntries(manifest.unit_tests);
+  }
+
+  private addNodeEntries(nodes: ParsedManifest["nodes"] | undefined): void {
+    if (!nodes) return;
+    for (const [uniqueId, node] of Object.entries(nodes)) {
+      const nodeAny = node as Record<string, unknown>;
+      const resourceType = this.extractResourceType(
+        (nodeAny.resource_type as string) || "model",
+      );
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: resourceType,
+        name: (nodeAny.name as string) || uniqueId,
+        package_name: (nodeAny.package_name as string) || "",
+        path: (nodeAny.path as string) || undefined,
+        original_file_path: (nodeAny.original_file_path as string) || undefined,
+        tags: (nodeAny.tags as string[]) || undefined,
+        description: (nodeAny.description as string) || undefined,
+      });
+      if (nodeAny.relation_name) {
+        this.relationMap.set(
+          (nodeAny.relation_name as string).toLowerCase(),
+          uniqueId,
         );
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: resourceType,
-          name: (nodeAny.name as string) || uniqueId,
-          package_name: (nodeAny.package_name as string) || "",
-          path: (nodeAny.path as string) || undefined,
-          original_file_path:
-            (nodeAny.original_file_path as string) || undefined,
-          tags: (nodeAny.tags as string[]) || undefined,
-          description: (nodeAny.description as string) || undefined,
-        });
-
-        if (nodeAny.relation_name) {
-          this.relationMap.set(
-            (nodeAny.relation_name as string).toLowerCase(),
-            uniqueId,
-          );
-        }
       }
     }
+  }
 
-    // Add sources
-    if (manifest.sources) {
-      for (const [uniqueId, source] of Object.entries(manifest.sources)) {
-        const sourceAny = source as Record<string, unknown>;
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: "source",
-          name: (sourceAny.name as string) || uniqueId,
-          package_name: (sourceAny.package_name as string) || "",
-          path: (sourceAny.path as string) || undefined,
-          original_file_path:
-            (sourceAny.original_file_path as string) || undefined,
-          tags: (sourceAny.tags as string[]) || undefined,
-          description: (sourceAny.description as string) || undefined,
-        });
-
-        if (sourceAny.relation_name) {
-          this.relationMap.set(
-            (sourceAny.relation_name as string).toLowerCase(),
-            uniqueId,
-          );
-        }
+  private addSourceEntries(
+    sources: ParsedManifest["sources"] | undefined,
+  ): void {
+    if (!sources) return;
+    for (const [uniqueId, source] of Object.entries(sources)) {
+      const sourceAny = source as Record<string, unknown>;
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: "source",
+        name: (sourceAny.name as string) || uniqueId,
+        package_name: (sourceAny.package_name as string) || "",
+        path: (sourceAny.path as string) || undefined,
+        original_file_path:
+          (sourceAny.original_file_path as string) || undefined,
+        tags: (sourceAny.tags as string[]) || undefined,
+        description: (sourceAny.description as string) || undefined,
+      });
+      if (sourceAny.relation_name) {
+        this.relationMap.set(
+          (sourceAny.relation_name as string).toLowerCase(),
+          uniqueId,
+        );
       }
     }
+  }
 
-    // Add macros (as nodes for dependency tracking)
-    if (manifest.macros) {
-      for (const [uniqueId, macro] of Object.entries(manifest.macros)) {
-        const macroAny = macro as Record<string, unknown>;
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: "macro",
-          name: (macroAny.name as string) || uniqueId,
-          package_name: (macroAny.package_name as string) || "",
-          path: (macroAny.path as string) || undefined,
-          original_file_path:
-            (macroAny.original_file_path as string) || undefined,
-        });
-      }
+  private addMacroEntries(macros: ParsedManifest["macros"] | undefined): void {
+    if (!macros) return;
+    for (const [uniqueId, macro] of Object.entries(macros)) {
+      const macroAny = macro as Record<string, unknown>;
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: "macro",
+        name: (macroAny.name as string) || uniqueId,
+        package_name: (macroAny.package_name as string) || "",
+        path: (macroAny.path as string) || undefined,
+        original_file_path:
+          (macroAny.original_file_path as string) || undefined,
+      });
     }
+  }
 
-    // Add exposures
-    if (manifest.exposures) {
-      for (const [uniqueId, exposure] of Object.entries(manifest.exposures)) {
-        const exposureAny = exposure as Record<string, unknown>;
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: "exposure",
-          name: (exposureAny.name as string) || uniqueId,
-          package_name: (exposureAny.package_name as string) || "",
-          tags: (exposureAny.tags as string[]) || undefined,
-          description: (exposureAny.description as string) || undefined,
-        });
-      }
+  private addExposureEntries(
+    exposures: ParsedManifest["exposures"] | undefined,
+  ): void {
+    if (!exposures) return;
+    for (const [uniqueId, exposure] of Object.entries(exposures)) {
+      const exposureAny = exposure as Record<string, unknown>;
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: "exposure",
+        name: (exposureAny.name as string) || uniqueId,
+        package_name: (exposureAny.package_name as string) || "",
+        tags: (exposureAny.tags as string[]) || undefined,
+        description: (exposureAny.description as string) || undefined,
+      });
     }
+  }
 
-    // Add metrics
-    if (manifest.metrics) {
-      for (const [uniqueId, metric] of Object.entries(manifest.metrics)) {
-        const metricAny = metric as Record<string, unknown>;
-        const tagsValue = metricAny.tags;
-        const tags = Array.isArray(tagsValue)
-          ? (tagsValue as string[])
-          : typeof tagsValue === "string"
-            ? [tagsValue]
-            : undefined;
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: "metric",
-          name: (metricAny.name as string) || uniqueId,
-          package_name: (metricAny.package_name as string) || "",
-          tags,
-        });
-      }
+  private addMetricEntries(
+    metrics: ParsedManifest["metrics"] | undefined,
+  ): void {
+    if (!metrics) return;
+    for (const [uniqueId, metric] of Object.entries(metrics)) {
+      const metricAny = metric as Record<string, unknown>;
+      const tagsValue = metricAny.tags;
+      const tags = Array.isArray(tagsValue)
+        ? (tagsValue as string[])
+        : typeof tagsValue === "string"
+          ? [tagsValue]
+          : undefined;
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: "metric",
+        name: (metricAny.name as string) || uniqueId,
+        package_name: (metricAny.package_name as string) || "",
+        tags,
+      });
     }
+  }
 
-    // Add semantic models
-    if (manifest.semantic_models) {
-      for (const [uniqueId, semanticModel] of Object.entries(
-        manifest.semantic_models,
-      )) {
-        const semanticModelAny = semanticModel as Record<string, unknown>;
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: "semantic_model",
-          name: (semanticModelAny.name as string) || uniqueId,
-          package_name: (semanticModelAny.package_name as string) || "",
-        });
-      }
+  private addSemanticModelEntries(
+    semanticModels: ParsedManifest["semantic_models"] | undefined,
+  ): void {
+    if (!semanticModels) return;
+    for (const [uniqueId, semanticModel] of Object.entries(semanticModels)) {
+      const sm = semanticModel as Record<string, unknown>;
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: "semantic_model",
+        name: (sm.name as string) || uniqueId,
+        package_name: (sm.package_name as string) || "",
+      });
     }
+  }
 
-    // Add unit tests
-    if (manifest.unit_tests) {
-      for (const [uniqueId, unitTest] of Object.entries(manifest.unit_tests)) {
-        const unitTestAny = unitTest as Record<string, unknown>;
-        this.graph.addNode(uniqueId, {
-          unique_id: uniqueId,
-          resource_type: "unit_test",
-          name: (unitTestAny.name as string) || uniqueId,
-          package_name: (unitTestAny.package_name as string) || "",
-        });
-      }
+  private addUnitTestEntries(
+    unitTests: ParsedManifest["unit_tests"] | undefined,
+  ): void {
+    if (!unitTests) return;
+    for (const [uniqueId, unitTest] of Object.entries(unitTests)) {
+      const ut = unitTest as Record<string, unknown>;
+      this.graph.addNode(uniqueId, {
+        unique_id: uniqueId,
+        resource_type: "unit_test",
+        name: (ut.name as string) || uniqueId,
+        package_name: (ut.package_name as string) || "",
+      });
     }
   }
 
@@ -193,112 +205,87 @@ export class ManifestGraph {
    * Add edges based on dependencies
    */
   private addEdges(manifest: ParsedManifest): void {
-    // Use parent_map if available (more efficient)
     if (manifest.parent_map) {
-      for (const [childId, parentIds] of Object.entries(manifest.parent_map)) {
-        // Only add edges if both nodes exist
-        if (this.graph.hasNode(childId)) {
-          const parentIdsArray = parentIds as string[];
-          for (const parentId of parentIdsArray) {
-            if (this.graph.hasNode(parentId)) {
-              // Avoid duplicate edges
-              if (!this.graph.hasEdge(parentId, childId)) {
-                this.graph.addEdge(parentId, childId, {
-                  dependency_type: this.inferDependencyType(parentId),
-                });
-              }
-            }
-          }
-        }
-      }
+      this.addEdgesFromParentMap(manifest.parent_map);
       return;
     }
+    this.addEdgesFromNodeDependsOn(manifest.nodes);
+    this.addEdgesFromExposureDependsOn(manifest.exposures);
+    this.addEdgesFromMetricDependsOn(manifest.metrics);
+  }
 
-    // Fallback: iterate through nodes and use depends_on
-    if (manifest.nodes) {
-      for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
-        const nodeAny = node as Record<string, unknown>;
-        if (nodeAny.depends_on) {
-          const dependsOn = nodeAny.depends_on as {
-            nodes?: string[];
-            macros?: string[];
-          };
-
-          // Add edges for node dependencies
-          if (dependsOn.nodes) {
-            for (const depNodeId of dependsOn.nodes) {
-              if (this.graph.hasNode(depNodeId)) {
-                if (!this.graph.hasEdge(depNodeId, uniqueId)) {
-                  this.graph.addEdge(depNodeId, uniqueId, {
-                    dependency_type: "node",
-                  });
-                }
-              }
-            }
-          }
-
-          // Add edges for macro dependencies (optional, macros are usually not in graph)
-          if (dependsOn.macros) {
-            for (const macroId of dependsOn.macros) {
-              if (this.graph.hasNode(macroId)) {
-                if (!this.graph.hasEdge(macroId, uniqueId)) {
-                  this.graph.addEdge(macroId, uniqueId, {
-                    dependency_type: "macro",
-                  });
-                }
-              }
-            }
-          }
+  private addEdgesFromParentMap(parentMap: Record<string, string[]>): void {
+    for (const [childId, parentIds] of Object.entries(parentMap)) {
+      if (!this.graph.hasNode(childId)) continue;
+      for (const parentId of parentIds) {
+        if (
+          this.graph.hasNode(parentId) &&
+          !this.graph.hasEdge(parentId, childId)
+        ) {
+          this.graph.addEdge(parentId, childId, {
+            dependency_type: this.inferDependencyType(parentId),
+          });
         }
       }
     }
+  }
 
-    // Handle exposures dependencies
-    if (manifest.exposures) {
-      for (const [uniqueId, exposure] of Object.entries(manifest.exposures)) {
-        const exposureAny = exposure as Record<string, unknown>;
-        if (exposureAny.depends_on) {
-          const dependsOn = exposureAny.depends_on as {
-            nodes?: string[];
-            macros?: string[];
-          };
-          if (dependsOn.nodes) {
-            for (const depNodeId of dependsOn.nodes) {
-              if (this.graph.hasNode(depNodeId)) {
-                if (!this.graph.hasEdge(depNodeId, uniqueId)) {
-                  this.graph.addEdge(depNodeId, uniqueId, {
-                    dependency_type: "node",
-                  });
-                }
-              }
-            }
-          }
+  private addEdgesFromDependsOn(
+    childId: string,
+    dependsOn: { nodes?: string[]; macros?: string[] },
+  ): void {
+    if (dependsOn.nodes) {
+      for (const depId of dependsOn.nodes) {
+        if (this.graph.hasNode(depId) && !this.graph.hasEdge(depId, childId)) {
+          this.graph.addEdge(depId, childId, { dependency_type: "node" });
         }
       }
     }
-
-    // Handle metrics dependencies
-    if (manifest.metrics) {
-      for (const [uniqueId, metric] of Object.entries(manifest.metrics)) {
-        const metricAny = metric as Record<string, unknown>;
-        if (metricAny.depends_on) {
-          const dependsOn = metricAny.depends_on as {
-            nodes?: string[];
-            macros?: string[];
-          };
-          if (dependsOn.nodes) {
-            for (const depNodeId of dependsOn.nodes) {
-              if (this.graph.hasNode(depNodeId)) {
-                if (!this.graph.hasEdge(depNodeId, uniqueId)) {
-                  this.graph.addEdge(depNodeId, uniqueId, {
-                    dependency_type: "node",
-                  });
-                }
-              }
-            }
-          }
+    if (dependsOn.macros) {
+      for (const macroId of dependsOn.macros) {
+        if (
+          this.graph.hasNode(macroId) &&
+          !this.graph.hasEdge(macroId, childId)
+        ) {
+          this.graph.addEdge(macroId, childId, { dependency_type: "macro" });
         }
       }
+    }
+  }
+
+  private addEdgesFromNodeDependsOn(
+    nodes: ParsedManifest["nodes"] | undefined,
+  ): void {
+    if (!nodes) return;
+    for (const [uniqueId, node] of Object.entries(nodes)) {
+      const dep = (node as Record<string, unknown>).depends_on as
+        | { nodes?: string[]; macros?: string[] }
+        | undefined;
+      if (dep) this.addEdgesFromDependsOn(uniqueId, dep);
+    }
+  }
+
+  private addEdgesFromExposureDependsOn(
+    exposures: ParsedManifest["exposures"] | undefined,
+  ): void {
+    if (!exposures) return;
+    for (const [uniqueId, exposure] of Object.entries(exposures)) {
+      const dep = (exposure as Record<string, unknown>).depends_on as
+        | { nodes?: string[]; macros?: string[] }
+        | undefined;
+      if (dep?.nodes) this.addEdgesFromDependsOn(uniqueId, dep);
+    }
+  }
+
+  private addEdgesFromMetricDependsOn(
+    metrics: ParsedManifest["metrics"] | undefined,
+  ): void {
+    if (!metrics) return;
+    for (const [uniqueId, metric] of Object.entries(metrics)) {
+      const dep = (metric as Record<string, unknown>).depends_on as
+        | { nodes?: string[]; macros?: string[] }
+        | undefined;
+      if (dep?.nodes) this.addEdgesFromDependsOn(uniqueId, dep);
     }
   }
 
@@ -390,6 +377,7 @@ export class ManifestGraph {
     const result: Array<{ nodeId: string; depth: number }> = [];
     const visited = new Set<string>();
     const queue: Array<{ id: string; depth: number }> = [];
+    let head = 0;
 
     for (const neighborId of this.graph.inboundNeighbors(nodeId)) {
       if (!visited.has(neighborId)) {
@@ -401,8 +389,8 @@ export class ManifestGraph {
       }
     }
 
-    while (queue.length > 0) {
-      const { id, depth } = queue.shift()!;
+    while (head < queue.length) {
+      const { id, depth } = queue[head++];
       const nextDepth = depth + 1;
       for (const neighborId of this.graph.inboundNeighbors(id)) {
         if (!visited.has(neighborId)) {
@@ -435,6 +423,7 @@ export class ManifestGraph {
     const result: Array<{ nodeId: string; depth: number }> = [];
     const visited = new Set<string>();
     const queue: Array<{ id: string; depth: number }> = [];
+    let head = 0;
 
     for (const neighborId of this.graph.outboundNeighbors(nodeId)) {
       if (!visited.has(neighborId)) {
@@ -446,8 +435,8 @@ export class ManifestGraph {
       }
     }
 
-    while (queue.length > 0) {
-      const { id, depth } = queue.shift()!;
+    while (head < queue.length) {
+      const { id, depth } = queue[head++];
       const nextDepth = depth + 1;
       for (const neighborId of this.graph.outboundNeighbors(id)) {
         if (!visited.has(neighborId)) {
@@ -605,7 +594,10 @@ export class ManifestGraph {
     if (catalog.nodes) {
       for (const [uniqueId, node] of Object.entries(catalog.nodes)) {
         if (this.graph.hasNode(uniqueId)) {
-          this.processCatalogColumns(uniqueId, (node as any).columns);
+          const columns = (node as Record<string, unknown>).columns as
+            | Record<string, unknown>
+            | undefined;
+          this.processCatalogColumns(uniqueId, columns);
         }
       }
     }
@@ -613,7 +605,10 @@ export class ManifestGraph {
     if (catalog.sources) {
       for (const [uniqueId, source] of Object.entries(catalog.sources)) {
         if (this.graph.hasNode(uniqueId)) {
-          this.processCatalogColumns(uniqueId, (source as any).columns);
+          const columns = (source as Record<string, unknown>).columns as
+            | Record<string, unknown>
+            | undefined;
+          this.processCatalogColumns(uniqueId, columns);
         }
       }
     }
@@ -621,7 +616,7 @@ export class ManifestGraph {
 
   private processCatalogColumns(
     parentUniqueId: string,
-    columns: Record<string, any>,
+    columns: Record<string, unknown> | undefined,
   ): void {
     if (!columns) return;
 
@@ -629,6 +624,10 @@ export class ManifestGraph {
 
     for (const [colName, colAttr] of Object.entries(columns)) {
       const fieldUniqueId = `${parentUniqueId}#${colName}`;
+      const attr = colAttr as Record<string, unknown> | undefined;
+      const description =
+        (attr?.comment as string | undefined) ??
+        (attr?.description as string | undefined);
 
       // Add field node if it doesn't exist
       if (!this.graph.hasNode(fieldUniqueId)) {
@@ -638,7 +637,7 @@ export class ManifestGraph {
           name: colName,
           package_name: parentNode.package_name,
           parent_id: parentUniqueId,
-          description: (colAttr as any).comment || (colAttr as any).description,
+          description,
         });
 
         // Add internal edge from parent to field

@@ -41,17 +41,32 @@ export interface BottleneckResult {
 }
 
 /**
+ * Simple glob match: * matches any chars. Avoids ReDoS from dynamic RegExp.
+ */
+function matchesGlob(text: string, pattern: string): boolean {
+  const parts = pattern.split("*");
+  if (parts.length === 1) return text === pattern;
+  let pos = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    const idx = text.indexOf(part, pos);
+    if (idx === -1) return false;
+    if (i === 0 && idx !== 0) return false;
+    pos = idx + part.length;
+  }
+  return (
+    parts[parts.length - 1] === "" || text.endsWith(parts[parts.length - 1])
+  );
+}
+
+/**
  * Filter executions by unique_id pattern (glob or RegExp)
  */
 function matchesUniqueId(uniqueId: string, pattern: string | RegExp): boolean {
   if (pattern instanceof RegExp) {
     return pattern.test(uniqueId);
   }
-  // Simple glob: * matches any chars
-  const regexStr = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*");
-  return new RegExp(`^${regexStr}$`).test(uniqueId);
+  return matchesGlob(uniqueId, pattern);
 }
 
 /**

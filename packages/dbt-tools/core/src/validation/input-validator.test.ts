@@ -5,6 +5,7 @@ import {
   validateResourceId,
   validateNoPreEncoding,
   validateString,
+  validateDepth,
 } from "./input-validator";
 
 describe("InputValidator", () => {
@@ -192,6 +193,38 @@ describe("InputValidator", () => {
       expect(() => validateString("%2e%2e")).toThrow(
         "Pre-encoded path traversal detected",
       );
+    });
+  });
+
+  describe("validateDepth", () => {
+    it("should accept undefined", () => {
+      expect(() => validateDepth(undefined)).not.toThrow();
+    });
+
+    it("should accept positive integers", () => {
+      expect(() => validateDepth(1)).not.toThrow();
+      expect(() => validateDepth(2)).not.toThrow();
+      expect(() => validateDepth(10)).not.toThrow();
+    });
+
+    it("should reject NaN", () => {
+      expect(() => validateDepth(Number.NaN)).toThrow(
+        "Invalid depth: NaN. Must be a positive integer",
+      );
+    });
+
+    it("should reject zero and negative", () => {
+      expect(() => validateDepth(0)).toThrow("Invalid depth");
+      expect(() => validateDepth(-1)).toThrow("Invalid depth");
+    });
+
+    it("should reject non-integers", () => {
+      expect(() => validateDepth(1.5)).toThrow("Invalid depth");
+    });
+
+    it("should reject non-numbers", () => {
+      expect(() => validateDepth("abc")).toThrow("Invalid depth");
+      expect(() => validateDepth("1")).toThrow("Invalid depth");
     });
   });
 });

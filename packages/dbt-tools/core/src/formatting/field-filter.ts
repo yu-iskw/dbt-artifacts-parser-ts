@@ -64,8 +64,16 @@ export class FieldFilter {
     return result;
   }
 
+  /** Rejects prototype-pollution keys (__proto__, constructor, prototype). */
+  private static isUnsafeKey(part: string): boolean {
+    return (
+      part === "__proto__" || part === "constructor" || part === "prototype"
+    );
+  }
+
   /**
-   * Get a nested value from an object using dot notation
+   * Get a nested value from an object using dot notation.
+   * Rejects prototype-pollution keys (__proto__, constructor, prototype).
    */
   private static getNestedValue(
     obj: Record<string, unknown>,
@@ -75,6 +83,7 @@ export class FieldFilter {
     let current: unknown = obj;
 
     for (const part of parts) {
+      if (this.isUnsafeKey(part)) return undefined;
       if (
         current === null ||
         current === undefined ||
@@ -82,7 +91,9 @@ export class FieldFilter {
       ) {
         return undefined;
       }
-
+      if (!Object.prototype.hasOwnProperty.call(current as object, part)) {
+        return undefined;
+      }
       current = (current as Record<string, unknown>)[part];
     }
 
@@ -110,7 +121,7 @@ export class FieldFilter {
         return;
       }
       if (
-        !(part in current) ||
+        !Object.prototype.hasOwnProperty.call(current, part) ||
         typeof current[part] !== "object" ||
         current[part] === null
       ) {

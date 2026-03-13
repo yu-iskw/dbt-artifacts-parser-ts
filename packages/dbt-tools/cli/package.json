@@ -24,13 +24,14 @@
   },
   "dependencies": {
     "@dbt-tools/core": "workspace:*",
-    "commander": "^12.1.0",
-    "dbt-artifacts-parser": "workspace:*"
+    "commander": "^14.0.3",
+    "dbt-artifacts-parser": "workspace:*",
+    "graphology": "^0.26.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.5.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "vitest": "^4.1.0"
   },
   "publishConfig": {
     "access": "public"

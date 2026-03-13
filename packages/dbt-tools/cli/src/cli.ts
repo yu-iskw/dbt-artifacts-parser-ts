@@ -1,32 +1,42 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import * as fs from "fs";
 import {
   ManifestGraph,
-  ExecutionAnalyzer,
   resolveArtifactPaths,
   loadManifest,
-  loadRunResults,
   loadCatalog,
   validateSafePath,
-  validateResourceId,
   isTTY,
   shouldOutputJSON,
   formatOutput,
   formatSummary,
-  formatDeps,
-  formatRunReport,
   FieldFilter,
   ErrorHandler,
-  DependencyService,
   SQLAnalyzer,
   getCommandSchema,
   getAllSchemas,
-  detectBottlenecks,
+  exportGraphToFormat,
+  writeGraphOutput,
 } from "@dbt-tools/core";
+import { runReportAction, depsAction } from "./cli-actions";
 
 const program = new Command();
+
+/** CLI option/argument description constants (avoid no-duplicate-string) */
+const ARG_MANIFEST_PATH = "[manifest-path]";
+const DESC_MANIFEST =
+  "Path to manifest.json file (defaults to ./target/manifest.json)";
+const OPT_TARGET_DIR = "--target-dir <dir>";
+const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
+const OPT_JSON = "--json";
+const DESC_JSON = "Force JSON output";
+const OPT_NO_JSON = "--no-json";
+const DESC_NO_JSON = "Force human-readable output";
+const DESC_GRAPH_FORMAT = "Export format: json, dot, gexf";
+const DEFAULT_GRAPH_FORMAT = "json";
+const OPT_FIELDS = "--fields <fields>";
+const DESC_FIELDS = "Comma-separated list of fields to include";
 
 program
   .name("dbt-tools")
@@ -56,16 +66,10 @@ function handleError(error: unknown, isTTY: boolean): void {
 program
   .command("summary")
   .description("Provide summary statistics for dbt manifest")
-  .argument(
-    "[manifest-path]",
-    "Path to manifest.json file (defaults to ./target/manifest.json)",
-  )
-  .option(
-    "--target-dir <dir>",
-    "Custom target directory (defaults to ./target)",
-  )
-  .option("--json", "Force JSON output")
-  .option("--no-json", "Force human-readable output")
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
   .action(
     (
       manifestPath: string | undefined,
@@ -120,17 +124,11 @@ program
 program
   .command("graph")
   .description("Export dependency graph")
-  .argument(
-    "[manifest-path]",
-    "Path to manifest.json file (defaults to ./target/manifest.json)",
-  )
-  .option("--format <format>", "Export format: json, dot, gexf", "json")
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option("--format <format>", DESC_GRAPH_FORMAT, DEFAULT_GRAPH_FORMAT)
   .option("--output <path>", "Output file path (default: stdout)")
-  .option(
-    "--target-dir <dir>",
-    "Custom target directory (defaults to ./target)",
-  )
-  .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_FIELDS, DESC_FIELDS)
   .option("--field-level", "Include field-level (column-level) lineage")
   .option("--catalog-path <path>", "Path to catalog.json file")
   .action(
@@ -175,11 +173,13 @@ program
             const analyzer = new SQLAnalyzer();
             // TODO: Determine dialect from manifest adapter type
             const adapterType =
-              (manifest.metadata as any)?.adapter_type || "mysql";
+              (manifest.metadata as { adapter_type?: string })?.adapter_type ??
+              "mysql";
 
             if (manifest.nodes) {
               for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
-                const compiledCode = (node as any).compiled_code;
+                const compiledCode = (node as Record<string, unknown>)
+                  .compiled_code as string | undefined;
                 if (compiledCode) {
                   const fieldDeps = analyzer.analyze(compiledCode, adapterType);
                   graph.addFieldEdges(uniqueId, fieldDeps);
@@ -193,145 +193,12 @@ program
           }
         }
 
-        const graphologyGraph = graph.getGraph();
-
-        let output: string;
-
-        switch (options.format?.toLowerCase()) {
-          case "json": {
-            // Export as JSON
-            const nodes: Array<{ id: string; attributes: unknown }> = [];
-            const edges: Array<{
-              source: string;
-              target: string;
-              attributes: unknown;
-            }> = [];
-
-            graphologyGraph.forEachNode((nodeId, attributes) => {
-              let filteredAttrs: unknown = attributes;
-              if (options.fields) {
-                filteredAttrs = FieldFilter.filterFields(
-                  attributes,
-                  options.fields,
-                );
-              }
-              nodes.push({ id: nodeId, attributes: filteredAttrs });
-            });
-
-            graphologyGraph.forEachEdge(
-              (edgeId, attributes, source, target) => {
-                edges.push({
-                  source,
-                  target,
-                  attributes,
-                });
-              },
-            );
-
-            output = JSON.stringify({ nodes, edges }, null, 2);
-            break;
-          }
-
-          case "dot": {
-            // Export as Graphviz DOT format
-            const lines: string[] = ["digraph DbtGraph {"];
-            lines.push("  compound=true;");
-            lines.push("  node [shape=box, style=filled, fillcolor=white];");
-
-            const resourceNodes: string[] = [];
-            const fieldNodesByParent: Record<string, string[]> = {};
-
-            graphologyGraph.forEachNode((nodeId, attributes) => {
-              if (attributes.resource_type === "field") {
-                const parentId = attributes.parent_id as string;
-                if (!fieldNodesByParent[parentId]) {
-                  fieldNodesByParent[parentId] = [];
-                }
-                fieldNodesByParent[parentId].push(nodeId);
-              } else {
-                resourceNodes.push(nodeId);
-              }
-            });
-
-            // Add clusters for resources with fields
-            for (const nodeId of resourceNodes) {
-              const attributes = graphologyGraph.getNodeAttributes(nodeId);
-              const name = (attributes.name as string) || nodeId;
-              const fields = fieldNodesByParent[nodeId];
-
-              if (fields && fields.length > 0) {
-                lines.push(`  subgraph "cluster_${nodeId}" {`);
-                lines.push(`    label = "${name}";`);
-                lines.push("    style = filled;");
-                lines.push("    fillcolor = lightgrey;");
-                for (const fieldId of fields) {
-                  const fieldAttr = graphologyGraph.getNodeAttributes(fieldId);
-                  lines.push(
-                    `    "${fieldId}" [label="${fieldAttr.name}", fillcolor=white];`,
-                  );
-                }
-                lines.push("  }");
-              } else {
-                lines.push(`  "${nodeId}" [label="${name}"];`);
-              }
-            }
-
-            graphologyGraph.forEachEdge(
-              (edgeId, attributes, source, target) => {
-                // Only show non-internal edges, or show all?
-                // For field-level, internal edges are mostly for clusters.
-                if (attributes.dependency_type !== "internal") {
-                  lines.push(`  "${source}" -> "${target}";`);
-                }
-              },
-            );
-            lines.push("}");
-            output = lines.join("\n");
-            break;
-          }
-
-          case "gexf": {
-            // Export as GEXF format (simplified)
-            const nodes: Array<{ id: string; label: string }> = [];
-            const edges: Array<{ source: string; target: string }> = [];
-
-            graphologyGraph.forEachNode((nodeId, attributes) => {
-              nodes.push({
-                id: nodeId,
-                label: (attributes.name as string) || nodeId,
-              });
-            });
-
-            graphologyGraph.forEachEdge(
-              (edgeId, attributes, source, target) => {
-                edges.push({ source, target });
-              },
-            );
-
-            output = `<?xml version="1.0" encoding="UTF-8"?>
-<gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
-  <graph mode="static" defaultedgetype="directed">
-    <nodes>
-${nodes.map((n) => `      <node id="${n.id}" label="${n.label}"/>`).join("\n")}
-    </nodes>
-    <edges>
-${edges.map((e, i) => `      <edge id="${i}" source="${e.source}" target="${e.target}"/>`).join("\n")}
-    </edges>
-  </graph>
-</gexf>`;
-            break;
-          }
-
-          default:
-            throw new Error(`Unsupported format: ${options.format}`);
-        }
-
-        if (options.output) {
-          fs.writeFileSync(options.output, output, "utf-8");
-          console.log(`Graph exported to ${options.output}`);
-        } else {
-          console.log(output);
-        }
+        const output = exportGraphToFormat(graph.getGraph(), {
+          format: options.format,
+          output: options.output,
+          fields: options.fields,
+        });
+        writeGraphOutput(output, options.output);
       } catch (error) {
         handleError(error, isTTY());
       }
@@ -349,14 +216,11 @@ program
     "Path to run_results.json file (defaults to ./target/run_results.json)",
   )
   .argument(
-    "[manifest-path]",
+    ARG_MANIFEST_PATH,
     "Path to manifest.json file (optional, for critical path)",
   )
-  .option(
-    "--target-dir <dir>",
-    "Custom target directory (defaults to ./target)",
-  )
-  .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_FIELDS, DESC_FIELDS)
   .option("--bottlenecks", "Include bottleneck section in report")
   .option(
     "--bottlenecks-top <n>",
@@ -368,8 +232,8 @@ program
     "Nodes exceeding s seconds (alternative to top-N)",
     parseFloat,
   )
-  .option("--json", "Force JSON output")
-  .option("--no-json", "Force human-readable output")
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
   .action(
     (
       runResultsPath: string | undefined,
@@ -383,130 +247,14 @@ program
         json?: boolean;
         noJson?: boolean;
       },
-    ) => {
-      try {
-        // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          manifestPath,
-          runResultsPath,
-          options.targetDir,
-        );
-
-        // Validate paths
-        validateSafePath(paths.manifest);
-        if (paths.runResults) {
-          validateSafePath(paths.runResults);
-        }
-
-        // Load run results
-        const runResults = loadRunResults(paths.runResults!);
-
-        let analyzer: ExecutionAnalyzer | undefined;
-        let graph: ManifestGraph | undefined;
-        if (paths.manifest) {
-          const manifest = loadManifest(paths.manifest);
-          graph = new ManifestGraph(manifest);
-          analyzer = new ExecutionAnalyzer(runResults, graph);
-        }
-
-        let summary = analyzer
-          ? analyzer.getSummary()
-          : {
-              total_execution_time: runResults.elapsed_time || 0,
-              total_nodes: runResults.results?.length || 0,
-              nodes_by_status: {} as Record<string, number>,
-              node_executions: [] as Array<{
-                unique_id: string;
-                status: string;
-                execution_time: number;
-              }>,
-            };
-
-        // If no analyzer, compute basic stats
-        if (!analyzer && runResults.results) {
-          const nodesByStatus: Record<string, number> = {};
-          for (const result of runResults.results) {
-            const status = result.status || "unknown";
-            nodesByStatus[status] = (nodesByStatus[status] || 0) + 1;
-          }
-          summary.nodes_by_status = nodesByStatus;
-        }
-
-        // Bottleneck detection
-        let bottlenecks:
-          | {
-              nodes: Array<{
-                unique_id: string;
-                name?: string;
-                execution_time: number;
-                rank: number;
-                pct_of_total: number;
-                status: string;
-              }>;
-              total_execution_time: number;
-              criteria_used: "top_n" | "threshold";
-            }
-          | undefined;
-        let bottlenecksTopLabel: string | undefined;
-
-        if (options.bottlenecks && summary.node_executions?.length) {
-          const topN = options.bottlenecksTop ?? 10;
-          const threshold = options.bottlenecksThreshold;
-
-          if (
-            options.bottlenecksTop !== undefined &&
-            options.bottlenecksThreshold !== undefined
-          ) {
-            throw new Error(
-              "Cannot use both --bottlenecks-top and --bottlenecks-threshold; choose one",
-            );
-          }
-
-          if (threshold !== undefined && threshold > 0) {
-            bottlenecks = detectBottlenecks(summary.node_executions, {
-              mode: "threshold",
-              min_seconds: threshold,
-              graph,
-            });
-            bottlenecksTopLabel = `>= ${threshold}s`;
-          } else {
-            bottlenecks = detectBottlenecks(summary.node_executions, {
-              mode: "top_n",
-              top: topN > 0 ? topN : 10,
-              graph,
-            });
-            bottlenecksTopLabel = `top ${topN}`;
-          }
-        }
-
-        // Apply field filtering if requested
-        if (options.fields) {
-          summary = FieldFilter.filterFields(
-            summary,
-            options.fields,
-          ) as typeof summary;
-        }
-
-        // Format output
-        const useJson = shouldOutputJSON(options.json, options.noJson);
-
-        if (useJson) {
-          const report: Record<string, unknown> = {
-            ...summary,
-          };
-          if (bottlenecks) {
-            report.bottlenecks = bottlenecks;
-          }
-          console.log(formatOutput(report, true));
-        } else {
-          console.log(
-            formatRunReport(summary, bottlenecks, bottlenecksTopLabel),
-          );
-        }
-      } catch (error) {
-        handleError(error, isTTY());
-      }
-    },
+    ) =>
+      runReportAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      ),
   );
 
 /**
@@ -525,11 +273,8 @@ program
     "downstream",
   )
   .option("--manifest-path <path>", "Path to manifest.json file")
-  .option(
-    "--target-dir <dir>",
-    "Custom target directory (defaults to ./target)",
-  )
-  .option("--fields <fields>", "Comma-separated list of fields to include")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_FIELDS, DESC_FIELDS)
   .option("--field <name>", "Specific field (column) to trace dependencies for")
   .option("--catalog-path <path>", "Path to catalog.json file")
   .option(
@@ -546,8 +291,8 @@ program
     "--build-order",
     "Output upstream dependencies in topological build order (only with --direction upstream)",
   )
-  .option("--json", "Force JSON output")
-  .option("--no-json", "Force human-readable output")
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
   .action(
     (
       resourceId: string,
@@ -564,113 +309,7 @@ program
         json?: boolean;
         noJson?: boolean;
       },
-    ) => {
-      try {
-        // Validate resource ID
-        validateResourceId(resourceId);
-
-        // Validate direction
-        const direction = options.direction?.toLowerCase();
-        if (direction !== "upstream" && direction !== "downstream") {
-          throw new Error(
-            `Invalid direction: ${options.direction}. Must be 'upstream' or 'downstream'`,
-          );
-        }
-
-        // Validate depth if provided
-        const depth = options.depth;
-        if (depth !== undefined && (typeof depth !== "number" || depth < 1)) {
-          throw new Error(
-            `Invalid depth: ${options.depth}. Must be a positive integer`,
-          );
-        }
-
-        // Validate format
-        const format = (options.format ?? "tree").toLowerCase();
-        if (format !== "flat" && format !== "tree") {
-          throw new Error(
-            `Invalid format: ${options.format}. Must be 'flat' or 'tree'`,
-          );
-        }
-
-        // Validate build-order: only valid with upstream
-        if (options.buildOrder && direction !== "upstream") {
-          throw new Error(
-            `--build-order is only valid with --direction upstream`,
-          );
-        }
-
-        // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          options.manifestPath,
-          undefined,
-          options.targetDir,
-          options.catalogPath,
-        );
-
-        // Validate path
-        validateSafePath(paths.manifest);
-
-        // Load manifest and create graph
-        const manifest = loadManifest(paths.manifest);
-        const graph = new ManifestGraph(manifest);
-
-        let targetId = resourceId;
-
-        // If field-level trace is requested
-        if (options.field) {
-          if (paths.catalog) {
-            validateSafePath(paths.catalog);
-            const catalog = loadCatalog(paths.catalog);
-            graph.addFieldNodes(catalog);
-
-            // Analyze SQL for involved nodes
-            const analyzer = new SQLAnalyzer();
-            const adapterType =
-              (manifest.metadata as any)?.adapter_type || "mysql";
-
-            // We need to analyze all nodes to build the full field lineage
-            // Alternatively, we could do it lazily, but for now, let's do all
-            if (manifest.nodes) {
-              for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
-                const compiledCode = (node as any).compiled_code;
-                if (compiledCode) {
-                  const fieldDeps = analyzer.analyze(compiledCode, adapterType);
-                  graph.addFieldEdges(uniqueId, fieldDeps);
-                }
-              }
-            }
-            targetId = `${resourceId}#${options.field}`;
-          } else {
-            console.warn(
-              "Warning: --field requires catalog.json, but it was not found. Falling back to resource-level lineage.",
-            );
-          }
-        }
-
-        // Get dependencies
-        const result = DependencyService.getDependencies(
-          graph,
-          targetId,
-          direction as "upstream" | "downstream",
-          options.fields,
-          options.depth,
-          format as "flat" | "tree",
-          options.buildOrder,
-        );
-
-        // Format output
-        const useJson = shouldOutputJSON(options.json, options.noJson);
-
-        if (useJson) {
-          console.log(formatOutput(result, true));
-        } else {
-          console.log(formatDeps(result, format));
-        }
-      } catch (error) {
-        handleError(error, isTTY());
-      }
-    },
+    ) => depsAction(resourceId, options, handleError, isTTY),
   );
 
 /**

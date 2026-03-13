@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { parseManifest } from "dbt-artifacts-parser/manifest";
+import { validateSafePath } from "../validation/input-validator";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
@@ -18,7 +19,7 @@ import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
  */
 export interface ArtifactPaths {
   manifest: string;
-  runResults?: string;
+  runResults: string;
   catalog?: string;
 }
 
@@ -32,6 +33,7 @@ function resolveManifestPath(
   targetDir?: string,
 ): string {
   if (manifestPath) {
+    validateSafePath(manifestPath);
     if (manifestPath.endsWith(".json")) {
       return path.resolve(manifestPath);
     }
@@ -40,6 +42,7 @@ function resolveManifestPath(
 
   const effectiveTargetDir =
     targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+  validateSafePath(effectiveTargetDir);
   return path.resolve(effectiveTargetDir, MANIFEST_FILE);
 }
 
@@ -48,6 +51,7 @@ function resolveRunResultsPath(
   targetDir?: string,
 ): string {
   if (runResultsPath) {
+    validateSafePath(runResultsPath);
     if (runResultsPath.endsWith(".json")) {
       return path.resolve(runResultsPath);
     }
@@ -56,11 +60,13 @@ function resolveRunResultsPath(
 
   const effectiveTargetDir =
     targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+  validateSafePath(effectiveTargetDir);
   return path.resolve(effectiveTargetDir, RUN_RESULTS_FILE);
 }
 
 function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
   if (catalogPath) {
+    validateSafePath(catalogPath);
     if (catalogPath.endsWith(".json")) {
       return path.resolve(catalogPath);
     }
@@ -69,6 +75,7 @@ function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
 
   const effectiveTargetDir =
     targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+  validateSafePath(effectiveTargetDir);
   return path.resolve(effectiveTargetDir, CATALOG_FILE);
 }
 
@@ -86,14 +93,8 @@ export function resolveArtifactPaths(
 
   const resolved: ArtifactPaths = {
     manifest: resolveManifestPath(manifestPath, effectiveTargetDir),
+    runResults: resolveRunResultsPath(runResultsPath, effectiveTargetDir),
   };
-
-  if (runResultsPath !== undefined) {
-    resolved.runResults = resolveRunResultsPath(
-      runResultsPath,
-      effectiveTargetDir,
-    );
-  }
 
   if (catalogPath !== undefined) {
     resolved.catalog = resolveCatalogPath(catalogPath, effectiveTargetDir);
@@ -106,6 +107,7 @@ export function resolveArtifactPaths(
  * Load and parse manifest.json file
  */
 export function loadManifest(manifestPath: string): ParsedManifest {
+  validateSafePath(manifestPath);
   const fullPath = path.resolve(manifestPath);
   if (!fs.existsSync(fullPath)) {
     throw new Error(`Manifest file not found: ${fullPath}`);
@@ -126,6 +128,8 @@ export function loadManifest(manifestPath: string): ParsedManifest {
  * Load and parse run_results.json file
  */
 export function loadRunResults(runResultsPath: string): ParsedRunResults {
+  validateSafePath(runResultsPath);
+  // : javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
   const fullPath = path.resolve(runResultsPath);
   if (!fs.existsSync(fullPath)) {
     throw new Error(`Run results file not found: ${fullPath}`);
@@ -146,6 +150,7 @@ export function loadRunResults(runResultsPath: string): ParsedRunResults {
  * Load and parse catalog.json file
  */
 export function loadCatalog(catalogPath: string): ParsedCatalog {
+  validateSafePath(catalogPath);
   const fullPath = path.resolve(catalogPath);
   if (!fs.existsSync(fullPath)) {
     throw new Error(`Catalog file not found: ${fullPath}`);

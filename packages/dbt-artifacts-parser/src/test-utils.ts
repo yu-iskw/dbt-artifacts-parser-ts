@@ -32,6 +32,18 @@ export type ResourceLocation = "tests" | "resources";
  */
 const resourcesDir = path.resolve(baseDir, "..", "resources");
 
+/** Validate path component to prevent traversal; throws if invalid */
+function validatePathComponent(name: string): void {
+  if (!name || typeof name !== "string" || name.trim().length === 0) {
+    throw new Error("Path component must be a non-empty string");
+  }
+  if (name.includes("..") || name.includes("/") || name.includes("\\")) {
+    throw new Error(
+      `Path component must not contain traversal or separators: ${name}`,
+    );
+  }
+}
+
 /**
  * Get the path to a test resource file
  *
@@ -58,7 +70,9 @@ export function getTestResourcePath(
         `Project and filename are required when location is "${location}"`,
       );
     }
-    // Path: packages/dbt-artifacts-parser/resources/{type}/{version}/{project}/{filename}
+    validatePathComponent(normalizedVersion);
+    validatePathComponent(project);
+    validatePathComponent(filename);
     return path.join(resourcesDir, type, normalizedVersion, project, filename);
   }
 

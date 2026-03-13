@@ -10,6 +10,8 @@ import { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
  */
 export type ParsedSources = SourcesV1 | SourcesV2 | SourcesV3;
 
+const ERR_NOT_SOURCES = "Not a sources.json";
+
 /**
  * Extract version number from dbt_schema_version URL
  */
@@ -77,20 +79,12 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
  */
 export function parseSources(parsed: Record<string, unknown>): ParsedSources {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a sources.json");
-  }
-
+  if (!metadata) throw new Error(ERR_NOT_SOURCES);
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/sources/v")) {
-    throw new Error("Not a sources.json");
-  }
-
+  if (!schemaVersion || !schemaVersion.includes("/sources/v"))
+    throw new Error(ERR_NOT_SOURCES);
   const version = extractVersion(schemaVersion);
-  if (version === null) {
-    throw new Error("Not a sources.json");
-  }
-
+  if (version === null) throw new Error(ERR_NOT_SOURCES);
   switch (version) {
     case 1:
       return parseSourcesV1(parsed);

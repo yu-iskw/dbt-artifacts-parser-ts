@@ -1,14 +1,16 @@
+import * as path from "path";
+
 /**
  * Validate that a path does not contain traversal sequences
  * Rejects paths like ../../.ssh or ..\\..\\etc
  */
-export function validateSafePath(path: string): void {
-  if (!path || typeof path !== "string") {
+export function validateSafePath(pathInput: string): void {
+  if (!pathInput || typeof pathInput !== "string") {
     throw new Error("Path must be a non-empty string");
   }
 
   // Check for path traversal patterns
-  const normalized = path.replace(/\\/g, "/");
+  const normalized = pathInput.replace(/\\/g, "/");
   if (
     normalized.includes("../") ||
     normalized.includes("..\\") ||
@@ -17,7 +19,25 @@ export function validateSafePath(path: string): void {
     normalized.includes("\\..\\")
   ) {
     throw new Error(
-      `Path traversal detected in path: ${path}. Paths must not contain ../ or ..\\`,
+      `Path traversal detected in path: ${pathInput}. Paths must not contain ../ or ..\\`,
+    );
+  }
+}
+
+/**
+ * Ensure a resolved path is under a base directory (e.g. cwd).
+ * Call this after path.resolve() to prevent escaping the base via absolute paths or traversal.
+ */
+export function assertPathUnderBase(
+  resolvedPath: string,
+  baseDir: string,
+): void {
+  const absPath = path.resolve(resolvedPath);
+  const baseAbs = path.resolve(baseDir);
+  const relative = path.relative(baseAbs, absPath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(
+      `Path is outside allowed base: ${resolvedPath}. Paths must be under ${baseDir}`,
     );
   }
 }
@@ -94,6 +114,24 @@ export function validateResourceId(id: string): void {
   }
 
   validateNoControlChars(id);
+}
+
+/**
+ * Validate optional depth for traversal (e.g. deps --depth).
+ * Rejects NaN, non-integers, and values < 1 when depth is provided.
+ */
+export function validateDepth(depth: unknown): void {
+  if (depth === undefined) {
+    return;
+  }
+  if (
+    typeof depth !== "number" ||
+    Number.isNaN(depth) ||
+    !Number.isInteger(depth) ||
+    depth < 1
+  ) {
+    throw new Error(`Invalid depth: ${depth}. Must be a positive integer`);
+  }
 }
 
 /**
