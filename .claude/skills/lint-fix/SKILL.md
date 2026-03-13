@@ -1,6 +1,6 @@
 ---
 name: lint-fix
-description: Run formatters and linters and fix violations. Use when the user asks to fix lint, format code, run linters, fix linter errors, fix style, tidy code, or run eslint --fix.
+description: Run formatters, linters, and static analysis. Use when the user asks to fix lint, format code, run linters, fix linter errors, fix style, tidy code, run eslint --fix.
 compatibility: Requires pnpm (or npm/yarn); project must define format/lint scripts.
 ---
 
@@ -24,6 +24,7 @@ Run from the **repository root**.
 
 - **Format (fix style):** `pnpm format` (trunk fmt), then `pnpm format:eslint` (eslint . --fix), then `pnpm format:prettier` (prettier --write .). If a script is missing in the project, skip it.
 - **Lint with fix:** `pnpm lint:trunk` (trunk check -y). ESLint auto-fix is already covered by `pnpm format:eslint` above.
+- **Structured feedback (AI agents):** Run `pnpm lint:report` first to get `lint-report.json` with score and violations. Then use `pnpm format:eslint` and `pnpm lint:eslint` to fix. See [docs/eslint-harness.md](../../docs/eslint-harness.md).
 
 Single sequence:
 
@@ -47,6 +48,10 @@ Full fix (all formatters and lint-with-fix):
 ```bash
 pnpm format && pnpm format:eslint && pnpm format:prettier && pnpm lint:trunk
 ```
+
+## Verifier integration
+
+When used by the verifier agent, the sequence ends with `pnpm lint:report`. The agent must re-run `pnpm lint:report` after applying fixes to confirm exit 0 before proceeding to the next verification step.
 
 ## Other projects
 

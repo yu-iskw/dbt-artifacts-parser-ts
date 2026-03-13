@@ -8,6 +8,8 @@ import { CatalogArtifact } from "./v1";
  */
 export type ParsedCatalog = CatalogArtifact;
 
+const ERR_NOT_CATALOG = "Not a catalog.json";
+
 /**
  * Extract version number from dbt_schema_version URL
  */
@@ -50,17 +52,17 @@ export function parseCatalogV1(
 export function parseCatalog(parsed: Record<string, unknown>): ParsedCatalog {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
   if (!metadata) {
-    throw new Error("Not a catalog.json");
+    throw new Error(ERR_NOT_CATALOG);
   }
 
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
   if (!schemaVersion || !schemaVersion.includes("/catalog/v")) {
-    throw new Error("Not a catalog.json");
+    throw new Error(ERR_NOT_CATALOG);
   }
 
   const version = extractVersion(schemaVersion);
   if (version === null) {
-    throw new Error("Not a catalog.json");
+    throw new Error(ERR_NOT_CATALOG);
   }
 
   switch (version) {

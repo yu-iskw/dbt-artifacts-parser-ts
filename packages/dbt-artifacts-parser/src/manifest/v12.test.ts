@@ -3,16 +3,17 @@ import fs from "fs";
 import path from "path";
 // @ts-ignore - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-import { WritableManifest } from "./v12";
+import { parseManifestV12 } from "./index";
 
 describe("manifest v12", () => {
   it("should parse manifest_1.8.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/manifest/v12/jaffle_shop/manifest_1.8.json",
+      "../../resources/manifest/v12/jaffle_shop/manifest_1.8.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(jsonContent) as WritableManifest;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseManifestV12(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();
@@ -37,10 +38,11 @@ describe("manifest v12", () => {
   it("should parse manifest_1.9.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/manifest/v12/jaffle_shop/manifest_1.9.json",
+      "../../resources/manifest/v12/jaffle_shop/manifest_1.9.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(jsonContent) as WritableManifest;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseManifestV12(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();
@@ -56,10 +58,11 @@ describe("manifest v12", () => {
   it("should parse manifest_1.10.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/manifest/v12/jaffle_shop/manifest_1.10.json",
+      "../../resources/manifest/v12/jaffle_shop/manifest_1.10.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(jsonContent) as WritableManifest;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseManifestV12(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();

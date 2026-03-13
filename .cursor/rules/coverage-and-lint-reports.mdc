@@ -1,0 +1,16 @@
+---
+description: Coverage and lint report requirements for AI agent feedback
+globs: 
+alwaysApply: true
+---
+
+# Coverage and Lint Reports (AI Agent Feedback)
+
+Before considering a task complete, run both report scripts from the repository root:
+
+- **Lint report:** `pnpm lint:report` — produces `lint-report.json`; must exit 0
+- **Coverage report:** `pnpm coverage:report` — produces `coverage-report.json`; must exit 0
+
+If `coverage-report.json` shows `belowThreshold: true`, add or improve unit tests until coverage meets thresholds (lines 60%, branches 50%, functions 60%, statements 60%).
+
+Both scripts exit with code 1 on failure; the agent must fix violations before proceeding.

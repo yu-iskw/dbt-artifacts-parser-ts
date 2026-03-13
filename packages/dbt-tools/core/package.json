@@ -1,0 +1,38 @@
+{
+  "name": "@dbt-tools/core",
+  "version": "0.1.0",
+  "description": "Core library for dbt artifact graph management and analysis",
+  "keywords": [
+    "dbt",
+    "graph",
+    "analysis"
+  ],
+  "license": "Apache-2.0",
+  "author": "yu-iskw",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "dbt-artifacts-parser": "workspace:*",
+    "graphology": "^0.26.0",
+    "graphology-dag": "^0.4.1",
+    "node-sql-parser": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

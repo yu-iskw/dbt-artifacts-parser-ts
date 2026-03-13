@@ -3,18 +3,17 @@ import fs from "fs";
 import path from "path";
 // @ts-ignore - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-import { HttpsSchemasGetdbtComDbtManifestV8Json } from "./v8";
+import { parseManifestV8 } from "./index";
 
 describe("manifest v8", () => {
   it("should parse jaffle_shop manifest.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/manifest/v8/jaffle_shop/manifest.json",
+      "../../resources/manifest/v8/jaffle_shop/manifest.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(
-      jsonContent,
-    ) as HttpsSchemasGetdbtComDbtManifestV8Json;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseManifestV8(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();
@@ -39,12 +38,11 @@ describe("manifest v8", () => {
   it("should parse jaffle_shop_at_1_4_3 manifest.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/manifest/v8/jaffle_shop_at_1_4_3/manifest.json",
+      "../../resources/manifest/v8/jaffle_shop_at_1_4_3/manifest.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(
-      jsonContent,
-    ) as HttpsSchemasGetdbtComDbtManifestV8Json;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseManifestV8(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();

@@ -3,16 +3,17 @@ import fs from "fs";
 import path from "path";
 // @ts-ignore - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-import { RunResultsArtifact } from "./v5";
+import { parseRunResultsV5 } from "./index";
 
 describe("run_results v5", () => {
   it("should parse run_results.json correctly", () => {
     const jsonPath = path.join(
       __dirname,
-      "../tests/resources/run_results/v5/jaffle_shop/run_results.json",
+      "../../resources/run_results/v5/jaffle_shop/run_results.json",
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const parsed = JSON.parse(jsonContent) as RunResultsArtifact;
+    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
+    const parsed = parseRunResultsV5(raw);
 
     expect(parsed).toBeDefined();
     expect(parsed.metadata).toBeDefined();

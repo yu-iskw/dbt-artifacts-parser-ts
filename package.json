@@ -9,6 +9,10 @@
   "main": "index.js",
   "scripts": {
     "build": "pnpm --recursive build",
+    "codeql": "pnpm codeql:db && pnpm codeql:analyze",
+    "codeql:analyze": "node scripts/codeql-check.mjs && codeql database analyze ./codeql-db codeql/javascript-queries --download --format=sarif-latest --output=codeql-results.sarif",
+    "codeql:db": "node scripts/codeql-check.mjs && rm -rf ./codeql-db && codeql database create ./codeql-db --language=javascript --source-root=.",
+    "coverage:report": "node scripts/coverage-score.mjs",
     "format": "pnpm format:trunk",
     "format:all": "pnpm format:trunk-all",
     "format:eslint": "eslint . --fix",
@@ -19,23 +23,31 @@
     "lint": "pnpm lint:trunk && pnpm lint:eslint",
     "lint:all": "pnpm lint:trunk-all",
     "lint:eslint": "eslint .",
+    "lint:report": "node scripts/eslint-score.mjs",
     "lint:security": "trunk check --all --scope security -y",
     "lint:semgrep": "semgrep ci",
     "lint:trunk": "trunk check -y",
     "lint:trunk-all": "trunk check --all -y",
-    "test": "pnpm --recursive test"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^15.1.3",
+    "@apidevtools/json-schema-ref-parser": "^15.3.1",
     "@typescript-eslint/eslint-plugin": "^8.57.0",
     "@typescript-eslint/parser": "^8.57.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "@vitest/eslint-plugin": "^1.6.11",
     "eslint": "^10.0.3",
+    "eslint-plugin-sonarjs": "^4.0.2",
     "json-schema-to-typescript": "^15.0.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   },
   "pnpm": {
     "overrides": {
-      "esbuild": "^0.27.2"
+      "esbuild": "^0.27.2",
+      "lodash": "^4.17.23",
+      "rollup": ">=4.59.0"
     }
   }
 }

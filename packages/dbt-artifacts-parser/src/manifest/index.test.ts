@@ -36,7 +36,7 @@ function sanitizePathComponent(name: string): string {
  * Returns a map of version number to array of file paths
  */
 function discoverManifestFiles(): Map<number, string[]> {
-  const resourcesDir = path.join(__dirname, "../tests/resources/manifest");
+  const resourcesDir = path.join(__dirname, "../../resources/manifest");
   const versionMap = new Map<number, string[]>();
 
   // Read all version directories (v1, v2, etc.)
@@ -95,7 +95,7 @@ describe("manifest parser", () => {
     it("should parse manifest v1 correctly", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/manifest/v1/jaffle_shop/manifest.json",
+        "../../resources/manifest/v1/jaffle_shop/manifest.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -135,7 +135,7 @@ describe("manifest parser", () => {
     it("should parse manifest v1 with parseManifestV1", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/manifest/v1/jaffle_shop/manifest.json",
+        "../../resources/manifest/v1/jaffle_shop/manifest.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -150,7 +150,7 @@ describe("manifest parser", () => {
     it("should throw error when version doesn't match", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/manifest/v1/jaffle_shop/manifest.json",
+        "../../resources/manifest/v1/jaffle_shop/manifest.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -163,7 +163,7 @@ describe("manifest parser", () => {
     it("should accept different manifest versions", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/manifest/v1/jaffle_shop/manifest.json",
+        "../../resources/manifest/v1/jaffle_shop/manifest.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -238,5 +238,66 @@ describe("manifest parser", () => {
         }
       });
     }
+  });
+
+  describe("cross-version rejection", () => {
+    it("should throw when v1 manifest is parsed with parseManifestV12", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/manifest/v1/jaffle_shop/manifest.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+
+      expect(() => parseManifestV12(parsed)).toThrow("Not a manifest.json v12");
+    });
+
+    it("should throw when v12 manifest is parsed with parseManifestV1", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/manifest/v12/jaffle_shop/manifest_1.10.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+
+      expect(() => parseManifestV1(parsed)).toThrow("Not a manifest.json v1");
+    });
+  });
+
+  describe("invalid data", () => {
+    it("should throw when metadata is null", () => {
+      expect(() => parseManifest({ metadata: null })).toThrow(
+        "Not a manifest.json",
+      );
+    });
+
+    it("should throw when dbt_schema_version is missing from metadata", () => {
+      expect(() => parseManifest({ metadata: { foo: "bar" } })).toThrow(
+        "Not a manifest.json",
+      );
+    });
+  });
+
+  describe("semantic assertions", () => {
+    it("v12 jaffle_shop manifest_1.10.json should have expected structure", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/manifest/v12/jaffle_shop/manifest_1.10.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+      const manifest = parseManifest(parsed);
+
+      expect(manifest.nodes).toBeDefined();
+      const nodeIds = Object.keys(manifest.nodes);
+      expect(nodeIds.length).toBeGreaterThan(0);
+
+      // jaffle_shop fixtures contain stg_products model
+      expect(nodeIds).toContain("model.jaffle_shop.stg_products");
+      const stgProducts = manifest.nodes["model.jaffle_shop.stg_products"];
+      expect(stgProducts).toBeDefined();
+      expect(stgProducts.unique_id).toBe("model.jaffle_shop.stg_products");
+      expect(stgProducts.resource_type).toBe("model");
+    });
   });
 });

@@ -21,7 +21,7 @@ function sanitizePathComponent(name: string): string {
  * Returns a map of version number to array of file paths
  */
 function discoverCatalogFiles(): Map<number, string[]> {
-  const resourcesDir = path.join(__dirname, "../tests/resources/catalog");
+  const resourcesDir = path.join(__dirname, "../../resources/catalog");
   const versionMap = new Map<number, string[]>();
 
   if (!fs.existsSync(resourcesDir)) {
@@ -84,7 +84,7 @@ describe("catalog parser", () => {
     it("should parse catalog v1 correctly", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/catalog/v1/jaffle_shop/catalog.json",
+        "../../resources/catalog/v1/jaffle_shop/catalog.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -122,7 +122,7 @@ describe("catalog parser", () => {
     it("should parse catalog v1 with parseCatalogV1", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/catalog/v1/jaffle_shop/catalog.json",
+        "../../resources/catalog/v1/jaffle_shop/catalog.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -137,7 +137,7 @@ describe("catalog parser", () => {
     it("should throw error when version doesn't match", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/catalog/v1/jaffle_shop/catalog.json",
+        "../../resources/catalog/v1/jaffle_shop/catalog.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -154,7 +154,7 @@ describe("catalog parser", () => {
     it("should accept catalog v1", () => {
       const jsonPath = path.join(
         __dirname,
-        "../tests/resources/catalog/v1/jaffle_shop/catalog.json",
+        "../../resources/catalog/v1/jaffle_shop/catalog.json",
       );
       const jsonContent = fs.readFileSync(jsonPath, "utf-8");
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -214,5 +214,67 @@ describe("catalog parser", () => {
         }
       });
     }
+  });
+
+  describe("cross-version rejection", () => {
+    it("should throw when catalog v1 with wrong metadata is rejected by parseCatalogV1", () => {
+      const validCatalog = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/catalog/v1.json",
+        },
+        nodes: {},
+        sources: {},
+      };
+      // Pass catalog with v2 schema version - parser should reject
+      const wrongVersion = {
+        ...validCatalog,
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/catalog/v2.json",
+        },
+      };
+      expect(() => parseCatalogV1(wrongVersion)).toThrow(
+        "Not a catalog.json v1",
+      );
+    });
+  });
+
+  describe("invalid data", () => {
+    it("should throw when metadata is null", () => {
+      expect(() => parseCatalog({ metadata: null })).toThrow(
+        "Not a catalog.json",
+      );
+    });
+
+    it("should throw when dbt_schema_version is missing from metadata", () => {
+      expect(() => parseCatalog({ metadata: { foo: "bar" } })).toThrow(
+        "Not a catalog.json",
+      );
+    });
+  });
+
+  describe("semantic assertions", () => {
+    it("v1 jaffle_shop catalog.json should have expected structure", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/catalog/v1/jaffle_shop/catalog.json",
+      );
+      const jsonContent = fs.readFileSync(jsonPath, "utf-8");
+      const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
+      const catalog = parseCatalog(parsed);
+
+      expect(catalog.nodes).toBeDefined();
+      expect(typeof catalog.nodes).toBe("object");
+      const nodeIds = Object.keys(catalog.nodes);
+      expect(nodeIds.length).toBeGreaterThan(0);
+
+      const firstNodeId = nodeIds[0];
+      const firstNode = catalog.nodes[firstNodeId];
+      expect(firstNode).toBeDefined();
+      expect(firstNode.metadata).toBeDefined();
+      expect(firstNode.metadata.schema).toBeDefined();
+      expect(firstNode.metadata.name).toBeDefined();
+      expect(firstNode.columns).toBeDefined();
+      expect(firstNode.stats).toBeDefined();
+    });
   });
 });
