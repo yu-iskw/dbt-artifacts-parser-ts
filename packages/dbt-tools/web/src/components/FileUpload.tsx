@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { analyzeArtifacts } from "../services/analyze";
 import type { AnalysisState } from "../types";
+import { Spinner } from "./Spinner";
+import { useToast } from "./Toast";
 
 interface FileUploadProps {
   onAnalysis: (analysis: AnalysisState) => void;
@@ -35,6 +37,7 @@ function FileInputRow({ id, label, file, onFileChange }: FileInputRowProps) {
 }
 
 export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
+  const { toast } = useToast();
   const [manifestFile, setManifestFile] = useState<File | null>(null);
   const [runResultsFile, setRunResultsFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,8 +58,15 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
       ]);
       const analysis = await analyzeArtifacts(manifestJson, runResultsJson);
       onAnalysis(analysis);
+      toast(
+        `Analyzed ${analysis.summary.total_nodes} executions successfully`,
+        "positive",
+      );
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to parse artifacts");
+      const message =
+        err instanceof Error ? err.message : "Failed to parse artifacts";
+      onError(message);
+      toast(`Parse failed — ${message}`, "danger");
     } finally {
       setLoading(false);
     }
@@ -97,7 +107,13 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
           onClick={handleAnalyze}
           disabled={!canAnalyze}
           className="primary-action"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
         >
+          {loading && <Spinner size={16} />}
           {loading ? "Analyzing…" : "Analyze artifacts"}
         </button>
       </div>

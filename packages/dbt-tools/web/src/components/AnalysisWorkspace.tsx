@@ -6,8 +6,16 @@ import {
   useState,
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
+import { EmptyState } from "./EmptyState";
 import { GanttChart } from "./GanttChart";
+import { Tooltip } from "./Tooltip";
 import type {
   AnalysisState,
   ExecutionRow,
@@ -17,7 +25,12 @@ import type {
   StatusTone,
 } from "../types";
 
-export type WorkspaceView = "overview" | "assets" | "results" | "timeline";
+export type WorkspaceView =
+  | "overview"
+  | "assets"
+  | "models"
+  | "tests"
+  | "timeline";
 
 interface AnalysisWorkspaceProps {
   analysis: AnalysisState;
@@ -221,7 +234,7 @@ function StatusDonutChart({
                 />
               ))}
             </Pie>
-            <Tooltip
+            <RechartsTooltip
               formatter={(value: number) => [`${value} runs`, "Count"]}
               contentStyle={{
                 borderRadius: 14,
@@ -426,9 +439,11 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              No bottleneck candidates were detected.
-            </div>
+            <EmptyState
+              icon="⚡"
+              headline="No bottleneck candidates detected"
+              subtext="All nodes finished within a similar time range — no single node dominated the run."
+            />
           )}
         </SectionCard>
 
@@ -463,9 +478,11 @@ function AssetsView({
   if (!resource) {
     return (
       <div className="workspace-card">
-        <div className="empty-state">
-          No resource matches the current explorer filters.
-        </div>
+        <EmptyState
+          icon="🔍"
+          headline="No resource selected"
+          subtext="Adjust the explorer filters or search to find the resource you're looking for."
+        />
       </div>
     );
   }
@@ -516,7 +533,9 @@ function AssetsView({
                 <div key={entry.uniqueId} className="dependency-list__row">
                   <div>
                     <strong>{entry.name}</strong>
-                    <span>{entry.uniqueId}</span>
+                    <Tooltip content={entry.uniqueId}>
+                      <span>{entry.uniqueId}</span>
+                    </Tooltip>
                   </div>
                   <span className="dependency-list__depth">
                     Depth {entry.depth}
@@ -525,9 +544,11 @@ function AssetsView({
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              This resource has no upstream dependencies.
-            </div>
+            <EmptyState
+              icon="↑"
+              headline="No upstream dependencies"
+              subtext="This resource does not depend on any other nodes in the graph."
+            />
           )}
         </SectionCard>
 
@@ -541,7 +562,9 @@ function AssetsView({
                 <div key={entry.uniqueId} className="dependency-list__row">
                   <div>
                     <strong>{entry.name}</strong>
-                    <span>{entry.uniqueId}</span>
+                    <Tooltip content={entry.uniqueId}>
+                      <span>{entry.uniqueId}</span>
+                    </Tooltip>
                   </div>
                   <span className="dependency-list__depth">
                     Depth {entry.depth}
@@ -550,9 +573,11 @@ function AssetsView({
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              This resource has no downstream dependents.
-            </div>
+            <EmptyState
+              icon="↓"
+              headline="No downstream dependents"
+              subtext="No other nodes in the graph depend on this resource."
+            />
           )}
         </SectionCard>
       </div>
@@ -562,37 +587,28 @@ function AssetsView({
 
 type ResultTab = "models" | "tests";
 
-/** Self-contained results view with model/test split and virtualized table. */
-function ResultsView({ allRows }: { allRows: ExecutionRow[] }) {
-  const [resultTab, setResultTab] = useState<ResultTab>("models");
+/** Self-contained results view for a single tab — driven by the nav view. */
+function ResultsView({
+  allRows,
+  tab,
+}: {
+  allRows: ExecutionRow[];
+  tab: ResultTab;
+}) {
   const [nameQuery, setNameQuery] = useState("");
   const deferredQuery = useDeferredValue(nameQuery);
   const [statusFilter, setStatusFilter] = useState("all");
   const resultsBodyRef = useRef<HTMLDivElement>(null);
 
   const tabRows = allRows.filter((row) =>
-    resultTab === "tests"
+    tab === "tests"
       ? TEST_RESOURCE_TYPES.has(row.resourceType)
       : !TEST_RESOURCE_TYPES.has(row.resourceType),
   );
 
-  const modelCount = allRows.filter(
-    (r) => !TEST_RESOURCE_TYPES.has(r.resourceType),
-  ).length;
-  const testCount = allRows.filter((r) =>
-    TEST_RESOURCE_TYPES.has(r.resourceType),
-  ).length;
-
   const filteredRows = tabRows
     .filter((row) => statusFilter === "all" || row.statusTone === statusFilter)
     .filter((row) => matchesExecution(row, deferredQuery));
-
-  // Reset status filter and query when switching tabs
-  const switchTab = (tab: ResultTab) => {
-    setResultTab(tab);
-    setStatusFilter("all");
-    setNameQuery("");
-  };
 
   const virtualizer = useVirtualizer({
     count: filteredRows.length,
@@ -617,28 +633,10 @@ function ResultsView({ allRows }: { allRows: ExecutionRow[] }) {
     },
   ];
 
-  const isTestTab = resultTab === "tests";
+  const isTestTab = tab === "tests";
 
   return (
     <div className="workspace-view">
-      {/* Model / Test split tabs */}
-      <div className="result-tabs">
-        <button
-          type="button"
-          className={resultTab === "models" ? "active" : ""}
-          onClick={() => switchTab("models")}
-        >
-          Models &amp; Operations ({modelCount})
-        </button>
-        <button
-          type="button"
-          className={resultTab === "tests" ? "active" : ""}
-          onClick={() => switchTab("tests")}
-        >
-          Tests ({testCount})
-        </button>
-      </div>
-
       <SectionCard
         title={isTestTab ? "Test results" : "Model execution results"}
         subtitle={
@@ -730,9 +728,11 @@ function ResultsView({ allRows }: { allRows: ExecutionRow[] }) {
             </div>
 
             {filteredRows.length === 0 && (
-              <div className="empty-state">
-                No rows match the current filters.
-              </div>
+              <EmptyState
+                icon="✓"
+                headline="No matching rows"
+                subtext="Try clearing the status filter or adjusting your search query."
+              />
             )}
           </div>
         </div>
@@ -852,6 +852,35 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
   );
 }
 
+const VIEW_TITLES: Record<WorkspaceView, string> = {
+  overview: "Run overview",
+  assets: "Resource deep dive",
+  models: "Model execution log",
+  tests: "Test results",
+  timeline: "Timeline view",
+};
+
+interface WorkspaceContentProps {
+  activeView: WorkspaceView;
+  analysis: AnalysisState;
+  selectedResource: ResourceNode | null;
+}
+
+function WorkspaceContent({
+  activeView,
+  analysis,
+  selectedResource,
+}: WorkspaceContentProps) {
+  if (activeView === "overview") return <OverviewView analysis={analysis} />;
+  if (activeView === "assets")
+    return <AssetsView analysis={analysis} resource={selectedResource} />;
+  if (activeView === "models")
+    return <ResultsView allRows={analysis.executions} tab="models" />;
+  if (activeView === "tests")
+    return <ResultsView allRows={analysis.executions} tab="tests" />;
+  return <TimelineView analysis={analysis} />;
+}
+
 export function AnalysisWorkspace({
   analysis,
   activeView,
@@ -867,7 +896,10 @@ export function AnalysisWorkspace({
   const [scopeFilter, setScopeFilter] = useState<"project" | "all">("project");
   const explorerListRef = useRef<HTMLDivElement>(null);
 
-  const projectName = deriveProjectName(analysis.executions);
+  // Prefer the authoritative name from manifest metadata; fall back to the
+  // heuristic (most-common packageName among executed nodes).
+  const projectName =
+    analysis.projectName ?? deriveProjectName(analysis.executions);
 
   useEffect(() => {
     setGroupFilter("all");
@@ -1065,11 +1097,13 @@ export function AnalysisWorkspace({
                       </div>
                       <div className="explorer-item__meta">
                         <span>{resource.resourceType}</span>
-                        <span>
-                          {resource.originalFilePath ??
-                            resource.path ??
-                            resource.uniqueId}
-                        </span>
+                        <Tooltip content={resource.uniqueId}>
+                          <span>
+                            {resource.originalFilePath ??
+                              resource.path ??
+                              resource.uniqueId}
+                          </span>
+                        </Tooltip>
                       </div>
                       {resource.description && (
                         <div
@@ -1092,9 +1126,11 @@ export function AnalysisWorkspace({
             </div>
 
             {explorerResources.length === 0 && (
-              <div className="empty-state">
-                No resources match the explorer filters.
-              </div>
+              <EmptyState
+                icon="🔍"
+                headline="No resources found"
+                subtext="Adjust the search query, group filter, or scope to find what you're looking for."
+              />
             )}
           </div>
         </aside>
@@ -1104,23 +1140,15 @@ export function AnalysisWorkspace({
         <div className="workspace-toolbar">
           <div>
             <p className="eyebrow">Analysis workspace</p>
-            <h2>
-              {activeView === "overview" && "Run overview"}
-              {activeView === "assets" && "Resource deep dive"}
-              {activeView === "results" && "Execution results"}
-              {activeView === "timeline" && "Timeline view"}
-            </h2>
+            <h2>{VIEW_TITLES[activeView]}</h2>
           </div>
         </div>
 
-        {activeView === "overview" && <OverviewView analysis={analysis} />}
-        {activeView === "assets" && (
-          <AssetsView analysis={analysis} resource={selectedResource} />
-        )}
-        {activeView === "results" && (
-          <ResultsView allRows={analysis.executions} />
-        )}
-        {activeView === "timeline" && <TimelineView analysis={analysis} />}
+        <WorkspaceContent
+          activeView={activeView}
+          analysis={analysis}
+          selectedResource={selectedResource}
+        />
       </div>
     </div>
   );

@@ -87,6 +87,8 @@ export interface ResourceConnectionSummary {
 
 export interface AnalysisState {
   summary: ExecutionSummary;
+  /** Project name from manifest metadata, or null for older manifests. */
+  projectName: string | null;
   /** Absolute epoch-ms of the earliest executed node. Null when no timing data. */
   runStartedAt: number | null;
   ganttData: GanttItem[];

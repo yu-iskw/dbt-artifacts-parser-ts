@@ -8,9 +8,11 @@ interface GanttChartProps {
 }
 
 // ─── Layout constants ──────────────────────────────────────────────────────
-const ROW_H = 28; // px per row
-const BAR_H = 16; // bar height within a row
-const BAR_PAD = (ROW_H - BAR_H) / 2; // vertical centring
+const ROW_H = 44; // px per row (increased to fit two-line label)
+const BAR_H = 14; // bar height within a row
+const BAR_PAD = 6; // px from row top to bar top (top-aligned, leaves room below)
+const NAME_Y = 14; // y offset within row for the node-name text baseline
+const TIME_Y = 34; // y offset within row for the start→end timestamp baseline
 const LABEL_W = 160; // left gutter for Y-axis labels
 const X_PAD = 24; // right padding
 const AXIS_TOP = 32; // top gutter for X-axis tick labels
@@ -100,6 +102,7 @@ function drawGantt(
   maxEnd: number,
   displayMode: DisplayMode,
   runStartedAt: number | null | undefined,
+  labelW: number = LABEL_W,
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -115,7 +118,7 @@ function drawGantt(
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
 
-  const chartW = w - LABEL_W - X_PAD;
+  const chartW = w - labelW - X_PAD;
 
   // ── X-axis ticks & grid lines ────────────────────────────────────────────
   const ticks = computeTicks(maxEnd);
@@ -125,7 +128,7 @@ function drawGantt(
   ctx.fillStyle = "#8e97a6";
 
   for (const tick of ticks) {
-    const x = LABEL_W + (tick.ms / maxEnd) * chartW;
+    const x = labelW + (tick.ms / maxEnd) * chartW;
     // grid line
     ctx.strokeStyle = "rgba(35,42,52,0.07)";
     ctx.lineWidth = 1;
@@ -148,14 +151,12 @@ function drawGantt(
     Math.ceil((scrollTop + h - AXIS_TOP) / ROW_H),
   );
 
-  ctx.font = "12px 'IBM Plex Sans', 'Avenir Next', sans-serif";
   ctx.textBaseline = "middle";
 
   for (let i = visStart; i <= visEnd; i++) {
     const item = data[i]!;
     const rowY = AXIS_TOP + i * ROW_H - scrollTop;
     const barY = rowY + BAR_PAD;
-    const midY = rowY + ROW_H / 2;
 
     // Alternating row background
     if (i % 2 === 0) {
@@ -163,18 +164,35 @@ function drawGantt(
       ctx.fillRect(0, rowY, w, ROW_H);
     }
 
-    // Y-axis label (clipped to LABEL_W)
+    // ── Y-axis labels (clipped to label gutter) ─────────────────────────
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, rowY, LABEL_W - 10, ROW_H);
+    ctx.rect(0, rowY, labelW - 10, ROW_H);
     ctx.clip();
     ctx.textAlign = "left";
+
+    // Line 1: node name
+    ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
     ctx.fillStyle = "#394251";
-    ctx.fillText(item.name || item.unique_id, 2, midY);
+    ctx.fillText(item.name || item.unique_id, 2, rowY + NAME_Y);
+
+    // Line 2: start → end (respects display mode)
+    const startLabel =
+      displayMode === "timestamps" && runStartedAt != null
+        ? formatTimestamp(runStartedAt + item.start)
+        : `+${formatMs(item.start)}`;
+    const endLabel =
+      displayMode === "timestamps" && runStartedAt != null
+        ? formatTimestamp(runStartedAt + item.end)
+        : `+${formatMs(item.end)}`;
+    ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText(`${startLabel} → ${endLabel}`, 2, rowY + TIME_Y);
+
     ctx.restore();
 
-    // Bar
-    const barX = LABEL_W + (item.start / maxEnd) * chartW;
+    // ── Bar ──────────────────────────────────────────────────────────────
+    const barX = labelW + (item.start / maxEnd) * chartW;
     const barW = Math.max(2, (item.duration / maxEnd) * chartW);
     ctx.fillStyle = getStatusColor(item.status);
     fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
@@ -253,9 +271,16 @@ export function GanttChart({ data, runStartedAt }: GanttChartProps) {
   const [scrollTop, setScrollTop] = useState(0);
   const [hover, setHover] = useState<HoverState | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("duration");
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const canShowTimestamps = runStartedAt != null;
   const activeMode: DisplayMode = canShowTimestamps ? displayMode : "duration";
+
+  // Shrink the label gutter proportionally on narrow screens; cap at LABEL_W
+  const effectiveLabelW =
+    containerWidth > 0
+      ? Math.max(80, Math.min(LABEL_W, Math.round(containerWidth * 0.35)))
+      : LABEL_W;
 
   const maxEnd = Math.max(...data.map((d) => d.end), 1);
   const totalScrollH = data.length * ROW_H + AXIS_TOP;
@@ -265,21 +290,33 @@ export function GanttChart({ data, runStartedAt }: GanttChartProps) {
   );
   const needsScroll = totalScrollH > viewportH;
 
-  // ── Redraw whenever data / scrollTop / mode changes ──────────────────────
+  // ── Redraw whenever data / scrollTop / mode / label width changes ─────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || data.length === 0) return;
 
     function draw() {
-      drawGantt(canvas!, data, scrollTop, maxEnd, activeMode, runStartedAt);
+      drawGantt(
+        canvas!,
+        data,
+        scrollTop,
+        maxEnd,
+        activeMode,
+        runStartedAt,
+        effectiveLabelW,
+      );
     }
 
     draw();
 
-    const ro = new ResizeObserver(draw);
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setContainerWidth(entry.contentRect.width);
+      draw();
+    });
     ro.observe(canvas);
     return () => ro.disconnect();
-  }, [data, scrollTop, maxEnd, activeMode, runStartedAt]);
+  }, [data, scrollTop, maxEnd, activeMode, runStartedAt, effectiveLabelW]);
 
   // ── Hit-testing ──────────────────────────────────────────────────────────
   function hitTest(e: React.MouseEvent<HTMLDivElement>): HoverState | null {
@@ -295,10 +332,10 @@ export function GanttChart({ data, runStartedAt }: GanttChartProps) {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const cw = canvas.getBoundingClientRect().width;
-    const chartW = cw - LABEL_W - X_PAD;
+    const chartW = cw - effectiveLabelW - X_PAD;
 
     const item = data[rowIdx]!;
-    const barX = LABEL_W + (item.start / maxEnd) * chartW;
+    const barX = effectiveLabelW + (item.start / maxEnd) * chartW;
     const barW = Math.max(2, (item.duration / maxEnd) * chartW);
 
     if (mouseX >= barX && mouseX <= barX + barW) {

@@ -236,6 +236,19 @@ export async function analyzeArtifacts(
   const graph = new ManifestGraph(manifest);
   const analyzer = new ExecutionAnalyzer(runResults, graph);
 
+  // Prefer the project name embedded in manifest metadata (available in dbt
+  // manifests >= v9). Fall back to null; AnalysisWorkspace derives it
+  // heuristically from execution package names.
+  const metaMaybe = (manifestJson as Record<string, unknown>).metadata;
+  const projectName: string | null =
+    metaMaybe !== null &&
+    typeof metaMaybe === "object" &&
+    "project_name" in (metaMaybe as object) &&
+    typeof (metaMaybe as Record<string, unknown>).project_name === "string" &&
+    (metaMaybe as Record<string, string>).project_name !== ""
+      ? (metaMaybe as Record<string, string>).project_name
+      : null;
+
   const summary = analyzer.getSummary();
   const ganttData = analyzer.getGanttData();
   const nodeExecutions = analyzer.getNodeExecutions();
@@ -303,6 +316,7 @@ export async function analyzeArtifacts(
 
   return {
     summary,
+    projectName,
     runStartedAt,
     ganttData,
     bottlenecks,
