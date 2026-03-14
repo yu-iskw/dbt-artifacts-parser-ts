@@ -35,6 +35,24 @@ function getStatusColor(status: string): string {
   return STATUS_COLORS[status.toLowerCase()] ?? "#64748b";
 }
 
+/** Left-border accent color by dbt resource type. */
+const RESOURCE_TYPE_COLORS: Record<string, string> = {
+  model: "#2558d9",
+  test: "#8b5cf6",
+  seed: "#0ea5e9",
+  snapshot: "#14b8a6",
+  source: "#94a3b8",
+  exposure: "#f97316",
+  metric: "#ec4899",
+  semantic_model: "#6366f1",
+  analysis: "#78716c",
+  unit_test: "#a78bfa",
+};
+
+function getResourceTypeColor(resourceType: string | undefined): string {
+  return (resourceType && RESOURCE_TYPE_COLORS[resourceType]) ?? "#cbd5e1";
+}
+
 const TOOLTIP_LABEL_STYLE: React.CSSProperties = {
   color: "var(--text-soft)",
   fontSize: "0.82rem",
@@ -196,6 +214,10 @@ function drawGantt(
     const barW = Math.max(2, (item.duration / maxEnd) * chartW);
     ctx.fillStyle = getStatusColor(item.status);
     fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
+
+    // 3-px left strip: secondary color encoding for resource type
+    ctx.fillStyle = getResourceTypeColor(item.resourceType);
+    ctx.fillRect(barX, barY, 3, BAR_H);
   }
 }
 
@@ -234,6 +256,12 @@ function GanttTooltip({
         <span style={TOOLTIP_LABEL_STYLE}>Status: </span>
         {hover.item.status}
       </div>
+      {hover.item.resourceType && (
+        <div>
+          <span style={TOOLTIP_LABEL_STYLE}>Type: </span>
+          {hover.item.resourceType}
+        </div>
+      )}
       {canShowTimestamps && runStartedAt != null ? (
         <>
           <div>

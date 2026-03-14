@@ -2,6 +2,7 @@ import {
   type ReactNode,
   useEffect,
   useDeferredValue,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -753,11 +754,12 @@ const TIMELINE_STATUS_OPTIONS = [
   "no op",
 ];
 
-/** Self-contained timeline view with status + name filters. */
+/** Self-contained timeline view with status + resource-type + name filters. */
 function TimelineView({ analysis }: { analysis: AnalysisState }) {
   const [nameQuery, setNameQuery] = useState("");
   const deferredQuery = useDeferredValue(nameQuery);
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set());
 
   function toggleStatus(status: string) {
     setActiveStatuses((prev) => {
@@ -771,29 +773,74 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
     });
   }
 
-  const filteredData: GanttItem[] = analysis.ganttData.filter((item) => {
-    if (
-      activeStatuses.size > 0 &&
-      !activeStatuses.has(item.status.toLowerCase())
-    ) {
-      return false;
-    }
-    if (deferredQuery) {
-      const q = deferredQuery.trim().toLowerCase();
-      if (
-        q &&
-        !item.name.toLowerCase().includes(q) &&
-        !item.unique_id.toLowerCase().includes(q)
-      ) {
-        return false;
+  function toggleType(type: string) {
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
       }
-    }
-    return true;
-  });
+      return next;
+    });
+  }
 
-  const presentStatuses = Array.from(
-    new Set(analysis.ganttData.map((d) => d.status.toLowerCase())),
-  ).filter((s) => TIMELINE_STATUS_OPTIONS.includes(s));
+  // O(1) row lookup — available for future Phase B use (dependency edge scrolling).
+  const _dataIndexById = useMemo(
+    () => new Map(analysis.ganttData.map((item, i) => [item.unique_id, i])),
+    [analysis.ganttData],
+  );
+  void _dataIndexById;
+
+  const presentStatuses = useMemo(
+    () =>
+      Array.from(
+        new Set(analysis.ganttData.map((d) => d.status.toLowerCase())),
+      ).filter((s) => TIMELINE_STATUS_OPTIONS.includes(s)),
+    [analysis.ganttData],
+  );
+
+  const presentTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          analysis.ganttData
+            .map((d) => d.resourceType)
+            .filter((t): t is string => Boolean(t)),
+        ),
+      ).sort(),
+    [analysis.ganttData],
+  );
+
+  const filteredData: GanttItem[] = useMemo(
+    () =>
+      analysis.ganttData.filter((item) => {
+        if (
+          activeStatuses.size > 0 &&
+          !activeStatuses.has(item.status.toLowerCase())
+        ) {
+          return false;
+        }
+        if (activeTypes.size > 0 && !activeTypes.has(item.resourceType ?? "")) {
+          return false;
+        }
+        if (deferredQuery) {
+          const q = deferredQuery.trim().toLowerCase();
+          if (
+            q &&
+            !item.name.toLowerCase().includes(q) &&
+            !item.unique_id.toLowerCase().includes(q)
+          ) {
+            return false;
+          }
+        }
+        return true;
+      }),
+    [analysis.ganttData, activeStatuses, activeTypes, deferredQuery],
+  );
+
+  const hasActiveFilters =
+    activeStatuses.size > 0 || activeTypes.size > 0 || nameQuery.length > 0;
 
   return (
     <div className="workspace-view">
@@ -818,26 +865,63 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
                   </button>
                 );
               })}
-              {activeStatuses.size > 0 && (
-                <button
-                  type="button"
-                  className={PILL_BASE}
-                  onClick={() => setActiveStatuses(new Set())}
-                >
-                  Clear filters
-                </button>
-              )}
+            </div>
+          )}
+
+          {presentTypes.length > 0 && (
+            <div className="pill-row">
+              {presentTypes.map((type) => {
+                const isActive = activeTypes.has(type);
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    className={isActive ? PILL_ACTIVE : PILL_BASE}
+                    onClick={() => toggleType(type)}
+                  >
+                    {type}
+                    {isActive && " ✓"}
+                  </button>
+                );
+              })}
             </div>
           )}
 
           <label className="workspace-search workspace-search--compact">
             <span>Search nodes</span>
-            <input
-              value={nameQuery}
-              onChange={(e) => setNameQuery(e.target.value)}
-              placeholder="Filter by name or id…"
-            />
+            <div className="workspace-search__input-row">
+              <input
+                value={nameQuery}
+                onChange={(e) => setNameQuery(e.target.value)}
+                placeholder="Filter by name or id…"
+                aria-label="Search timeline nodes"
+              />
+              {nameQuery && (
+                <button
+                  type="button"
+                  className="workspace-search__clear"
+                  aria-label="Clear search"
+                  onClick={() => setNameQuery("")}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </label>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className={PILL_BASE}
+              onClick={() => {
+                setActiveStatuses(new Set());
+                setActiveTypes(new Set());
+                setNameQuery("");
+              }}
+            >
+              Clear all filters
+            </button>
+          )}
         </div>
 
         {filteredData.length < analysis.ganttData.length && (

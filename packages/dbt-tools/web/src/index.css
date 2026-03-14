@@ -775,6 +775,38 @@ code {
   min-width: min(100%, 300px);
 }
 
+.workspace-search__input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.workspace-search__input-row input {
+  flex: 1;
+  padding-right: 2.4rem; /* room for the clear button */
+}
+
+.workspace-search__clear {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0.15rem 0.3rem;
+  cursor: pointer;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.workspace-search__clear:hover {
+  color: var(--text);
+  background: rgba(35, 42, 52, 0.08);
+}
+
 .group-chip-list,
 .pill-row {
   display: flex;

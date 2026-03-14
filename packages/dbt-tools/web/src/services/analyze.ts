@@ -277,6 +277,19 @@ export async function analyzeArtifacts(
   );
 
   const graphologyGraph = graph.getGraph();
+
+  // Enrich each GanttItem with its resource_type from the manifest graph.
+  const enrichedGanttData = ganttData.map((item) => {
+    const attrs = graphologyGraph.hasNode(item.unique_id)
+      ? graphologyGraph.getNodeAttributes(item.unique_id)
+      : undefined;
+    const rtRaw = attrs?.resource_type;
+    return {
+      ...item,
+      resourceType: typeof rtRaw === "string" && rtRaw ? rtRaw : undefined,
+    };
+  });
+
   const executions = nodeExecutions
     .map((execution) => {
       const attrs = graphologyGraph.hasNode(execution.unique_id)
@@ -318,7 +331,7 @@ export async function analyzeArtifacts(
     summary,
     projectName,
     runStartedAt,
-    ganttData,
+    ganttData: enrichedGanttData,
     bottlenecks,
     graphSummary: {
       totalNodes: graphSummary.total_nodes,
