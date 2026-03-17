@@ -1,10 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import type { GanttItem } from "../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getResourceTypeColor, getStatusColor } from "../constants/colors";
+import type { GanttItem, ResourceConnectionSummary } from "../types";
 
 interface GanttChartProps {
   data: GanttItem[];
   /** Absolute epoch-ms of the earliest executed node — enables wall-clock timestamps. */
   runStartedAt?: number | null;
+  /** O(1) lookup from unique_id → row index (pass from TimelineView). */
+  dataIndexById?: Map<string, number>;
+  /** Dependency index keyed by unique_id. */
+  dependencyIndex?: Record<string, ResourceConnectionSummary>;
+  /** Whether to render dependency edges. Default: true. */
+  showEdges?: boolean;
 }
 
 // ─── Layout constants ──────────────────────────────────────────────────────
@@ -18,40 +25,6 @@ const X_PAD = 24; // right padding
 const AXIS_TOP = 32; // top gutter for X-axis tick labels
 const MAX_VIEWPORT_H = 640; // cap scroll window height
 const MIN_VIEWPORT_H = 240;
-
-// ─── Colours ───────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  success: "#2bb673",
-  error: "#d86066",
-  skipped: "#94a3b8",
-  "run error": "#d86066",
-  pass: "#2bb673",
-  fail: "#d86066",
-  warn: "#f2a44b",
-  "no op": "#94a3b8",
-};
-
-function getStatusColor(status: string): string {
-  return STATUS_COLORS[status.toLowerCase()] ?? "#64748b";
-}
-
-/** Left-border accent color by dbt resource type. */
-const RESOURCE_TYPE_COLORS: Record<string, string> = {
-  model: "#2558d9",
-  test: "#8b5cf6",
-  seed: "#0ea5e9",
-  snapshot: "#14b8a6",
-  source: "#94a3b8",
-  exposure: "#f97316",
-  metric: "#ec4899",
-  semantic_model: "#6366f1",
-  analysis: "#78716c",
-  unit_test: "#a78bfa",
-};
-
-function getResourceTypeColor(resourceType: string | undefined): string {
-  return (resourceType && RESOURCE_TYPE_COLORS[resourceType]) ?? "#cbd5e1";
-}
 
 const TOOLTIP_LABEL_STYLE: React.CSSProperties = {
   color: "var(--text-soft)",
@@ -221,6 +194,39 @@ function drawGantt(
   }
 }
 
+// ─── Edge computation ─────────────────────────────────────────────────────
+interface Edge {
+  sourceRow: number;
+  targetRow: number;
+}
+
+function getEdgesForVisibleRows(
+  data: GanttItem[],
+  visStart: number,
+  visEnd: number,
+  dependencyIndex: Record<string, ResourceConnectionSummary>,
+  dataIndexById: Map<string, number>,
+): Edge[] {
+  const visibleIds = new Set<string>();
+  for (let i = visStart; i <= visEnd; i++) {
+    visibleIds.add(data[i]!.unique_id);
+  }
+
+  const edges: Edge[] = [];
+  for (let i = visStart; i <= visEnd; i++) {
+    const item = data[i]!;
+    const deps = dependencyIndex[item.unique_id];
+    if (!deps) continue;
+    for (const dep of deps.upstream) {
+      if (!visibleIds.has(dep.uniqueId)) continue;
+      const sourceRow = dataIndexById.get(dep.uniqueId);
+      if (sourceRow === undefined) continue;
+      edges.push({ sourceRow, targetRow: i });
+    }
+  }
+  return edges;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────
 interface HoverState {
   item: GanttItem;
@@ -293,7 +299,13 @@ function GanttTooltip({
   );
 }
 
-export function GanttChart({ data, runStartedAt }: GanttChartProps) {
+export function GanttChart({
+  data,
+  runStartedAt,
+  dataIndexById,
+  dependencyIndex,
+  showEdges = true,
+}: GanttChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -317,6 +329,27 @@ export function GanttChart({ data, runStartedAt }: GanttChartProps) {
     Math.min(MAX_VIEWPORT_H, totalScrollH),
   );
   const needsScroll = totalScrollH > viewportH;
+
+  // ── Compute visible row range (shared by canvas and SVG) ──────────────────
+  const visStart = Math.max(0, Math.floor(scrollTop / ROW_H));
+  const visEnd = Math.min(
+    data.length - 1,
+    Math.ceil((scrollTop + viewportH - AXIS_TOP) / ROW_H),
+  );
+
+  // ── Compute edges for visible rows ────────────────────────────────────────
+  const edges = useMemo(() => {
+    if (!showEdges || !dependencyIndex || !dataIndexById || data.length === 0) {
+      return [];
+    }
+    return getEdgesForVisibleRows(
+      data,
+      visStart,
+      visEnd,
+      dependencyIndex,
+      dataIndexById,
+    );
+  }, [showEdges, dependencyIndex, dataIndexById, data, visStart, visEnd]);
 
   // ── Redraw whenever data / scrollTop / mode / label width changes ─────────
   useEffect(() => {
@@ -380,6 +413,22 @@ export function GanttChart({ data, runStartedAt }: GanttChartProps) {
     );
   }
 
+  // ── SVG edge paths ────────────────────────────────────────────────────────
+  function edgePath(edge: Edge, chartW: number): string {
+    const src = data[edge.sourceRow]!;
+    const tgt = data[edge.targetRow]!;
+
+    const sx = effectiveLabelW + ((src.start + src.duration) / maxEnd) * chartW;
+    const sy =
+      AXIS_TOP + edge.sourceRow * ROW_H + BAR_PAD + BAR_H / 2 - scrollTop;
+    const tx = effectiveLabelW + (tgt.start / maxEnd) * chartW;
+    const ty =
+      AXIS_TOP + edge.targetRow * ROW_H + BAR_PAD + BAR_H / 2 - scrollTop;
+    const cx = Math.abs(tx - sx) * 0.4;
+
+    return `M${sx},${sy} C${sx + cx},${sy} ${tx - cx},${ty} ${tx},${ty}`;
+  }
+
   return (
     <div>
       {/* Display mode toggle */}
@@ -421,6 +470,42 @@ export function GanttChart({ data, runStartedAt }: GanttChartProps) {
             display: "block",
           }}
         />
+
+        {/* SVG edge overlay — rendered above canvas, below tooltip */}
+        {edges.length > 0 && (
+          <svg
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: viewportH,
+              pointerEvents: "none",
+              overflow: "hidden",
+              zIndex: 5,
+            }}
+            aria-hidden
+          >
+            {edges.map((edge, i) => {
+              // chartW is approximate here; canvas width may differ by 1px — acceptable for edges
+              const approxChartW =
+                (canvasRef.current?.getBoundingClientRect().width ??
+                  (containerWidth || 600)) -
+                effectiveLabelW -
+                X_PAD;
+              return (
+                <path
+                  key={i}
+                  d={edgePath(edge, approxChartW)}
+                  stroke="#3b82f6"
+                  strokeWidth={1.5}
+                  fill="none"
+                  opacity={0.5}
+                />
+              );
+            })}
+          </svg>
+        )}
 
         {/* Transparent overlay: captures scroll + mouse events */}
         <div

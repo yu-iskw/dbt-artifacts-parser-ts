@@ -1,12 +1,13 @@
 import {
   type ReactNode,
+  type RefObject,
   useEffect,
   useDeferredValue,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 import {
   Cell,
   Pie,
@@ -16,7 +17,9 @@ import {
 } from "recharts";
 import { EmptyState } from "./EmptyState";
 import { GanttChart } from "./GanttChart";
+import { GanttLegend } from "./GanttLegend";
 import { Tooltip } from "./Tooltip";
+import { getResourceTypeColor } from "../constants/colors";
 import type {
   AnalysisState,
   ExecutionRow,
@@ -63,6 +66,13 @@ function formatSeconds(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) return "n/a";
   if (value >= 10) return `${value.toFixed(1)}s`;
   return `${value.toFixed(2)}s`;
+}
+
+function formatRunStartedAt(epochMs: number): string {
+  return new Date(epochMs).toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 function badgeClassName(tone: StatusTone): string {
@@ -333,6 +343,73 @@ function StatusDonut({ analysis }: { analysis: AnalysisState }) {
   );
 }
 
+function TypeDonutCard({
+  resourceType,
+  statusData,
+  totalCount,
+}: {
+  resourceType: string;
+  statusData: Array<{ name: string; value: number; tone: StatusTone }>;
+  totalCount: number;
+}) {
+  const accentColor = getResourceTypeColor(resourceType);
+  return (
+    <div
+      className="type-donut-card"
+      style={{ "--type-accent": accentColor } as React.CSSProperties}
+    >
+      <div className="type-donut-card__title">
+        {resourceType.replace("_", " ")}
+        <span className="type-donut-card__count">{totalCount}</span>
+      </div>
+      <div className="type-donut-card__chart">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={statusData}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={32}
+              outerRadius={48}
+              paddingAngle={3}
+              strokeWidth={0}
+            >
+              {statusData.map((entry) => (
+                <Cell
+                  key={entry.name}
+                  fill={STATUS_COLORS[entry.tone as StatusTone]}
+                />
+              ))}
+            </Pie>
+            <RechartsTooltip
+              formatter={(value: number) => [`${value} runs`, "Count"]}
+              contentStyle={{
+                borderRadius: 14,
+                border: "1px solid rgba(35, 42, 52, 0.12)",
+                boxShadow: "0 20px 40px rgba(26, 34, 43, 0.14)",
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="type-donut-card__legend">
+        {statusData.map((entry) => (
+          <div key={entry.name} className="type-donut-card__legend-row">
+            <div className="type-donut-card__legend-label">
+              <span
+                className="legend-row__swatch"
+                style={{ background: STATUS_COLORS[entry.tone as StatusTone] }}
+              />
+              {entry.name}
+            </div>
+            <span>{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Shows counts per resource type in the graph. */
 function GraphCompositionCard({
   graphSummary,
@@ -372,6 +449,36 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
   ).length;
   const criticalPathLength = analysis.summary.critical_path?.path.length ?? 0;
   const modelsCount = analysis.graphSummary.nodesByType.model ?? 0;
+
+  // Build a tone lookup from the aggregate statusBreakdown so per-type cards
+  // can colour their slices correctly without re-deriving tone logic.
+  const statusToTone = useMemo(() => {
+    const map = new Map<string, StatusTone>();
+    for (const entry of analysis.statusBreakdown) {
+      map.set(entry.status, entry.tone);
+    }
+    return map;
+  }, [analysis.statusBreakdown]);
+
+  // Per-type status data: group executions by resourceType, then by status.
+  const typeStatusEntries = useMemo(() => {
+    const countMap: Record<string, Record<string, number>> = {};
+    for (const row of analysis.executions) {
+      const counts = (countMap[row.resourceType] ??= {});
+      counts[row.status] = (counts[row.status] ?? 0) + 1;
+    }
+    return Object.entries(countMap)
+      .map(([type, counts]) => {
+        const statusData = Object.entries(counts).map(([name, value]) => ({
+          name,
+          value,
+          tone: (statusToTone.get(name) ?? "neutral") as StatusTone,
+        }));
+        const totalCount = Object.values(counts).reduce((s, n) => s + n, 0);
+        return { type, statusData, totalCount };
+      })
+      .sort((a, b) => b.totalCount - a.totalCount);
+  }, [analysis.executions, statusToTone]);
 
   return (
     <div className="workspace-view">
@@ -465,6 +572,24 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
           </div>
         </SectionCard>
       </div>
+
+      {typeStatusEntries.length > 0 && (
+        <SectionCard
+          title="Execution by resource type"
+          subtitle="Status breakdown per resource type."
+        >
+          <div className="type-donut-grid">
+            {typeStatusEntries.map(({ type, statusData, totalCount }) => (
+              <TypeDonutCard
+                key={type}
+                resourceType={type}
+                statusData={statusData}
+                totalCount={totalCount}
+              />
+            ))}
+          </div>
+        </SectionCard>
+      )}
     </div>
   );
 }
@@ -728,13 +853,28 @@ function ResultsView({
               })}
             </div>
 
-            {filteredRows.length === 0 && (
-              <EmptyState
-                icon="✓"
-                headline="No matching rows"
-                subtext="Try clearing the status filter or adjusting your search query."
-              />
-            )}
+            {filteredRows.length === 0 &&
+              (tabRows.length === 0 ? (
+                <EmptyState
+                  icon={isTestTab ? "🧪" : "📋"}
+                  headline={
+                    isTestTab
+                      ? "No test results in this artifact"
+                      : "No execution results"
+                  }
+                  subtext={
+                    isTestTab
+                      ? "Run 'dbt test' or 'dbt build' to capture test results in run_results.json."
+                      : "No model, seed, or snapshot executions were found in run_results.json."
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon="✓"
+                  headline="No matching rows"
+                  subtext="Try clearing the status filter or adjusting your search query."
+                />
+              ))}
           </div>
         </div>
       </SectionCard>
@@ -785,12 +925,11 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
     });
   }
 
-  // O(1) row lookup — available for future Phase B use (dependency edge scrolling).
-  const _dataIndexById = useMemo(
+  // O(1) row lookup passed to GanttChart for edge rendering.
+  const dataIndexById = useMemo(
     () => new Map(analysis.ganttData.map((item, i) => [item.unique_id, i])),
     [analysis.ganttData],
   );
-  void _dataIndexById;
 
   const presentStatuses = useMemo(
     () =>
@@ -839,6 +978,26 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
     [analysis.ganttData, activeStatuses, activeTypes, deferredQuery],
   );
 
+  // Counts per status/type (unfiltered) — shared by legend and filter pills.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of analysis.ganttData) {
+      const s = item.status.toLowerCase();
+      counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }, [analysis.ganttData]);
+
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of analysis.ganttData) {
+      if (item.resourceType) {
+        counts[item.resourceType] = (counts[item.resourceType] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [analysis.ganttData]);
+
   const hasActiveFilters =
     activeStatuses.size > 0 || activeTypes.size > 0 || nameQuery.length > 0;
 
@@ -848,81 +1007,101 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
         title="Execution timeline"
         subtitle="Relative start and duration for each executed node."
       >
-        <div className="timeline-controls">
-          {presentStatuses.length > 0 && (
-            <div className="pill-row">
-              {presentStatuses.map((status) => {
-                const isActive = activeStatuses.has(status);
-                return (
+        <GanttLegend
+          statusCounts={statusCounts}
+          typeCounts={typeCounts}
+          activeStatuses={activeStatuses}
+          activeTypes={activeTypes}
+          onToggleStatus={toggleStatus}
+          onToggleType={toggleType}
+        />
+
+        <details className="timeline-filter-accordion">
+          <summary className="timeline-filter-accordion__summary">
+            Filters
+            {hasActiveFilters && (
+              <span className="timeline-filter-accordion__badge">
+                {activeStatuses.size + activeTypes.size + (nameQuery ? 1 : 0)}
+              </span>
+            )}
+          </summary>
+
+          <div className="timeline-controls">
+            {presentStatuses.length > 0 && (
+              <div className="pill-row">
+                {presentStatuses.map((status) => {
+                  const isActive = activeStatuses.has(status);
+                  const count = statusCounts[status] ?? 0;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      className={isActive ? PILL_ACTIVE : PILL_BASE}
+                      onClick={() => toggleStatus(status)}
+                    >
+                      {status} ({count}){isActive && " ✓"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {presentTypes.length > 0 && (
+              <div className="pill-row">
+                {presentTypes.map((type) => {
+                  const isActive = activeTypes.has(type);
+                  const count = typeCounts[type] ?? 0;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className={isActive ? PILL_ACTIVE : PILL_BASE}
+                      onClick={() => toggleType(type)}
+                    >
+                      {type} ({count}){isActive && " ✓"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <label className="workspace-search workspace-search--compact">
+              <span>Search nodes</span>
+              <div className="workspace-search__input-row">
+                <input
+                  value={nameQuery}
+                  onChange={(e) => setNameQuery(e.target.value)}
+                  placeholder="Filter by name or id…"
+                  aria-label="Search timeline nodes"
+                />
+                {nameQuery && (
                   <button
-                    key={status}
                     type="button"
-                    className={isActive ? PILL_ACTIVE : PILL_BASE}
-                    onClick={() => toggleStatus(status)}
+                    className="workspace-search__clear"
+                    aria-label="Clear search"
+                    onClick={() => setNameQuery("")}
                   >
-                    {status}
-                    {isActive && " ✓"}
+                    ✕
                   </button>
-                );
-              })}
-            </div>
-          )}
+                )}
+              </div>
+            </label>
 
-          {presentTypes.length > 0 && (
-            <div className="pill-row">
-              {presentTypes.map((type) => {
-                const isActive = activeTypes.has(type);
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    className={isActive ? PILL_ACTIVE : PILL_BASE}
-                    onClick={() => toggleType(type)}
-                  >
-                    {type}
-                    {isActive && " ✓"}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <label className="workspace-search workspace-search--compact">
-            <span>Search nodes</span>
-            <div className="workspace-search__input-row">
-              <input
-                value={nameQuery}
-                onChange={(e) => setNameQuery(e.target.value)}
-                placeholder="Filter by name or id…"
-                aria-label="Search timeline nodes"
-              />
-              {nameQuery && (
-                <button
-                  type="button"
-                  className="workspace-search__clear"
-                  aria-label="Clear search"
-                  onClick={() => setNameQuery("")}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </label>
-
-          {hasActiveFilters && (
-            <button
-              type="button"
-              className={PILL_BASE}
-              onClick={() => {
-                setActiveStatuses(new Set());
-                setActiveTypes(new Set());
-                setNameQuery("");
-              }}
-            >
-              Clear all filters
-            </button>
-          )}
-        </div>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className={PILL_BASE}
+                onClick={() => {
+                  setActiveStatuses(new Set());
+                  setActiveTypes(new Set());
+                  setNameQuery("");
+                }}
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+        </details>
 
         {filteredData.length < analysis.ganttData.length && (
           <p className="timeline-filter-note">
@@ -930,9 +1109,221 @@ function TimelineView({ analysis }: { analysis: AnalysisState }) {
           </p>
         )}
 
-        <GanttChart data={filteredData} runStartedAt={analysis.runStartedAt} />
+        <GanttChart
+          data={filteredData}
+          runStartedAt={analysis.runStartedAt}
+          dataIndexById={dataIndexById}
+          dependencyIndex={analysis.dependencyIndex}
+        />
       </SectionCard>
     </div>
+  );
+}
+
+interface ExplorerPaneProps {
+  explorerResources: ResourceNode[];
+  totalResources: number;
+  resourceGroups: AnalysisState["resourceGroups"];
+  scopeFilter: "project" | "all";
+  setScopeFilter: (value: "project" | "all") => void;
+  groupFilter: string;
+  setGroupFilter: (value: string) => void;
+  resourceQuery: string;
+  setResourceQuery: (value: string) => void;
+  selectedResourceId: string | null;
+  setSelectedResourceId: (id: string | null) => void;
+  projectName: string | null | undefined;
+  explorerListRef: RefObject<HTMLDivElement>;
+  explorerVirtualizer: Virtualizer<HTMLDivElement, Element>;
+}
+
+function ExplorerPane({
+  explorerResources,
+  totalResources,
+  resourceGroups,
+  scopeFilter,
+  setScopeFilter,
+  groupFilter,
+  setGroupFilter,
+  resourceQuery,
+  setResourceQuery,
+  selectedResourceId,
+  setSelectedResourceId,
+  projectName,
+  explorerListRef,
+  explorerVirtualizer,
+}: ExplorerPaneProps) {
+  return (
+    <aside className="explorer-pane">
+      <div className="explorer-pane__header">
+        <div>
+          <p className="eyebrow">Asset explorer</p>
+          <h2>Workspace inventory</h2>
+        </div>
+        <div className="explorer-pane__count">
+          {explorerResources.length}
+          {scopeFilter === "project" &&
+            totalResources !== explorerResources.length && (
+              <span
+                style={{
+                  fontSize: "0.72rem",
+                  display: "block",
+                  textAlign: "center",
+                  color: COLOR_TEXT_SOFT,
+                }}
+              >
+                of {totalResources}
+              </span>
+            )}
+        </div>
+      </div>
+
+      {/* Scope filter */}
+      {projectName && (
+        <div className="group-chip-list">
+          <button
+            type="button"
+            className={scopeFilter === "project" ? CHIP_ACTIVE : CHIP_BASE}
+            onClick={() => setScopeFilter("project")}
+            title={`Show only ${projectName} resources`}
+          >
+            {projectName}
+          </button>
+          <button
+            type="button"
+            className={scopeFilter === "all" ? CHIP_ACTIVE : CHIP_BASE}
+            onClick={() => setScopeFilter("all")}
+          >
+            All packages
+          </button>
+        </div>
+      )}
+
+      <label className="workspace-search">
+        <span>Search resources</span>
+        <input
+          value={resourceQuery}
+          onChange={(event) => setResourceQuery(event.target.value)}
+          placeholder="Filter by name, path, type, or id"
+        />
+      </label>
+
+      <div className="group-chip-list">
+        <button
+          type="button"
+          className={groupFilter === "all" ? CHIP_ACTIVE : CHIP_BASE}
+          onClick={() => setGroupFilter("all")}
+        >
+          All <span>{explorerResources.length}</span>
+        </button>
+        {resourceGroups
+          .filter(
+            (group) =>
+              scopeFilter === "all" ||
+              !projectName ||
+              explorerResources.some(
+                (r) => r.resourceType === group.resourceType,
+              ),
+          )
+          .map((group) => {
+            const countInScope = explorerResources.filter(
+              (r) => r.resourceType === group.resourceType,
+            ).length;
+            if (countInScope === 0) return null;
+            return (
+              <button
+                key={group.resourceType}
+                type="button"
+                className={
+                  groupFilter === group.resourceType ? CHIP_ACTIVE : CHIP_BASE
+                }
+                onClick={() => setGroupFilter(group.resourceType)}
+              >
+                {group.label} <span>{countInScope}</span>
+              </button>
+            );
+          })}
+      </div>
+
+      {/* Virtualized explorer list */}
+      <div className="explorer-list" ref={explorerListRef}>
+        <div
+          style={{
+            height: explorerVirtualizer.getTotalSize(),
+            position: "relative",
+          }}
+        >
+          {explorerVirtualizer.getVirtualItems().map((virtualRow) => {
+            const resource = explorerResources[virtualRow.index]!;
+            return (
+              <div
+                key={resource.uniqueId}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                  paddingBottom: "0.7rem",
+                }}
+              >
+                <button
+                  type="button"
+                  className={
+                    resource.uniqueId === selectedResourceId
+                      ? "explorer-item explorer-item--active"
+                      : "explorer-item"
+                  }
+                  style={{ width: "100%" }}
+                  onClick={() => setSelectedResourceId(resource.uniqueId)}
+                >
+                  <div className="explorer-item__title-row">
+                    <strong>{resource.name}</strong>
+                    {resource.status && (
+                      <span className={badgeClassName(resource.statusTone)}>
+                        {resource.status}
+                      </span>
+                    )}
+                  </div>
+                  <div className="explorer-item__meta">
+                    <span>{resource.resourceType}</span>
+                    <Tooltip content={resource.uniqueId}>
+                      <span>
+                        {resource.originalFilePath ??
+                          resource.path ??
+                          resource.uniqueId}
+                      </span>
+                    </Tooltip>
+                  </div>
+                  {resource.description && (
+                    <div
+                      style={{
+                        marginTop: "0.4rem",
+                        fontSize: "0.84rem",
+                        color: COLOR_TEXT_SOFT,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {resource.description.length > 80
+                        ? `${resource.description.slice(0, 80)}…`
+                        : resource.description}
+                    </div>
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {explorerResources.length === 0 && (
+          <EmptyState
+            icon="🔍"
+            headline="No resources found"
+            subtext="Adjust the search query, group filter, or scope to find what you're looking for."
+          />
+        )}
+      </div>
+    </aside>
   );
 }
 
@@ -959,9 +1350,13 @@ function WorkspaceContent({
   if (activeView === "assets")
     return <AssetsView analysis={analysis} resource={selectedResource} />;
   if (activeView === "models")
-    return <ResultsView allRows={analysis.executions} tab="models" />;
+    return (
+      <ResultsView key="models" allRows={analysis.executions} tab="models" />
+    );
   if (activeView === "tests")
-    return <ResultsView allRows={analysis.executions} tab="tests" />;
+    return (
+      <ResultsView key="tests" allRows={analysis.executions} tab="tests" />
+    );
   return <TimelineView analysis={analysis} />;
 }
 
@@ -1044,180 +1439,22 @@ export function AnalysisWorkspace({
     >
       {/* Explorer pane — only visible on the Assets tab */}
       {showExplorer && (
-        <aside className="explorer-pane">
-          <div className="explorer-pane__header">
-            <div>
-              <p className="eyebrow">Asset explorer</p>
-              <h2>Workspace inventory</h2>
-            </div>
-            <div className="explorer-pane__count">
-              {explorerResources.length}
-              {scopeFilter === "project" &&
-                analysis.resources.length !== explorerResources.length && (
-                  <span
-                    style={{
-                      fontSize: "0.72rem",
-                      display: "block",
-                      textAlign: "center",
-                      color: COLOR_TEXT_SOFT,
-                    }}
-                  >
-                    of {analysis.resources.length}
-                  </span>
-                )}
-            </div>
-          </div>
-
-          {/* Scope filter */}
-          {projectName && (
-            <div className="group-chip-list">
-              <button
-                type="button"
-                className={scopeFilter === "project" ? CHIP_ACTIVE : CHIP_BASE}
-                onClick={() => setScopeFilter("project")}
-                title={`Show only ${projectName} resources`}
-              >
-                {projectName}
-              </button>
-              <button
-                type="button"
-                className={scopeFilter === "all" ? CHIP_ACTIVE : CHIP_BASE}
-                onClick={() => setScopeFilter("all")}
-              >
-                All packages
-              </button>
-            </div>
-          )}
-
-          <label className="workspace-search">
-            <span>Search resources</span>
-            <input
-              value={resourceQuery}
-              onChange={(event) => setResourceQuery(event.target.value)}
-              placeholder="Filter by name, path, type, or id"
-            />
-          </label>
-
-          <div className="group-chip-list">
-            <button
-              type="button"
-              className={groupFilter === "all" ? CHIP_ACTIVE : CHIP_BASE}
-              onClick={() => setGroupFilter("all")}
-            >
-              All <span>{explorerResources.length}</span>
-            </button>
-            {analysis.resourceGroups
-              .filter(
-                (group) =>
-                  scopeFilter === "all" ||
-                  !projectName ||
-                  analysis.resources.some(
-                    (r) =>
-                      r.resourceType === group.resourceType &&
-                      r.packageName === projectName,
-                  ),
-              )
-              .map((group) => {
-                const countInScope = explorerResources.filter(
-                  (r) => r.resourceType === group.resourceType,
-                ).length;
-                if (countInScope === 0) return null;
-                return (
-                  <button
-                    key={group.resourceType}
-                    type="button"
-                    className={
-                      groupFilter === group.resourceType
-                        ? CHIP_ACTIVE
-                        : CHIP_BASE
-                    }
-                    onClick={() => setGroupFilter(group.resourceType)}
-                  >
-                    {group.label} <span>{countInScope}</span>
-                  </button>
-                );
-              })}
-          </div>
-
-          {/* Virtualized explorer list */}
-          <div className="explorer-list" ref={explorerListRef}>
-            <div
-              style={{
-                height: explorerVirtualizer.getTotalSize(),
-                position: "relative",
-              }}
-            >
-              {explorerVirtualizer.getVirtualItems().map((virtualRow) => {
-                const resource = explorerResources[virtualRow.index]!;
-                return (
-                  <div
-                    key={resource.uniqueId}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                      paddingBottom: "0.7rem",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className={
-                        resource.uniqueId === selectedResourceId
-                          ? "explorer-item explorer-item--active"
-                          : "explorer-item"
-                      }
-                      style={{ width: "100%" }}
-                      onClick={() => setSelectedResourceId(resource.uniqueId)}
-                    >
-                      <div className="explorer-item__title-row">
-                        <strong>{resource.name}</strong>
-                        {resource.status && (
-                          <span className={badgeClassName(resource.statusTone)}>
-                            {resource.status}
-                          </span>
-                        )}
-                      </div>
-                      <div className="explorer-item__meta">
-                        <span>{resource.resourceType}</span>
-                        <Tooltip content={resource.uniqueId}>
-                          <span>
-                            {resource.originalFilePath ??
-                              resource.path ??
-                              resource.uniqueId}
-                          </span>
-                        </Tooltip>
-                      </div>
-                      {resource.description && (
-                        <div
-                          style={{
-                            marginTop: "0.4rem",
-                            fontSize: "0.84rem",
-                            color: COLOR_TEXT_SOFT,
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {resource.description.length > 80
-                            ? `${resource.description.slice(0, 80)}…`
-                            : resource.description}
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {explorerResources.length === 0 && (
-              <EmptyState
-                icon="🔍"
-                headline="No resources found"
-                subtext="Adjust the search query, group filter, or scope to find what you're looking for."
-              />
-            )}
-          </div>
-        </aside>
+        <ExplorerPane
+          explorerResources={explorerResources}
+          totalResources={analysis.resources.length}
+          resourceGroups={analysis.resourceGroups}
+          scopeFilter={scopeFilter}
+          setScopeFilter={setScopeFilter}
+          groupFilter={groupFilter}
+          setGroupFilter={setGroupFilter}
+          resourceQuery={resourceQuery}
+          setResourceQuery={setResourceQuery}
+          selectedResourceId={selectedResourceId}
+          setSelectedResourceId={setSelectedResourceId}
+          projectName={projectName}
+          explorerListRef={explorerListRef}
+          explorerVirtualizer={explorerVirtualizer}
+        />
       )}
 
       <div className="workspace-main-panel">
@@ -1226,6 +1463,20 @@ export function AnalysisWorkspace({
             <p className="eyebrow">Analysis workspace</p>
             <h2>{VIEW_TITLES[activeView]}</h2>
           </div>
+          {(projectName != null || analysis.runStartedAt != null) && (
+            <div className="workspace-header-meta">
+              {projectName != null && (
+                <span className="workspace-header-meta__project">
+                  {projectName}
+                </span>
+              )}
+              {analysis.runStartedAt != null && (
+                <span className="workspace-header-meta__time">
+                  Run started {formatRunStartedAt(analysis.runStartedAt)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <WorkspaceContent

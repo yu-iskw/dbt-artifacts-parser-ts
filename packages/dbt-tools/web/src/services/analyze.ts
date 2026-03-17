@@ -38,6 +38,30 @@ function statusLabel(status: string | null | undefined): string {
     .join(" ");
 }
 
+/**
+ * Infer the dbt resource type from the unique_id prefix.
+ * All dbt unique_ids follow the format `{resource_type}.{package}.{name}...`.
+ * Used as a fallback when the node is absent from the manifest graph (e.g.
+ * slight manifest/run_results version mismatch).
+ */
+function inferResourceTypeFromId(uniqueId: string): string {
+  const prefix = uniqueId.split(".")[0] ?? "";
+  const KNOWN = new Set([
+    "model",
+    "test",
+    "unit_test",
+    "seed",
+    "snapshot",
+    "source",
+    "exposure",
+    "metric",
+    "semantic_model",
+    "analysis",
+    "macro",
+  ]);
+  return KNOWN.has(prefix) ? prefix : "operation";
+}
+
 function resourceTypeLabel(resourceType: string): string {
   return resourceType
     .split("_")
@@ -286,7 +310,10 @@ export async function analyzeArtifacts(
     const rtRaw = attrs?.resource_type;
     return {
       ...item,
-      resourceType: typeof rtRaw === "string" && rtRaw ? rtRaw : undefined,
+      resourceType:
+        typeof rtRaw === "string" && rtRaw
+          ? rtRaw
+          : inferResourceTypeFromId(item.unique_id),
     };
   });
 
@@ -299,7 +326,9 @@ export async function analyzeArtifacts(
       return {
         uniqueId: execution.unique_id,
         name: String(attrs?.name || execution.unique_id),
-        resourceType: String(attrs?.resource_type || "operation"),
+        resourceType: String(
+          attrs?.resource_type || inferResourceTypeFromId(execution.unique_id),
+        ),
         packageName: String(attrs?.package_name || ""),
         path:
           typeof attrs?.original_file_path === "string"

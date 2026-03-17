@@ -10,8 +10,8 @@ export interface GanttItem {
   end: number;
   duration: number;
   status: string;
-  /** dbt resource type (model, test, seed, snapshot, etc.). Optional — absent when not found in graph. */
-  resourceType?: string;
+  /** dbt resource type (model, test, seed, snapshot, etc.). Inferred from unique_id prefix when absent from the manifest graph. */
+  resourceType: string;
 }
 
 export type StatusTone = "positive" | "warning" | "danger" | "neutral";

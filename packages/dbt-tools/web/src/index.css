@@ -890,6 +890,29 @@ code {
   align-items: end;
 }
 
+.workspace-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.workspace-header-meta__project {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.workspace-header-meta__time {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
 .workspace-view {
   display: flex;
   flex-direction: column;
@@ -1123,6 +1146,174 @@ code {
   margin: 0 0 0.5rem;
   font-size: 0.86rem;
   color: var(--text-soft);
+}
+
+/* Per-type donut grid in OverviewView */
+.type-donut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.type-donut-card {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--type-accent, #cbd5e1);
+  padding: 0.75rem;
+}
+
+.type-donut-card__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-bottom: 0.5rem;
+}
+
+.type-donut-card__count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.type-donut-card__chart {
+  width: 100%;
+  height: 110px;
+}
+
+.type-donut-card__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.77rem;
+}
+
+.type-donut-card__legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.type-donut-card__legend-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Gantt legend — color swatches for status and resource type */
+.gantt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(35, 42, 52, 0.07);
+  border-radius: 8px;
+}
+
+.gantt-legend__group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.gantt-legend__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
+  margin-right: 0.25rem;
+}
+
+.gantt-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-body);
+  transition: background 0.12s;
+}
+
+.gantt-legend__item:hover {
+  background: rgba(35, 42, 52, 0.06);
+}
+
+.gantt-legend__item--active {
+  background: rgba(37, 88, 217, 0.08);
+  border-color: rgba(37, 88, 217, 0.25);
+}
+
+.gantt-legend__name {
+  text-transform: capitalize;
+}
+
+.gantt-legend__count {
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+/* Timeline filter accordion */
+.timeline-filter-accordion {
+  margin-bottom: 0.5rem;
+}
+
+.timeline-filter-accordion__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  padding: 0.3rem 0;
+  user-select: none;
+  list-style: none;
+}
+
+.timeline-filter-accordion__summary::-webkit-details-marker {
+  display: none;
+}
+
+.timeline-filter-accordion__summary::before {
+  content: "▶";
+  font-size: 0.65rem;
+  transition: transform 0.15s;
+  display: inline-block;
+}
+
+details.timeline-filter-accordion[open]
+  .timeline-filter-accordion__summary::before {
+  transform: rotate(90deg);
+}
+
+.timeline-filter-accordion__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(37, 88, 217, 0.15);
+  color: #2558d9;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+details.timeline-filter-accordion .timeline-controls {
+  margin-top: 0.5rem;
 }
 
 .results-table {
