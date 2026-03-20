@@ -7,46 +7,95 @@ import { ErrorBanner } from "./components/ErrorBanner";
 import { FileUpload } from "./components/FileUpload";
 import { Skeleton } from "./components/Skeleton";
 import { ToastProvider, useToast } from "./components/Toast";
+import {
+  AssetsIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoonIcon,
+  ModelsIcon,
+  OverviewIcon,
+  SunIcon,
+  TestsIcon,
+  TimelineIcon,
+} from "./components/Icons";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
 import type { AnalysisState } from "./types";
+
+const SWITCH_TO_LIGHT_MODE = "Switch to light mode";
+const SWITCH_TO_DARK_MODE = "Switch to dark mode";
+
+type IconComponent = React.ComponentType<{
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}>;
 
 const navigationItems: Array<{
   view: WorkspaceView;
   label: string;
   description: string;
-  abbr: string;
+  icon: IconComponent;
 }> = [
   {
     view: "overview",
     label: "Overview",
     description: "Run health and bottlenecks",
-    abbr: "Ov",
+    icon: OverviewIcon,
   },
   {
     view: "assets",
     label: "Assets",
     description: "Manifest resource explorer",
-    abbr: "As",
+    icon: AssetsIcon,
   },
   {
     view: "models",
     label: "Models",
     description: "Model, seed, snapshot runs",
-    abbr: "Mo",
+    icon: ModelsIcon,
   },
   {
     view: "tests",
     label: "Tests",
     description: "Test pass / fail results",
-    abbr: "Te",
+    icon: TestsIcon,
   },
   {
     view: "timeline",
     label: "Timeline",
     description: "Runtime sequencing",
-    abbr: "Ti",
+    icon: TimelineIcon,
   },
 ];
+
+type ThemeMode = "light" | "dark";
+
+function getInitialTheme(): ThemeMode {
+  try {
+    const stored = localStorage.getItem("dbt-tools-theme");
+    if (stored === "dark" || stored === "light") return stored;
+  } catch {
+    // ignore
+  }
+  return "light";
+}
+
+function computeNavBadges(
+  analysis: AnalysisState | null,
+): Partial<Record<WorkspaceView, number>> {
+  if (!analysis) return {};
+  const modelCount = analysis.executions.filter((e) =>
+    ["model", "seed", "snapshot"].includes(e.resourceType),
+  ).length;
+  const testCount = analysis.executions.filter((e) =>
+    ["test", "unit_test"].includes(e.resourceType),
+  ).length;
+  return {
+    assets: analysis.graphSummary.totalNodes,
+    models: modelCount,
+    tests: testCount,
+  };
+}
 
 function AppSidebar({
   activeView,
@@ -56,6 +105,8 @@ function AppSidebar({
   onNavigate,
   analysis,
   analysisSource,
+  themeMode,
+  onToggleTheme,
 }: {
   activeView: WorkspaceView;
   setActiveView: (v: WorkspaceView) => void;
@@ -63,9 +114,13 @@ function AppSidebar({
   setSidebarCollapsed: (fn: (c: boolean) => boolean) => void;
   /** Called after any navigation action so the parent can close the mobile overlay. */
   onNavigate: () => void;
-  analysis: { summary: { total_nodes: number } } | null;
+  analysis: AnalysisState | null;
   analysisSource: "preload" | "upload" | null;
+  themeMode: ThemeMode;
+  onToggleTheme: () => void;
 }) {
+  const badges = computeNavBadges(analysis);
+
   return (
     <aside
       id="app-sidebar"
@@ -92,6 +147,8 @@ function AppSidebar({
         {navigationItems.map((item) => {
           const disabled = !analysis;
           const active = activeView === item.view;
+          const badge = badges[item.view];
+          const NavIcon = item.icon;
           return (
             <button
               key={item.view}
@@ -106,11 +163,18 @@ function AppSidebar({
               }}
               title={sidebarCollapsed ? item.label : undefined}
             >
-              <span className="sidebar-link__abbr" aria-hidden="true">
-                {item.abbr}
+              <span className="sidebar-link__icon-row">
+                <NavIcon size={18} className="sidebar-link__icon" />
+                {!sidebarCollapsed && badge !== undefined && (
+                  <span className="sidebar-link__badge">{badge}</span>
+                )}
               </span>
-              <strong>{item.label}</strong>
-              <span>{item.description}</span>
+              {!sidebarCollapsed && (
+                <>
+                  <strong>{item.label}</strong>
+                  <span>{item.description}</span>
+                </>
+              )}
             </button>
           );
         })}
@@ -121,7 +185,11 @@ function AppSidebar({
         onClick={() => setSidebarCollapsed((c) => !c)}
         aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {sidebarCollapsed ? "›" : "‹"}
+        {sidebarCollapsed ? (
+          <ChevronRightIcon size={16} />
+        ) : (
+          <ChevronLeftIcon size={16} />
+        )}
       </button>
       {!sidebarCollapsed && (
         <div className="app-sidebar__footer">
@@ -135,7 +203,49 @@ function AppSidebar({
               ? `${analysis.summary.total_nodes} executions analyzed`
               : "Waiting for artifacts"}
           </span>
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={onToggleTheme}
+            aria-label={
+              themeMode === "dark" ? SWITCH_TO_LIGHT_MODE : SWITCH_TO_DARK_MODE
+            }
+            title={
+              themeMode === "dark" ? SWITCH_TO_LIGHT_MODE : SWITCH_TO_DARK_MODE
+            }
+          >
+            {themeMode === "dark" ? (
+              <>
+                <SunIcon size={14} />
+                <span>Light mode</span>
+              </>
+            ) : (
+              <>
+                <MoonIcon size={14} />
+                <span>Dark mode</span>
+              </>
+            )}
+          </button>
         </div>
+      )}
+      {sidebarCollapsed && (
+        <button
+          type="button"
+          className="theme-toggle-btn theme-toggle-btn--icon-only"
+          onClick={onToggleTheme}
+          aria-label={
+            themeMode === "dark" ? SWITCH_TO_LIGHT_MODE : SWITCH_TO_DARK_MODE
+          }
+          title={
+            themeMode === "dark" ? SWITCH_TO_LIGHT_MODE : SWITCH_TO_DARK_MODE
+          }
+        >
+          {themeMode === "dark" ? (
+            <SunIcon size={16} />
+          ) : (
+            <MoonIcon size={16} />
+          )}
+        </button>
       )}
     </aside>
   );
@@ -179,6 +289,7 @@ function AppContent() {
   const [activeView, setActiveView] = useState<WorkspaceView>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialTheme);
 
   // Track previous analysis to detect first-load transition
   const prevAnalysisRef = useRef<AnalysisState | null>(null);
@@ -207,6 +318,18 @@ function AppContent() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  function handleToggleTheme() {
+    setThemeMode((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("dbt-tools-theme", next);
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
+
   const workspaceTitle = VIEW_TITLES[activeView];
   const workspaceSummary = analysis
     ? `${analysis.graphSummary.totalNodes} nodes · ${analysis.summary.total_nodes} executions · ${analysisSource === "preload" ? "Auto-loaded from DBT_TARGET" : "Loaded from uploaded artifacts"}`
@@ -216,12 +339,13 @@ function AppContent() {
     "app-frame",
     sidebarCollapsed ? "app-frame--sidebar-collapsed" : "",
     sidebarOpen ? "app-frame--nav-open" : "",
+    themeMode === "dark" ? "app-frame--dark" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={frameClass}>
+    <div className={frameClass} data-theme={themeMode}>
       {/* Backdrop — dismisses the mobile overlay sidebar */}
       {sidebarOpen && (
         <div
@@ -239,6 +363,8 @@ function AppContent() {
         onNavigate={() => setSidebarOpen(false)}
         analysis={analysis}
         analysisSource={analysisSource}
+        themeMode={themeMode}
+        onToggleTheme={handleToggleTheme}
       />
 
       <main className="app-main">

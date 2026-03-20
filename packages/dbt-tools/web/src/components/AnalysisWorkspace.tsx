@@ -18,6 +18,7 @@ import {
 import { EmptyState } from "./EmptyState";
 import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
+import { ResourceTypeIcon } from "./Icons";
 import { Tooltip } from "./Tooltip";
 import { getResourceTypeColor } from "../constants/colors";
 import type {
@@ -61,6 +62,18 @@ const SOFT_TEXT_STYLE = {
 
 // Resource types classified as "test" in the Results split
 const TEST_RESOURCE_TYPES = new Set(["test", "unit_test"]);
+
+const INLINE_FLEX_CENTER_SM = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.3rem",
+} as const;
+
+const INLINE_FLEX_CENTER_XS = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.32rem",
+} as const;
 
 function formatSeconds(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) return "n/a";
@@ -165,7 +178,7 @@ function MetricCard({
   tone?: StatusTone;
 }) {
   return (
-    <div className="metric-card">
+    <div className={`metric-card metric-card--${tone}`}>
       <div className="metric-card__label">{label}</div>
       <div className={metricValueClassName(tone)}>{value}</div>
       <div className="metric-card__detail">{detail}</div>
@@ -359,7 +372,14 @@ function TypeDonutCard({
       style={{ "--type-accent": accentColor } as React.CSSProperties}
     >
       <div className="type-donut-card__title">
-        {resourceType.replace("_", " ")}
+        <span style={INLINE_FLEX_CENTER_SM}>
+          <ResourceTypeIcon
+            resourceType={resourceType}
+            size={13}
+            style={{ color: accentColor, flexShrink: 0 }}
+          />
+          {resourceType.replace("_", " ")}
+        </span>
         <span className="type-donut-card__count">{totalCount}</span>
       </div>
       <div className="type-donut-card__chart">
@@ -426,8 +446,19 @@ function GraphCompositionCard({
     <div className="rank-list">
       {entries.map(([type, count]) => (
         <div key={type} className="rank-list__row">
+          <div
+            className="rank-list__rank"
+            style={{
+              background: "transparent",
+              color: getResourceTypeColor(type),
+            }}
+          >
+            <ResourceTypeIcon resourceType={type} size={18} />
+          </div>
           <div className="rank-list__body">
-            <strong>{type}</strong>
+            <strong style={{ textTransform: "capitalize" }}>
+              {type.replace("_", " ")}
+            </strong>
           </div>
           <div className="rank-list__metric">
             <strong>{count}</strong>
@@ -437,6 +468,79 @@ function GraphCompositionCard({
                 : ""}
             </span>
           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HealthRing({
+  successCount,
+  totalCount,
+}: {
+  successCount: number;
+  totalCount: number;
+}) {
+  const pct =
+    totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
+  const successPct = `${pct}%`;
+  return (
+    <div className="health-ring-wrapper">
+      <div
+        className="health-ring"
+        style={{ "--success-pct": successPct } as React.CSSProperties}
+        role="img"
+        aria-label={`${pct}% success rate`}
+      >
+        <div className="health-ring__inner">
+          <span className="health-ring__pct">{pct}%</span>
+          <span className="health-ring__label">health</span>
+        </div>
+      </div>
+      <div className="health-ring__meta">
+        <strong>
+          {successCount} of {totalCount} passed
+        </strong>
+        <span>
+          {totalCount - successCount > 0
+            ? `${totalCount - successCount} errors or warnings`
+            : "All executions healthy"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RunMetaCard({ analysis }: { analysis: AnalysisState }) {
+  const invocationId = (
+    analysis.summary as unknown as { invocation_id?: string }
+  ).invocation_id;
+  const items: Array<{ label: string; value: string }> = [];
+  if (analysis.projectName) {
+    items.push({ label: "Project", value: analysis.projectName });
+  }
+  if (invocationId) {
+    items.push({ label: "Invocation", value: invocationId });
+  }
+  if (analysis.runStartedAt != null) {
+    items.push({
+      label: "Started",
+      value: formatRunStartedAt(analysis.runStartedAt),
+    });
+  }
+  if (analysis.summary.total_execution_time != null) {
+    items.push({
+      label: "Wall time",
+      value: formatSeconds(analysis.summary.total_execution_time),
+    });
+  }
+  if (items.length === 0) return null;
+  return (
+    <div className="run-meta-card">
+      {items.map((item) => (
+        <div key={item.label} className="run-meta-item">
+          <span className="run-meta-item__label">{item.label}</span>
+          <span className="run-meta-item__value">{item.value}</span>
         </div>
       ))}
     </div>
@@ -480,8 +584,14 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
       .sort((a, b) => b.totalCount - a.totalCount);
   }, [analysis.executions, statusToTone]);
 
+  const successCount = analysis.statusBreakdown
+    .filter((e) => e.tone === "positive")
+    .reduce((s, e) => s + e.count, 0);
+
   return (
     <div className="workspace-view">
+      <RunMetaCard analysis={analysis} />
+
       <div className="metric-grid">
         <MetricCard
           label="Run footprint"
@@ -513,6 +623,12 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
         <SectionCard
           title="Execution health"
           subtitle="Status mix across the analyzed run."
+          headerRight={
+            <HealthRing
+              successCount={successCount}
+              totalCount={analysis.summary.total_nodes}
+            />
+          }
         >
           <StatusDonut analysis={analysis} />
         </SectionCard>
@@ -840,7 +956,17 @@ function ResultsView({
                       <strong>{row.name}</strong>
                       <span>{row.path ?? row.uniqueId}</span>
                     </div>
-                    <div>{row.resourceType}</div>
+                    <div style={INLINE_FLEX_CENTER_XS}>
+                      <ResourceTypeIcon
+                        resourceType={row.resourceType}
+                        size={13}
+                        style={{
+                          color: getResourceTypeColor(row.resourceType),
+                          flexShrink: 0,
+                        }}
+                      />
+                      {row.resourceType}
+                    </div>
                     <div>
                       <span className={badgeClassName(row.statusTone)}>
                         {row.status}
@@ -1286,7 +1412,17 @@ function ExplorerPane({
                     )}
                   </div>
                   <div className="explorer-item__meta">
-                    <span>{resource.resourceType}</span>
+                    <span style={INLINE_FLEX_CENTER_SM}>
+                      <ResourceTypeIcon
+                        resourceType={resource.resourceType}
+                        size={13}
+                        style={{
+                          color: getResourceTypeColor(resource.resourceType),
+                          flexShrink: 0,
+                        }}
+                      />
+                      {resource.resourceType}
+                    </span>
                     <Tooltip content={resource.uniqueId}>
                       <span>
                         {resource.originalFilePath ??
