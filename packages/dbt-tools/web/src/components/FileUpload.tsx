@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { analyzeArtifacts } from "../services/analyze";
 import type { AnalysisState } from "../types";
 import { Spinner } from "./Spinner";
@@ -35,6 +35,21 @@ function FileInputRow({ id, label, file, onFileChange }: FileInputRowProps) {
     </div>
   );
 }
+
+const WORKSPACE_FEATURES = [
+  {
+    title: "Health-first overview",
+    body: "Spot failing nodes, long-running bottlenecks, and critical-path pressure before opening individual assets.",
+  },
+  {
+    title: "Catalog-style context",
+    body: "Browse lineage-adjacent metadata such as descriptions, packages, execution status, and dependency depth in one flow.",
+  },
+  {
+    title: "Timeline investigation",
+    body: "Shift from summary to execution sequencing without leaving the workspace, inspired by dbt docs and observability tools.",
+  },
+] as const;
 
 export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   const { toast } = useToast();
@@ -73,20 +88,56 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   }
 
   const canAnalyze = manifestFile && runResultsFile && !loading;
+  const readinessLabel = useMemo(() => {
+    if (manifestFile && runResultsFile) return "Ready to analyze";
+    if (manifestFile || runResultsFile) return "Waiting for one more file";
+    return "Add both dbt artifacts to continue";
+  }, [manifestFile, runResultsFile]);
 
   return (
     <section className="upload-hero">
       <div className="upload-hero__copy">
         <p className="eyebrow">Bring your artifacts</p>
-        <h2>Open a polished run workspace from local dbt outputs.</h2>
+        <h2>
+          Review dbt runs like a modern control plane, not a raw JSON dump.
+        </h2>
         <p>
-          Load a matching <code>manifest.json</code> and{" "}
-          <code>run_results.json</code> pair to inspect execution health,
-          bottlenecks, dependencies, and timing in one place.
+          Start from the two artifacts that power <code>dbt docs</code> and most
+          run analysis workflows: a matching <code>manifest.json</code> and
+          <code> run_results.json</code> pair.
         </p>
+
+        <div className="upload-hero__callout">
+          <span className="upload-hero__callout-badge">Recommended flow</span>
+          <strong>
+            Run <code>dbt docs generate</code> after a representative job.
+          </strong>
+          <p>
+            That keeps lineage, metadata, and runtime results aligned so the
+            workspace can feel closer to dbt Docs for discovery and closer to
+            Elementary for health triage.
+          </p>
+        </div>
+
+        <div className="upload-feature-grid">
+          {WORKSPACE_FEATURES.map((feature) => (
+            <article key={feature.title} className="upload-feature-card">
+              <strong>{feature.title}</strong>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
       </div>
 
       <div className="upload-panel">
+        <div className="upload-panel__header">
+          <div>
+            <p className="eyebrow">Artifact intake</p>
+            <h3>Open investigation workspace</h3>
+          </div>
+          <span className="upload-panel__status">{readinessLabel}</span>
+        </div>
+
         <div className="upload-panel__inputs">
           <FileInputRow
             id="manifest-input"
@@ -102,6 +153,23 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
           />
         </div>
 
+        <div className="upload-panel__tips">
+          <div>
+            <strong>Best when files come from the same run.</strong>
+            <span>
+              Mismatched manifests and run results usually surface missing nodes
+              or stale timings.
+            </span>
+          </div>
+          <div>
+            <strong>Use local outputs or DBT_TARGET.</strong>
+            <span>
+              The app supports both uploaded artifacts and auto-loaded local
+              targets for faster iteration.
+            </span>
+          </div>
+        </div>
+
         <button
           type="button"
           onClick={handleAnalyze}
@@ -110,6 +178,7 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
           style={{
             display: "inline-flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: "0.5rem",
           }}
         >

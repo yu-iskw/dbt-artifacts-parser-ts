@@ -15,38 +15,126 @@ const navigationItems: Array<{
   label: string;
   description: string;
   abbr: string;
+  icon: string;
 }> = [
   {
     view: "overview",
     label: "Overview",
     description: "Run health and bottlenecks",
     abbr: "Ov",
+    icon: "◫",
   },
   {
     view: "assets",
     label: "Assets",
     description: "Manifest resource explorer",
     abbr: "As",
+    icon: "◧",
   },
   {
     view: "models",
     label: "Models",
     description: "Model, seed, snapshot runs",
     abbr: "Mo",
+    icon: "◩",
   },
   {
     view: "tests",
     label: "Tests",
     description: "Test pass / fail results",
     abbr: "Te",
+    icon: "◪",
   },
   {
     view: "timeline",
     label: "Timeline",
     description: "Runtime sequencing",
     abbr: "Ti",
+    icon: "◬",
   },
 ];
+
+function getViewCount(
+  view: WorkspaceView,
+  analysis: AnalysisState | null,
+): string | null {
+  if (!analysis) return null;
+  if (view === "overview") return `${analysis.summary.total_nodes}`;
+  if (view === "assets") return `${analysis.resources.length}`;
+  if (view === "models") {
+    return `${analysis.executions.filter((row) => !["test", "unit_test"].includes(row.resourceType)).length}`;
+  }
+  if (view === "tests") {
+    return `${analysis.executions.filter((row) => ["test", "unit_test"].includes(row.resourceType)).length}`;
+  }
+  return `${analysis.ganttData.length}`;
+}
+
+function buildWorkspaceSignals(
+  analysis: AnalysisState,
+  analysisSource: "preload" | "upload" | null,
+) {
+  const attentionCount = analysis.executions.filter(
+    (row) => row.statusTone === "danger",
+  ).length;
+  const warningCount = analysis.executions.filter(
+    (row) => row.statusTone === "warning",
+  ).length;
+  const totalTests = analysis.executions.filter((row) =>
+    ["test", "unit_test"].includes(row.resourceType),
+  ).length;
+  const documentedResources = analysis.resources.filter((resource) =>
+    Boolean(resource.description?.trim()),
+  ).length;
+  const documentationCoverage =
+    analysis.resources.length > 0
+      ? Math.round((documentedResources / analysis.resources.length) * 100)
+      : 0;
+
+  return [
+    {
+      label: "Run posture",
+      value:
+        attentionCount > 0
+          ? `${attentionCount} failing`
+          : warningCount > 0
+            ? `${warningCount} warning`
+            : "Healthy",
+      detail:
+        attentionCount > 0
+          ? "Prioritize failing nodes before reviewing downstream impact."
+          : warningCount > 0
+            ? "Warnings detected; review tests and exposures next."
+            : "No failing nodes surfaced in this run.",
+      tone:
+        attentionCount > 0
+          ? "danger"
+          : warningCount > 0
+            ? "warning"
+            : "positive",
+    },
+    {
+      label: "Metadata coverage",
+      value: `${documentationCoverage}%`,
+      detail: `${documentedResources} of ${analysis.resources.length} resources include descriptions for catalog-style discovery.`,
+      tone:
+        documentationCoverage >= 70
+          ? "positive"
+          : documentationCoverage >= 35
+            ? "warning"
+            : "neutral",
+    },
+    {
+      label: "Workspace mode",
+      value: analysisSource === "preload" ? "Live target" : "Artifact upload",
+      detail:
+        analysisSource === "preload"
+          ? `Synced from DBT_TARGET with ${analysis.graphSummary.totalEdges} dependency edges ready for investigation.`
+          : `${analysis.summary.total_nodes} executions loaded from local artifacts${totalTests > 0 ? `, including ${totalTests} tests` : ""}.`,
+      tone: "neutral",
+    },
+  ] as const;
+}
 
 function AppSidebar({
   activeView,
@@ -63,7 +151,7 @@ function AppSidebar({
   setSidebarCollapsed: (fn: (c: boolean) => boolean) => void;
   /** Called after any navigation action so the parent can close the mobile overlay. */
   onNavigate: () => void;
-  analysis: { summary: { total_nodes: number } } | null;
+  analysis: AnalysisState | null;
   analysisSource: "preload" | "upload" | null;
 }) {
   return (
@@ -106,11 +194,21 @@ function AppSidebar({
               }}
               title={sidebarCollapsed ? item.label : undefined}
             >
+              <span className="sidebar-link__icon" aria-hidden="true">
+                {item.icon}
+              </span>
               <span className="sidebar-link__abbr" aria-hidden="true">
                 {item.abbr}
               </span>
-              <strong>{item.label}</strong>
-              <span>{item.description}</span>
+              <div className="sidebar-link__body">
+                <strong>{item.label}</strong>
+                <span>{item.description}</span>
+              </div>
+              {getViewCount(item.view, analysis) && (
+                <span className="sidebar-link__count">
+                  {getViewCount(item.view, analysis)}
+                </span>
+              )}
             </button>
           );
         })}
@@ -208,6 +306,9 @@ function AppContent() {
   }, []);
 
   const workspaceTitle = VIEW_TITLES[activeView];
+  const workspaceSignals = analysis
+    ? buildWorkspaceSignals(analysis, analysisSource)
+    : [];
   const workspaceSummary = analysis
     ? `${analysis.graphSummary.totalNodes} nodes · ${analysis.summary.total_nodes} executions · ${analysisSource === "preload" ? "Auto-loaded from DBT_TARGET" : "Loaded from uploaded artifacts"}`
     : "Upload a manifest and run results to open the analysis workspace.";
@@ -280,6 +381,21 @@ function AppContent() {
             )}
           </div>
         </header>
+
+        {analysis && (
+          <section className="workspace-signals" aria-label="Workspace signals">
+            {workspaceSignals.map((signal) => (
+              <article
+                key={signal.label}
+                className={`signal-card signal-card--${signal.tone}`}
+              >
+                <p className="signal-card__label">{signal.label}</p>
+                <strong>{signal.value}</strong>
+                <span>{signal.detail}</span>
+              </article>
+            ))}
+          </section>
+        )}
 
         {error && <ErrorBanner message={error} />}
 
