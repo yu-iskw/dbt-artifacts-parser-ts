@@ -173,6 +173,78 @@ function MetricCard({
   );
 }
 
+function OverviewNarrative({
+  analysis,
+  projectName,
+}: {
+  analysis: AnalysisState;
+  projectName: string | null;
+}) {
+  const failingNodes = analysis.executions.filter(
+    (row) => row.statusTone === "danger",
+  ).length;
+  const documentedResources = analysis.resources.filter((resource) =>
+    Boolean(resource.description?.trim()),
+  ).length;
+  const documentationCoverage =
+    analysis.resources.length > 0
+      ? Math.round((documentedResources / analysis.resources.length) * 100)
+      : 0;
+  const longestNode = analysis.bottlenecks?.nodes[0] ?? null;
+
+  return (
+    <section className="overview-hero">
+      <div className="overview-hero__copy">
+        <p className="eyebrow">Operational narrative</p>
+        <h3>
+          {projectName ?? "This project"} has {analysis.graphSummary.totalNodes}{" "}
+          graph nodes, {analysis.summary.total_nodes} captured executions, and{" "}
+          {failingNodes > 0
+            ? `${failingNodes} failing nodes to triage.`
+            : "no failing nodes in the latest run."}
+        </h3>
+        <p>
+          Designed to bridge dbt Docs-style discovery with observability-style
+          investigation: start with health, then move into lineage, metadata,
+          and execution sequence.
+        </p>
+      </div>
+      <div className="overview-hero__facts">
+        <div className="overview-fact-card">
+          <span>Metadata coverage</span>
+          <strong>{documentationCoverage}%</strong>
+          <p>
+            {documentedResources} resources have descriptions for catalog
+            exploration.
+          </p>
+        </div>
+        <div className="overview-fact-card">
+          <span>Critical path</span>
+          <strong>
+            {analysis.summary.critical_path?.path.length ?? 0} nodes
+          </strong>
+          <p>
+            {analysis.graphSummary.hasCycles
+              ? "Cycles detected in the dependency graph."
+              : "No cycles detected in the dependency graph."}
+          </p>
+        </div>
+        <div className="overview-fact-card">
+          <span>Primary bottleneck</span>
+          <strong>
+            {longestNode ? formatSeconds(longestNode.execution_time) : "n/a"}
+          </strong>
+          <p>
+            {longestNode
+              ? `${longestNode.name ?? longestNode.unique_id} is the heaviest node in this run.`
+              : "No single bottleneck dominated this run."}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type HealthViewMode = "status" | "type";
 
 const TOGGLE_WRAPPER_STYLE = {
@@ -443,7 +515,13 @@ function GraphCompositionCard({
   );
 }
 
-function OverviewView({ analysis }: { analysis: AnalysisState }) {
+function OverviewView({
+  analysis,
+  projectName,
+}: {
+  analysis: AnalysisState;
+  projectName: string | null;
+}) {
   const workerThreadCount = analysis.threadStats.filter(
     (entry) => entry.threadId !== "unknown",
   ).length;
@@ -482,6 +560,8 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
 
   return (
     <div className="workspace-view">
+      <OverviewNarrative analysis={analysis} projectName={projectName} />
+
       <div className="metric-grid">
         <MetricCard
           label="Run footprint"
@@ -532,19 +612,21 @@ function OverviewView({ analysis }: { analysis: AnalysisState }) {
         >
           {analysis.bottlenecks && analysis.bottlenecks.nodes.length > 0 ? (
             <div className="rank-list">
-              {analysis.bottlenecks.nodes.map((node) => (
-                <div key={node.unique_id} className="rank-list__row">
-                  <div className="rank-list__rank">{node.rank}</div>
-                  <div className="rank-list__body">
-                    <strong>{node.name ?? node.unique_id}</strong>
-                    <span>{node.unique_id}</span>
+              {analysis.bottlenecks.nodes.map(
+                (node: (typeof analysis.bottlenecks.nodes)[number]) => (
+                  <div key={node.unique_id} className="rank-list__row">
+                    <div className="rank-list__rank">{node.rank}</div>
+                    <div className="rank-list__body">
+                      <strong>{node.name ?? node.unique_id}</strong>
+                      <span>{node.unique_id}</span>
+                    </div>
+                    <div className="rank-list__metric">
+                      <strong>{formatSeconds(node.execution_time)}</strong>
+                      <span>{node.pct_of_total}% of run</span>
+                    </div>
                   </div>
-                  <div className="rank-list__metric">
-                    <strong>{formatSeconds(node.execution_time)}</strong>
-                    <span>{node.pct_of_total}% of run</span>
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           ) : (
             <EmptyState
@@ -1199,6 +1281,14 @@ function ExplorerPane({
         </div>
       )}
 
+      <div className="explorer-summary-card">
+        <strong>{projectName ?? "Workspace"}</strong>
+        <span>
+          {totalResources} resources available · {resourceGroups.length} tracked
+          resource groups
+        </span>
+      </div>
+
       <label className="workspace-search">
         <span>Search resources</span>
         <input
@@ -1346,7 +1436,15 @@ function WorkspaceContent({
   analysis,
   selectedResource,
 }: WorkspaceContentProps) {
-  if (activeView === "overview") return <OverviewView analysis={analysis} />;
+  if (activeView === "overview")
+    return (
+      <OverviewView
+        analysis={analysis}
+        projectName={
+          analysis.projectName ?? deriveProjectName(analysis.executions)
+        }
+      />
+    );
   if (activeView === "assets")
     return <AssetsView analysis={analysis} resource={selectedResource} />;
   if (activeView === "models")
