@@ -173,17 +173,29 @@ function drawRowLabels(
   ctx.restore();
 }
 
-function drawRowBar(
-  ctx: CanvasRenderingContext2D,
-  item: GanttItem,
-  rowY: number,
-  maxEnd: number,
-  chartW: number,
-  labelW: number,
-  emphasis: number,
-  isHovered: boolean,
-  attachedTestStats: ResourceTestStats | undefined,
-) {
+interface DrawRowBarParams {
+  ctx: CanvasRenderingContext2D;
+  item: GanttItem;
+  rowY: number;
+  maxEnd: number;
+  chartW: number;
+  labelW: number;
+  emphasis: number;
+  isHovered: boolean;
+  attachedTestStats: ResourceTestStats | undefined;
+}
+
+function drawRowBar({
+  ctx,
+  item,
+  rowY,
+  maxEnd,
+  chartW,
+  labelW,
+  emphasis,
+  isHovered,
+  attachedTestStats,
+}: DrawRowBarParams) {
   const barY = rowY + BAR_PAD;
   const barX = labelW + (item.start / maxEnd) * chartW;
   const barW = Math.max(2, (item.duration / maxEnd) * chartW);
@@ -308,7 +320,7 @@ function drawGantt(
       timeZone,
       emphasis,
     );
-    drawRowBar(
+    drawRowBar({
       ctx,
       item,
       rowY,
@@ -317,8 +329,8 @@ function drawGantt(
       labelW,
       emphasis,
       isHovered,
-      testStatsById?.get(item.unique_id),
-    );
+      attachedTestStats: testStatsById?.get(item.unique_id),
+    });
   }
 }
 

@@ -18,6 +18,7 @@ import {
   buildLineageGraphModel,
   clampDepth,
   collectHighlightedGraphIds,
+  filterLineageGraphModel,
   getLensNodeFill,
   getLensLegendItems,
 } from "@web/lib/analysis-workspace/lineageModel";
@@ -27,8 +28,9 @@ import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 
 const OVERLAY_VIEWPORT_MARGIN = 12;
 const OVERLAY_CURSOR_OFFSET = 6;
-const TOOLTIP_OVERLAY_SIZE = { width: 280, height: 180 };
+const TOOLTIP_OVERLAY_SIZE = { width: 248, height: 176 };
 const CONTEXT_MENU_OVERLAY_SIZE = { width: 220, height: 120 };
+const TOOLTIP_NODE_PADDING = { x: 10, y: 8 };
 
 function estimateBadgeWidth(label: string): number {
   return 16 + label.length * 6.2;
@@ -61,42 +63,6 @@ function positionOverlay({
   if (y + height + margin > viewportHeight) {
     y = anchorY - height - offset;
   }
-
-  x = Math.min(
-    Math.max(margin, x),
-    Math.max(margin, viewportWidth - width - margin),
-  );
-  y = Math.min(
-    Math.max(margin, y),
-    Math.max(margin, viewportHeight - height - margin),
-  );
-
-  return { x, y };
-}
-
-function positionOverlayAgainstRect({
-  anchorRect,
-  width,
-  height,
-  offset = OVERLAY_CURSOR_OFFSET,
-  margin = OVERLAY_VIEWPORT_MARGIN,
-}: {
-  anchorRect: DOMRect;
-  width: number;
-  height: number;
-  offset?: number;
-  margin?: number;
-}) {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const spaceRight = viewportWidth - anchorRect.right - margin;
-  const spaceLeft = anchorRect.left - margin;
-
-  let x =
-    spaceRight >= width + offset || spaceRight >= spaceLeft
-      ? anchorRect.right + offset
-      : anchorRect.left - width - offset;
-  let y = anchorRect.top + anchorRect.height / 2 - height / 2;
 
   x = Math.min(
     Math.max(margin, x),
@@ -149,41 +115,108 @@ export function DepthStepper({
   );
 }
 
+function getSharedDepthValue(
+  upstreamDepth: number,
+  downstreamDepth: number,
+  allDepsMode: boolean,
+): "1" | "2" | "3" | "all" | "custom" {
+  if (allDepsMode) return "all";
+  if (
+    upstreamDepth === downstreamDepth &&
+    upstreamDepth >= 1 &&
+    upstreamDepth <= 3
+  ) {
+    return String(upstreamDepth) as "1" | "2" | "3";
+  }
+  return "custom";
+}
+
+function SharedDepthSelector({
+  upstreamDepth,
+  downstreamDepth,
+  allDepsMode,
+  setUpstreamDepth,
+  setDownstreamDepth,
+  setAllDepsMode,
+}: {
+  upstreamDepth: number;
+  downstreamDepth: number;
+  allDepsMode: boolean;
+  setUpstreamDepth: Dispatch<SetStateAction<number>>;
+  setDownstreamDepth: Dispatch<SetStateAction<number>>;
+  setAllDepsMode: Dispatch<SetStateAction<boolean>>;
+}) {
+  const sharedDepth = getSharedDepthValue(
+    upstreamDepth,
+    downstreamDepth,
+    allDepsMode,
+  );
+
+  const setDepth = (value: "1" | "2" | "3" | "all") => {
+    if (value === "all") {
+      setAllDepsMode(true);
+      return;
+    }
+    const numeric = Number(value);
+    setAllDepsMode(false);
+    setUpstreamDepth(numeric);
+    setDownstreamDepth(numeric);
+  };
+
+  return (
+    <div className="shared-depth-selector">
+      <span className="shared-depth-selector__label">Depth</span>
+      {(["1", "2", "3", "all"] as const).map((value) => (
+        <button
+          key={value}
+          type="button"
+          className={sharedDepth === value ? PILL_ACTIVE : PILL_BASE}
+          onClick={() => setDepth(value)}
+        >
+          {value === "all" ? "All" : value}
+        </button>
+      ))}
+      {sharedDepth === "custom" && (
+        <span className="shared-depth-selector__state">Custom</span>
+      )}
+    </div>
+  );
+}
+
 // eslint-disable-next-line max-lines-per-function -- single SVG lineage surface
 export function LineageGraphSurface({
   model,
   onSelectResource,
   lensMode = "type",
+  activeLegendKeys,
+  onToggleLegendKey,
   fullscreen = false,
   displayMode = "focused",
 }: {
   model: LineageGraphModel;
   onSelectResource: (id: string) => void;
   lensMode?: LensMode;
+  activeLegendKeys: Set<string>;
+  onToggleLegendKey: (key: string) => void;
   fullscreen?: boolean;
   displayMode?: LineageDisplayMode;
 }) {
   const {
-    graphEdges,
     nodeLayouts,
     svgHeight,
     svgWidth,
-    hasRelatedNodes,
     nodeWidth,
     nodeHeight,
     nodeRadius,
   } = model;
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [tooltipNodeId, setTooltipNodeId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [viewportTick, setViewportTick] = useState(0);
   const [nodeOffsets, setNodeOffsets] = useState<
     Map<string, { dx: number; dy: number }>
   >(new Map());
   const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    nodeId: string;
-  } | null>(null);
-  const [tooltipInfo, setTooltipInfo] = useState<{
     x: number;
     y: number;
     nodeId: string;
@@ -209,6 +242,25 @@ export function LineageGraphSurface({
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef<{ x: number; y: number } | null>(null);
+  const selectedResourceId = useMemo(
+    () =>
+      Array.from(nodeLayouts.values()).find(
+        (entry) => entry.side === "selected",
+      )?.resource.uniqueId ?? "",
+    [nodeLayouts],
+  );
+  const filteredGraph = useMemo(
+    () =>
+      filterLineageGraphModel(
+        model,
+        lensMode,
+        activeLegendKeys,
+        selectedResourceId,
+      ),
+    [activeLegendKeys, lensMode, model, selectedResourceId],
+  );
+  const visibleNodeLayouts = filteredGraph.nodeLayouts;
+  const visibleEdges = filteredGraph.graphEdges;
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -246,6 +298,12 @@ export function LineageGraphSurface({
   }, [contextMenu]);
 
   useEffect(() => {
+    if (tooltipNodeId && !visibleNodeLayouts.has(tooltipNodeId)) {
+      setTooltipNodeId(null);
+    }
+  }, [tooltipNodeId, visibleNodeLayouts]);
+
+  useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
     const handler = (e: WheelEvent) => {
@@ -276,7 +334,7 @@ export function LineageGraphSurface({
     return () => viewport.removeEventListener("wheel", handler);
   }, []);
 
-  if (nodeLayouts.size === 0) {
+  if (visibleNodeLayouts.size === 0) {
     return (
       <div
         className={`dependency-graph dependency-graph--empty dependency-graph--${displayMode}${fullscreen ? " dependency-graph--fullscreen" : ""}`}
@@ -294,13 +352,78 @@ export function LineageGraphSurface({
     lensMode,
     nodeLayouts,
   );
-  const highlightedIds = collectHighlightedGraphIds(hoveredId, graphEdges);
+  const highlightedIds = collectHighlightedGraphIds(hoveredId, visibleEdges);
   const hasHoverFocus = highlightedIds.size > 0;
 
   const getEffectivePos = (nodeId: string, baseX: number, baseY: number) => {
     const off = nodeOffsets.get(nodeId);
     return { x: baseX + (off?.dx ?? 0), y: baseY + (off?.dy ?? 0) };
   };
+
+  const tooltipLayout = tooltipNodeId
+    ? (visibleNodeLayouts.get(tooltipNodeId) ?? null)
+    : null;
+  const tooltipPosition = useMemo(() => {
+    if (!tooltipLayout || !viewportRef.current) return null;
+
+    const { x, y } = getEffectivePos(
+      tooltipLayout.resource.uniqueId,
+      tooltipLayout.x,
+      tooltipLayout.y,
+    );
+    const viewport = viewportRef.current;
+    const scaledX = x * zoom;
+    const scaledY = y * zoom;
+    const nodeWidthScaled = nodeWidth * zoom;
+    const nodeHeightScaled = nodeHeight * zoom;
+
+    let left =
+      scaledX +
+      nodeWidthScaled -
+      TOOLTIP_OVERLAY_SIZE.width -
+      TOOLTIP_NODE_PADDING.x;
+    let top = scaledY + TOOLTIP_NODE_PADDING.y;
+
+    if (left < viewport.scrollLeft + OVERLAY_VIEWPORT_MARGIN) {
+      left = scaledX + TOOLTIP_NODE_PADDING.x;
+    }
+    if (
+      top + TOOLTIP_OVERLAY_SIZE.height >
+      viewport.scrollTop + viewport.clientHeight
+    ) {
+      top =
+        scaledY +
+        nodeHeightScaled -
+        TOOLTIP_OVERLAY_SIZE.height -
+        TOOLTIP_NODE_PADDING.y;
+    }
+
+    left = Math.min(
+      Math.max(viewport.scrollLeft + OVERLAY_VIEWPORT_MARGIN, left),
+      Math.max(
+        viewport.scrollLeft + OVERLAY_VIEWPORT_MARGIN,
+        viewport.scrollLeft +
+          viewport.clientWidth -
+          TOOLTIP_OVERLAY_SIZE.width -
+          OVERLAY_VIEWPORT_MARGIN,
+      ),
+    );
+    top = Math.min(
+      Math.max(viewport.scrollTop + OVERLAY_VIEWPORT_MARGIN, top),
+      Math.max(
+        viewport.scrollTop + OVERLAY_VIEWPORT_MARGIN,
+        viewport.scrollTop +
+          viewport.clientHeight -
+          TOOLTIP_OVERLAY_SIZE.height -
+          OVERLAY_VIEWPORT_MARGIN,
+      ),
+    );
+
+    return {
+      left,
+      top,
+    };
+  }, [tooltipLayout, zoom, nodeWidth, nodeHeight, nodeOffsets, viewportTick]);
 
   return (
     <div
@@ -315,7 +438,12 @@ export function LineageGraphSurface({
               : "By coverage"}
         </span>
         {legendItems.map((item) => (
-          <span key={item.key} className="lineage-legend__item">
+          <button
+            key={item.key}
+            type="button"
+            className={`lineage-legend__item${activeLegendKeys.size === 0 || activeLegendKeys.has(item.key) ? " lineage-legend__item--active" : " lineage-legend__item--inactive"}`}
+            onClick={() => onToggleLegendKey(item.key)}
+          >
             <span
               className="lineage-legend__swatch"
               style={{
@@ -324,8 +452,21 @@ export function LineageGraphSurface({
               }}
             />
             {item.label}
-          </span>
+          </button>
         ))}
+        {activeLegendKeys.size > 0 && (
+          <button
+            type="button"
+            className="lineage-legend__clear"
+            onClick={() =>
+              activeLegendKeys.forEach((key) => {
+                onToggleLegendKey(key);
+              })
+            }
+          >
+            Clear
+          </button>
+        )}
       </div>
       <div className="lineage-graph__viewport-toolbar">
         <div className="lineage-graph__zoom-controls">
@@ -361,8 +502,8 @@ export function LineageGraphSurface({
           )}
         </div>
         <p className="lineage-graph__summary">
-          {model.upstreamMap.size} upstream · {model.downstreamMap.size}{" "}
-          downstream
+          {visibleNodeLayouts.size} nodes · {model.upstreamMap.size} upstream ·{" "}
+          {model.downstreamMap.size} downstream
         </p>
       </div>
       <div
@@ -397,6 +538,7 @@ export function LineageGraphSurface({
         onPointerCancel={() => {
           panDragRef.current = null;
         }}
+        onScroll={() => setViewportTick((current) => current + 1)}
       >
         <div
           className="lineage-graph__canvas"
@@ -405,229 +547,267 @@ export function LineageGraphSurface({
             height: `${svgHeight * zoom}px`,
           }}
         >
-          <svg
-            className="dependency-graph__svg"
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            preserveAspectRatio="xMidYMid meet"
-            aria-hidden="true"
+          <div
+            className="lineage-graph__zoom-layer"
+            style={{
+              width: `${svgWidth}px`,
+              height: `${svgHeight}px`,
+              transform: `scale(${zoom})`,
+            }}
           >
-            {graphEdges.map((edge) => {
-              const from = nodeLayouts.get(edge.from);
-              const to = nodeLayouts.get(edge.to);
-              if (!from || !to) return null;
-              const fp = getEffectivePos(edge.from, from.x, from.y);
-              const tp = getEffectivePos(edge.to, to.x, to.y);
-              const startX = fp.x + nodeWidth;
-              const startY = fp.y + nodeHeight / 2;
-              const endX = tp.x;
-              const endY = tp.y + nodeHeight / 2;
-              const curve = Math.max(28, Math.abs(endX - startX) * 0.34);
-              return (
-                <path
-                  key={`${edge.from}->${edge.to}`}
-                  d={`M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`}
-                  className={`dependency-graph__edge${!hasHoverFocus || highlightedIds.has(edge.from) || highlightedIds.has(edge.to) ? "" : " dependency-graph__edge--dimmed"}`}
-                />
-              );
-            })}
-            {Array.from(nodeLayouts.values()).map((node) => {
-              const isHighlighted =
-                !hasHoverFocus || highlightedIds.has(node.resource.uniqueId);
-              const { x, y } = getEffectivePos(
-                node.resource.uniqueId,
-                node.x,
-                node.y,
-              );
-              const passLabel = `✓${node.passCount}`;
-              const failLabel = `✗${node.failCount}`;
-              const passBadgeWidth = estimateBadgeWidth(passLabel);
-              const failBadgeWidth = estimateBadgeWidth(failLabel);
-              const badgeGap = 6;
-              const badgeY =
-                displayMode === "summary"
-                  ? y + nodeHeight - 18
-                  : y + nodeHeight - 21;
-              const badgeHeight = displayMode === "summary" ? 14 : 16;
-              const badgeRadius = badgeHeight / 2;
-              return (
-                <g key={node.resource.uniqueId}>
-                  <rect
-                    x={x}
-                    y={y}
-                    width={nodeWidth}
-                    height={nodeHeight}
-                    rx={nodeRadius}
-                    style={{ fill: getLensNodeFill(node.resource, lensMode) }}
-                    className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}`}
+            <svg
+              className="dependency-graph__svg"
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+            >
+              {visibleEdges.map((edge) => {
+                const from = visibleNodeLayouts.get(edge.from);
+                const to = visibleNodeLayouts.get(edge.to);
+                if (!from || !to) return null;
+                const fp = getEffectivePos(edge.from, from.x, from.y);
+                const tp = getEffectivePos(edge.to, to.x, to.y);
+                const startX = fp.x + nodeWidth;
+                const startY = fp.y + nodeHeight / 2;
+                const endX = tp.x;
+                const endY = tp.y + nodeHeight / 2;
+                const curve = Math.max(28, Math.abs(endX - startX) * 0.34);
+                return (
+                  <path
+                    key={`${edge.from}->${edge.to}`}
+                    d={`M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`}
+                    className={`dependency-graph__edge${!hasHoverFocus || highlightedIds.has(edge.from) || highlightedIds.has(edge.to) ? "" : " dependency-graph__edge--dimmed"}`}
                   />
-                  <text
-                    x={x + 16}
-                    y={displayMode === "summary" ? y + 20 : y + 25}
-                    className="dependency-graph__node-label"
-                  >
-                    {node.resource.name}
-                  </text>
-                  <text
-                    x={x + 16}
-                    y={displayMode === "summary" ? y + 35 : y + 45}
-                    className="dependency-graph__node-meta"
-                  >
-                    {node.side === "selected"
-                      ? formatResourceTypeLabel(node.resource.resourceType)
-                      : `${formatResourceTypeLabel(node.resource.resourceType)} · Depth ${node.depth}`}
-                  </text>
-                  <rect
-                    x={x + 16}
-                    y={badgeY}
-                    width={passBadgeWidth}
-                    height={badgeHeight}
-                    rx={badgeRadius}
-                    className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--pass"
+                );
+              })}
+              {Array.from(visibleNodeLayouts.values()).map((node) => {
+                const isHighlighted =
+                  !hasHoverFocus || highlightedIds.has(node.resource.uniqueId);
+                const { x, y } = getEffectivePos(
+                  node.resource.uniqueId,
+                  node.x,
+                  node.y,
+                );
+                const passLabel = `✓${node.passCount}`;
+                const failLabel = `✗${node.failCount}`;
+                const passBadgeWidth = estimateBadgeWidth(passLabel);
+                const failBadgeWidth = estimateBadgeWidth(failLabel);
+                const badgeGap = 6;
+                const badgeY =
+                  displayMode === "summary"
+                    ? y + nodeHeight - 20
+                    : y + nodeHeight - 23;
+                const badgeHeight = displayMode === "summary" ? 15 : 17;
+                const badgeRadius = badgeHeight / 2;
+                return (
+                  <g key={node.resource.uniqueId}>
+                    <rect
+                      x={x}
+                      y={y}
+                      width={nodeWidth}
+                      height={nodeHeight}
+                      rx={nodeRadius}
+                      style={{ fill: getLensNodeFill(node.resource, lensMode) }}
+                      className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}`}
+                    />
+                    <text
+                      x={x + 16}
+                      y={displayMode === "summary" ? y + 22 : y + 28}
+                      className="dependency-graph__node-label"
+                    >
+                      {node.resource.name}
+                    </text>
+                    <text
+                      x={x + 16}
+                      y={displayMode === "summary" ? y + 39 : y + 50}
+                      className="dependency-graph__node-meta"
+                    >
+                      {node.side === "selected"
+                        ? formatResourceTypeLabel(node.resource.resourceType)
+                        : `${formatResourceTypeLabel(node.resource.resourceType)} · Depth ${node.depth}`}
+                    </text>
+                    <rect
+                      x={x + 16}
+                      y={badgeY}
+                      width={passBadgeWidth}
+                      height={badgeHeight}
+                      rx={badgeRadius}
+                      className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--pass"
+                    />
+                    <text
+                      x={x + 16 + passBadgeWidth / 2}
+                      y={badgeY + badgeHeight / 2}
+                      className="dependency-graph__node-stat dependency-graph__node-stat--pass"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      {passLabel}
+                    </text>
+                    <rect
+                      x={x + 16 + passBadgeWidth + badgeGap}
+                      y={badgeY}
+                      width={failBadgeWidth}
+                      height={badgeHeight}
+                      rx={badgeRadius}
+                      className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
+                    />
+                    <text
+                      x={
+                        x + 16 + passBadgeWidth + badgeGap + failBadgeWidth / 2
+                      }
+                      y={badgeY + badgeHeight / 2}
+                      className="dependency-graph__node-stat dependency-graph__node-stat--fail"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      {failLabel}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+            <div className="dependency-graph__interactive-layer">
+              {Array.from(visibleNodeLayouts.values()).map((node) => {
+                const { x, y } = getEffectivePos(
+                  node.resource.uniqueId,
+                  node.x,
+                  node.y,
+                );
+                const hotspotStyle: CSSProperties = {
+                  left: `${(x / svgWidth) * 100}%`,
+                  top: `${(y / svgHeight) * 100}%`,
+                  width: `${(nodeWidth / svgWidth) * 100}%`,
+                  height: `${(nodeHeight / svgHeight) * 100}%`,
+                };
+                return (
+                  <button
+                    key={node.resource.uniqueId}
+                    type="button"
+                    className={`dependency-graph__hotspot dependency-graph__hotspot--${node.side}`}
+                    style={hotspotStyle}
+                    onClick={() => {
+                      if (nodeDragRef.current?.hasMoved) return;
+                      onSelectResource(node.resource.uniqueId);
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      const position = positionOverlay({
+                        anchorX: event.clientX,
+                        anchorY: event.clientY,
+                        width: CONTEXT_MENU_OVERLAY_SIZE.width,
+                        height: CONTEXT_MENU_OVERLAY_SIZE.height,
+                      });
+                      setContextMenu({
+                        x: position.x,
+                        y: position.y,
+                        nodeId: node.resource.uniqueId,
+                      });
+                    }}
+                    onMouseEnter={() => {
+                      setHoveredId(node.resource.uniqueId);
+                      setTooltipNodeId(node.resource.uniqueId);
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredId(null);
+                      setTooltipNodeId(null);
+                    }}
+                    title={node.resource.uniqueId}
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                      const existing = nodeOffsets.get(
+                        node.resource.uniqueId,
+                      ) ?? {
+                        dx: 0,
+                        dy: 0,
+                      };
+                      nodeDragRef.current = {
+                        nodeId: node.resource.uniqueId,
+                        pointerId: event.pointerId,
+                        startClientX: event.clientX,
+                        startClientY: event.clientY,
+                        initialDx: existing.dx,
+                        initialDy: existing.dy,
+                        hasMoved: false,
+                      };
+                      (event.currentTarget as HTMLElement).setPointerCapture(
+                        event.pointerId,
+                      );
+                    }}
+                    onPointerMove={(event) => {
+                      const drag = nodeDragRef.current;
+                      if (
+                        !drag ||
+                        drag.pointerId !== event.pointerId ||
+                        drag.nodeId !== node.resource.uniqueId
+                      ) {
+                        return;
+                      }
+                      const rawDx = event.clientX - drag.startClientX;
+                      const rawDy = event.clientY - drag.startClientY;
+                      if (Math.abs(rawDx) > 4 || Math.abs(rawDy) > 4) {
+                        drag.hasMoved = true;
+                      }
+                      const dx = drag.initialDx + rawDx / zoom;
+                      const dy = drag.initialDy + rawDy / zoom;
+                      setNodeOffsets((prev) => {
+                        const next = new Map(prev);
+                        next.set(drag.nodeId, { dx, dy });
+                        return next;
+                      });
+                    }}
+                    onPointerUp={(event) => {
+                      if (nodeDragRef.current?.pointerId === event.pointerId) {
+                        (
+                          event.currentTarget as HTMLElement
+                        ).releasePointerCapture(event.pointerId);
+                        setTimeout(() => {
+                          nodeDragRef.current = null;
+                        }, 0);
+                      }
+                    }}
+                    onPointerCancel={() => {
+                      nodeDragRef.current = null;
+                    }}
                   />
-                  <text
-                    x={x + 16 + passBadgeWidth / 2}
-                    y={badgeY + badgeHeight / 2}
-                    className="dependency-graph__node-stat dependency-graph__node-stat--pass"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {passLabel}
-                  </text>
-                  <rect
-                    x={x + 16 + passBadgeWidth + badgeGap}
-                    y={badgeY}
-                    width={failBadgeWidth}
-                    height={badgeHeight}
-                    rx={badgeRadius}
-                    className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
-                  />
-                  <text
-                    x={x + 16 + passBadgeWidth + badgeGap + failBadgeWidth / 2}
-                    y={badgeY + badgeHeight / 2}
-                    className="dependency-graph__node-stat dependency-graph__node-stat--fail"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {failLabel}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-          <div className="dependency-graph__interactive-layer">
-            {Array.from(nodeLayouts.values()).map((node) => {
-              const { x, y } = getEffectivePos(
-                node.resource.uniqueId,
-                node.x,
-                node.y,
-              );
-              const hotspotStyle: CSSProperties = {
-                left: `${(x / svgWidth) * 100}%`,
-                top: `${(y / svgHeight) * 100}%`,
-                width: `${(nodeWidth / svgWidth) * 100}%`,
-                height: `${(nodeHeight / svgHeight) * 100}%`,
-              };
-              return (
-                <button
-                  key={node.resource.uniqueId}
-                  type="button"
-                  className={`dependency-graph__hotspot dependency-graph__hotspot--${node.side}`}
-                  style={hotspotStyle}
-                  onClick={() => {
-                    if (nodeDragRef.current?.hasMoved) return;
-                    onSelectResource(node.resource.uniqueId);
-                  }}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    const position = positionOverlay({
-                      anchorX: event.clientX,
-                      anchorY: event.clientY,
-                      width: CONTEXT_MENU_OVERLAY_SIZE.width,
-                      height: CONTEXT_MENU_OVERLAY_SIZE.height,
-                    });
-                    setContextMenu({
-                      x: position.x,
-                      y: position.y,
-                      nodeId: node.resource.uniqueId,
-                    });
-                  }}
-                  onMouseEnter={(event) => {
-                    setHoveredId(node.resource.uniqueId);
-                    const position = positionOverlayAgainstRect({
-                      anchorRect: event.currentTarget.getBoundingClientRect(),
-                      width: TOOLTIP_OVERLAY_SIZE.width,
-                      height: TOOLTIP_OVERLAY_SIZE.height,
-                    });
-                    setTooltipInfo({
-                      x: position.x,
-                      y: position.y,
-                      nodeId: node.resource.uniqueId,
-                    });
-                  }}
-                  onMouseLeave={() => {
-                    setHoveredId(null);
-                    setTooltipInfo(null);
-                  }}
-                  title={node.resource.uniqueId}
-                  onPointerDown={(event) => {
-                    event.stopPropagation();
-                    const existing = nodeOffsets.get(
-                      node.resource.uniqueId,
-                    ) ?? {
-                      dx: 0,
-                      dy: 0,
-                    };
-                    nodeDragRef.current = {
-                      nodeId: node.resource.uniqueId,
-                      pointerId: event.pointerId,
-                      startClientX: event.clientX,
-                      startClientY: event.clientY,
-                      initialDx: existing.dx,
-                      initialDy: existing.dy,
-                      hasMoved: false,
-                    };
-                    (event.currentTarget as HTMLElement).setPointerCapture(
-                      event.pointerId,
-                    );
-                  }}
-                  onPointerMove={(event) => {
-                    const drag = nodeDragRef.current;
-                    if (
-                      !drag ||
-                      drag.pointerId !== event.pointerId ||
-                      drag.nodeId !== node.resource.uniqueId
-                    )
-                      return;
-                    const rawDx = event.clientX - drag.startClientX;
-                    const rawDy = event.clientY - drag.startClientY;
-                    if (Math.abs(rawDx) > 4 || Math.abs(rawDy) > 4) {
-                      drag.hasMoved = true;
-                    }
-                    const dx = drag.initialDx + rawDx / zoom;
-                    const dy = drag.initialDy + rawDy / zoom;
-                    setNodeOffsets((prev) => {
-                      const next = new Map(prev);
-                      next.set(drag.nodeId, { dx, dy });
-                      return next;
-                    });
-                  }}
-                  onPointerUp={(event) => {
-                    if (nodeDragRef.current?.pointerId === event.pointerId) {
-                      (
-                        event.currentTarget as HTMLElement
-                      ).releasePointerCapture(event.pointerId);
-                      setTimeout(() => {
-                        nodeDragRef.current = null;
-                      }, 0);
-                    }
-                  }}
-                  onPointerCancel={() => {
-                    nodeDragRef.current = null;
-                  }}
-                />
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+          {tooltipLayout && tooltipPosition && (
+            <div
+              className="graph-node-tooltip"
+              style={{
+                left: tooltipPosition.left,
+                top: tooltipPosition.top,
+              }}
+              aria-hidden="true"
+            >
+              <div className="graph-node-tooltip__name">
+                {tooltipLayout.resource.name}
+              </div>
+              <div className="graph-node-tooltip__meta">
+                {formatResourceTypeLabel(tooltipLayout.resource.resourceType)}
+                {tooltipLayout.resource.packageName
+                  ? ` · ${tooltipLayout.resource.packageName}`
+                  : ""}
+              </div>
+              {tooltipLayout.resource.status && (
+                <div
+                  className={`graph-node-tooltip__status graph-node-tooltip__status--${tooltipLayout.resource.statusTone}`}
+                >
+                  {tooltipLayout.resource.status}
+                  {tooltipLayout.resource.executionTime != null
+                    ? ` · ${formatSeconds(tooltipLayout.resource.executionTime)}`
+                    : ""}
+                </div>
+              )}
+              {tooltipLayout.resource.description && (
+                <div className="graph-node-tooltip__description">
+                  {tooltipLayout.resource.description}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       {contextMenu && (
@@ -647,7 +827,7 @@ export function LineageGraphSurface({
             Focus on this node
           </button>
           {(() => {
-            const layout = nodeLayouts.get(contextMenu.nodeId);
+            const layout = visibleNodeLayouts.get(contextMenu.nodeId);
             return layout ? (
               <div className="graph-context-menu__label">
                 {layout.resource.name}
@@ -656,40 +836,6 @@ export function LineageGraphSurface({
           })()}
         </div>
       )}
-      {tooltipInfo &&
-        (() => {
-          const layout = nodeLayouts.get(tooltipInfo.nodeId);
-          if (!layout) return null;
-          const r = layout.resource;
-          return (
-            <div
-              className="graph-node-tooltip"
-              style={{ left: tooltipInfo.x, top: tooltipInfo.y }}
-              aria-hidden="true"
-            >
-              <div className="graph-node-tooltip__name">{r.name}</div>
-              <div className="graph-node-tooltip__meta">
-                {formatResourceTypeLabel(r.resourceType)}
-                {r.packageName ? ` · ${r.packageName}` : ""}
-              </div>
-              {r.status && (
-                <div
-                  className={`graph-node-tooltip__status graph-node-tooltip__status--${r.statusTone}`}
-                >
-                  {r.status}
-                  {r.executionTime != null
-                    ? ` · ${formatSeconds(r.executionTime)}`
-                    : ""}
-                </div>
-              )}
-              {r.description && (
-                <div className="graph-node-tooltip__description">
-                  {r.description}
-                </div>
-              )}
-            </div>
-          );
-        })()}
     </div>
   );
 }
@@ -732,10 +878,12 @@ export function LineagePanel({
   downstreamDepth,
   allDepsMode,
   lensMode,
+  activeLegendKeys,
   setUpstreamDepth,
   setDownstreamDepth,
   setAllDepsMode,
   setLensMode,
+  setActiveLegendKeys,
   onSelectResource,
   displayMode = "focused",
 }: {
@@ -747,15 +895,29 @@ export function LineagePanel({
   downstreamDepth: number;
   allDepsMode: boolean;
   lensMode: LensMode;
+  activeLegendKeys: Set<string>;
   setUpstreamDepth: Dispatch<SetStateAction<number>>;
   setDownstreamDepth: Dispatch<SetStateAction<number>>;
   setAllDepsMode: Dispatch<SetStateAction<boolean>>;
   setLensMode: (mode: LensMode) => void;
+  setActiveLegendKeys: Dispatch<SetStateAction<Set<string>>>;
   onSelectResource: (id: string) => void;
   displayMode?: LineageDisplayMode;
 }) {
   const [isFullscreenOpen, setFullscreenOpen] = useState(false);
   const ALL_DEPS_DEPTH = 20;
+
+  const toggleLegendKey = (key: string) => {
+    setActiveLegendKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   const graphModel = useMemo(
     () =>
@@ -783,6 +945,14 @@ export function LineagePanel({
   const depthToolbar = (withClose = false) => (
     <div className="lineage-toolbar">
       <LensSelector lensMode={lensMode} setLensMode={setLensMode} />
+      <SharedDepthSelector
+        upstreamDepth={upstreamDepth}
+        downstreamDepth={downstreamDepth}
+        allDepsMode={allDepsMode}
+        setUpstreamDepth={setUpstreamDepth}
+        setDownstreamDepth={setDownstreamDepth}
+        setAllDepsMode={setAllDepsMode}
+      />
       <DepthStepper
         label="Upstream"
         value={upstreamDepth}
@@ -795,21 +965,15 @@ export function LineagePanel({
         setValue={setDownstreamDepth}
         disabled={allDepsMode}
       />
-      <button
-        type="button"
-        className={allDepsMode ? PILL_ACTIVE : PILL_BASE}
-        onClick={() => {
-          if (allDepsMode) {
-            setAllDepsMode(false);
-            setUpstreamDepth(2);
-            setDownstreamDepth(2);
-          } else {
-            setAllDepsMode(true);
-          }
-        }}
-      >
-        {allDepsMode ? "Depth 2" : "Show all"}
-      </button>
+      {activeLegendKeys.size > 0 && (
+        <button
+          type="button"
+          className={PILL_BASE}
+          onClick={() => setActiveLegendKeys(new Set())}
+        >
+          Clear filters
+        </button>
+      )}
       {withClose ? (
         <button
           type="button"
@@ -862,6 +1026,8 @@ export function LineagePanel({
             model={graphModel}
             onSelectResource={onSelectResource}
             lensMode={lensMode}
+            activeLegendKeys={activeLegendKeys}
+            onToggleLegendKey={toggleLegendKey}
             displayMode={displayMode}
           />
         </div>
@@ -891,6 +1057,8 @@ export function LineagePanel({
               model={graphModel}
               onSelectResource={onSelectResource}
               lensMode={lensMode}
+              activeLegendKeys={activeLegendKeys}
+              onToggleLegendKey={toggleLegendKey}
               displayMode="focused"
               fullscreen
             />

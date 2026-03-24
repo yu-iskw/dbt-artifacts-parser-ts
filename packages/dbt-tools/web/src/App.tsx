@@ -448,6 +448,7 @@ function AppContent() {
     downstreamDepth: 2,
     allDepsMode: false,
     lensMode: "type",
+    activeLegendKeys: new Set(),
   });
 
   // Persist sidebar collapsed state to localStorage

@@ -1,10 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { loadWorkspace } from "./helpers/preload";
 
+/** Duplicated string literals consolidated for sonarjs/no-duplicate-string */
+const APP_SIDEBAR = "#app-sidebar";
+const HEADING_RUN_ANALYSIS = "Run analysis";
+
 const NAV_VIEWS = [
   { label: "Overview", heading: "Run overview" },
   { label: "Catalog", heading: "Catalog workspace" },
-  { label: "Runs", heading: "Run analysis" },
+  { label: "Runs", heading: HEADING_RUN_ANALYSIS },
 ] as const;
 const NAV_CHILDREN = [
   "Assets",
@@ -22,7 +26,7 @@ test.describe("sidebar navigation", () => {
     for (const { label } of NAV_VIEWS) {
       await expect(
         page
-          .locator("#app-sidebar")
+          .locator(APP_SIDEBAR)
           .getByRole("button", { name: label, exact: true }),
       ).toBeVisible();
     }
@@ -35,7 +39,7 @@ test.describe("sidebar navigation", () => {
     for (const label of NAV_CHILDREN) {
       await expect(
         page
-          .locator("#app-sidebar")
+          .locator(APP_SIDEBAR)
           .getByRole("button", { name: label, exact: true }),
       ).toBeVisible();
     }
@@ -54,7 +58,7 @@ test.describe("sidebar navigation", () => {
     for (const { label } of NAV_VIEWS) {
       await expect(
         page
-          .locator("#app-sidebar")
+          .locator(APP_SIDEBAR)
           .getByRole("button", { name: label, exact: true }),
       ).toBeDisabled();
     }
@@ -67,7 +71,7 @@ test.describe("sidebar navigation", () => {
 
     for (const { label, heading } of NAV_VIEWS) {
       await page
-        .locator("#app-sidebar")
+        .locator(APP_SIDEBAR)
         .getByRole("button", { name: label, exact: true })
         .click();
       // Use .first() because some headings (e.g. "Test results") appear at
@@ -92,7 +96,7 @@ test.describe("sidebar navigation", () => {
             (v.label === "Overview" && view === "overview"),
         )?.label ?? view.charAt(0).toUpperCase() + view.slice(1);
       await page
-        .locator("#app-sidebar")
+        .locator(APP_SIDEBAR)
         .getByRole("button", { name: label, exact: true })
         .click();
       await expect(page).toHaveURL(new RegExp(`[?&]view=${view}`), {
@@ -108,21 +112,21 @@ test.describe("sidebar navigation", () => {
     await page.getByRole("button", { name: SIDEBAR_EXPAND_LABEL }).click();
 
     await page
-      .locator("#app-sidebar")
+      .locator(APP_SIDEBAR)
       .getByRole("button", { name: "Assets", exact: true })
       .click();
     await expect(page).toHaveURL(/view=catalog/);
     await expect(page).toHaveURL(/tab=summary/);
 
     await page
-      .locator("#app-sidebar")
+      .locator(APP_SIDEBAR)
       .getByRole("button", { name: "Lineage", exact: true })
       .click();
     await expect(page).toHaveURL(/view=catalog/);
     await expect(page).toHaveURL(/tab=lineage/);
 
     await page
-      .locator("#app-sidebar")
+      .locator(APP_SIDEBAR)
       .getByRole("button", { name: "Tests", exact: true })
       .click();
     await expect(page).toHaveURL(/view=runs/);
@@ -130,7 +134,7 @@ test.describe("sidebar navigation", () => {
     await expect(page).toHaveURL(/kind=tests/);
 
     await page
-      .locator("#app-sidebar")
+      .locator(APP_SIDEBAR)
       .getByRole("button", { name: "Timeline", exact: true })
       .click();
     await expect(page).toHaveURL(/view=runs/);
@@ -167,12 +171,12 @@ test.describe("sidebar navigation", () => {
     await loadWorkspace(page);
     await expect(
       page
-        .locator("#app-sidebar")
+        .locator(APP_SIDEBAR)
         .getByRole("button", { name: "Assets", exact: true }),
     ).not.toBeVisible();
     await expect(
       page
-        .locator("#app-sidebar")
+        .locator(APP_SIDEBAR)
         .getByRole("button", { name: "Timeline", exact: true }),
     ).not.toBeVisible();
   });
@@ -190,7 +194,7 @@ test.describe("sidebar navigation", () => {
     await page.reload();
     await expect(
       page
-        .locator("#app-sidebar")
+        .locator(APP_SIDEBAR)
         .getByRole("button", { name: "Overview", exact: true }),
     ).toBeEnabled({ timeout: 30_000 });
     await expect(
@@ -203,7 +207,7 @@ test.describe("sidebar navigation", () => {
 
     // Use the sidebar nav label selector to avoid matching tree branch buttons
     await page
-      .locator("#app-sidebar")
+      .locator(APP_SIDEBAR)
       .getByRole("button", { name: "Catalog", exact: true })
       .click();
     await expect(
@@ -212,11 +216,11 @@ test.describe("sidebar navigation", () => {
 
     // Navigate to Runs via the sidebar.
     await page
-      .locator("#app-sidebar")
+      .locator(APP_SIDEBAR)
       .getByRole("button", { name: "Runs", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Run analysis" }),
+      page.getByRole("heading", { name: HEADING_RUN_ANALYSIS }),
     ).toBeVisible();
 
     await page.goBack();
@@ -230,11 +234,11 @@ test.describe("sidebar navigation", () => {
     await page.goto(`/?view=runs&tab=timeline`);
     await expect(
       page
-        .locator("#app-sidebar")
+        .locator(APP_SIDEBAR)
         .getByRole("button", { name: "Runs", exact: true }),
     ).toBeEnabled({ timeout: 30_000 });
     await expect(
-      page.getByRole("heading", { name: "Run analysis" }),
+      page.getByRole("heading", { name: HEADING_RUN_ANALYSIS }),
     ).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole("tab", { name: "Timeline" })).toHaveAttribute(
       "aria-selected",

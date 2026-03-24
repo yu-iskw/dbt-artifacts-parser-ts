@@ -23,6 +23,9 @@ import {
   displayResourcePath,
 } from "@web/lib/analysis-workspace/utils";
 
+/** Catalog copy when a field is missing from artifacts (sonarjs/no-duplicate-string). */
+const NOT_CAPTURED = "Not captured";
+
 // ---------------------------------------------------------------------------
 // SQL syntax highlighting — zero-dependency tokenizer
 // ---------------------------------------------------------------------------
@@ -166,19 +169,19 @@ function renderMetricDefinition(definition: MetricDefinition): ReactNode {
       <div className="detail-grid">
         <div className="detail-stat">
           <span>Label</span>
-          <strong>{definition.label ?? "Not captured"}</strong>
+          <strong>{definition.label ?? NOT_CAPTURED}</strong>
         </div>
         <div className="detail-stat">
           <span>Metric type</span>
-          <strong>{definition.metricType ?? "Not captured"}</strong>
+          <strong>{definition.metricType ?? NOT_CAPTURED}</strong>
         </div>
         <div className="detail-stat">
           <span>Source</span>
-          <strong>{definition.sourceReference ?? "Not captured"}</strong>
+          <strong>{definition.sourceReference ?? NOT_CAPTURED}</strong>
         </div>
         <div className="detail-stat">
           <span>Time granularity</span>
-          <strong>{definition.timeGranularity ?? "Not captured"}</strong>
+          <strong>{definition.timeGranularity ?? NOT_CAPTURED}</strong>
         </div>
       </div>
       {definition.expression && (
@@ -208,15 +211,15 @@ function renderSemanticModelDefinition(
       <div className="detail-grid">
         <div className="detail-stat">
           <span>Label</span>
-          <strong>{definition.label ?? "Not captured"}</strong>
+          <strong>{definition.label ?? NOT_CAPTURED}</strong>
         </div>
         <div className="detail-stat">
           <span>Source model</span>
-          <strong>{definition.sourceReference ?? "Not captured"}</strong>
+          <strong>{definition.sourceReference ?? NOT_CAPTURED}</strong>
         </div>
         <div className="detail-stat">
           <span>Default time dimension</span>
-          <strong>{definition.defaultTimeDimension ?? "Not captured"}</strong>
+          <strong>{definition.defaultTimeDimension ?? NOT_CAPTURED}</strong>
         </div>
       </div>
       <DefinitionList label="Entities" values={definition.entities} />
@@ -229,6 +232,55 @@ function renderSemanticModelDefinition(
         </div>
       )}
     </div>
+  );
+}
+
+function AssetSqlOrDefinitionCard({
+  resource,
+  showsDefinition,
+  definition,
+  sqlText,
+}: {
+  resource: ResourceNode;
+  showsDefinition: boolean;
+  definition: ResourceNode["definition"];
+  sqlText: string | undefined;
+}) {
+  return (
+    <SectionCard
+      title={showsDefinition ? "Definition" : "SQL"}
+      subtitle={
+        showsDefinition
+          ? definition?.kind === "metric"
+            ? "Structured metric definition captured from the manifest."
+            : "Structured semantic model definition captured from the manifest."
+          : resource.compiledCode
+            ? "Compiled SQL for the selected resource."
+            : "Raw SQL captured from the manifest."
+      }
+    >
+      {showsDefinition && definition ? (
+        definition.kind === "metric" ? (
+          renderMetricDefinition(definition)
+        ) : (
+          renderSemanticModelDefinition(definition)
+        )
+      ) : sqlText ? (
+        <SqlPanel sql={sqlText} />
+      ) : (
+        <EmptyState
+          icon="⌘"
+          headline={
+            showsDefinition ? "No definition available" : "No SQL available"
+          }
+          subtext={
+            showsDefinition
+              ? "This resource does not expose enough definition metadata in the current artifacts."
+              : "This resource does not expose compiled or raw SQL in the current artifacts."
+          }
+        />
+      )}
+    </SectionCard>
   );
 }
 
@@ -254,6 +306,7 @@ export function AssetsView({
   const downstreamDepth = assetViewState.downstreamDepth;
   const allDepsMode = assetViewState.allDepsMode;
   const lensMode = assetViewState.lensMode;
+  const activeLegendKeys = assetViewState.activeLegendKeys;
 
   const setUpstreamDepth: Dispatch<SetStateAction<number>> = (v) =>
     onAssetViewStateChange((cur) => ({
@@ -271,7 +324,17 @@ export function AssetsView({
       allDepsMode: typeof v === "function" ? v(cur.allDepsMode) : v,
     }));
   const setLensMode = (mode: LensMode) =>
-    onAssetViewStateChange((cur) => ({ ...cur, lensMode: mode }));
+    onAssetViewStateChange((cur) => ({
+      ...cur,
+      lensMode: mode,
+      activeLegendKeys: new Set(),
+    }));
+  const setActiveLegendKeys: Dispatch<SetStateAction<Set<string>>> = (value) =>
+    onAssetViewStateChange((cur) => ({
+      ...cur,
+      activeLegendKeys:
+        typeof value === "function" ? value(cur.activeLegendKeys) : value,
+    }));
 
   // Reset lineage settings when a new resource is selected.
   useEffect(() => {
@@ -288,6 +351,7 @@ export function AssetsView({
         upstreamDepth: 2,
         downstreamDepth: 2,
         allDepsMode: false,
+        activeLegendKeys: new Set(),
       };
     });
   }, [resource?.uniqueId, onAssetViewStateChange]);
@@ -326,10 +390,12 @@ export function AssetsView({
     downstreamDepth,
     allDepsMode,
     lensMode,
+    activeLegendKeys,
     setUpstreamDepth,
     setDownstreamDepth,
     setAllDepsMode,
     setLensMode,
+    setActiveLegendKeys,
     onSelectResource,
   } as const;
 
@@ -374,7 +440,7 @@ export function AssetsView({
           </div>
           <div className="detail-stat">
             <span>Owner</span>
-            <strong>Not captured</strong>
+            <strong>{NOT_CAPTURED}</strong>
           </div>
           <div className="detail-stat">
             <span>Health</span>
@@ -395,40 +461,12 @@ export function AssetsView({
 
       <LineagePanel {...lineagePanelProps} displayMode="summary" />
 
-      <SectionCard
-        title={showsDefinition ? "Definition" : "SQL"}
-        subtitle={
-          showsDefinition
-            ? definition.kind === "metric"
-              ? "Structured metric definition captured from the manifest."
-              : "Structured semantic model definition captured from the manifest."
-            : resource.compiledCode
-              ? "Compiled SQL for the selected resource."
-              : "Raw SQL captured from the manifest."
-        }
-      >
-        {showsDefinition ? (
-          definition.kind === "metric" ? (
-            renderMetricDefinition(definition)
-          ) : (
-            renderSemanticModelDefinition(definition)
-          )
-        ) : sqlText ? (
-          <SqlPanel sql={sqlText} />
-        ) : (
-          <EmptyState
-            icon="⌘"
-            headline={
-              showsDefinition ? "No definition available" : "No SQL available"
-            }
-            subtext={
-              showsDefinition
-                ? "This resource does not expose enough definition metadata in the current artifacts."
-                : "This resource does not expose compiled or raw SQL in the current artifacts."
-            }
-          />
-        )}
-      </SectionCard>
+      <AssetSqlOrDefinitionCard
+        resource={resource}
+        showsDefinition={showsDefinition}
+        definition={definition}
+        sqlText={sqlText}
+      />
     </div>
   );
 }

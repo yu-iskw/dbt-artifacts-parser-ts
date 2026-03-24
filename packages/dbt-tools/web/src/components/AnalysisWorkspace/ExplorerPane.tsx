@@ -124,6 +124,131 @@ export function ResourceTypeSummaryBar({
   );
 }
 
+function ExplorerTreeList({
+  treeRows,
+  explorerMode,
+  expandedNodeIds,
+  toggleExpandedNode,
+  selectedResourceId,
+  setSelectedResourceId,
+}: {
+  treeRows: ExplorerTreeRow[];
+  explorerMode: AssetExplorerMode;
+  expandedNodeIds: Set<string>;
+  toggleExpandedNode: (id: string) => void;
+  selectedResourceId: string | null;
+  setSelectedResourceId: (id: string | null) => void;
+}) {
+  return (
+    <div className="explorer-tree">
+      {treeRows.length > 0 ? (
+        treeRows.map(({ node, depth }) => {
+          if (node.kind === "branch") {
+            const isExpanded = expandedNodeIds.has(node.id);
+            return (
+              <button
+                key={node.id}
+                type="button"
+                className="explorer-tree__row explorer-tree__row--branch"
+                style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
+                onClick={() => toggleExpandedNode(node.id)}
+              >
+                <span
+                  className={`explorer-tree__chevron${isExpanded ? " explorer-tree__chevron--expanded" : ""}`}
+                  aria-hidden="true"
+                >
+                  ▸
+                </span>
+                <span className="explorer-tree__folder" aria-hidden="true">
+                  <ExplorerBranchIcon mode={explorerMode} depth={depth} />
+                </span>
+                <span className="explorer-tree__label">{node.label}</span>
+                {node.testStats &&
+                  node.testStats.pass +
+                    node.testStats.fail +
+                    node.testStats.error >
+                    0 && (
+                    <span className="explorer-tree__test-stats">
+                      {node.testStats.pass > 0 && (
+                        <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
+                          ✓{node.testStats.pass}
+                        </span>
+                      )}
+                      {(node.testStats.fail > 0 ||
+                        node.testStats.error > 0) && (
+                        <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
+                          ✗{node.testStats.fail + node.testStats.error}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                <span className="explorer-tree__count">{node.count}</span>
+              </button>
+            );
+          }
+
+          const resource = node.resource!;
+          return (
+            <button
+              key={node.id}
+              type="button"
+              className={
+                resource.uniqueId === selectedResourceId
+                  ? "explorer-tree__row explorer-tree__row--leaf explorer-tree__row--active"
+                  : "explorer-tree__row explorer-tree__row--leaf"
+              }
+              style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
+              onClick={() => setSelectedResourceId(resource.uniqueId)}
+              title={resource.uniqueId}
+            >
+              <span className="explorer-tree__leaf-icon" aria-hidden="true">
+                <ResourceTypeIcon resourceType={resource.resourceType} />
+              </span>
+              <span className="explorer-tree__resource-body">
+                <span className="explorer-tree__resource-text">
+                  <span className="explorer-tree__label">{resource.name}</span>
+                  {node.originLabel && (
+                    <span className="explorer-tree__origin">
+                      {node.originLabel}
+                    </span>
+                  )}
+                </span>
+                <span className="explorer-tree__resource-type">
+                  {formatResourceTypeLabel(resource.resourceType)}
+                </span>
+              </span>
+              {node.testStats &&
+                node.testStats.pass +
+                  node.testStats.fail +
+                  node.testStats.error >
+                  0 && (
+                  <span className="explorer-tree__test-stats">
+                    {node.testStats.pass > 0 && (
+                      <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
+                        ✓{node.testStats.pass}
+                      </span>
+                    )}
+                    {(node.testStats.fail > 0 || node.testStats.error > 0) && (
+                      <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
+                        ✗{node.testStats.fail + node.testStats.error}
+                      </span>
+                    )}
+                  </span>
+                )}
+            </button>
+          );
+        })
+      ) : (
+        <EmptyState
+          icon="🔍"
+          headline="No resources found"
+          subtext="Adjust the search query to find matching branches or assets."
+        />
+      )}
+    </div>
+  );
+}
+
 export function ExplorerPane({
   treeRows,
   filteredResources,
@@ -301,115 +426,14 @@ export function ExplorerPane({
 
       <ResourceTypeSummaryBar resources={filteredResources} />
 
-      <div className="explorer-tree">
-        {treeRows.length > 0 ? (
-          treeRows.map(({ node, depth }) => {
-            if (node.kind === "branch") {
-              const isExpanded = expandedNodeIds.has(node.id);
-              return (
-                <button
-                  key={node.id}
-                  type="button"
-                  className="explorer-tree__row explorer-tree__row--branch"
-                  style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
-                  onClick={() => toggleExpandedNode(node.id)}
-                >
-                  <span
-                    className={`explorer-tree__chevron${isExpanded ? " explorer-tree__chevron--expanded" : ""}`}
-                    aria-hidden="true"
-                  >
-                    ▸
-                  </span>
-                  <span className="explorer-tree__folder" aria-hidden="true">
-                    <ExplorerBranchIcon mode={explorerMode} depth={depth} />
-                  </span>
-                  <span className="explorer-tree__label">{node.label}</span>
-                  {node.testStats &&
-                    node.testStats.pass +
-                      node.testStats.fail +
-                      node.testStats.error >
-                      0 && (
-                      <span className="explorer-tree__test-stats">
-                        {node.testStats.pass > 0 && (
-                          <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
-                            ✓{node.testStats.pass}
-                          </span>
-                        )}
-                        {(node.testStats.fail > 0 ||
-                          node.testStats.error > 0) && (
-                          <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
-                            ✗{node.testStats.fail + node.testStats.error}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  <span className="explorer-tree__count">{node.count}</span>
-                </button>
-              );
-            }
-
-            const resource = node.resource!;
-            return (
-              <button
-                key={node.id}
-                type="button"
-                className={
-                  resource.uniqueId === selectedResourceId
-                    ? "explorer-tree__row explorer-tree__row--leaf explorer-tree__row--active"
-                    : "explorer-tree__row explorer-tree__row--leaf"
-                }
-                style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
-                onClick={() => setSelectedResourceId(resource.uniqueId)}
-                title={resource.uniqueId}
-              >
-                <span className="explorer-tree__leaf-icon" aria-hidden="true">
-                  <ResourceTypeIcon resourceType={resource.resourceType} />
-                </span>
-                <span className="explorer-tree__resource-body">
-                  <span className="explorer-tree__resource-text">
-                    <span className="explorer-tree__label">
-                      {resource.name}
-                    </span>
-                    {node.originLabel && (
-                      <span className="explorer-tree__origin">
-                        {node.originLabel}
-                      </span>
-                    )}
-                  </span>
-                  <span className="explorer-tree__resource-type">
-                    {formatResourceTypeLabel(resource.resourceType)}
-                  </span>
-                </span>
-                {node.testStats &&
-                  node.testStats.pass +
-                    node.testStats.fail +
-                    node.testStats.error >
-                    0 && (
-                    <span className="explorer-tree__test-stats">
-                      {node.testStats.pass > 0 && (
-                        <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
-                          ✓{node.testStats.pass}
-                        </span>
-                      )}
-                      {(node.testStats.fail > 0 ||
-                        node.testStats.error > 0) && (
-                        <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
-                          ✗{node.testStats.fail + node.testStats.error}
-                        </span>
-                      )}
-                    </span>
-                  )}
-              </button>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon="🔍"
-            headline="No resources found"
-            subtext="Adjust the search query to find matching branches or assets."
-          />
-        )}
-      </div>
+      <ExplorerTreeList
+        treeRows={treeRows}
+        explorerMode={explorerMode}
+        expandedNodeIds={expandedNodeIds}
+        toggleExpandedNode={toggleExpandedNode}
+        selectedResourceId={selectedResourceId}
+        setSelectedResourceId={setSelectedResourceId}
+      />
     </aside>
   );
 }

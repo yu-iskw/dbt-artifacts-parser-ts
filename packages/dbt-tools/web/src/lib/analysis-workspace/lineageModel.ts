@@ -366,7 +366,7 @@ export function buildLineageGraphModel({
 
   const columnCount = columnNodes.length;
   const nodeWidth = displayMode === "summary" ? 176 : 212;
-  const nodeHeight = displayMode === "summary" ? 58 : 74;
+  const nodeHeight = displayMode === "summary" ? 64 : 80;
   const nodeRadius = displayMode === "summary" ? 14 : 18;
   const columnGap = displayMode === "summary" ? 104 : 160;
   const rowGap = displayMode === "summary" ? 24 : 40;
@@ -555,6 +555,20 @@ export interface LensLegendItem {
   borderColor?: string;
 }
 
+export function getLegendKeyForResource(
+  resource: ResourceNode,
+  lensMode: LensMode,
+): string {
+  switch (lensMode) {
+    case "status":
+      return resource.statusTone ?? "neutral";
+    case "type":
+      return resource.resourceType;
+    case "coverage":
+      return resource.description ? "documented" : "undocumented";
+  }
+}
+
 function capitalizeFirst(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -609,4 +623,38 @@ export function getLensLegendItems(
         },
       ];
   }
+}
+
+export function filterLineageGraphModel(
+  model: LineageGraphModel,
+  lensMode: LensMode,
+  activeLegendKeys: Set<string>,
+  selectedResourceId: string,
+): Pick<LineageGraphModel, "nodeLayouts" | "graphEdges"> {
+  if (activeLegendKeys.size === 0) {
+    return {
+      nodeLayouts: model.nodeLayouts,
+      graphEdges: model.graphEdges,
+    };
+  }
+
+  const filteredNodeLayouts = new Map<string, LineageGraphNodeLayout>();
+  for (const [nodeId, layout] of model.nodeLayouts.entries()) {
+    if (
+      nodeId === selectedResourceId ||
+      activeLegendKeys.has(getLegendKeyForResource(layout.resource, lensMode))
+    ) {
+      filteredNodeLayouts.set(nodeId, layout);
+    }
+  }
+
+  const visibleIds = new Set(filteredNodeLayouts.keys());
+  const filteredGraphEdges = model.graphEdges.filter(
+    (edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to),
+  );
+
+  return {
+    nodeLayouts: filteredNodeLayouts,
+    graphEdges: filteredGraphEdges,
+  };
 }

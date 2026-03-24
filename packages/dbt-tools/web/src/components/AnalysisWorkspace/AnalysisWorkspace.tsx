@@ -150,6 +150,43 @@ function collectDefaultExpandedBranchIds(
   return expanded;
 }
 
+function WorkspaceHeaderMeta({
+  analysis,
+  projectName,
+}: {
+  analysis: AnalysisState;
+  projectName: string | null;
+}) {
+  const invocationStartedAt = getInvocationTimestamp(analysis);
+  if (
+    projectName == null &&
+    analysis.invocationId == null &&
+    invocationStartedAt == null
+  ) {
+    return null;
+  }
+  return (
+    <div className="workspace-header-meta">
+      {projectName != null && (
+        <span className="workspace-header-meta__project">{projectName}</span>
+      )}
+      {analysis.invocationId != null && (
+        <span
+          className="workspace-header-meta__invocation"
+          title={analysis.invocationId}
+        >
+          Invocation {analysis.invocationId}
+        </span>
+      )}
+      {invocationStartedAt != null && (
+        <span className="workspace-header-meta__time">
+          Invocation started {formatRunStartedAt(invocationStartedAt)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function AnalysisWorkspace({
   analysis,
   activeView,
@@ -384,31 +421,7 @@ export function AnalysisWorkspace({
             <p className="eyebrow">Analysis workspace</p>
             <h2>{activeViewTitle}</h2>
           </div>
-          {(projectName != null ||
-            analysis.invocationId != null ||
-            getInvocationTimestamp(analysis) != null) && (
-            <div className="workspace-header-meta">
-              {projectName != null && (
-                <span className="workspace-header-meta__project">
-                  {projectName}
-                </span>
-              )}
-              {analysis.invocationId != null && (
-                <span
-                  className="workspace-header-meta__invocation"
-                  title={analysis.invocationId}
-                >
-                  Invocation {analysis.invocationId}
-                </span>
-              )}
-              {getInvocationTimestamp(analysis) != null && (
-                <span className="workspace-header-meta__time">
-                  Invocation started{" "}
-                  {formatRunStartedAt(getInvocationTimestamp(analysis)!)}
-                </span>
-              )}
-            </div>
-          )}
+          <WorkspaceHeaderMeta analysis={analysis} projectName={projectName} />
         </div>
 
         <WorkspaceContent

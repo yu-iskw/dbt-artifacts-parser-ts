@@ -38,6 +38,7 @@ export interface AssetViewState {
   downstreamDepth: number;
   allDepsMode: boolean;
   lensMode: LensMode;
+  activeLegendKeys: Set<string>;
 }
 
 export interface RunsViewState {

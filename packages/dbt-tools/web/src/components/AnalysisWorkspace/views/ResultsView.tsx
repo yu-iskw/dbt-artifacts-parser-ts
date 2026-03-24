@@ -18,6 +18,63 @@ import { SectionCard } from "../shared";
 
 export type ResultTab = "models" | "tests";
 
+function ResultsTableEmptyOverlay({
+  error,
+  isIndexing,
+  isLoading,
+  hasRowsInTab,
+  isTestTab,
+}: {
+  error: string | null;
+  isIndexing: boolean;
+  isLoading: boolean;
+  hasRowsInTab: boolean;
+  isTestTab: boolean;
+}) {
+  if (error) {
+    return (
+      <EmptyState
+        icon="⚠"
+        headline="Could not load result rows"
+        subtext={error}
+      />
+    );
+  }
+  if (isIndexing || isLoading) {
+    return (
+      <EmptyState
+        icon="⏳"
+        headline="Loading result rows"
+        subtext="Preparing the current result slice."
+      />
+    );
+  }
+  if (!hasRowsInTab) {
+    return (
+      <EmptyState
+        icon={isTestTab ? "🧪" : "📋"}
+        headline={
+          isTestTab
+            ? "No test results in this artifact"
+            : "No execution results"
+        }
+        subtext={
+          isTestTab
+            ? "Run 'dbt test' or 'dbt build' to capture test results in run_results.json."
+            : "No model, seed, or snapshot executions were found in run_results.json."
+        }
+      />
+    );
+  }
+  return (
+    <EmptyState
+      icon="✓"
+      headline="No matching rows"
+      subtext="Try clearing the status filter or adjusting your search query."
+    />
+  );
+}
+
 /** Self-contained results view for a single tab — driven by the nav view. */
 export function ResultsView({
   rows,
@@ -220,40 +277,15 @@ export function ResultsView({
               })}
             </div>
 
-            {rows.length === 0 &&
-              (error ? (
-                <EmptyState
-                  icon="⚠"
-                  headline="Could not load result rows"
-                  subtext={error}
-                />
-              ) : isIndexing || isLoading ? (
-                <EmptyState
-                  icon="⏳"
-                  headline="Loading result rows"
-                  subtext="Preparing the current result slice."
-                />
-              ) : !hasRowsInTab ? (
-                <EmptyState
-                  icon={isTestTab ? "🧪" : "📋"}
-                  headline={
-                    isTestTab
-                      ? "No test results in this artifact"
-                      : "No execution results"
-                  }
-                  subtext={
-                    isTestTab
-                      ? "Run 'dbt test' or 'dbt build' to capture test results in run_results.json."
-                      : "No model, seed, or snapshot executions were found in run_results.json."
-                  }
-                />
-              ) : (
-                <EmptyState
-                  icon="✓"
-                  headline="No matching rows"
-                  subtext="Try clearing the status filter or adjusting your search query."
-                />
-              ))}
+            {rows.length === 0 && (
+              <ResultsTableEmptyOverlay
+                error={error}
+                isIndexing={isIndexing}
+                isLoading={isLoading}
+                hasRowsInTab={hasRowsInTab}
+                isTestTab={isTestTab}
+              />
+            )}
           </div>
         </div>
         <p className="results-table__progress">

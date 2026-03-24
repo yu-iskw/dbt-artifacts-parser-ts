@@ -54,20 +54,20 @@
   --dbt-type-generic: #a6b4c6;
   --dbt-type-generic-soft: #435061;
   /* Graph surfaces */
-  --graph-bg-top: #1b4052;
-  --graph-bg-bottom: #133140;
-  --graph-bg-accent: rgba(130, 182, 208, 0.16);
-  --graph-panel: rgba(34, 69, 87, 0.78);
-  --graph-panel-hover: rgba(41, 79, 99, 0.9);
-  --graph-panel-active: rgba(236, 248, 255, 0.18);
-  --graph-border: rgba(206, 232, 242, 0.16);
-  --graph-border-strong: rgba(239, 249, 255, 0.4);
-  --graph-text: #f7fbff;
-  --graph-text-muted: rgba(222, 236, 244, 0.84);
-  --graph-text-soft: rgba(198, 220, 230, 0.76);
-  --graph-edge: rgba(101, 190, 226, 0.38);
-  --graph-hotspot: rgba(226, 246, 255, 0.56);
-  --graph-node-stroke: rgba(255, 255, 255, 0.26);
+  --graph-bg-top: #16384b;
+  --graph-bg-bottom: #0f2838;
+  --graph-bg-accent: rgba(136, 196, 226, 0.12);
+  --graph-panel: rgba(56, 88, 107, 0.9);
+  --graph-panel-hover: rgba(70, 106, 127, 0.96);
+  --graph-panel-active: rgba(237, 248, 255, 0.2);
+  --graph-border: rgba(214, 234, 245, 0.15);
+  --graph-border-strong: rgba(244, 251, 255, 0.5);
+  --graph-text: #f8fbfe;
+  --graph-text-muted: rgba(233, 242, 248, 0.88);
+  --graph-text-soft: rgba(210, 226, 236, 0.82);
+  --graph-edge: rgba(112, 198, 236, 0.44);
+  --graph-hotspot: rgba(236, 249, 255, 0.64);
+  --graph-node-stroke: rgba(255, 255, 255, 0.3);
   --graph-node-selected-stroke: rgba(255, 255, 255, 0.92);
   --radius-lg: 28px;
   --radius-md: 20px;
@@ -2278,9 +2278,39 @@ details.timeline-filter-accordion .timeline-controls {
   display: inline-flex;
   align-items: center;
   gap: 0.38rem;
+  padding: 0.16rem 0.36rem;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
   font-size: 0.8rem;
   color: var(--graph-text-muted);
   font-weight: 500;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.lineage-legend__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lineage-legend__item--active {
+  opacity: 1;
+}
+
+.lineage-legend__item--inactive {
+  opacity: 0.42;
+}
+
+.lineage-legend__clear {
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--graph-text-muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .lineage-legend__swatch {
@@ -2332,12 +2362,12 @@ details.timeline-filter-accordion .timeline-controls {
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 20px 40px rgba(18, 38, 50, 0.16);
   cursor: grab;
-  min-height: 360px;
+  height: 440px;
   user-select: none;
 }
 
 .dependency-graph--summary .lineage-graph__viewport {
-  min-height: 460px;
+  height: 520px;
 }
 
 .lineage-graph__viewport:active {
@@ -2347,10 +2377,19 @@ details.timeline-filter-accordion .timeline-controls {
 .lineage-graph__viewport--fullscreen {
   flex: 1;
   min-height: 0;
+  height: auto;
 }
 
 .lineage-graph__canvas {
   position: relative;
+  min-width: max-content;
+}
+
+.lineage-graph__zoom-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
 }
 
 /* SVG graph elements */
@@ -2383,25 +2422,25 @@ details.timeline-filter-accordion .timeline-controls {
 /* Node text */
 .dependency-graph__node-label {
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   fill: var(--graph-text);
   pointer-events: none;
 }
 
 .dependency-graph--summary .dependency-graph__node-label {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .dependency-graph__node-meta {
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   fill: var(--graph-text-soft);
   pointer-events: none;
 }
 
 .dependency-graph--summary .dependency-graph__node-meta {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .dependency-graph__node-stat-pill {
@@ -2418,7 +2457,7 @@ details.timeline-filter-accordion .timeline-controls {
 
 .dependency-graph__node-stat {
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   pointer-events: none;
 }
@@ -2432,7 +2471,7 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .dependency-graph--summary .dependency-graph__node-stat {
-  font-size: 9px;
+  font-size: 10px;
 }
 
 /* Edges */
@@ -2512,17 +2551,17 @@ details.timeline-filter-accordion .timeline-controls {
 
 /* Node hover tooltip */
 .graph-node-tooltip {
-  position: fixed;
+  position: absolute;
   z-index: 450;
-  padding: 0.65rem 0.85rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.98);
+  width: 248px;
+  padding: 0.55rem 0.72rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.97);
   box-shadow:
-    0 18px 36px rgba(17, 24, 39, 0.16),
+    0 14px 28px rgba(17, 24, 39, 0.14),
     inset 0 0 0 1px rgba(35, 42, 52, 0.1);
   backdrop-filter: blur(16px);
   pointer-events: none;
-  max-width: 280px;
 }
 
 .graph-node-tooltip__name {
@@ -2602,6 +2641,26 @@ details.timeline-filter-accordion .timeline-controls {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
+}
+
+.shared-depth-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+}
+
+.shared-depth-selector__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--graph-text-soft);
+  margin-right: 0.1rem;
+}
+
+.shared-depth-selector__state {
+  font-size: 0.76rem;
+  color: var(--graph-text-soft);
+  font-weight: 600;
 }
 
 .lineage-stepper {

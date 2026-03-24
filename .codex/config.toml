@@ -1,1 +1,11 @@
+# Project Codex defaults (loaded only when this repo is trusted). See:
+# https://developers.openai.com/codex/config-basic
+
+approval_policy = "on-request"
 sandbox_mode = "workspace-write"
+web_search = "cached"
+
+# Subprocess network for shell commands is off unless you opt in; use approval
+# prompts or `codex -c ...` for one-off network if installs need it.
+[sandbox_workspace_write]
+network_access = false

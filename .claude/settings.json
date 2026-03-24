@@ -1,9 +1,25 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment": "Enable sandbox in Claude Code with /sandbox (choose auto-allow or regular permissions). Project defaults: .claude/settings.json. Personal overrides: .claude/settings.local.json (gitignored).",
+  "permissions": {
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": "disable",
+    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(gh pr create *)"
+    ],
+    "allow": ["Bash(pnpm *)", "Bash(npm *)", "Bash(npx *)", "Bash(node *)"]
+  },
+  "respectGitignore": true,
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "denyRead": ["~/.aws/credentials"]
+    },
     "network": {
       "allowedDomains": [
         "registry.npmjs.org",
@@ -13,5 +29,15 @@
         "*.googleapis.com"
       ]
     }
+  },
+  "_comment": "Project defaults (committed). Personal overrides: .claude/settings.local.json (gitignored). Verify layers with /status in Claude Code. Sandbox: /sandbox in REPL; autoAllowBashIfSandboxed trades fewer prompts for less review of sandboxed commands.",
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   }
 }
