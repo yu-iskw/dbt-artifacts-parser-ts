@@ -1,0 +1,37 @@
+{
+  "name": "@dbt-tools/web",
+  "version": "0.1.0",
+  "description": "Web application for visual dbt artifact analysis",
+  "keywords": [
+    "dbt",
+    "web",
+    "visualization"
+  ],
+  "license": "Apache-2.0",
+  "author": "yu-iskw",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "dev:debug": "DBT_DEBUG=1 vite",
+    "dev:target": "DBT_TARGET=./target vite",
+    "preview": "vite preview",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@dbt-tools/core": "workspace:*",
+    "@tanstack/react-virtual": "^3.13.22",
+    "dbt-artifacts-parser": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.3"
+  }
+}

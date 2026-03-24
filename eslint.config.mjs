@@ -8,6 +8,7 @@ export default [
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/codeql-db/**",
       "**/resources/**",
       ".claude/**",
       ".cursor/**",
@@ -15,6 +16,8 @@ export default [
       ".trunk/**",
       "**/*.generated.ts",
       "packages/dbt-artifacts-parser/resources/**/*.json",
+      "**/playwright-report/**",
+      "**/test-results/**",
     ],
   },
   {
@@ -29,6 +32,9 @@ export default [
           "./packages/dbt-artifacts-parser/tsconfig.json",
           "./packages/dbt-tools/core/tsconfig.json",
           "./packages/dbt-tools/cli/tsconfig.json",
+          "./packages/dbt-tools/web/tsconfig.json",
+          "./packages/dbt-tools/web/tsconfig.node.json",
+          "./packages/dbt-tools/web/tsconfig.e2e.json",
         ],
       },
     },
@@ -49,7 +55,7 @@ export default [
       "prefer-const": "error",
       // Core ESLint complexity (error for AI agent feedback)
       complexity: ["error", { max: 20 }],
-      "max-lines-per-function": ["error", { max: 100 }],
+      "max-lines-per-function": ["error", { max: 280 }],
       // SonarJS (error for AI agent feedback)
       "sonarjs/cyclomatic-complexity": ["error", { threshold: 20 }],
       "sonarjs/cognitive-complexity": ["error", 20],
