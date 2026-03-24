@@ -50,6 +50,7 @@ export interface RunsViewState {
 export interface AnalysisWorkspaceProps {
   analysis: AnalysisState;
   activeView: WorkspaceView;
+  activeViewTitle: string;
   analysisSource: "preload" | "upload" | null;
   overviewFilters: OverviewFilterState;
   onOverviewFiltersChange: Dispatch<SetStateAction<OverviewFilterState>>;
@@ -60,5 +61,4 @@ export interface AnalysisWorkspaceProps {
   assetViewState: AssetViewState;
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>;
   runsViewState: RunsViewState;
-  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
 }

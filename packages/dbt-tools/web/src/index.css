@@ -326,12 +326,6 @@ code {
   gap: 0.55rem;
 }
 
-.sidebar-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.32rem;
-}
-
 .sidebar-link {
   display: flex;
   flex-direction: row;
@@ -347,24 +341,6 @@ code {
   transition:
     background 160ms ease,
     color 160ms ease;
-}
-
-/* Abbreviated icon — hidden in expanded mode */
-.sidebar-link__abbr {
-  display: none;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.sidebar-link strong {
-  font-size: 1rem;
-}
-
-.sidebar-link span:not(.sidebar-link__abbr) {
-  color: var(--text-soft);
-  font-size: 0.9rem;
 }
 
 .sidebar-link:hover:not(:disabled),
@@ -385,48 +361,8 @@ code {
   padding: 0.6rem 0.5rem;
 }
 
-.app-sidebar--collapsed .sidebar-link__body,
-.app-sidebar--collapsed .sidebar-link__count,
-.app-sidebar--collapsed .sidebar-link__abbr {
+.app-sidebar--collapsed .sidebar-link__body {
   display: none;
-}
-
-.sidebar-children {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-left: 3rem;
-}
-
-.sidebar-sublink {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 2rem;
-  padding: 0.42rem 0.7rem;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text-muted);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    color 160ms ease;
-}
-
-.sidebar-sublink:hover:not(:disabled),
-.sidebar-sublink--active {
-  background: rgba(23, 71, 179, 0.08);
-  color: var(--text);
-}
-
-.sidebar-sublink--active {
-  font-weight: 700;
-}
-
-.sidebar-sublink:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 /* Sidebar collapse toggle button */
@@ -1959,8 +1895,7 @@ details.timeline-filter-accordion .timeline-controls {
 
 .sidebar-link__body {
   display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
+  align-items: center;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -1972,28 +1907,6 @@ details.timeline-filter-accordion .timeline-controls {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.sidebar-link__body span {
-  font-size: 0.78rem;
-  color: var(--text-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-link__count {
-  margin-left: auto;
-  align-self: center;
-  min-width: 2rem;
-  padding: 0.22rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(37, 88, 217, 0.08);
-  color: var(--accent);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-align: center;
-  flex-shrink: 0;
 }
 
 /* Collapsed: icon pill highlight for active item */
@@ -2798,13 +2711,6 @@ details.timeline-filter-accordion .timeline-controls {
 /* Tighter workspace card header gap */
 .workspace-card__header {
   margin-bottom: 0.9rem;
-}
-
-/* Slightly more visual separation between sidebar nav sections */
-.sidebar-group + .sidebar-group {
-  margin-top: 0.35rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid rgba(35, 42, 52, 0.07);
 }
 
 /* ─── Explorer pane ──────────────────────────────────────────────────────── */

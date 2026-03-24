@@ -19,25 +19,15 @@ import { useAnalysisPage } from "./hooks/useAnalysisPage";
 import type { AnalysisState } from "@web/types";
 
 interface SidebarNavigationTarget {
+  id: string;
+  label: string;
   view: WorkspaceView;
   catalogTab?: CatalogDetailTab;
   runsTab?: RunsTab;
   runsKind?: RunsKind;
 }
 
-interface SidebarNavigationChild extends SidebarNavigationTarget {
-  id: string;
-  label: string;
-}
-
-interface SidebarNavigationSection extends SidebarNavigationTarget {
-  view: WorkspaceView;
-  label: string;
-  description: string;
-  children?: SidebarNavigationChild[];
-}
-
-function NavIcon({ view }: { view: WorkspaceView }) {
+function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
   const svgProps = {
     viewBox: "0 0 24 24" as const,
     fill: "none" as const,
@@ -50,7 +40,7 @@ function NavIcon({ view }: { view: WorkspaceView }) {
     "aria-hidden": true as const,
   };
 
-  if (view === "overview") {
+  if (id === "overview") {
     // Dashboard: 2×2 rounded grid
     return (
       <svg {...svgProps}>
@@ -62,7 +52,7 @@ function NavIcon({ view }: { view: WorkspaceView }) {
     );
   }
 
-  if (view === "catalog") {
+  if (id === "assets") {
     // Lineage/network: branching paths (DAG concept)
     return (
       <svg {...svgProps}>
@@ -75,70 +65,69 @@ function NavIcon({ view }: { view: WorkspaceView }) {
     );
   }
 
-  // Runs: stacked layers (execution runs concept)
+  if (id === "models") {
+    return (
+      <svg {...svgProps}>
+        <path d="M2 7l10-4 10 4-10 4-10-4z" />
+        <path d="M2 12l10 4 10-4" />
+        <path d="M2 17l10 4 10-4" />
+      </svg>
+    );
+  }
+
+  if (id === "tests") {
+    return (
+      <svg {...svgProps}>
+        <path d="M12 3l7 3v5c0 4.6-2.7 8.8-7 10-4.3-1.2-7-5.4-7-10V6l7-3z" />
+        <path d="m9.2 12 2 2 3.8-4.2" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...svgProps}>
-      <path d="M2 7l10-4 10 4-10 4-10-4z" />
-      <path d="M2 12l10 4 10-4" />
-      <path d="M2 17l10 4 10-4" />
+      <path d="M4 7h16" />
+      <path d="M4 12h9" />
+      <path d="M4 17h13" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="10" cy="12" r="2" />
+      <circle cx="17" cy="17" r="2" />
     </svg>
   );
 }
 
-const navigationItems: SidebarNavigationSection[] = [
+const navigationItems: SidebarNavigationTarget[] = [
   {
+    id: "overview",
     view: "overview",
     label: "Overview",
-    description: "Run posture and next actions",
   },
   {
+    id: "assets",
     view: "catalog",
-    label: "Catalog",
-    description: "Asset discovery and lineage",
+    label: "Assets",
     catalogTab: "summary",
-    children: [
-      {
-        id: "assets",
-        label: "Assets",
-        view: "catalog",
-        catalogTab: "summary",
-      },
-      {
-        id: "lineage",
-        label: "Lineage",
-        view: "catalog",
-        catalogTab: "lineage",
-      },
-    ],
   },
   {
+    id: "models",
     view: "runs",
-    label: "Runs",
-    description: "Results and timeline analysis",
+    label: "Models",
     runsTab: "results",
     runsKind: "models",
-    children: [
-      {
-        id: "models",
-        label: "Models",
-        view: "runs",
-        runsTab: "results",
-        runsKind: "models",
-      },
-      {
-        id: "tests",
-        label: "Tests",
-        view: "runs",
-        runsTab: "results",
-        runsKind: "tests",
-      },
-      {
-        id: "timeline",
-        label: "Timeline",
-        view: "runs",
-        runsTab: "timeline",
-      },
-    ],
+  },
+  {
+    id: "tests",
+    view: "runs",
+    label: "Tests",
+    runsTab: "results",
+    runsKind: "tests",
+  },
+  {
+    id: "timeline",
+    view: "runs",
+    label: "Timeline",
+    runsTab: "timeline",
+    runsKind: "models",
   },
 ];
 
@@ -204,14 +193,36 @@ function getInitialSidebarCollapsed(): boolean {
   return true;
 }
 
-function getViewCount(
-  view: WorkspaceView,
-  analysis: AnalysisState | null,
-): string | null {
-  if (!analysis) return null;
-  if (view === "overview") return `${analysis.summary.total_nodes}`;
-  if (view === "catalog") return `${analysis.resources.length}`;
-  return `${analysis.executions.length}`;
+function isNavigationTargetActive(
+  target: SidebarNavigationTarget,
+  activeView: WorkspaceView,
+  assetViewState: AssetViewState,
+  runsViewState: RunsViewState,
+): boolean {
+  if (activeView !== target.view) return false;
+  if (target.view === "catalog") {
+    return true;
+  }
+  if (target.view === "runs") {
+    if ((target.runsTab ?? "results") !== runsViewState.tab) return false;
+    if ((target.runsTab ?? "results") === "results") {
+      return (target.runsKind ?? "models") === runsViewState.kind;
+    }
+    return true;
+  }
+  return true;
+}
+
+function getActiveNavigationItem(
+  activeView: WorkspaceView,
+  assetViewState: AssetViewState,
+  runsViewState: RunsViewState,
+): SidebarNavigationTarget {
+  return (
+    navigationItems.find((item) =>
+      isNavigationTargetActive(item, activeView, assetViewState, runsViewState),
+    ) ?? navigationItems[0]
+  );
 }
 
 function buildWorkspaceSignals(
@@ -302,21 +313,6 @@ function AppSidebar({
   assetViewState: AssetViewState;
   runsViewState: RunsViewState;
 }) {
-  const isChildActive = (target: SidebarNavigationTarget): boolean => {
-    if (activeView !== target.view) return false;
-    if (target.view === "catalog") {
-      return (target.catalogTab ?? "summary") === assetViewState.detailTab;
-    }
-    if (target.view === "runs") {
-      if ((target.runsTab ?? "results") !== runsViewState.tab) return false;
-      if ((target.runsTab ?? "results") === "results") {
-        return (target.runsKind ?? "models") === runsViewState.kind;
-      }
-      return true;
-    }
-    return true;
-  };
-
   return (
     <aside
       id="app-sidebar"
@@ -342,67 +338,34 @@ function AppSidebar({
       <nav className="app-sidebar__nav" aria-label="Workspace sections">
         {navigationItems.map((item) => {
           const disabled = !analysis;
-          const active = activeView === item.view;
+          const active = isNavigationTargetActive(
+            item,
+            activeView,
+            assetViewState,
+            runsViewState,
+          );
           return (
-            <div key={item.view} className="sidebar-group">
-              <button
-                type="button"
-                className={
-                  active ? "sidebar-link sidebar-link--active" : "sidebar-link"
-                }
-                disabled={disabled}
-                onClick={() => {
-                  setNavigationTarget(item);
-                  onNavigate();
-                }}
-                aria-label={item.label}
-                title={item.label}
-              >
-                <span className="sidebar-link__icon">
-                  <NavIcon view={item.view} />
-                </span>
-                <div className="sidebar-link__body">
-                  <strong>{item.label}</strong>
-                  <span>{item.description}</span>
-                </div>
-                {getViewCount(item.view, analysis) && (
-                  <span className="sidebar-link__count">
-                    {getViewCount(item.view, analysis)}
-                  </span>
-                )}
-              </button>
-              {!sidebarCollapsed && item.children && (
-                <div
-                  className="sidebar-children"
-                  role="group"
-                  aria-label={`${item.label} destinations`}
-                >
-                  {item.children.map((child) => {
-                    const childActive = isChildActive(child);
-                    return (
-                      <button
-                        key={child.id}
-                        type="button"
-                        className={
-                          childActive
-                            ? "sidebar-sublink sidebar-sublink--active"
-                            : "sidebar-sublink"
-                        }
-                        disabled={disabled}
-                        onClick={() => {
-                          setNavigationTarget(child);
-                          onNavigate();
-                        }}
-                        aria-label={child.label}
-                        title={child.label}
-                      >
-                        <span>{child.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <button
+              key={item.id}
+              type="button"
+              className={
+                active ? "sidebar-link sidebar-link--active" : "sidebar-link"
+              }
+              disabled={disabled}
+              onClick={() => {
+                setNavigationTarget(item);
+                onNavigate();
+              }}
+              aria-label={item.label}
+              title={item.label}
+            >
+              <span className="sidebar-link__icon">
+                <NavIcon id={item.id} />
+              </span>
+              <div className="sidebar-link__body">
+                <strong>{item.label}</strong>
+              </div>
+            </button>
           );
         })}
       </nav>
@@ -447,12 +410,6 @@ function LoadingCard() {
 }
 
 // ─── Inner app (consumes ToastContext) ───────────────────────────────────────
-
-const VIEW_TITLES: Record<WorkspaceView, string> = {
-  overview: "Workspace overview",
-  catalog: "Catalog workspace",
-  runs: "Run analysis",
-};
 
 function AppContent() {
   const { toast } = useToast();
@@ -615,7 +572,12 @@ function AppContent() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const workspaceTitle = VIEW_TITLES[activeView];
+  const activeNavigationItem = getActiveNavigationItem(
+    activeView,
+    assetViewState,
+    runsViewState,
+  );
+  const workspaceTitle = activeNavigationItem.label;
   const workspaceSignals = analysis
     ? buildWorkspaceSignals(analysis, analysisSource)
     : [];
@@ -715,6 +677,7 @@ function AppContent() {
           <AnalysisWorkspace
             analysis={analysis}
             activeView={activeView}
+            activeViewTitle={workspaceTitle}
             analysisSource={analysisSource}
             overviewFilters={overviewFilters}
             onOverviewFiltersChange={setOverviewFilters}
@@ -725,7 +688,6 @@ function AppContent() {
             assetViewState={assetViewState}
             onAssetViewStateChange={setAssetViewState}
             runsViewState={runsViewState}
-            onRunsViewStateChange={setRunsViewState}
           />
         ) : preloadLoading ? (
           <LoadingCard />

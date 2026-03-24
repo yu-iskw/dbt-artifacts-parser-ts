@@ -17,7 +17,6 @@ import {
   type TimelineFilterState,
   type WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
-import { VIEW_TITLES } from "@web/lib/analysis-workspace/constants";
 import {
   deriveProjectName,
   getInvocationTimestamp,
@@ -55,7 +54,6 @@ interface WorkspaceContentProps {
   assetViewState: AssetViewState;
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>;
   runsViewState: RunsViewState;
-  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
 }
 
 function WorkspaceContent({
@@ -73,7 +71,6 @@ function WorkspaceContent({
   assetViewState,
   onAssetViewStateChange,
   runsViewState,
-  onRunsViewStateChange,
 }: WorkspaceContentProps) {
   if (activeView === "overview")
     return (
@@ -111,12 +108,6 @@ function WorkspaceContent({
       tab={runsViewState.kind}
       filters={resultsFilters}
       setFilters={onResultsFiltersChange}
-      onTabChange={(tab) =>
-        onRunsViewStateChange((current) => ({
-          ...current,
-          kind: tab,
-        }))
-      }
     />
   );
 }
@@ -124,6 +115,7 @@ function WorkspaceContent({
 export function AnalysisWorkspace({
   analysis,
   activeView,
+  activeViewTitle,
   analysisSource,
   overviewFilters,
   onOverviewFiltersChange,
@@ -134,7 +126,6 @@ export function AnalysisWorkspace({
   assetViewState,
   onAssetViewStateChange,
   runsViewState,
-  onRunsViewStateChange,
 }: AnalysisWorkspaceProps) {
   const deferredResourceQuery = useDeferredValue(assetViewState.resourceQuery);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
@@ -349,42 +340,8 @@ export function AnalysisWorkspace({
         <div className="workspace-toolbar">
           <div>
             <p className="eyebrow">Analysis workspace</p>
-            <h2>{VIEW_TITLES[activeView]}</h2>
+            <h2>{activeViewTitle}</h2>
           </div>
-          {activeView === "runs" && (
-            <div
-              className="workspace-segmented-control"
-              role="tablist"
-              aria-label="Runs tab"
-            >
-              {(
-                [
-                  { value: "results", label: "Results" },
-                  { value: "timeline", label: "Timeline" },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={runsViewState.tab === tab.value}
-                  className={
-                    runsViewState.tab === tab.value
-                      ? "workspace-segmented-control__button workspace-segmented-control__button--active"
-                      : "workspace-segmented-control__button"
-                  }
-                  onClick={() =>
-                    onRunsViewStateChange((current) => ({
-                      ...current,
-                      tab: tab.value,
-                    }))
-                  }
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
           {(projectName != null ||
             analysis.invocationId != null ||
             getInvocationTimestamp(analysis) != null) && (
@@ -432,7 +389,6 @@ export function AnalysisWorkspace({
           assetViewState={assetViewState}
           onAssetViewStateChange={onAssetViewStateChange}
           runsViewState={runsViewState}
-          onRunsViewStateChange={onRunsViewStateChange}
         />
       </div>
     </div>
