@@ -73,7 +73,7 @@ Disable any you do not need in `enabledPlugins` to reduce surface area.
 
 ### MCP
 
-There is **no** project-level [`.mcp.json`](.mcp.json) in this repository. User-level MCP servers still apply from your Claude Code user config; for org-wide allow/deny of MCP, use [managed MCP](https://docs.anthropic.com/en/mcp#managed-mcp-configuration) when required.
+There is **no** project-level `.mcp.json` in this repository. User-level MCP servers still apply from your Claude Code user config; for org-wide allow/deny of MCP, use [managed MCP](https://docs.anthropic.com/en/mcp#managed-mcp-configuration) when required.
 
 ### Enterprise / managed policy (optional)
 
@@ -88,6 +88,6 @@ If IT must enforce non-overridable rules (permissions, domains, MCP, marketplace
 
 ## Frontend-specific guidance
 
-For stack details, UI tone (product/analyzer UI), and verification expectations for Codex, see [`.codex/skills/dbt-tools-frontend/SKILL.md`](.codex/skills/dbt-tools-frontend/SKILL.md).
+For stack details, UI tone (product/analyzer UI), and verification expectations for Codex, see [`.codex/skills/frontend-skill/SKILL.md`](.codex/skills/frontend-skill/SKILL.md).
 
 Optionally install OpenAI’s `frontend-skill` in the Codex app for composition and motion defaults; repository facts and commands in this file and the skill take precedence.

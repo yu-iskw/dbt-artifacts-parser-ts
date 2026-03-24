@@ -24,7 +24,7 @@ Run from the **repository root**.
 
 - **Format (fix style):** `pnpm format` (trunk fmt), then `pnpm format:eslint` (eslint . --fix), then `pnpm format:prettier` (prettier --write .). If a script is missing in the project, skip it.
 - **Lint with fix:** `pnpm lint:trunk` (trunk check -y). ESLint auto-fix is already covered by `pnpm format:eslint` above.
-- **Structured feedback (AI agents):** Run `pnpm lint:report` first to get `lint-report.json` with score and violations. Then use `pnpm format:eslint` and `pnpm lint:eslint` to fix. See [docs/eslint-harness.md](../../docs/eslint-harness.md).
+- **Structured feedback (AI agents):** Run `pnpm lint:report` first to get `lint-report.json` with score and violations. Then use `pnpm format:eslint` and `pnpm lint:eslint` to fix.
 
 Single sequence:
 

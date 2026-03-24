@@ -7,35 +7,34 @@ cli:
 plugins:
   sources:
     - id: trunk
-      ref: v1.7.4
+      ref: v1.7.6
       uri: https://github.com/trunk-io/plugins
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
-    - go@>=1.25.0
-    - node@22.10.0
+    - go@>=1.26.1
+    - node@24.14.0
     - python@>=3.12.0
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   disabled:
     - checkov
     - trufflehog
-  # Codex skill bundles are upstream-style reference docs; keep them out of trunk gate.
-  ignore:
-    - linters: [markdownlint, yamllint]
-      paths: [.codex/**]
   enabled:
     # - semgrep@1.155.0
+    - markdown-link-check@3.14.2
+    - markdownlint-cli2@0.22.0
+    - eslint@10.1.0
+    - taplo@0.10.0
     - shellcheck@0.11.0
     - shfmt@3.6.0
-    - sort-package-json@3.6.1
     - actionlint@1.7.8
     - pre-commit-hooks@5.0.0
     - trivy@0.69.3
     - osv-scanner@2.3.1
     - yamllint@1.38.0
     - git-diff-check
-    - markdownlint@0.48.0
+    # - markdownlint@0.48.0
     - prettier@3.8.1
 actions:
   enabled:

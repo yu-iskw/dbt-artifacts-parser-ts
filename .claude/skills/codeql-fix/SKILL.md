@@ -22,7 +22,7 @@ pnpm codeql
 ```
 
 - Creates a CodeQL database (`codeql-db/`) and runs analysis
-- Pre-check: [scripts/codeql-check.mjs](../../scripts/codeql-check.mjs) verifies CodeQL CLI is installed
+- Pre-check: [scripts/codeql-check.mjs](../../../scripts/codeql-check.mjs) verifies CodeQL CLI is installed
 - Output: `codeql-results.sarif` (view with SARIF Viewer in VS Code)
 
 Install: [CodeQL CLI](https://github.com/github/codeql-cli-binaries/releases) (e.g. `brew install codeql`).
