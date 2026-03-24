@@ -1,4 +1,4 @@
-import type { AnalysisState } from "../types";
+import type { AnalysisState } from "@web/types";
 
 const RESOURCE_TYPE_ORDER = [
   "model",
@@ -302,7 +302,8 @@ export async function analyzeArtifacts(
 
   const graphologyGraph = graph.getGraph();
 
-  // Enrich each GanttItem with its resource_type from the manifest graph.
+  // Enrich each GanttItem with its resource_type, packageName, and path from
+  // the manifest graph.
   const enrichedGanttData = ganttData.map((item) => {
     const attrs = graphologyGraph.hasNode(item.unique_id)
       ? graphologyGraph.getNodeAttributes(item.unique_id)
@@ -314,6 +315,14 @@ export async function analyzeArtifacts(
         typeof rtRaw === "string" && rtRaw
           ? rtRaw
           : inferResourceTypeFromId(item.unique_id),
+      packageName:
+        typeof attrs?.package_name === "string" ? attrs.package_name : "",
+      path:
+        typeof attrs?.original_file_path === "string"
+          ? attrs.original_file_path
+          : typeof attrs?.path === "string"
+            ? attrs.path
+            : null,
     };
   });
 

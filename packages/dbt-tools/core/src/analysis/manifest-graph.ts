@@ -15,7 +15,7 @@ import {
   getVersionInfo,
   MIN_SUPPORTED_SCHEMA_VERSION,
 } from "../version";
-import { ColumnDependencyMap } from "./sql-analyzer";
+import type { ColumnDependencyMap } from "./sql-analyzer";
 /**
  * ManifestGraph builds and manages a directed graph from a dbt manifest.
  *

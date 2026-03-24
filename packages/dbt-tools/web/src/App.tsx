@@ -2,57 +2,207 @@ import { useEffect, useRef, useState } from "react";
 import {
   AnalysisWorkspace,
   type WorkspaceView,
+  type CatalogDetailTab,
+  type RunsTab,
+  type RunsKind,
+  type OverviewFilterState,
+  type ResultsFilterState,
+  type TimelineFilterState,
+  type AssetViewState,
+  type RunsViewState,
 } from "./components/AnalysisWorkspace";
 import { ErrorBanner } from "./components/ErrorBanner";
 import { FileUpload } from "./components/FileUpload";
-import { Skeleton } from "./components/Skeleton";
-import { ToastProvider, useToast } from "./components/Toast";
+import { Skeleton } from "./components/ui/Skeleton";
+import { ToastProvider, useToast } from "./components/ui/Toast";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
-import type { AnalysisState } from "./types";
+import type { AnalysisState } from "@web/types";
 
-const navigationItems: Array<{
+interface SidebarNavigationTarget {
+  view: WorkspaceView;
+  catalogTab?: CatalogDetailTab;
+  runsTab?: RunsTab;
+  runsKind?: RunsKind;
+}
+
+interface SidebarNavigationChild extends SidebarNavigationTarget {
+  id: string;
+  label: string;
+}
+
+interface SidebarNavigationSection extends SidebarNavigationTarget {
   view: WorkspaceView;
   label: string;
   description: string;
-  abbr: string;
-  icon: string;
-}> = [
+  children?: SidebarNavigationChild[];
+}
+
+function NavIcon({ view }: { view: WorkspaceView }) {
+  const svgProps = {
+    viewBox: "0 0 24 24" as const,
+    fill: "none" as const,
+    stroke: "currentColor" as const,
+    strokeWidth: "1.8" as const,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    width: 20,
+    height: 20,
+    "aria-hidden": true as const,
+  };
+
+  if (view === "overview") {
+    // Dashboard: 2×2 rounded grid
+    return (
+      <svg {...svgProps}>
+        <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+        <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+        <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+      </svg>
+    );
+  }
+
+  if (view === "catalog") {
+    // Lineage/network: branching paths (DAG concept)
+    return (
+      <svg {...svgProps}>
+        <circle cx="5.5" cy="6.5" r="2" />
+        <circle cx="5.5" cy="17.5" r="2" />
+        <circle cx="18.5" cy="12" r="2" />
+        <path d="M7.5 6.5 Q13 6.5 16.5 12" />
+        <path d="M7.5 17.5 Q13 17.5 16.5 12" />
+      </svg>
+    );
+  }
+
+  // Runs: stacked layers (execution runs concept)
+  return (
+    <svg {...svgProps}>
+      <path d="M2 7l10-4 10 4-10 4-10-4z" />
+      <path d="M2 12l10 4 10-4" />
+      <path d="M2 17l10 4 10-4" />
+    </svg>
+  );
+}
+
+const navigationItems: SidebarNavigationSection[] = [
   {
     view: "overview",
     label: "Overview",
-    description: "Run health and bottlenecks",
-    abbr: "Ov",
-    icon: "◫",
+    description: "Run posture and next actions",
   },
   {
-    view: "assets",
-    label: "Assets",
-    description: "Manifest resource explorer",
-    abbr: "As",
-    icon: "◧",
+    view: "catalog",
+    label: "Catalog",
+    description: "Asset discovery and lineage",
+    catalogTab: "summary",
+    children: [
+      {
+        id: "assets",
+        label: "Assets",
+        view: "catalog",
+        catalogTab: "summary",
+      },
+      {
+        id: "lineage",
+        label: "Lineage",
+        view: "catalog",
+        catalogTab: "lineage",
+      },
+    ],
   },
   {
-    view: "models",
-    label: "Models",
-    description: "Model, seed, snapshot runs",
-    abbr: "Mo",
-    icon: "◩",
-  },
-  {
-    view: "tests",
-    label: "Tests",
-    description: "Test pass / fail results",
-    abbr: "Te",
-    icon: "◪",
-  },
-  {
-    view: "timeline",
-    label: "Timeline",
-    description: "Runtime sequencing",
-    abbr: "Ti",
-    icon: "◬",
+    view: "runs",
+    label: "Runs",
+    description: "Results and timeline analysis",
+    runsTab: "results",
+    runsKind: "models",
+    children: [
+      {
+        id: "models",
+        label: "Models",
+        view: "runs",
+        runsTab: "results",
+        runsKind: "models",
+      },
+      {
+        id: "tests",
+        label: "Tests",
+        view: "runs",
+        runsTab: "results",
+        runsKind: "tests",
+      },
+      {
+        id: "timeline",
+        label: "Timeline",
+        view: "runs",
+        runsTab: "timeline",
+      },
+    ],
   },
 ];
+
+const VALID_VIEWS = new Set<WorkspaceView>(["overview", "catalog", "runs"]);
+const VALID_CATALOG_TABS = new Set<CatalogDetailTab>([
+  "summary",
+  "lineage",
+  "sql",
+]);
+const VALID_RUNS_TABS = new Set<RunsTab>(["results", "timeline"]);
+const VALID_RUNS_KINDS = new Set<RunsKind>(["models", "tests"]);
+
+function parseViewFromSearch(search: string): WorkspaceView | null {
+  const params = new URLSearchParams(search);
+  const raw = params.get("view");
+  if (raw && VALID_VIEWS.has(raw as WorkspaceView)) {
+    return raw as WorkspaceView;
+  }
+  return null;
+}
+
+function getInitialView(): WorkspaceView {
+  return parseViewFromSearch(window.location.search) ?? "overview";
+}
+
+function parseCatalogDetailTab(search: string): CatalogDetailTab | null {
+  const raw = new URLSearchParams(search).get("tab");
+  if (raw && VALID_CATALOG_TABS.has(raw as CatalogDetailTab)) {
+    return raw as CatalogDetailTab;
+  }
+  return null;
+}
+
+function parseRunsTab(search: string): RunsTab | null {
+  const raw = new URLSearchParams(search).get("tab");
+  if (raw && VALID_RUNS_TABS.has(raw as RunsTab)) {
+    return raw as RunsTab;
+  }
+  return null;
+}
+
+function parseRunsKind(search: string): RunsKind | null {
+  const raw = new URLSearchParams(search).get("kind");
+  if (raw && VALID_RUNS_KINDS.has(raw as RunsKind)) {
+    return raw as RunsKind;
+  }
+  return null;
+}
+
+function parseSelectedResourceId(search: string): string | null {
+  return new URLSearchParams(search).get("resource");
+}
+
+const SIDEBAR_STORAGE_KEY = "dbt-tools.sidebarCollapsed";
+
+function getInitialSidebarCollapsed(): boolean {
+  try {
+    const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (stored !== null) return stored === "true";
+  } catch {
+    // ignore
+  }
+  return true;
+}
 
 function getViewCount(
   view: WorkspaceView,
@@ -60,14 +210,8 @@ function getViewCount(
 ): string | null {
   if (!analysis) return null;
   if (view === "overview") return `${analysis.summary.total_nodes}`;
-  if (view === "assets") return `${analysis.resources.length}`;
-  if (view === "models") {
-    return `${analysis.executions.filter((row) => !["test", "unit_test"].includes(row.resourceType)).length}`;
-  }
-  if (view === "tests") {
-    return `${analysis.executions.filter((row) => ["test", "unit_test"].includes(row.resourceType)).length}`;
-  }
-  return `${analysis.ganttData.length}`;
+  if (view === "catalog") return `${analysis.resources.length}`;
+  return `${analysis.executions.length}`;
 }
 
 function buildWorkspaceSignals(
@@ -138,22 +282,41 @@ function buildWorkspaceSignals(
 
 function AppSidebar({
   activeView,
-  setActiveView,
+  setNavigationTarget,
   sidebarCollapsed,
   setSidebarCollapsed,
   onNavigate,
   analysis,
   analysisSource,
+  assetViewState,
+  runsViewState,
 }: {
   activeView: WorkspaceView;
-  setActiveView: (v: WorkspaceView) => void;
+  setNavigationTarget: (target: SidebarNavigationTarget) => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (fn: (c: boolean) => boolean) => void;
   /** Called after any navigation action so the parent can close the mobile overlay. */
   onNavigate: () => void;
   analysis: AnalysisState | null;
   analysisSource: "preload" | "upload" | null;
+  assetViewState: AssetViewState;
+  runsViewState: RunsViewState;
 }) {
+  const isChildActive = (target: SidebarNavigationTarget): boolean => {
+    if (activeView !== target.view) return false;
+    if (target.view === "catalog") {
+      return (target.catalogTab ?? "summary") === assetViewState.detailTab;
+    }
+    if (target.view === "runs") {
+      if ((target.runsTab ?? "results") !== runsViewState.tab) return false;
+      if ((target.runsTab ?? "results") === "results") {
+        return (target.runsKind ?? "models") === runsViewState.kind;
+      }
+      return true;
+    }
+    return true;
+  };
+
   return (
     <aside
       id="app-sidebar"
@@ -163,7 +326,7 @@ function AppSidebar({
         type="button"
         className="app-sidebar__brand-link"
         onClick={() => {
-          setActiveView("overview");
+          setNavigationTarget({ view: "overview" });
           onNavigate();
         }}
         title="Go to overview"
@@ -172,7 +335,7 @@ function AppSidebar({
         {!sidebarCollapsed && (
           <div>
             <strong>dbt-tools</strong>
-            <span>Visual run workspace</span>
+            <span>Catalog and runs workspace</span>
           </div>
         )}
       </button>
@@ -181,35 +344,65 @@ function AppSidebar({
           const disabled = !analysis;
           const active = activeView === item.view;
           return (
-            <button
-              key={item.view}
-              type="button"
-              className={
-                active ? "sidebar-link sidebar-link--active" : "sidebar-link"
-              }
-              disabled={disabled}
-              onClick={() => {
-                setActiveView(item.view);
-                onNavigate();
-              }}
-              title={sidebarCollapsed ? item.label : undefined}
-            >
-              <span className="sidebar-link__icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span className="sidebar-link__abbr" aria-hidden="true">
-                {item.abbr}
-              </span>
-              <div className="sidebar-link__body">
-                <strong>{item.label}</strong>
-                <span>{item.description}</span>
-              </div>
-              {getViewCount(item.view, analysis) && (
-                <span className="sidebar-link__count">
-                  {getViewCount(item.view, analysis)}
+            <div key={item.view} className="sidebar-group">
+              <button
+                type="button"
+                className={
+                  active ? "sidebar-link sidebar-link--active" : "sidebar-link"
+                }
+                disabled={disabled}
+                onClick={() => {
+                  setNavigationTarget(item);
+                  onNavigate();
+                }}
+                aria-label={item.label}
+                title={item.label}
+              >
+                <span className="sidebar-link__icon">
+                  <NavIcon view={item.view} />
                 </span>
+                <div className="sidebar-link__body">
+                  <strong>{item.label}</strong>
+                  <span>{item.description}</span>
+                </div>
+                {getViewCount(item.view, analysis) && (
+                  <span className="sidebar-link__count">
+                    {getViewCount(item.view, analysis)}
+                  </span>
+                )}
+              </button>
+              {!sidebarCollapsed && item.children && (
+                <div
+                  className="sidebar-children"
+                  role="group"
+                  aria-label={`${item.label} destinations`}
+                >
+                  {item.children.map((child) => {
+                    const childActive = isChildActive(child);
+                    return (
+                      <button
+                        key={child.id}
+                        type="button"
+                        className={
+                          childActive
+                            ? "sidebar-sublink sidebar-sublink--active"
+                            : "sidebar-sublink"
+                        }
+                        disabled={disabled}
+                        onClick={() => {
+                          setNavigationTarget(child);
+                          onNavigate();
+                        }}
+                        aria-label={child.label}
+                        title={child.label}
+                      >
+                        <span>{child.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            </button>
+            </div>
           );
         })}
       </nav>
@@ -257,10 +450,8 @@ function LoadingCard() {
 
 const VIEW_TITLES: Record<WorkspaceView, string> = {
   overview: "Workspace overview",
-  assets: "Asset investigation",
-  models: "Model results",
-  tests: "Test results",
-  timeline: "Execution timeline",
+  catalog: "Catalog workspace",
+  runs: "Run analysis",
 };
 
 function AppContent() {
@@ -274,16 +465,135 @@ function AppContent() {
     onAnalysis,
     onError,
   } = useAnalysisPage();
-  const [activeView, setActiveView] = useState<WorkspaceView>("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeView, setActiveViewRaw] =
+    useState<WorkspaceView>(getInitialView);
+  const [sidebarCollapsed, setSidebarCollapsedRaw] = useState(
+    getInitialSidebarCollapsed,
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Filter / view state for the workspace
+  const [overviewFilters, setOverviewFilters] = useState<OverviewFilterState>({
+    status: "all",
+    resourceTypes: new Set(),
+    query: "",
+  });
+  const [resultsFilters, setResultsFilters] = useState<ResultsFilterState>({
+    status: "all",
+    query: "",
+  });
+  const [runsViewState, setRunsViewState] = useState<RunsViewState>({
+    tab: parseRunsTab(window.location.search) ?? "results",
+    kind: parseRunsKind(window.location.search) ?? "models",
+  });
+  const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>({
+    query: "",
+    activeStatuses: new Set(),
+    activeTypes: new Set(),
+  });
+  const [assetViewState, setAssetViewState] = useState<AssetViewState>({
+    explorerMode: "project",
+    status: "all",
+    resourceTypes: new Set(),
+    resourceQuery: "",
+    selectedResourceId: parseSelectedResourceId(window.location.search),
+    detailTab: parseCatalogDetailTab(window.location.search) ?? "summary",
+    upstreamDepth: 2,
+    downstreamDepth: 2,
+    allDepsMode: false,
+    lensMode: "status",
+  });
+
+  // Persist sidebar collapsed state to localStorage
+  const setSidebarCollapsed: (fn: (c: boolean) => boolean) => void = (fn) => {
+    setSidebarCollapsedRaw((current) => {
+      const next = fn(current);
+      try {
+        window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const setNavigationTarget = (target: SidebarNavigationTarget) => {
+    setActiveViewRaw(target.view);
+    if (target.view === "catalog") {
+      setAssetViewState((current) => ({
+        ...current,
+        detailTab: target.catalogTab ?? "summary",
+      }));
+      return;
+    }
+    if (target.view === "runs") {
+      setRunsViewState((current) => ({
+        ...current,
+        tab: target.runsTab ?? "results",
+        kind:
+          (target.runsTab ?? "results") === "results"
+            ? (target.runsKind ?? "models")
+            : current.kind,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", activeView);
+    if (activeView === "catalog") {
+      url.searchParams.set("tab", assetViewState.detailTab);
+      if (assetViewState.selectedResourceId) {
+        url.searchParams.set("resource", assetViewState.selectedResourceId);
+      } else {
+        url.searchParams.delete("resource");
+      }
+      url.searchParams.delete("kind");
+    } else if (activeView === "runs") {
+      url.searchParams.set("tab", runsViewState.tab);
+      url.searchParams.set("kind", runsViewState.kind);
+      url.searchParams.delete("resource");
+    } else {
+      url.searchParams.delete("tab");
+      url.searchParams.delete("kind");
+      url.searchParams.delete("resource");
+    }
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl !== currentUrl) {
+      window.history.pushState(null, "", nextUrl);
+    }
+  }, [
+    activeView,
+    assetViewState.detailTab,
+    assetViewState.selectedResourceId,
+    runsViewState.kind,
+    runsViewState.tab,
+  ]);
+
+  // Listen for popstate (back/forward) to sync URL -> state
+  useEffect(() => {
+    const onPopState = () => {
+      const search = window.location.search;
+      const v = parseViewFromSearch(search);
+      if (v) setActiveViewRaw(v);
+      setRunsViewState((current) => ({
+        ...current,
+        tab: parseRunsTab(search) ?? current.tab,
+        kind: parseRunsKind(search) ?? current.kind,
+      }));
+      setAssetViewState((current) => ({
+        ...current,
+        selectedResourceId: parseSelectedResourceId(search),
+        detailTab: parseCatalogDetailTab(search) ?? current.detailTab,
+      }));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   // Track previous analysis to detect first-load transition
   const prevAnalysisRef = useRef<AnalysisState | null>(null);
-
-  useEffect(() => {
-    if (!analysis) setActiveView("overview");
-  }, [analysis]);
 
   // Toast when the workspace auto-loads from a preloaded DBT_TARGET
   useEffect(() => {
@@ -310,7 +620,7 @@ function AppContent() {
     ? buildWorkspaceSignals(analysis, analysisSource)
     : [];
   const workspaceSummary = analysis
-    ? `${analysis.graphSummary.totalNodes} nodes · ${analysis.summary.total_nodes} executions · ${analysisSource === "preload" ? "Auto-loaded from DBT_TARGET" : "Loaded from uploaded artifacts"}`
+    ? `${analysis.resources.length} assets · ${analysis.summary.total_nodes} executions · ${analysisSource === "preload" ? "Auto-loaded from DBT_TARGET" : "Loaded from uploaded artifacts"}`
     : "Upload a manifest and run results to open the analysis workspace.";
 
   const frameClass = [
@@ -334,12 +644,14 @@ function AppContent() {
 
       <AppSidebar
         activeView={activeView}
-        setActiveView={setActiveView}
+        setNavigationTarget={setNavigationTarget}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
         onNavigate={() => setSidebarOpen(false)}
         analysis={analysis}
         analysisSource={analysisSource}
+        assetViewState={assetViewState}
+        runsViewState={runsViewState}
       />
 
       <main className="app-main">
@@ -400,7 +712,21 @@ function AppContent() {
         {error && <ErrorBanner message={error} />}
 
         {analysis ? (
-          <AnalysisWorkspace analysis={analysis} activeView={activeView} />
+          <AnalysisWorkspace
+            analysis={analysis}
+            activeView={activeView}
+            analysisSource={analysisSource}
+            overviewFilters={overviewFilters}
+            onOverviewFiltersChange={setOverviewFilters}
+            resultsFilters={resultsFilters}
+            onResultsFiltersChange={setResultsFilters}
+            timelineFilters={timelineFilters}
+            onTimelineFiltersChange={setTimelineFilters}
+            assetViewState={assetViewState}
+            onAssetViewStateChange={setAssetViewState}
+            runsViewState={runsViewState}
+            onRunsViewStateChange={setRunsViewState}
+          />
         ) : preloadLoading ? (
           <LoadingCard />
         ) : (

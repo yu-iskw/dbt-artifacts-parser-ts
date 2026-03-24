@@ -1,5 +1,5 @@
 import { analyzeArtifacts } from "./analyze";
-import type { AnalysisState } from "../types";
+import type { AnalysisState } from "@web/types";
 
 /**
  * Fetches manifest.json and run_results.json from /api/ and returns AnalysisState.

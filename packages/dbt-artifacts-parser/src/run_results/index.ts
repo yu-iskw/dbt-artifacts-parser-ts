@@ -1,12 +1,12 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v6'
 export * from "./v6";
-import { RunResults as RunResultsV1 } from "./v1";
-import { RunResults as RunResultsV2 } from "./v2";
-import { HttpsSchemasGetdbtComDbtRunResultsV3Json as RunResultsV3 } from "./v3";
-import { HttpsSchemasGetdbtComDbtRunResultsV4Json as RunResultsV4 } from "./v4";
-import { RunResultsArtifact as RunResultsV5 } from "./v5";
-import { RunResultsArtifact as RunResultsV6 } from "./v6";
+import type { RunResults as RunResultsV1 } from "./v1";
+import type { RunResults as RunResultsV2 } from "./v2";
+import type { HttpsSchemasGetdbtComDbtRunResultsV3Json as RunResultsV3 } from "./v3";
+import type { HttpsSchemasGetdbtComDbtRunResultsV4Json as RunResultsV4 } from "./v4";
+import type { RunResultsArtifact as RunResultsV5 } from "./v5";
+import type { RunResultsArtifact as RunResultsV6 } from "./v6";
 
 /**
  * Union type of all supported run_results versions

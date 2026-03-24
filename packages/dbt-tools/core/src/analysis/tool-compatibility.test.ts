@@ -27,12 +27,6 @@ describe("tool compatibility matrix", () => {
         path.join(manifestPath, "..", "..", "..", ".."),
         manifestPath,
       );
-      const pathParts = relativePath.split(path.sep);
-      const versionMatch = pathParts.find((p) => /^v\d+$/.test(p));
-      const versionNum = versionMatch
-        ? parseInt(versionMatch.substring(1), 10)
-        : 0;
-
       it(`should work with ${relativePath}`, () => {
         const content = fs.readFileSync(manifestPath, "utf-8");
         const parsed = JSON.parse(content) as Record<string, unknown>;

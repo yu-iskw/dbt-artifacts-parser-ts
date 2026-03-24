@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { loadTestManifest } from "dbt-artifacts-parser/test-utils";
+import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import { ManifestGraph } from "./manifest-graph";
 import { DependencyService } from "./dependency-service";
 
@@ -238,14 +239,16 @@ describe("DependencyService", () => {
         "tree",
       );
       expect(resultDepth1.count).toBeLessThanOrEqual(resultAll.count);
-      const allHaveDepth1 = (
+      const checkDepth1 = (
         nodes: typeof resultDepth1.dependencies,
-      ): boolean =>
-        nodes.every((n) => {
+      ): boolean => {
+        for (const n of nodes) {
           if (n.depth !== 1) return false;
-          return n.dependencies.every((c) => allHaveDepth1([c]));
-        });
-      expect(allHaveDepth1(resultDepth1.dependencies)).toBe(true);
+          if (!checkDepth1(n.dependencies)) return false;
+        }
+        return true;
+      };
+      expect(checkDepth1(resultDepth1.dependencies)).toBe(true);
     });
 
     it("should have parent-child edges consistent with graph in tree format", () => {
@@ -291,20 +294,10 @@ describe("DependencyService", () => {
         },
       };
 
-      graph.addFieldNodes(catalog as any);
+      graph.addFieldNodes(catalog as unknown as ParsedCatalog);
 
-      // Add field edge
-      const dependencies = {
-        id: [
-          {
-            sourceTable: "model.jaffle_shop.stg_customers",
-            sourceColumn: "id",
-          },
-        ],
-      };
-      // For this test, relationMap lookup would be needed, but we can mock it
-      // Actually, ManifestGraph.addFieldEdges uses relationMap.
-      // Let's manually add the edge for simplicity in this unit test
+      // For this test, relationMap lookup would be needed, but we can mock it.
+      // ManifestGraph.addFieldEdges uses relationMap, so manually add the edge.
       const graphologyGraph = graph.getGraph();
       graphologyGraph.addDirectedEdge(
         "model.jaffle_shop.stg_customers#id",

@@ -1,15 +1,15 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import type { ParsedSources } from "./index";
 import {
   parseSources,
   parseSourcesV1,
   parseSourcesV2,
   parseSourcesV3,
-  ParsedSources,
 } from "./index";
 
-// @ts-ignore - import.meta is available in Vitest ESM context
+// @ts-expect-error - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**

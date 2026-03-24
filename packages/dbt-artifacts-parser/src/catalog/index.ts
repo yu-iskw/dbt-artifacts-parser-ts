@@ -1,7 +1,7 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v1'
 export * from "./v1";
-import { CatalogArtifact } from "./v1";
+import type { CatalogArtifact } from "./v1";
 
 /**
  * Union type of all supported catalog versions

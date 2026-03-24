@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getResourceTypeColor, getStatusColor } from "../constants/colors";
-import type { GanttItem, ResourceConnectionSummary } from "../types";
+import { getResourceTypeColor, getStatusColor } from "@web/constants/colors";
+import type { GanttItem, ResourceConnectionSummary } from "@web/types";
 
 interface GanttChartProps {
   data: GanttItem[];
@@ -23,8 +23,9 @@ const TIME_Y = 34; // y offset within row for the start→end timestamp baseline
 const LABEL_W = 160; // left gutter for Y-axis labels
 const X_PAD = 24; // right padding
 const AXIS_TOP = 32; // top gutter for X-axis tick labels
-const MAX_VIEWPORT_H = 640; // cap scroll window height
 const MIN_VIEWPORT_H = 240;
+const VIEWPORT_SCREEN_PADDING = 320;
+const MAX_VIEWPORT_RATIO = 0.78;
 
 const TOOLTIP_LABEL_STYLE: React.CSSProperties = {
   color: "var(--text-soft)",
@@ -85,15 +86,108 @@ function fillRoundRect(
   ctx.fill();
 }
 
+function drawRowBackground(
+  ctx: CanvasRenderingContext2D,
+  rowIndex: number,
+  rowY: number,
+  width: number,
+  isFocused: boolean,
+  isHovered: boolean,
+) {
+  if (rowIndex % 2 !== 0) return;
+  ctx.fillStyle = isHovered ? "rgba(37,88,217,0.07)" : "rgba(248,250,252,0.55)";
+  ctx.globalAlpha = isFocused ? 1 : 0.35;
+  ctx.fillRect(0, rowY, width, ROW_H);
+  ctx.globalAlpha = 1;
+}
+
+function drawRowLabels(
+  ctx: CanvasRenderingContext2D,
+  item: GanttItem,
+  rowY: number,
+  labelW: number,
+  displayMode: DisplayMode,
+  runStartedAt: number | null | undefined,
+  emphasis: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = emphasis;
+  ctx.beginPath();
+  ctx.rect(0, rowY, labelW - 10, ROW_H);
+  ctx.clip();
+  ctx.textAlign = "left";
+
+  ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
+  ctx.fillStyle = "#394251";
+  ctx.fillText(item.name || item.unique_id, 2, rowY + NAME_Y);
+
+  const startLabel =
+    displayMode === "timestamps" && runStartedAt != null
+      ? formatTimestamp(runStartedAt + item.start)
+      : `+${formatMs(item.start)}`;
+  const endLabel =
+    displayMode === "timestamps" && runStartedAt != null
+      ? formatTimestamp(runStartedAt + item.end)
+      : `+${formatMs(item.end)}`;
+  ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillText(`${startLabel} → ${endLabel}`, 2, rowY + TIME_Y);
+  ctx.restore();
+}
+
+function drawRowBar(
+  ctx: CanvasRenderingContext2D,
+  item: GanttItem,
+  rowY: number,
+  maxEnd: number,
+  chartW: number,
+  labelW: number,
+  emphasis: number,
+  isHovered: boolean,
+) {
+  const barY = rowY + BAR_PAD;
+  const barX = labelW + (item.start / maxEnd) * chartW;
+  const barW = Math.max(2, (item.duration / maxEnd) * chartW);
+
+  ctx.globalAlpha = emphasis;
+  ctx.fillStyle = getStatusColor(item.status);
+  fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
+
+  ctx.fillStyle = getResourceTypeColor(item.resourceType);
+  ctx.fillRect(barX, barY, 3, BAR_H);
+
+  if (isHovered) {
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(37, 88, 217, 0.65)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(barX - 0.5, barY - 0.5, barW + 1, BAR_H + 1);
+  }
+  ctx.globalAlpha = 1;
+}
+
 // ─── Main draw function ────────────────────────────────────────────────────
+interface DrawGanttParams {
+  scrollTop: number;
+  maxEnd: number;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  focusIds: Set<string> | null;
+  hoveredId: string | null;
+  labelW?: number;
+}
+
 function drawGantt(
   canvas: HTMLCanvasElement,
   data: GanttItem[],
-  scrollTop: number,
-  maxEnd: number,
-  displayMode: DisplayMode,
-  runStartedAt: number | null | undefined,
-  labelW: number = LABEL_W,
+  {
+    scrollTop,
+    maxEnd,
+    displayMode,
+    runStartedAt,
+    focusIds,
+    hoveredId,
+    labelW = LABEL_W,
+  }: DrawGanttParams,
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -145,52 +239,15 @@ function drawGantt(
   ctx.textBaseline = "middle";
 
   for (let i = visStart; i <= visEnd; i++) {
-    const item = data[i]!;
+    const item = data[i];
     const rowY = AXIS_TOP + i * ROW_H - scrollTop;
-    const barY = rowY + BAR_PAD;
+    const isFocused = focusIds == null || focusIds.has(item.unique_id);
+    const isHovered = hoveredId === item.unique_id;
+    const emphasis = isFocused ? 1 : 0.18;
 
-    // Alternating row background
-    if (i % 2 === 0) {
-      ctx.fillStyle = "rgba(248,250,252,0.55)";
-      ctx.fillRect(0, rowY, w, ROW_H);
-    }
-
-    // ── Y-axis labels (clipped to label gutter) ─────────────────────────
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, rowY, labelW - 10, ROW_H);
-    ctx.clip();
-    ctx.textAlign = "left";
-
-    // Line 1: node name
-    ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
-    ctx.fillStyle = "#394251";
-    ctx.fillText(item.name || item.unique_id, 2, rowY + NAME_Y);
-
-    // Line 2: start → end (respects display mode)
-    const startLabel =
-      displayMode === "timestamps" && runStartedAt != null
-        ? formatTimestamp(runStartedAt + item.start)
-        : `+${formatMs(item.start)}`;
-    const endLabel =
-      displayMode === "timestamps" && runStartedAt != null
-        ? formatTimestamp(runStartedAt + item.end)
-        : `+${formatMs(item.end)}`;
-    ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
-    ctx.fillStyle = "#94a3b8";
-    ctx.fillText(`${startLabel} → ${endLabel}`, 2, rowY + TIME_Y);
-
-    ctx.restore();
-
-    // ── Bar ──────────────────────────────────────────────────────────────
-    const barX = labelW + (item.start / maxEnd) * chartW;
-    const barW = Math.max(2, (item.duration / maxEnd) * chartW);
-    ctx.fillStyle = getStatusColor(item.status);
-    fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
-
-    // 3-px left strip: secondary color encoding for resource type
-    ctx.fillStyle = getResourceTypeColor(item.resourceType);
-    ctx.fillRect(barX, barY, 3, BAR_H);
+    drawRowBackground(ctx, i, rowY, w, isFocused, isHovered);
+    drawRowLabels(ctx, item, rowY, labelW, displayMode, runStartedAt, emphasis);
+    drawRowBar(ctx, item, rowY, maxEnd, chartW, labelW, emphasis, isHovered);
   }
 }
 
@@ -209,17 +266,17 @@ function getEdgesForVisibleRows(
 ): Edge[] {
   const visibleIds = new Set<string>();
   for (let i = visStart; i <= visEnd; i++) {
-    visibleIds.add(data[i]!.unique_id);
+    visibleIds.add(data[i].unique_id);
   }
 
   const edges: Edge[] = [];
   for (let i = visStart; i <= visEnd; i++) {
-    const item = data[i]!;
+    const item = data[i];
     const deps = dependencyIndex[item.unique_id];
     if (!deps) continue;
-    for (const dep of deps.upstream) {
-      if (!visibleIds.has(dep.uniqueId)) continue;
-      const sourceRow = dataIndexById.get(dep.uniqueId);
+    for (const upstreamId of deps.upstream.map((d) => d.uniqueId)) {
+      if (!visibleIds.has(upstreamId)) continue;
+      const sourceRow = dataIndexById.get(upstreamId);
       if (sourceRow === undefined) continue;
       edges.push({ sourceRow, targetRow: i });
     }
@@ -232,6 +289,147 @@ interface HoverState {
   item: GanttItem;
   x: number;
   y: number;
+}
+
+function hitTestBar(
+  event: React.MouseEvent<HTMLDivElement>,
+  data: GanttItem[],
+  scrollTop: number,
+  maxEnd: number,
+  effectiveLabelW: number,
+  canvas: HTMLCanvasElement | null,
+): HoverState | null {
+  if (!canvas) return null;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  if (mouseY < AXIS_TOP || mouseX < 0) return null;
+
+  const rowIdx = Math.floor((mouseY - AXIS_TOP + scrollTop) / ROW_H);
+  if (rowIdx < 0 || rowIdx >= data.length) return null;
+
+  const chartW = canvas.getBoundingClientRect().width - effectiveLabelW - X_PAD;
+  const item = data[rowIdx];
+  const barX = effectiveLabelW + (item.start / maxEnd) * chartW;
+  const barW = Math.max(2, (item.duration / maxEnd) * chartW);
+
+  return mouseX >= barX && mouseX <= barX + barW
+    ? { item, x: mouseX, y: mouseY }
+    : null;
+}
+
+function edgePath(
+  edge: Edge,
+  data: GanttItem[],
+  effectiveLabelW: number,
+  maxEnd: number,
+  chartW: number,
+  scrollTop: number,
+): string {
+  const src = data[edge.sourceRow];
+  const tgt = data[edge.targetRow];
+  const sx = effectiveLabelW + ((src.start + src.duration) / maxEnd) * chartW;
+  const sy =
+    AXIS_TOP + edge.sourceRow * ROW_H + BAR_PAD + BAR_H / 2 - scrollTop;
+  const tx = effectiveLabelW + (tgt.start / maxEnd) * chartW;
+  const ty =
+    AXIS_TOP + edge.targetRow * ROW_H + BAR_PAD + BAR_H / 2 - scrollTop;
+  const cx = Math.abs(tx - sx) * 0.4;
+
+  return `M${sx},${sy} C${sx + cx},${sy} ${tx - cx},${ty} ${tx},${ty}`;
+}
+
+function GanttModeToggle({
+  activeMode,
+  onChange,
+}: {
+  activeMode: DisplayMode;
+  onChange: (next: DisplayMode) => void;
+}) {
+  return (
+    <div className="gantt-controls">
+      <div className="gantt-mode-toggle">
+        <button
+          type="button"
+          className={activeMode === "duration" ? "active" : ""}
+          onClick={() => onChange("duration")}
+        >
+          Duration
+        </button>
+        <button
+          type="button"
+          className={activeMode === "timestamps" ? "active" : ""}
+          onClick={() => onChange("timestamps")}
+        >
+          Timestamps
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GanttEdges({
+  edges,
+  data,
+  focusedIds,
+  canvasWidth,
+  effectiveLabelW,
+  maxEnd,
+  scrollTop,
+  viewportH,
+}: {
+  edges: Edge[];
+  data: GanttItem[];
+  focusedIds: Set<string> | null;
+  canvasWidth: number;
+  effectiveLabelW: number;
+  maxEnd: number;
+  scrollTop: number;
+  viewportH: number;
+}) {
+  if (edges.length === 0) return null;
+  const approxChartW = canvasWidth - effectiveLabelW - X_PAD;
+
+  return (
+    <svg
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: viewportH,
+        pointerEvents: "none",
+        overflow: "hidden",
+        zIndex: 5,
+      }}
+      aria-hidden
+    >
+      {edges.map((edge, i) => {
+        const edgeFocused =
+          focusedIds == null ||
+          (focusedIds.has(data[edge.sourceRow].unique_id) &&
+            focusedIds.has(data[edge.targetRow].unique_id));
+        return (
+          <path
+            key={i}
+            d={edgePath(
+              edge,
+              data,
+              effectiveLabelW,
+              maxEnd,
+              approxChartW,
+              scrollTop,
+            )}
+            stroke="#3b82f6"
+            strokeWidth={edgeFocused ? 1.6 : 1.1}
+            fill="none"
+            opacity={edgeFocused ? 0.55 : 0.1}
+          />
+        );
+      })}
+    </svg>
+  );
 }
 
 function GanttTooltip({
@@ -312,6 +510,9 @@ export function GanttChart({
   const [hover, setHover] = useState<HoverState | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("duration");
   const [containerWidth, setContainerWidth] = useState(0);
+  const [windowHeight, setWindowHeight] = useState(() =>
+    typeof window === "undefined" ? 900 : window.innerHeight,
+  );
 
   const canShowTimestamps = runStartedAt != null;
   const activeMode: DisplayMode = canShowTimestamps ? displayMode : "duration";
@@ -324,11 +525,24 @@ export function GanttChart({
 
   const maxEnd = Math.max(...data.map((d) => d.end), 1);
   const totalScrollH = data.length * ROW_H + AXIS_TOP;
+  const maxViewportHeight = Math.max(
+    MIN_VIEWPORT_H,
+    Math.min(
+      windowHeight - VIEWPORT_SCREEN_PADDING,
+      Math.round(windowHeight * MAX_VIEWPORT_RATIO),
+    ),
+  );
   const viewportH = Math.max(
     MIN_VIEWPORT_H,
-    Math.min(MAX_VIEWPORT_H, totalScrollH),
+    Math.min(maxViewportHeight, totalScrollH),
   );
   const needsScroll = totalScrollH > viewportH;
+
+  useEffect(() => {
+    const onResize = () => setWindowHeight(window.innerHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // ── Compute visible row range (shared by canvas and SVG) ──────────────────
   const visStart = Math.max(0, Math.floor(scrollTop / ROW_H));
@@ -351,21 +565,32 @@ export function GanttChart({
     );
   }, [showEdges, dependencyIndex, dataIndexById, data, visStart, visEnd]);
 
+  const focusedIds = useMemo(() => {
+    if (!hover?.item || !dependencyIndex) return null;
+    const relation = dependencyIndex[hover.item.unique_id];
+    if (!relation) return new Set([hover.item.unique_id]);
+    return new Set([
+      hover.item.unique_id,
+      ...relation.upstream.map((d) => d.uniqueId),
+      ...relation.downstream.map((d) => d.uniqueId),
+    ]);
+  }, [dependencyIndex, hover]);
+
   // ── Redraw whenever data / scrollTop / mode / label width changes ─────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || data.length === 0) return;
 
     function draw() {
-      drawGantt(
-        canvas!,
-        data,
+      drawGantt(canvas!, data, {
         scrollTop,
         maxEnd,
-        activeMode,
+        displayMode: activeMode,
         runStartedAt,
-        effectiveLabelW,
-      );
+        focusIds: focusedIds,
+        hoveredId: hover?.item.unique_id ?? null,
+        labelW: effectiveLabelW,
+      });
     }
 
     draw();
@@ -377,33 +602,16 @@ export function GanttChart({
     });
     ro.observe(canvas);
     return () => ro.disconnect();
-  }, [data, scrollTop, maxEnd, activeMode, runStartedAt, effectiveLabelW]);
-
-  // ── Hit-testing ──────────────────────────────────────────────────────────
-  function hitTest(e: React.MouseEvent<HTMLDivElement>): HoverState | null {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    if (mouseY < AXIS_TOP || mouseX < 0) return null;
-
-    const rowIdx = Math.floor((mouseY - AXIS_TOP + scrollTop) / ROW_H);
-    if (rowIdx < 0 || rowIdx >= data.length) return null;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const cw = canvas.getBoundingClientRect().width;
-    const chartW = cw - effectiveLabelW - X_PAD;
-
-    const item = data[rowIdx]!;
-    const barX = effectiveLabelW + (item.start / maxEnd) * chartW;
-    const barW = Math.max(2, (item.duration / maxEnd) * chartW);
-
-    if (mouseX >= barX && mouseX <= barX + barW) {
-      return { item, x: mouseX, y: mouseY };
-    }
-    return null;
-  }
+  }, [
+    data,
+    scrollTop,
+    maxEnd,
+    activeMode,
+    runStartedAt,
+    focusedIds,
+    hover,
+    effectiveLabelW,
+  ]);
 
   if (data.length === 0) {
     return (
@@ -413,44 +621,10 @@ export function GanttChart({
     );
   }
 
-  // ── SVG edge paths ────────────────────────────────────────────────────────
-  function edgePath(edge: Edge, chartW: number): string {
-    const src = data[edge.sourceRow]!;
-    const tgt = data[edge.targetRow]!;
-
-    const sx = effectiveLabelW + ((src.start + src.duration) / maxEnd) * chartW;
-    const sy =
-      AXIS_TOP + edge.sourceRow * ROW_H + BAR_PAD + BAR_H / 2 - scrollTop;
-    const tx = effectiveLabelW + (tgt.start / maxEnd) * chartW;
-    const ty =
-      AXIS_TOP + edge.targetRow * ROW_H + BAR_PAD + BAR_H / 2 - scrollTop;
-    const cx = Math.abs(tx - sx) * 0.4;
-
-    return `M${sx},${sy} C${sx + cx},${sy} ${tx - cx},${ty} ${tx},${ty}`;
-  }
-
   return (
-    <div>
-      {/* Display mode toggle */}
+    <div className="gantt-shell">
       {canShowTimestamps && (
-        <div className="gantt-controls">
-          <div className="gantt-mode-toggle">
-            <button
-              type="button"
-              className={activeMode === "duration" ? "active" : ""}
-              onClick={() => setDisplayMode("duration")}
-            >
-              Duration
-            </button>
-            <button
-              type="button"
-              className={activeMode === "timestamps" ? "active" : ""}
-              onClick={() => setDisplayMode("timestamps")}
-            >
-              Timestamps
-            </button>
-          </div>
-        </div>
+        <GanttModeToggle activeMode={activeMode} onChange={setDisplayMode} />
       )}
 
       <section
@@ -471,52 +645,39 @@ export function GanttChart({
           }}
         />
 
-        {/* SVG edge overlay — rendered above canvas, below tooltip */}
-        {edges.length > 0 && (
-          <svg
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: viewportH,
-              pointerEvents: "none",
-              overflow: "hidden",
-              zIndex: 5,
-            }}
-            aria-hidden
-          >
-            {edges.map((edge, i) => {
-              // chartW is approximate here; canvas width may differ by 1px — acceptable for edges
-              const approxChartW =
-                (canvasRef.current?.getBoundingClientRect().width ??
-                  (containerWidth || 600)) -
-                effectiveLabelW -
-                X_PAD;
-              return (
-                <path
-                  key={i}
-                  d={edgePath(edge, approxChartW)}
-                  stroke="#3b82f6"
-                  strokeWidth={1.5}
-                  fill="none"
-                  opacity={0.5}
-                />
-              );
-            })}
-          </svg>
-        )}
+        <GanttEdges
+          edges={edges}
+          data={data}
+          focusedIds={focusedIds}
+          canvasWidth={containerWidth > 0 ? containerWidth : 600}
+          effectiveLabelW={effectiveLabelW}
+          maxEnd={maxEnd}
+          scrollTop={scrollTop}
+          viewportH={viewportH}
+        />
 
         {/* Transparent overlay: captures scroll + mouse events */}
         <div
           ref={overlayRef}
+          className="chart-frame__viewport"
           style={{
             position: "relative",
             height: viewportH,
             overflowY: needsScroll ? "scroll" : "hidden",
           }}
           onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-          onMouseMove={(e) => setHover(hitTest(e))}
+          onMouseMove={(e) =>
+            setHover(
+              hitTestBar(
+                e,
+                data,
+                scrollTop,
+                maxEnd,
+                effectiveLabelW,
+                canvasRef.current,
+              ),
+            )
+          }
           onMouseLeave={() => setHover(null)}
         >
           {/* Spacer that creates the scrollable height */}

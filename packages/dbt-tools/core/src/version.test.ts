@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { loadTestManifest } from "dbt-artifacts-parser/test-utils";
+import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import {
   getManifestSchemaVersion,
   getDbtVersion,
@@ -40,7 +41,9 @@ describe("Version Detection", () => {
         metadata: {},
         nodes: {},
       } as unknown;
-      const version = getManifestSchemaVersion(manifest as any);
+      const version = getManifestSchemaVersion(
+        manifest as unknown as ParsedManifest,
+      );
       expect(version).toBeNull();
     });
   });
@@ -62,7 +65,7 @@ describe("Version Detection", () => {
         },
         nodes: {},
       } as unknown;
-      const dbtVersion = getDbtVersion(manifest as any);
+      const dbtVersion = getDbtVersion(manifest as unknown as ParsedManifest);
       expect(dbtVersion).toBeNull();
     });
   });
@@ -101,7 +104,9 @@ describe("Version Detection", () => {
         metadata: {},
         nodes: {},
       } as unknown;
-      expect(isSupportedVersion(manifest as any)).toBe(false);
+      expect(isSupportedVersion(manifest as unknown as ParsedManifest)).toBe(
+        false,
+      );
     });
   });
 
@@ -134,7 +139,7 @@ describe("Version Detection", () => {
         metadata: {},
         nodes: {},
       } as unknown;
-      const versionInfo = getVersionInfo(manifest as any);
+      const versionInfo = getVersionInfo(manifest as unknown as ParsedManifest);
 
       expect(versionInfo.schema_version).toBeNull();
       expect(versionInfo.dbt_version).toBeNull();

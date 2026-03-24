@@ -12,6 +12,10 @@ export interface GanttItem {
   status: string;
   /** dbt resource type (model, test, seed, snapshot, etc.). Inferred from unique_id prefix when absent from the manifest graph. */
   resourceType: string;
+  /** dbt package name for this node (populated from the manifest graph). */
+  packageName: string;
+  /** Source file path for this node (populated from the manifest graph). */
+  path: string | null;
 }
 
 export type StatusTone = "positive" | "warning" | "danger" | "neutral";
@@ -30,7 +34,17 @@ export interface ResourceNode {
   packageName: string;
   path: string | null;
   originalFilePath: string | null;
+  /** Patch path from the manifest (used as a fallback for display path when originalFilePath is absent). */
+  patchPath?: string | null;
+  /** Database name from the manifest (available on model/seed/snapshot nodes). */
+  database?: string | null;
+  /** Schema name from the manifest (available on model/seed/snapshot nodes). */
+  schema?: string | null;
   description: string | null;
+  /** Compiled SQL for this resource (available on model nodes with compiled output). */
+  compiledCode?: string | null;
+  /** Raw SQL source for this resource (available from manifest compiled_code / raw_code). */
+  rawCode?: string | null;
   status: string | null;
   statusTone: StatusTone;
   executionTime: number | null;
@@ -103,4 +117,6 @@ export interface AnalysisState {
   threadStats: ThreadStat[];
   dependencyIndex: Record<string, ResourceConnectionSummary>;
   selectedResourceId: string | null;
+  /** dbt invocation ID from the run_results metadata (if available). */
+  invocationId?: string | null;
 }

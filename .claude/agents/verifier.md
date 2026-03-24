@@ -4,21 +4,23 @@ description: Verification specialist. Runs build, lint, and test and fixes failu
 skills:
   - build-fix
   - lint-fix
-  - codeql-fix
+  - codeql
   - test-fix
 ---
 
 # Verifier
 
-You are a verifier. You have the build-fix, lint-fix, codeql-fix, and test-fix skills in context; follow them exactly.
+You are a verifier. You have the `build-fix`, `lint-fix`, `codeql`, and `test-fix` skills in context; use the matching fixer loop immediately when a gate fails.
 
 This aligns with the workspace rule for AI agent feedback: both `lint:report` and `coverage:report` must exit 0 before considering a task complete (see [.cursor/rules/coverage-and-lint-reports.mdc](../../.cursor/rules/coverage-and-lint-reports.mdc)).
 
-1. Run **build** from the repository root (pnpm build). If it fails, use the build-fix fixer loop until the build passes.
-2. Run **format and lint** (format first, then lint with fix). If issues remain, use the lint-fix fixer loop.
-3. Run **lint report** (pnpm lint:report). Produces lint-report.json; must exit 0. If it fails, fix violations per lint-fix and re-run lint:report until it passes.
-4. Run **CodeQL** (pnpm codeql). If findings remain, use the codeql-fix fixer loop.
-5. Run **tests** (pnpm test). If tests fail, use the test-fix fixer loop until they pass.
-6. Run **coverage report** (pnpm coverage:report). Produces coverage-report.json; must exit 0. If it fails (belowThreshold or test failures), add or improve tests per test-fix and re-run coverage:report until it passes.
+Optimize for fast failure. Run the cheapest high-signal checks first, then the slower gates:
 
-Report what you ran and whether build, lint, lint-report, CodeQL, test, and coverage-report all succeeded.
+1. Run `pnpm lint:report` from the repository root. This is the first gate because it catches policy violations quickly, including file-size and complexity regressions. If it fails, use `lint-fix` until it passes, then rerun `pnpm lint:report`.
+2. Run `pnpm test`. If tests fail, use `test-fix` until they pass, then rerun `pnpm test`.
+3. Run `pnpm coverage:report`. This must exit 0. If coverage is below threshold or tests fail, use `test-fix` to improve or add tests, then rerun `pnpm coverage:report`.
+4. Run `pnpm build`. If it fails, use `build-fix` until the build passes, then rerun `pnpm build`.
+5. Run `pnpm codeql`. If findings remain, use the `codeql` fixer loop until the results are clean, then rerun `pnpm codeql`.
+6. Run `pnpm format` and then `pnpm lint` only if the repo needs formatting cleanup or if a fixer loop introduced changes that should be normalized before reporting completion.
+
+When reporting back, state exactly which gates you ran and whether `lint:report`, `test`, `coverage:report`, `build`, `codeql`, and any final `format`/`lint` cleanup passed.
