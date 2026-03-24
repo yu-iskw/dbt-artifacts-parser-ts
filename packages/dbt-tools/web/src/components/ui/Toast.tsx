@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { StatusTone } from "../types";
+import type { StatusTone } from "@web/types";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

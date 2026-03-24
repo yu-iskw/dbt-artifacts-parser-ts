@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAnalysisPreload } from "./useAnalysisPreload";
 import { useDbtArtifactsReload } from "./useDbtArtifactsReload";
-import type { AnalysisState } from "../types";
+import type { AnalysisState } from "@web/types";
 
 export interface UseAnalysisPageResult {
   analysis: AnalysisState | null;

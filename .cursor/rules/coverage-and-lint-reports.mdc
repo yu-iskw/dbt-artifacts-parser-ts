@@ -1,6 +1,5 @@
 ---
 description: Coverage and lint report requirements for AI agent feedback
-globs: 
 alwaysApply: true
 ---
 

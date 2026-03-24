@@ -1,18 +1,18 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v12'
 export * from "./v12";
-import { Manifest as ManifestV1 } from "./v1";
-import { Manifest as ManifestV2 } from "./v2";
-import { HttpsSchemasGetdbtComDbtManifestV3Json as ManifestV3 } from "./v3";
-import { HttpsSchemasGetdbtComDbtManifestV4Json as ManifestV4 } from "./v4";
-import { HttpsSchemasGetdbtComDbtManifestV5Json as ManifestV5 } from "./v5";
-import { HttpsSchemasGetdbtComDbtManifestV6Json as ManifestV6 } from "./v6";
-import { HttpsSchemasGetdbtComDbtManifestV7Json as ManifestV7 } from "./v7";
-import { HttpsSchemasGetdbtComDbtManifestV8Json as ManifestV8 } from "./v8";
-import { HttpsSchemasGetdbtComDbtManifestV9Json as ManifestV9 } from "./v9";
-import { HttpsSchemasGetdbtComDbtManifestV10Json as ManifestV10 } from "./v10";
-import { WritableManifest as ManifestV11 } from "./v11";
-import { WritableManifest as ManifestV12 } from "./v12";
+import type { Manifest as ManifestV1 } from "./v1";
+import type { Manifest as ManifestV2 } from "./v2";
+import type { HttpsSchemasGetdbtComDbtManifestV3Json as ManifestV3 } from "./v3";
+import type { HttpsSchemasGetdbtComDbtManifestV4Json as ManifestV4 } from "./v4";
+import type { HttpsSchemasGetdbtComDbtManifestV5Json as ManifestV5 } from "./v5";
+import type { HttpsSchemasGetdbtComDbtManifestV6Json as ManifestV6 } from "./v6";
+import type { HttpsSchemasGetdbtComDbtManifestV7Json as ManifestV7 } from "./v7";
+import type { HttpsSchemasGetdbtComDbtManifestV8Json as ManifestV8 } from "./v8";
+import type { HttpsSchemasGetdbtComDbtManifestV9Json as ManifestV9 } from "./v9";
+import type { HttpsSchemasGetdbtComDbtManifestV10Json as ManifestV10 } from "./v10";
+import type { WritableManifest as ManifestV11 } from "./v11";
+import type { WritableManifest as ManifestV12 } from "./v12";
 
 /**
  * Union type of all supported manifest versions

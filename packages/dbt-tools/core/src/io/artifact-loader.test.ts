@@ -12,8 +12,6 @@ import {
   loadTestManifest,
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { parseManifest } from "dbt-artifacts-parser/manifest";
 
 describe("ArtifactLoader", () => {
   let tempDir: string;

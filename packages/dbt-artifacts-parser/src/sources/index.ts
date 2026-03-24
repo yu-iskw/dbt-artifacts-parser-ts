@@ -1,9 +1,9 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v3'
 export * from "./v3";
-import { Sources as SourcesV1 } from "./v1";
-import { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
-import { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
+import type { Sources as SourcesV1 } from "./v1";
+import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
+import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
 
 /**
  * Union type of all supported sources versions

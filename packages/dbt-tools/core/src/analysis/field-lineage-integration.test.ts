@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
+import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import { ManifestGraph } from "./manifest-graph";
 import { SQLAnalyzer } from "./sql-analyzer";
 import { DependencyService } from "./dependency-service";
@@ -72,8 +74,8 @@ describe("Field-level lineage integration", () => {
     };
 
     // 3. Build graph
-    const graph = new ManifestGraph(manifest as any);
-    graph.addFieldNodes(catalog as any);
+    const graph = new ManifestGraph(manifest as unknown as ParsedManifest);
+    graph.addFieldNodes(catalog as unknown as ParsedCatalog);
 
     // 4. Analyze SQL and add edges
     const analyzer = new SQLAnalyzer();

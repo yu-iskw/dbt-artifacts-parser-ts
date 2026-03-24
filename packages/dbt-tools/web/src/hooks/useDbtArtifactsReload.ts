@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { refetchFromApi } from "../services/artifactApi";
 import { debug } from "../debug";
-import type { AnalysisState } from "../types";
+import type { AnalysisState } from "@web/types";
 
 /**
  * Subscribes to dbt-artifacts-changed (Vite HMR) when analysis came from preload.

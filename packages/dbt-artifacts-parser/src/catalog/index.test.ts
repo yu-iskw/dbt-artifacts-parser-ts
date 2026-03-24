@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { parseCatalog, parseCatalogV1, ParsedCatalog } from "./index";
+import type { ParsedCatalog } from "./index";
+import { parseCatalog, parseCatalogV1 } from "./index";
 
-// @ts-ignore - import.meta is available in Vitest ESM context
+// @ts-expect-error - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
@@ -143,7 +144,7 @@ describe("catalog parser", () => {
       const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
 
       // Modify version to v2 to test version mismatch
-      (parsed.metadata as any).dbt_schema_version =
+      (parsed.metadata as Record<string, unknown>)["dbt_schema_version"] =
         "https://schemas.getdbt.com/dbt/catalog/v2.json";
 
       expect(() => parseCatalogV1(parsed)).toThrow("Not a catalog.json v1");

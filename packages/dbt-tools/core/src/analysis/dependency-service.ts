@@ -1,4 +1,4 @@
-import { ManifestGraph } from "./manifest-graph";
+import type { ManifestGraph } from "./manifest-graph";
 import { FieldFilter } from "../formatting/field-filter";
 import type { GraphNodeAttributes } from "../types";
 

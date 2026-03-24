@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { loadTestManifest } from "dbt-artifacts-parser/test-utils";
+import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import { ManifestGraph } from "./manifest-graph";
 
 describe("ManifestGraph", () => {
@@ -560,7 +561,7 @@ describe("ManifestGraph", () => {
         sources: {},
       };
 
-      graph.addFieldNodes(catalog as any);
+      graph.addFieldNodes(catalog as unknown as ParsedCatalog);
       const graphologyGraph = graph.getGraph();
 
       expect(graphologyGraph.hasNode("model.jaffle_shop.customers#id")).toBe(
@@ -592,8 +593,11 @@ describe("ManifestGraph", () => {
     it("should add field-to-field edges and resolve relation names", () => {
       const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
       // Add relation_name to a node for testing resolution
-      const rawManifest = manifestJson as any;
-      rawManifest.nodes["model.jaffle_shop.stg_customers"].relation_name =
+      const rawManifest = manifestJson as Record<
+        string,
+        Record<string, Record<string, unknown>>
+      >;
+      rawManifest["nodes"]["model.jaffle_shop.stg_customers"]["relation_name"] =
         '"analytics"."core"."stg_customers"';
 
       const manifest = parseManifest(rawManifest);

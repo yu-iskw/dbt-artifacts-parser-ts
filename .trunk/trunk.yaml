@@ -20,6 +20,10 @@ lint:
   disabled:
     - checkov
     - trufflehog
+  # Codex skill bundles are upstream-style reference docs; keep them out of trunk gate.
+  ignore:
+    - linters: [markdownlint, yamllint]
+      paths: [.codex/**]
   enabled:
     # - semgrep@1.155.0
     - shellcheck@0.11.0

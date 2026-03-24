@@ -1,4 +1,5 @@
-import { Parser, Select } from "node-sql-parser";
+import type { Select } from "node-sql-parser";
+import { Parser } from "node-sql-parser";
 
 /** AST node shapes from node-sql-parser (loosely typed for runtime objects) */
 interface AstColumnRef {

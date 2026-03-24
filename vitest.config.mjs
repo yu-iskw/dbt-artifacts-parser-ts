@@ -1,6 +1,15 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import { defineConfig } from "vitest/config";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@web": path.resolve(__dirname, "packages/dbt-tools/web/src"),
+    },
+  },
   test: {
     include: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
     exclude: [".trunk/**", "node_modules/**"],

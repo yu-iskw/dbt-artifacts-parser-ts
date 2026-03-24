@@ -15,7 +15,7 @@ import {
   getVersionInfo,
   MIN_SUPPORTED_SCHEMA_VERSION,
 } from "../version";
-import { ColumnDependencyMap } from "./sql-analyzer";
+import type { ColumnDependencyMap } from "./sql-analyzer";
 /**
  * ManifestGraph builds and manages a directed graph from a dbt manifest.
  *
@@ -78,8 +78,16 @@ export class ManifestGraph {
         package_name: (nodeAny.package_name as string) || "",
         path: (nodeAny.path as string) || undefined,
         original_file_path: (nodeAny.original_file_path as string) || undefined,
+        patch_path: (nodeAny.patch_path as string) || undefined,
+        database: (nodeAny.database as string) || undefined,
+        schema: (nodeAny.schema as string) || undefined,
         tags: (nodeAny.tags as string[]) || undefined,
         description: (nodeAny.description as string) || undefined,
+        compiled_code: (nodeAny.compiled_code as string) || undefined,
+        raw_code:
+          (nodeAny.raw_code as string) ||
+          (nodeAny.raw_sql as string) ||
+          undefined,
       });
       if (nodeAny.relation_name) {
         this.relationMap.set(
@@ -128,6 +136,8 @@ export class ManifestGraph {
         path: (macroAny.path as string) || undefined,
         original_file_path:
           (macroAny.original_file_path as string) || undefined,
+        description: (macroAny.description as string) || undefined,
+        raw_code: (macroAny.macro_sql as string) || undefined,
       });
     }
   }
@@ -166,6 +176,60 @@ export class ManifestGraph {
         resource_type: "metric",
         name: (metricAny.name as string) || uniqueId,
         package_name: (metricAny.package_name as string) || "",
+        path: (metricAny.path as string) || undefined,
+        original_file_path:
+          (metricAny.original_file_path as string) || undefined,
+        description: (metricAny.description as string) || undefined,
+        label: (metricAny.label as string) || undefined,
+        metric_type: (metricAny.type as string) || undefined,
+        metric_expression:
+          ((metricAny.type_params as Record<string, unknown> | undefined)
+            ?.expr as string | undefined) || undefined,
+        metric_measure:
+          ((
+            (metricAny.type_params as Record<string, unknown> | undefined)
+              ?.measure as Record<string, unknown> | undefined
+          )?.name as string | undefined) || undefined,
+        metric_input_measures: Array.isArray(
+          (metricAny.type_params as Record<string, unknown> | undefined)
+            ?.input_measures,
+        )
+          ? (
+              (metricAny.type_params as Record<string, unknown>)
+                .input_measures as Array<Record<string, unknown>>
+            )
+              .map((entry) => entry.name)
+              .filter((entry): entry is string => typeof entry === "string")
+          : undefined,
+        metric_input_metrics: Array.isArray(
+          (metricAny.type_params as Record<string, unknown> | undefined)
+            ?.metrics,
+        )
+          ? (
+              (metricAny.type_params as Record<string, unknown>)
+                .metrics as Array<Record<string, unknown>>
+            )
+              .map((entry) => entry.name)
+              .filter((entry): entry is string => typeof entry === "string")
+          : undefined,
+        metric_time_granularity:
+          (metricAny.time_granularity as string) || undefined,
+        metric_filters: Array.isArray(
+          (metricAny.filter as Record<string, unknown> | undefined)
+            ?.where_filters,
+        )
+          ? (
+              (metricAny.filter as Record<string, unknown>)
+                .where_filters as Array<Record<string, unknown>>
+            )
+              .map((entry) => entry.where_sql_template)
+              .filter((entry): entry is string => typeof entry === "string")
+          : undefined,
+        metric_source_reference:
+          (
+            (metricAny.depends_on as Record<string, unknown> | undefined)
+              ?.nodes as string[] | undefined
+          )?.[0] || undefined,
         tags,
       });
     }
@@ -182,6 +246,29 @@ export class ManifestGraph {
         resource_type: "semantic_model",
         name: (sm.name as string) || uniqueId,
         package_name: (sm.package_name as string) || "",
+        path: (sm.path as string) || undefined,
+        original_file_path: (sm.original_file_path as string) || undefined,
+        description: (sm.description as string) || undefined,
+        label: (sm.label as string) || undefined,
+        semantic_model_reference: (sm.model as string) || undefined,
+        semantic_model_default_time_dimension:
+          ((sm.defaults as Record<string, unknown> | undefined)
+            ?.agg_time_dimension as string | undefined) || undefined,
+        semantic_model_entities: Array.isArray(sm.entities)
+          ? (sm.entities as Array<Record<string, unknown>>)
+              .map((entry) => entry.name)
+              .filter((entry): entry is string => typeof entry === "string")
+          : undefined,
+        semantic_model_measures: Array.isArray(sm.measures)
+          ? (sm.measures as Array<Record<string, unknown>>)
+              .map((entry) => entry.name)
+              .filter((entry): entry is string => typeof entry === "string")
+          : undefined,
+        semantic_model_dimensions: Array.isArray(sm.dimensions)
+          ? (sm.dimensions as Array<Record<string, unknown>>)
+              .map((entry) => entry.name)
+              .filter((entry): entry is string => typeof entry === "string")
+          : undefined,
       });
     }
   }

@@ -3,7 +3,7 @@ import {
   STATUS_COLORS,
   getResourceTypeColor,
   getStatusColor,
-} from "../constants/colors";
+} from "@web/constants/colors";
 
 interface GanttLegendProps {
   /** Count per status key (lowercase). Only entries with count > 0 are shown. */

@@ -8,7 +8,7 @@ import {
   discoverSourcesFiles,
 } from "../test-utils";
 
-// @ts-ignore - import.meta is available in Vitest ESM context
+// @ts-expect-error - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const resourcesDir = path.join(__dirname, "../../resources");

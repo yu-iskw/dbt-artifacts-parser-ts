@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { analyzeArtifacts } from "../services/analyze";
-import type { AnalysisState } from "../types";
-import { Spinner } from "./Spinner";
-import { useToast } from "./Toast";
+import type { AnalysisState } from "@web/types";
+import { Spinner } from "./ui/Spinner";
+import { useToast } from "./ui/Toast";
 
 interface FileUploadProps {
   onAnalysis: (analysis: AnalysisState) => void;
@@ -172,7 +172,9 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
 
         <button
           type="button"
-          onClick={handleAnalyze}
+          onClick={() => {
+            void handleAnalyze();
+          }}
           disabled={!canAnalyze}
           className="primary-action"
           style={{
