@@ -13,6 +13,7 @@ import type { AnalysisState, ResourceNode } from "@web/types";
 import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import {
   type LineageGraphModel,
+  type LineageDisplayMode,
   type LensLegendItem,
   buildLineageGraphModel,
   clampDepth,
@@ -23,6 +24,51 @@ import {
 import type { LensMode } from "@web/lib/analysis-workspace/types";
 import { SectionCard, formatResourceTypeLabel } from "./shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+
+const OVERLAY_VIEWPORT_MARGIN = 12;
+const OVERLAY_CURSOR_OFFSET = 14;
+const TOOLTIP_OVERLAY_SIZE = { width: 280, height: 180 };
+const CONTEXT_MENU_OVERLAY_SIZE = { width: 220, height: 120 };
+
+function positionOverlay({
+  anchorX,
+  anchorY,
+  width,
+  height,
+  offset = OVERLAY_CURSOR_OFFSET,
+  margin = OVERLAY_VIEWPORT_MARGIN,
+}: {
+  anchorX: number;
+  anchorY: number;
+  width: number;
+  height: number;
+  offset?: number;
+  margin?: number;
+}) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let x = anchorX + offset;
+  let y = anchorY + offset;
+
+  if (x + width + margin > viewportWidth) {
+    x = anchorX - width - offset;
+  }
+  if (y + height + margin > viewportHeight) {
+    y = anchorY - height - offset;
+  }
+
+  x = Math.min(
+    Math.max(margin, x),
+    Math.max(margin, viewportWidth - width - margin),
+  );
+  y = Math.min(
+    Math.max(margin, y),
+    Math.max(margin, viewportHeight - height - margin),
+  );
+
+  return { x, y };
+}
 
 export function DepthStepper({
   label,
@@ -67,16 +113,26 @@ export function DepthStepper({
 export function LineageGraphSurface({
   model,
   onSelectResource,
-  lensMode = "status",
+  lensMode = "type",
   fullscreen = false,
+  displayMode = "focused",
 }: {
   model: LineageGraphModel;
   onSelectResource: (id: string) => void;
   lensMode?: LensMode;
   fullscreen?: boolean;
+  displayMode?: LineageDisplayMode;
 }) {
-  const { graphEdges, nodeLayouts, svgHeight, svgWidth, hasRelatedNodes } =
-    model;
+  const {
+    graphEdges,
+    nodeLayouts,
+    svgHeight,
+    svgWidth,
+    hasRelatedNodes,
+    nodeWidth,
+    nodeHeight,
+    nodeRadius,
+  } = model;
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [nodeOffsets, setNodeOffsets] = useState<
@@ -183,7 +239,7 @@ export function LineageGraphSurface({
   if (!hasRelatedNodes) {
     return (
       <div
-        className={`dependency-graph dependency-graph--empty${fullscreen ? " dependency-graph--fullscreen" : ""}`}
+        className={`dependency-graph dependency-graph--empty dependency-graph--${displayMode}${fullscreen ? " dependency-graph--fullscreen" : ""}`}
       >
         <EmptyState
           icon="↔"
@@ -208,7 +264,7 @@ export function LineageGraphSurface({
 
   return (
     <div
-      className={`dependency-graph${fullscreen ? " dependency-graph--fullscreen" : ""}`}
+      className={`dependency-graph dependency-graph--${displayMode}${fullscreen ? " dependency-graph--fullscreen" : ""}`}
     >
       <div className="lineage-legend">
         <span className="lineage-legend__mode-label">
@@ -316,8 +372,6 @@ export function LineageGraphSurface({
               const from = nodeLayouts.get(edge.from);
               const to = nodeLayouts.get(edge.to);
               if (!from || !to) return null;
-              const nodeWidth = 212;
-              const nodeHeight = 62;
               const fp = getEffectivePos(edge.from, from.x, from.y);
               const tp = getEffectivePos(edge.to, to.x, to.y);
               const startX = fp.x + nodeWidth;
@@ -346,22 +400,22 @@ export function LineageGraphSurface({
                   <rect
                     x={x}
                     y={y}
-                    width="212"
-                    height="62"
-                    rx="18"
+                    width={nodeWidth}
+                    height={nodeHeight}
+                    rx={nodeRadius}
                     style={{ fill: getLensNodeFill(node.resource, lensMode) }}
                     className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}`}
                   />
                   <text
                     x={x + 16}
-                    y={y + 24}
+                    y={displayMode === "summary" ? y + 19 : y + 24}
                     className="dependency-graph__node-label"
                   >
                     {node.resource.name}
                   </text>
                   <text
                     x={x + 16}
-                    y={y + 43}
+                    y={displayMode === "summary" ? y + 33 : y + 43}
                     className="dependency-graph__node-meta"
                   >
                     {node.side === "selected"
@@ -382,8 +436,8 @@ export function LineageGraphSurface({
               const hotspotStyle: CSSProperties = {
                 left: `${(x / svgWidth) * 100}%`,
                 top: `${(y / svgHeight) * 100}%`,
-                width: `${(212 / svgWidth) * 100}%`,
-                height: `${(62 / svgHeight) * 100}%`,
+                width: `${(nodeWidth / svgWidth) * 100}%`,
+                height: `${(nodeHeight / svgHeight) * 100}%`,
               };
               return (
                 <button
@@ -397,17 +451,29 @@ export function LineageGraphSurface({
                   }}
                   onContextMenu={(event) => {
                     event.preventDefault();
+                    const position = positionOverlay({
+                      anchorX: event.clientX,
+                      anchorY: event.clientY,
+                      width: CONTEXT_MENU_OVERLAY_SIZE.width,
+                      height: CONTEXT_MENU_OVERLAY_SIZE.height,
+                    });
                     setContextMenu({
-                      x: event.clientX,
-                      y: event.clientY,
+                      x: position.x,
+                      y: position.y,
                       nodeId: node.resource.uniqueId,
                     });
                   }}
                   onMouseEnter={(event) => {
                     setHoveredId(node.resource.uniqueId);
+                    const position = positionOverlay({
+                      anchorX: event.clientX,
+                      anchorY: event.clientY,
+                      width: TOOLTIP_OVERLAY_SIZE.width,
+                      height: TOOLTIP_OVERLAY_SIZE.height,
+                    });
                     setTooltipInfo({
-                      x: event.clientX + 14,
-                      y: event.clientY + 14,
+                      x: position.x,
+                      y: position.y,
                       nodeId: node.resource.uniqueId,
                     });
                   }}
@@ -549,8 +615,8 @@ function LensSelector({
   setLensMode: (mode: LensMode) => void;
 }) {
   const modes: Array<{ value: LensMode; label: string }> = [
-    { value: "status", label: "Status" },
     { value: "type", label: "Type" },
+    { value: "status", label: "Status" },
     { value: "coverage", label: "Coverage" },
   ];
   return (
@@ -584,6 +650,7 @@ export function LineagePanel({
   setAllDepsMode,
   setLensMode,
   onSelectResource,
+  displayMode = "focused",
 }: {
   resource: ResourceNode;
   dependencySummary: AnalysisState["dependencyIndex"][string] | undefined;
@@ -598,6 +665,7 @@ export function LineagePanel({
   setAllDepsMode: Dispatch<SetStateAction<boolean>>;
   setLensMode: (mode: LensMode) => void;
   onSelectResource: (id: string) => void;
+  displayMode?: LineageDisplayMode;
 }) {
   const [isFullscreenOpen, setFullscreenOpen] = useState(false);
   const ALL_DEPS_DEPTH = 20;
@@ -611,11 +679,13 @@ export function LineagePanel({
         resourceById,
         upstreamDepth: allDepsMode ? ALL_DEPS_DEPTH : upstreamDepth,
         downstreamDepth: allDepsMode ? ALL_DEPS_DEPTH : downstreamDepth,
+        displayMode,
       }),
     [
       allDepsMode,
       dependencyIndex,
       dependencySummary,
+      displayMode,
       downstreamDepth,
       resource,
       resourceById,
@@ -662,13 +732,15 @@ export function LineagePanel({
           Close
         </button>
       ) : (
-        <button
-          type="button"
-          className="workspace-pill"
-          onClick={() => setFullscreenOpen(true)}
-        >
-          Expand
-        </button>
+        displayMode === "focused" && (
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() => setFullscreenOpen(true)}
+          >
+            Expand
+          </button>
+        )
       )}
     </div>
   );
@@ -676,11 +748,15 @@ export function LineagePanel({
   return (
     <>
       <SectionCard
-        title="Lineage"
-        subtitle={`Exact upstream and downstream lineage for ${resource.name}.`}
-        headerRight={depthToolbar()}
+        title={displayMode === "summary" ? "Lineage graph" : "Lineage"}
+        subtitle={
+          displayMode === "summary"
+            ? `dbt Docs-style upstream and downstream lineage for ${resource.name}.`
+            : `Exact upstream and downstream lineage for ${resource.name}.`
+        }
+        headerRight={displayMode === "focused" ? depthToolbar() : undefined}
       >
-        <div className="lineage-summary">
+        <div className={`lineage-summary lineage-summary--${displayMode}`}>
           <div className="lineage-summary__stats">
             <div className="lineage-summary__stat">
               <span>Selected resource</span>
@@ -699,6 +775,7 @@ export function LineagePanel({
             model={graphModel}
             onSelectResource={onSelectResource}
             lensMode={lensMode}
+            displayMode={displayMode}
           />
         </div>
       </SectionCard>
@@ -727,6 +804,7 @@ export function LineagePanel({
               model={graphModel}
               onSelectResource={onSelectResource}
               lensMode={lensMode}
+              displayMode="focused"
               fullscreen
             />
           </section>

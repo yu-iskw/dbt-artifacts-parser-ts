@@ -2,6 +2,8 @@ import type { AnalysisState, ResourceNode } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "./constants";
 import type { LensMode } from "./types";
 
+export type LineageDisplayMode = "summary" | "focused";
+
 export interface LineageGraphNodeLayout {
   resource: ResourceNode;
   x: number;
@@ -20,6 +22,10 @@ export interface LineageGraphModel {
   svgWidth: number;
   svgHeight: number;
   hasRelatedNodes: boolean;
+  nodeWidth: number;
+  nodeHeight: number;
+  nodeRadius: number;
+  displayMode: LineageDisplayMode;
 }
 
 export type DependencyIndex = AnalysisState["dependencyIndex"];
@@ -317,6 +323,7 @@ export function buildLineageGraphModel({
   resourceById,
   upstreamDepth,
   downstreamDepth,
+  displayMode = "focused",
 }: {
   resource: ResourceNode;
   dependencySummary: DependencyIndex[string] | undefined;
@@ -324,6 +331,7 @@ export function buildLineageGraphModel({
   resourceById: Map<string, ResourceNode>;
   upstreamDepth: number;
   downstreamDepth: number;
+  displayMode?: LineageDisplayMode;
 }): LineageGraphModel {
   const upstreamMap = collectDependencyIdsByDepth(
     dependencyIndex,
@@ -350,12 +358,13 @@ export function buildLineageGraphModel({
   ).filter((entry) => entry.resources.length > 0);
 
   const columnCount = columnNodes.length;
-  const nodeWidth = 212;
-  const nodeHeight = 62;
-  const columnGap = 160;
-  const rowGap = 40;
-  const paddingX = 56;
-  const paddingY = 52;
+  const nodeWidth = displayMode === "summary" ? 176 : 212;
+  const nodeHeight = displayMode === "summary" ? 46 : 62;
+  const nodeRadius = displayMode === "summary" ? 14 : 18;
+  const columnGap = displayMode === "summary" ? 104 : 160;
+  const rowGap = displayMode === "summary" ? 24 : 40;
+  const paddingX = displayMode === "summary" ? 40 : 56;
+  const paddingY = displayMode === "summary" ? 40 : 52;
   const svgWidth =
     paddingX * 2 +
     columnCount * nodeWidth +
@@ -420,6 +429,10 @@ export function buildLineageGraphModel({
       nodeLayouts.size > 1 &&
       ((dependencySummary?.upstreamCount ?? 0) > 0 ||
         (dependencySummary?.downstreamCount ?? 0) > 0),
+    nodeWidth,
+    nodeHeight,
+    nodeRadius,
+    displayMode,
   };
 }
 
@@ -456,53 +469,53 @@ export function getLineageGraphTypes(
 
 /** Soft pastel fill colors for the status lens (applied inline on SVG rects). */
 export const STATUS_LENS_FILLS: Record<string, string> = {
-  positive: "rgba(43, 182, 115, 0.22)",
-  warning: "rgba(242, 164, 75, 0.24)",
-  danger: "rgba(216, 96, 102, 0.24)",
-  neutral: "rgba(142, 151, 166, 0.18)",
+  positive: "var(--status-positive-soft)",
+  warning: "var(--status-warning-soft)",
+  danger: "var(--status-danger-soft)",
+  neutral: "var(--status-neutral-soft)",
 };
 
 /** Solid colors for status lens legend swatches. */
 export const STATUS_LENS_SOLID: Record<string, string> = {
-  positive: "#2bb673",
-  warning: "#f2a44b",
-  danger: "#d86066",
-  neutral: "#8e97a6",
+  positive: "var(--status-positive)",
+  warning: "var(--status-warning)",
+  danger: "var(--status-danger)",
+  neutral: "var(--status-neutral)",
 };
 
-const TYPE_LENS_NEUTRAL = "rgba(142, 151, 166, 0.16)";
-const TYPE_LENS_MUTED = "rgba(120, 113, 108, 0.14)";
+const TYPE_LENS_NEUTRAL = "var(--dbt-type-generic-soft)";
+const TYPE_LENS_MUTED = "var(--dbt-type-macro-soft)";
 
 /** Soft pastel fill colors for the type lens. */
 export const TYPE_LENS_FILLS: Record<string, string> = {
-  model: "rgba(37, 88, 217, 0.18)",
-  source: "rgba(8, 145, 178, 0.18)",
-  seed: "rgba(147, 51, 234, 0.16)",
-  snapshot: "rgba(234, 88, 12, 0.16)",
-  test: TYPE_LENS_NEUTRAL,
-  unit_test: TYPE_LENS_NEUTRAL,
-  metric: "rgba(219, 39, 119, 0.16)",
-  semantic_model: "rgba(99, 102, 241, 0.16)",
-  exposure: "rgba(13, 148, 136, 0.16)",
+  model: "var(--dbt-type-model-soft)",
+  source: "var(--dbt-type-source-soft)",
+  seed: "var(--dbt-type-seed-soft)",
+  snapshot: "var(--dbt-type-snapshot-soft)",
+  test: "var(--dbt-type-test-soft)",
+  unit_test: "var(--dbt-type-test-soft)",
+  metric: "var(--dbt-type-metric-soft)",
+  semantic_model: "var(--dbt-type-semantic-model-soft)",
+  exposure: "var(--dbt-type-exposure-soft)",
   macro: TYPE_LENS_MUTED,
-  operation: TYPE_LENS_MUTED,
-  sql_operation: TYPE_LENS_MUTED,
+  operation: "var(--dbt-type-operation-soft)",
+  sql_operation: "var(--dbt-type-operation-soft)",
 };
 
 /** Solid colors for type lens legend swatches. */
 export const TYPE_LENS_SOLID: Record<string, string> = {
-  model: "#2558d9",
-  source: "#0891b2",
-  seed: "#9333ea",
-  snapshot: "#ea580c",
-  test: "#8e97a6",
-  unit_test: "#8e97a6",
-  metric: "#db2777",
-  semantic_model: "#6366f1",
-  exposure: "#0d9488",
-  macro: "#78716c",
-  operation: "#78716c",
-  sql_operation: "#78716c",
+  model: "var(--dbt-type-model)",
+  source: "var(--dbt-type-source)",
+  seed: "var(--dbt-type-seed)",
+  snapshot: "var(--dbt-type-snapshot)",
+  test: "var(--dbt-type-test)",
+  unit_test: "var(--dbt-type-test)",
+  metric: "var(--dbt-type-metric)",
+  semantic_model: "var(--dbt-type-semantic-model)",
+  exposure: "var(--dbt-type-exposure)",
+  macro: "var(--dbt-type-macro)",
+  operation: "var(--dbt-type-operation)",
+  sql_operation: "var(--dbt-type-operation)",
 };
 
 /** Returns the SVG fill color for a node given the active lens mode. */
@@ -520,8 +533,8 @@ export function getLensNodeFill(
       return TYPE_LENS_FILLS[resource.resourceType] ?? TYPE_LENS_NEUTRAL;
     case "coverage":
       return resource.description
-        ? "rgba(43, 182, 115, 0.22)"
-        : "rgba(216, 96, 102, 0.22)";
+        ? "var(--status-positive-soft)"
+        : "var(--status-danger-soft)";
   }
 }
 

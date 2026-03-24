@@ -333,13 +333,6 @@ export function ExplorerPane({
                       )}
                     </span>
                   )}
-                {resource.status && (
-                  <span
-                    className={`explorer-tree__status explorer-tree__status--${resource.statusTone}`}
-                  >
-                    {resource.status}
-                  </span>
-                )}
               </button>
             );
           })

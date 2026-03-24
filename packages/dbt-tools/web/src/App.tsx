@@ -458,7 +458,7 @@ function AppContent() {
     upstreamDepth: 2,
     downstreamDepth: 2,
     allDepsMode: false,
-    lensMode: "status",
+    lensMode: "type",
   });
 
   // Persist sidebar collapsed state to localStorage

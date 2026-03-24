@@ -1,14 +1,17 @@
 :root {
   color-scheme: light;
+  /* Foundation surfaces */
   --bg: #edf1f5;
   --bg-soft: #f7f8fb;
   --panel: rgba(255, 255, 255, 0.94);
   --panel-strong: #ffffff;
   --panel-border: rgba(29, 39, 51, 0.12);
   --panel-shadow: 0 16px 36px rgba(18, 26, 33, 0.06);
+  /* Text hierarchy */
   --text: #17212b;
   --text-muted: #536273;
   --text-soft: #708091;
+  /* Brand + semantic status */
   --accent: #1747b3;
   --accent-soft: rgba(37, 88, 217, 0.12);
   --mint: #2bb673;
@@ -19,6 +22,53 @@
   --rose-soft: rgba(216, 96, 102, 0.16);
   --slate: #8e97a6;
   --slate-soft: rgba(142, 151, 166, 0.15);
+  --status-positive: var(--mint);
+  --status-positive-soft: var(--mint-soft);
+  --status-warning: var(--amber);
+  --status-warning-soft: var(--amber-soft);
+  --status-danger: var(--rose);
+  --status-danger-soft: var(--rose-soft);
+  --status-neutral: var(--slate);
+  --status-neutral-soft: var(--slate-soft);
+  /* dbt resource types */
+  --dbt-type-source: #77c043;
+  --dbt-type-source-soft: rgba(119, 192, 67, 0.24);
+  --dbt-type-seed: #7a5af8;
+  --dbt-type-seed-soft: rgba(122, 90, 248, 0.22);
+  --dbt-type-snapshot: #ff8b3d;
+  --dbt-type-snapshot-soft: rgba(255, 139, 61, 0.24);
+  --dbt-type-model: #00a6c7;
+  --dbt-type-model-soft: rgba(0, 166, 199, 0.24);
+  --dbt-type-semantic-model: #5b8def;
+  --dbt-type-semantic-model-soft: rgba(91, 141, 239, 0.24);
+  --dbt-type-metric: #ff5c93;
+  --dbt-type-metric-soft: rgba(255, 92, 147, 0.24);
+  --dbt-type-exposure: #ff7b54;
+  --dbt-type-exposure-soft: rgba(255, 123, 84, 0.24);
+  --dbt-type-test: #8e97a6;
+  --dbt-type-test-soft: rgba(142, 151, 166, 0.22);
+  --dbt-type-macro: #8a6f5a;
+  --dbt-type-macro-soft: rgba(138, 111, 90, 0.22);
+  --dbt-type-operation: #8a6f5a;
+  --dbt-type-operation-soft: rgba(138, 111, 90, 0.22);
+  --dbt-type-generic: #8e97a6;
+  --dbt-type-generic-soft: rgba(142, 151, 166, 0.2);
+  /* Graph surfaces */
+  --graph-bg-top: #134f61;
+  --graph-bg-bottom: #103f4d;
+  --graph-bg-accent: rgba(47, 135, 159, 0.18);
+  --graph-panel: rgba(8, 42, 54, 0.72);
+  --graph-panel-hover: rgba(10, 49, 62, 0.88);
+  --graph-panel-active: rgba(235, 250, 255, 0.16);
+  --graph-border: rgba(176, 223, 237, 0.1);
+  --graph-border-strong: rgba(214, 242, 250, 0.24);
+  --graph-text: #f8fdff;
+  --graph-text-muted: rgba(225, 240, 246, 0.8);
+  --graph-text-soft: rgba(214, 234, 242, 0.72);
+  --graph-edge: rgba(88, 192, 220, 0.34);
+  --graph-hotspot: rgba(221, 247, 255, 0.5);
+  --graph-node-stroke: rgba(255, 255, 255, 0.18);
+  --graph-node-selected-stroke: rgba(255, 255, 255, 0.92);
   --radius-lg: 28px;
   --radius-md: 20px;
   --radius-sm: 14px;
@@ -2130,17 +2180,34 @@ details.timeline-filter-accordion .timeline-controls {
   flex-direction: column;
   gap: 0.75rem;
   position: relative;
+  color: var(--graph-text-muted);
 }
 
 .dependency-graph--empty {
   min-height: 260px;
   align-items: center;
   justify-content: center;
+  border-radius: 22px;
+  padding: 1.25rem;
+  background: linear-gradient(
+    180deg,
+    var(--graph-bg-top) 0%,
+    var(--graph-bg-bottom) 100%
+  );
+  box-shadow: inset 0 0 0 1px var(--graph-border);
 }
 
 .dependency-graph--fullscreen {
   min-height: 0;
   height: 100%;
+}
+
+.dependency-graph--summary {
+  gap: 0.9rem;
+}
+
+.dependency-graph--focused {
+  gap: 0.8rem;
 }
 
 /* Legend bar */
@@ -2150,9 +2217,10 @@ details.timeline-filter-accordion .timeline-controls {
   align-items: center;
   gap: 0.35rem 0.9rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 10px;
-  background: rgba(248, 250, 252, 0.85);
-  border: 1px solid rgba(35, 42, 52, 0.07);
+  border-radius: 14px;
+  background: var(--graph-panel);
+  border: 1px solid var(--graph-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .lineage-legend__mode-label {
@@ -2160,7 +2228,7 @@ details.timeline-filter-accordion .timeline-controls {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--text-soft);
+  color: var(--graph-text-soft);
   margin-right: 0.2rem;
   white-space: nowrap;
 }
@@ -2170,7 +2238,7 @@ details.timeline-filter-accordion .timeline-controls {
   align-items: center;
   gap: 0.38rem;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--graph-text-muted);
   font-weight: 500;
 }
 
@@ -2179,7 +2247,7 @@ details.timeline-filter-accordion .timeline-controls {
   height: 11px;
   border-radius: 3px;
   flex-shrink: 0;
-  border: 1px solid rgba(35, 42, 52, 0.12);
+  border: 1px solid var(--graph-node-stroke);
 }
 
 /* Toolbar above graph */
@@ -2201,19 +2269,34 @@ details.timeline-filter-accordion .timeline-controls {
 .lineage-graph__summary {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--text-soft);
+  color: var(--graph-text-muted);
   white-space: nowrap;
 }
 
 /* Viewport & canvas */
 .lineage-graph__viewport {
   overflow: auto;
-  border-radius: var(--radius-md);
-  background: rgba(248, 250, 252, 0.55);
-  border: 1px solid rgba(35, 42, 52, 0.08);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top, var(--graph-bg-accent), transparent 34%),
+    linear-gradient(
+      180deg,
+      var(--graph-bg-top) 0%,
+      color-mix(in srgb, var(--graph-bg-top) 55%, var(--graph-bg-bottom) 45%)
+        54%,
+      var(--graph-bg-bottom) 100%
+    );
+  border: 1px solid var(--graph-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 40px rgba(8, 33, 43, 0.16);
   cursor: grab;
-  min-height: 320px;
+  min-height: 360px;
   user-select: none;
+}
+
+.dependency-graph--summary .lineage-graph__viewport {
+  min-height: 460px;
 }
 
 .lineage-graph__viewport:active {
@@ -2238,16 +2321,17 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .dependency-graph__node {
-  stroke: rgba(35, 42, 52, 0.13);
+  stroke: var(--graph-node-stroke);
   stroke-width: 1;
   transition:
     fill 220ms ease,
     opacity 200ms ease;
+  filter: drop-shadow(0 8px 14px rgba(5, 26, 34, 0.16));
 }
 
 .dependency-graph__node--selected {
-  stroke: var(--accent);
-  stroke-width: 2.5;
+  stroke: var(--graph-node-selected-stroke);
+  stroke-width: 2.2;
 }
 
 .dependency-graph__node--dimmed {
@@ -2259,27 +2343,35 @@ details.timeline-filter-accordion .timeline-controls {
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 12px;
   font-weight: 600;
-  fill: var(--text);
+  fill: var(--graph-text);
   pointer-events: none;
+}
+
+.dependency-graph--summary .dependency-graph__node-label {
+  font-size: 11px;
 }
 
 .dependency-graph__node-meta {
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 10.5px;
-  fill: var(--text-soft);
+  fill: var(--graph-text-muted);
   pointer-events: none;
+}
+
+.dependency-graph--summary .dependency-graph__node-meta {
+  font-size: 9px;
 }
 
 /* Edges */
 .dependency-graph__edge {
   fill: none;
-  stroke: rgba(35, 42, 52, 0.2);
-  stroke-width: 1.5;
+  stroke: var(--graph-edge);
+  stroke-width: 1.8;
   transition: opacity 200ms ease;
 }
 
 .dependency-graph__edge--dimmed {
-  opacity: 0.1;
+  opacity: 0.12;
 }
 
 /* Interactive hotspot layer */
@@ -2301,7 +2393,7 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .dependency-graph__hotspot:hover {
-  box-shadow: inset 0 0 0 2px rgba(37, 88, 217, 0.35);
+  box-shadow: inset 0 0 0 2px var(--graph-hotspot);
 }
 
 /* Context menu */
@@ -2415,6 +2507,22 @@ details.timeline-filter-accordion .timeline-controls {
   overflow: hidden;
 }
 
+.dependency-graph .workspace-pill {
+  background: var(--graph-panel);
+  color: var(--graph-text);
+  box-shadow: inset 0 0 0 1px var(--graph-border);
+}
+
+.dependency-graph .workspace-pill:hover {
+  background: var(--graph-panel-hover);
+}
+
+.dependency-graph .workspace-pill--active {
+  background: var(--graph-panel-active);
+  color: var(--graph-text);
+  box-shadow: inset 0 0 0 1px var(--graph-border-strong);
+}
+
 /* Lineage toolbar — lens selector + depth steppers */
 .lineage-toolbar {
   display: flex;
@@ -2429,8 +2537,8 @@ details.timeline-filter-accordion .timeline-controls {
   gap: 0.3rem;
   padding: 0.25rem 0.5rem 0.25rem 0.7rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: inset 0 0 0 1px rgba(35, 42, 52, 0.1);
+  background: var(--graph-panel);
+  box-shadow: inset 0 0 0 1px var(--graph-border);
 }
 
 .lineage-stepper--disabled {
@@ -2440,7 +2548,7 @@ details.timeline-filter-accordion .timeline-controls {
 .lineage-stepper__label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--graph-text-soft);
   white-space: nowrap;
 }
 
@@ -2458,7 +2566,7 @@ details.timeline-filter-accordion .timeline-controls {
   height: 22px;
   border-radius: 50%;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--graph-text-muted);
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
@@ -2468,8 +2576,8 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .lineage-stepper__button:hover:not(:disabled) {
-  background: rgba(35, 42, 52, 0.08);
-  color: var(--text);
+  background: var(--graph-panel-active);
+  color: var(--graph-text);
 }
 
 .lineage-stepper__button:disabled {
@@ -2482,7 +2590,7 @@ details.timeline-filter-accordion .timeline-controls {
   text-align: center;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--text);
+  color: var(--graph-text);
 }
 
 /* Lineage summary stats */
@@ -2490,6 +2598,10 @@ details.timeline-filter-accordion .timeline-controls {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.lineage-summary--summary {
+  gap: 1rem;
 }
 
 .lineage-summary__stats {
@@ -2501,14 +2613,14 @@ details.timeline-filter-accordion .timeline-controls {
 .lineage-summary__stat {
   padding: 0.7rem 0.85rem;
   border-radius: 14px;
-  background: rgba(248, 250, 252, 0.88);
-  border: 1px solid rgba(35, 42, 52, 0.06);
+  background: var(--graph-panel);
+  border: 1px solid var(--graph-border);
 }
 
 .lineage-summary__stat span {
   display: block;
   font-size: 0.75rem;
-  color: var(--text-soft);
+  color: var(--graph-text-soft);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 600;
@@ -2518,6 +2630,7 @@ details.timeline-filter-accordion .timeline-controls {
   display: block;
   margin-top: 0.18rem;
   font-size: 1.1rem;
+  color: var(--graph-text);
 }
 
 /* Fullscreen dialog */
@@ -3015,37 +3128,6 @@ details.timeline-filter-accordion .timeline-controls {
 .explorer-tree__test-stat--fail {
   color: var(--rose);
   background: var(--rose-soft);
-}
-
-/* Status badge on leaf row */
-.explorer-tree__status {
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.1rem 0.42rem;
-  border-radius: 999px;
-  flex-shrink: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.explorer-tree__status--positive {
-  color: var(--mint);
-  background: var(--mint-soft);
-}
-
-.explorer-tree__status--warning {
-  color: var(--amber);
-  background: var(--amber-soft);
-}
-
-.explorer-tree__status--danger {
-  color: var(--rose);
-  background: var(--rose-soft);
-}
-
-.explorer-tree__status--neutral {
-  color: var(--slate);
-  background: var(--slate-soft);
 }
 
 /* Count badge on branch row */

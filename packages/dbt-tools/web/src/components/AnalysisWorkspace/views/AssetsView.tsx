@@ -216,6 +216,21 @@ export function AssetsView({
     { value: "lineage", label: "Lineage" },
     { value: "sql", label: "SQL" },
   ];
+  const lineagePanelProps = {
+    resource,
+    dependencySummary,
+    dependencyIndex: analysis.dependencyIndex,
+    resourceById,
+    upstreamDepth,
+    downstreamDepth,
+    allDepsMode,
+    lensMode,
+    setUpstreamDepth,
+    setDownstreamDepth,
+    setAllDepsMode,
+    setLensMode,
+    onSelectResource,
+  } as const;
 
   return (
     <div className="workspace-view">
@@ -255,73 +270,63 @@ export function AssetsView({
       </section>
 
       {detailTab === "summary" && (
-        <SectionCard
-          title="Asset summary"
-          subtitle="Core execution and discovery context for the selected asset."
-        >
-          <div className="detail-grid">
-            <div className="detail-stat">
-              <span>Status</span>
-              <strong>{resource.status ?? "Not executed"}</strong>
+        <>
+          <SectionCard
+            title="Asset summary"
+            subtitle="Core execution and discovery context for the selected asset."
+          >
+            <div className="detail-grid">
+              <div className="detail-stat">
+                <span>Status</span>
+                <strong>{resource.status ?? "Not executed"}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Execution time</span>
+                <strong>{formatSeconds(resource.executionTime)}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Thread</span>
+                <strong>{resource.threadId ?? "n/a"}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Path</span>
+                <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Upstream</span>
+                <strong>{dependencySummary?.upstream.length ?? 0}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Downstream</span>
+                <strong>{dependencySummary?.downstream.length ?? 0}</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Owner</span>
+                <strong>Not captured</strong>
+              </div>
+              <div className="detail-stat">
+                <span>Health</span>
+                <strong>{resource.status ?? "Unknown"}</strong>
+              </div>
             </div>
-            <div className="detail-stat">
-              <span>Execution time</span>
-              <strong>{formatSeconds(resource.executionTime)}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Thread</span>
-              <strong>{resource.threadId ?? "n/a"}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Path</span>
-              <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Upstream</span>
-              <strong>{dependencySummary?.upstream.length ?? 0}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Downstream</span>
-              <strong>{dependencySummary?.downstream.length ?? 0}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Owner</span>
-              <strong>Not captured</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Health</span>
-              <strong>{resource.status ?? "Unknown"}</strong>
-            </div>
-          </div>
-          {resource.description ? (
-            <p className="resource-spotlight__description">
-              {resource.description}
-            </p>
-          ) : (
-            <p className="resource-spotlight__description resource-spotlight__description--muted">
-              No description was captured for this asset. Catalog-oriented
-              metadata can surface here when present in the manifest.
-            </p>
-          )}
-        </SectionCard>
+            {resource.description ? (
+              <p className="resource-spotlight__description">
+                {resource.description}
+              </p>
+            ) : (
+              <p className="resource-spotlight__description resource-spotlight__description--muted">
+                No description was captured for this asset. Catalog-oriented
+                metadata can surface here when present in the manifest.
+              </p>
+            )}
+          </SectionCard>
+
+          <LineagePanel {...lineagePanelProps} displayMode="summary" />
+        </>
       )}
 
       {detailTab === "lineage" && (
-        <LineagePanel
-          resource={resource}
-          dependencySummary={dependencySummary}
-          dependencyIndex={analysis.dependencyIndex}
-          resourceById={resourceById}
-          upstreamDepth={upstreamDepth}
-          downstreamDepth={downstreamDepth}
-          allDepsMode={allDepsMode}
-          lensMode={lensMode}
-          setUpstreamDepth={setUpstreamDepth}
-          setDownstreamDepth={setDownstreamDepth}
-          setAllDepsMode={setAllDepsMode}
-          setLensMode={setLensMode}
-          onSelectResource={onSelectResource}
-        />
+        <LineagePanel {...lineagePanelProps} displayMode="focused" />
       )}
 
       {detailTab === "sql" &&
