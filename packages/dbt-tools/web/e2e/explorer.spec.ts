@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { loadWorkspace } from "./helpers/preload";
 
 const FILTER_TREE_PLACEHOLDER = "Filter tree by name, path, type, or id";
@@ -6,23 +6,33 @@ const LEAF_SELECTOR = ".explorer-tree__row--leaf";
 const BRANCH_SELECTOR = ".explorer-tree__row--branch";
 const ROW_SELECTOR = ".explorer-tree__row";
 const ARIA_SELECTED = "aria-selected";
+const LINEAGE_STAT_SELECTOR = ".lineage-summary__stat";
+
+/** Search and status pills live in a collapsible panel (default collapsed). */
+async function expandExplorerFilters(page: Page) {
+  const region = page.getByRole("region", { name: "Explorer filters" });
+  const toggle = region.getByRole("button").first();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+}
 
 test.describe("asset explorer", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
-    await page.getByRole("button", { name: "Catalog" }).click();
+    await page.getByRole("button", { name: "Assets", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "Catalog workspace" }),
+      page.getByRole("heading", { name: "Assets" }).first(),
     ).toBeVisible();
+    await expandExplorerFilters(page);
   });
 
-  test("shows 'Workspace inventory' heading", async ({ page }) => {
+  test("catalog workspace shows inventory heading and Project tab selected", async ({
+    page,
+  }) => {
     await expect(
       page.getByRole("heading", { name: "Workspace inventory" }),
     ).toBeVisible();
-  });
-
-  test("Project tab is selected by default", async ({ page }) => {
     const projectTab = page.getByRole("tab", { name: "Project" });
     await expect(projectTab).toBeVisible();
     await expect(projectTab).toHaveAttribute(ARIA_SELECTED, "true");
@@ -99,9 +109,9 @@ test.describe("asset explorer", () => {
     await firstLeaf.waitFor({ state: "visible" });
     await firstLeaf.click();
 
-    await expect(
-      page.getByRole("heading", { name: "Catalog asset" }),
-    ).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("Catalog asset")).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test("lineage panel shows Upstream and Downstream labels", async ({
@@ -116,13 +126,13 @@ test.describe("asset explorer", () => {
     // the DepthStepper also uses these labels.
     await expect(
       page
-        .locator(".lineage-summary__stat")
+        .locator(LINEAGE_STAT_SELECTOR)
         .filter({ hasText: "Upstream" })
         .first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(
       page
-        .locator(".lineage-summary__stat")
+        .locator(LINEAGE_STAT_SELECTOR)
         .filter({ hasText: "Downstream" })
         .first(),
     ).toBeVisible({ timeout: 5_000 });
@@ -173,47 +183,36 @@ test.describe("asset explorer", () => {
 test.describe("asset explorer — lineage panel controls", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
-    await page.getByRole("button", { name: "Catalog" }).click();
+    await page.getByRole("button", { name: "Assets", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "Catalog workspace" }),
+      page.getByRole("heading", { name: "Assets" }).first(),
     ).toBeVisible();
 
-    // Select a resource that has lineage (models in jaffle_shop do)
     const modelLeaves = page
       .locator(LEAF_SELECTOR)
       .filter({ hasText: "Model" });
     await modelLeaves.first().waitFor({ state: "visible" });
     await modelLeaves.first().click();
-    await page.getByRole("tab", { name: "Lineage" }).click();
-    await expect(page.getByRole("heading", { name: "Lineage" })).toBeVisible({
+    await expect(
+      page.getByRole("heading", { name: "Lineage graph" }),
+    ).toBeVisible({
       timeout: 10_000,
     });
   });
 
-  test("Show all toggle appears after selecting a resource", async ({
+  test("lineage summary shows upstream and downstream stats", async ({
     page,
   }) => {
     await expect(
-      page
-        .getByRole("button", { name: "Show all" })
-        .or(page.getByRole("button", { name: /Depth/ })),
-    ).toBeVisible({ timeout: 5_000 });
-  });
-
-  test("Expand button opens fullscreen lineage dialog", async ({ page }) => {
-    // Use exact: true to avoid matching the "Expand sidebar" button
-    await page.getByRole("button", { name: "Expand", exact: true }).click();
-
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
-  });
-
-  test("fullscreen dialog can be closed", async ({ page }) => {
-    // Use exact: true to avoid matching the "Expand sidebar" button
-    await page.getByRole("button", { name: "Expand", exact: true }).click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5_000 });
-
-    await page.getByRole("button", { name: "Close lineage graph" }).click();
-    await expect(page.getByRole("dialog")).not.toBeVisible();
+      page.locator(LINEAGE_STAT_SELECTOR).getByText("Upstream"),
+    ).toBeVisible();
+    await expect(
+      page.locator(LINEAGE_STAT_SELECTOR).getByText("Downstream"),
+    ).toBeVisible();
+    await expect(
+      page.locator(".lineage-graph, .lineage-summary svg").first(),
+    ).toBeVisible({
+      timeout: 5_000,
+    });
   });
 });

@@ -11,7 +11,8 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const ANALYZE_BUTTON_LABEL = "Analyze artifacts";
-const RUN_OVERVIEW_HEADING = "Run overview";
+/** App header title when the active nav item is Overview (`App.tsx` workspaceTitle). */
+const RUN_OVERVIEW_HEADING = "Overview";
 const MANIFEST_INPUT = "#manifest-input";
 const RUN_RESULTS_INPUT = "#run-results-input";
 
@@ -73,14 +74,17 @@ test.describe("analyze flow — file upload happy path", () => {
 
     await page.getByRole("button", { name: ANALYZE_BUTTON_LABEL }).click();
 
-    // Workspace header h2 should show "Run overview"
     await expect(
-      page.getByRole("heading", { name: RUN_OVERVIEW_HEADING }),
+      page.getByRole("heading", { name: RUN_OVERVIEW_HEADING }).first(),
     ).toBeVisible({ timeout: 30_000 });
 
     // Sidebar nav buttons become enabled after analysis loads
-    await expect(page.getByRole("button", { name: "Catalog" })).toBeEnabled();
-    await expect(page.getByRole("button", { name: "Runs" })).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Assets", exact: true }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Models", exact: true }),
+    ).toBeEnabled();
   });
 });
 
@@ -89,7 +93,7 @@ test.describe("analyze flow — preload mock happy path", () => {
     await loadWorkspace(page);
 
     await expect(
-      page.getByRole("heading", { name: RUN_OVERVIEW_HEADING }),
+      page.getByRole("heading", { name: RUN_OVERVIEW_HEADING }).first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 

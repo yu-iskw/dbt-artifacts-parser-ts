@@ -3,38 +3,29 @@ import { loadWorkspace } from "./helpers/preload";
 
 const RESULTS_SEARCH_PLACEHOLDER = "Filter by name, type, status, thread…";
 const RESULTS_ROW_SELECTOR = ".results-table__row";
+const MODEL_RESULTS_HEADING = "Model execution results";
 
 test.describe("model results view", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
-    await page.getByRole("button", { name: "Runs" }).click();
+    await page.getByRole("button", { name: "Models", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "Run analysis" }),
+      page.getByRole("heading", { name: "Models" }).first(),
     ).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Results" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.getByRole("tab", { name: "Models" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-  });
-
-  test("shows Model execution results section heading", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { name: "Model execution results" }),
+      page.getByRole("heading", { name: MODEL_RESULTS_HEADING }),
     ).toBeVisible();
   });
 
-  test("shows subtitle describing the log contents", async ({ page }) => {
+  test("model results panel shows heading, subtitle, and column headers", async ({
+    page,
+  }) => {
+    await expect(
+      page.getByRole("heading", { name: MODEL_RESULTS_HEADING }),
+    ).toBeVisible();
     await expect(
       page.getByText("Model, snapshot, seed and operation execution log."),
     ).toBeVisible();
-  });
-
-  test("table column headers are visible", async ({ page }) => {
-    // Use the results-table__header to scope the column header check
     const header = page.locator(".results-table__header");
     await expect(header.getByText("Node")).toBeVisible();
     await expect(header.getByText("Type")).toBeVisible();
@@ -106,22 +97,18 @@ test.describe("model results view", () => {
 test.describe("test results view", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
-    await page.getByRole("button", { name: "Runs" }).click();
-    await page.getByRole("tab", { name: "Tests" }).click();
+    await page.getByRole("button", { name: "Tests", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Tests" }).first(),
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Test results" }).first(),
     ).toBeVisible();
   });
 
-  test("shows Test results section heading inside the card", async ({
-    page,
-  }) => {
-    // The h3 in the SectionCard — use first() since heading appears at h1/h2/h3
+  test("test results card shows heading and subtitle", async ({ page }) => {
     const headings = page.getByRole("heading", { name: "Test results" });
     await expect(headings.first()).toBeVisible();
-  });
-
-  test("shows subtitle describing test results", async ({ page }) => {
     await expect(
       page.getByText("Test pass/fail results from the captured run."),
     ).toBeVisible();
@@ -141,12 +128,12 @@ test.describe("test results view", () => {
     });
   });
 
-  test("switching to Models sub-tab shows model results heading", async ({
+  test("switching to Models via sidebar shows model results heading", async ({
     page,
   }) => {
-    await page.getByRole("tab", { name: "Models" }).click();
+    await page.getByRole("button", { name: "Models", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "Model execution results" }),
+      page.getByRole("heading", { name: MODEL_RESULTS_HEADING }),
     ).toBeVisible({ timeout: 3_000 });
   });
 });

@@ -4,9 +4,11 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  // One retry keeps CI resilient without tripling wall time on every flake (was 2).
+  retries: process.env.CI ? 1 : 0,
+  // Fixed CI parallelism keeps the single vite preview process predictable; raise after profiling.
+  workers: process.env.CI ? 2 : undefined,
+  reporter: process.env.CI ? [["github"], ["line"]] : "html",
   use: {
     baseURL: "http://localhost:4173",
     trace: "on-first-retry",

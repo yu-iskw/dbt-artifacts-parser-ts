@@ -6,7 +6,7 @@ test.describe("overview view", () => {
     await loadWorkspace(page);
     // Already on overview by default
     await expect(
-      page.getByRole("heading", { name: "Run overview" }),
+      page.getByRole("heading", { name: "Overview" }).first(),
     ).toBeVisible();
   });
 
@@ -86,35 +86,20 @@ test.describe("overview view", () => {
     await expect(page.locator(".action-list__row").first()).toBeVisible();
   });
 
-  test("Attention heading renders", async ({ page }) => {
+  test("analytic section headings render on overview", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Attention" }),
     ).toBeVisible();
-  });
-
-  test("Critical path heading renders", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Critical path" }),
     ).toBeVisible();
-  });
-
-  test("Thread distribution heading renders", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Thread distribution" }),
     ).toBeVisible();
-  });
-
-  test("Footprint heading renders", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Footprint" }),
     ).toBeVisible();
-  });
-
-  test("Coverage heading renders", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Coverage" })).toBeVisible();
-  });
-
-  test("Graph composition heading renders", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Graph composition" }),
     ).toBeVisible();
