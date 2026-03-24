@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -213,6 +214,10 @@ export function LineageGraphSurface({
   const [tooltipNodeId, setTooltipNodeId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [viewportTick, setViewportTick] = useState(0);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const [nodeOffsets, setNodeOffsets] = useState<
     Map<string, { dx: number; dy: number }>
   >(new Map());
@@ -298,12 +303,6 @@ export function LineageGraphSurface({
   }, [contextMenu]);
 
   useEffect(() => {
-    if (tooltipNodeId && !visibleNodeLayouts.has(tooltipNodeId)) {
-      setTooltipNodeId(null);
-    }
-  }, [tooltipNodeId, visibleNodeLayouts]);
-
-  useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
     const handler = (e: WheelEvent) => {
@@ -334,44 +333,35 @@ export function LineageGraphSurface({
     return () => viewport.removeEventListener("wheel", handler);
   }, []);
 
-  if (visibleNodeLayouts.size === 0) {
-    return (
-      <div
-        className={`dependency-graph dependency-graph--empty dependency-graph--${displayMode}${fullscreen ? " dependency-graph--fullscreen" : ""}`}
-      >
-        <EmptyState
-          icon="↔"
-          headline="No lineage available"
-          subtext="This resource could not be placed on the lineage canvas."
-        />
-      </div>
-    );
-  }
-
-  const legendItems: LensLegendItem[] = getLensLegendItems(
-    lensMode,
-    nodeLayouts,
+  const getEffectivePos = useCallback(
+    (nodeId: string, baseX: number, baseY: number) => {
+      const off = nodeOffsets.get(nodeId);
+      return { x: baseX + (off?.dx ?? 0), y: baseY + (off?.dy ?? 0) };
+    },
+    [nodeOffsets],
   );
-  const highlightedIds = collectHighlightedGraphIds(hoveredId, visibleEdges);
-  const hasHoverFocus = highlightedIds.size > 0;
 
-  const getEffectivePos = (nodeId: string, baseX: number, baseY: number) => {
-    const off = nodeOffsets.get(nodeId);
-    return { x: baseX + (off?.dx ?? 0), y: baseY + (off?.dy ?? 0) };
-  };
-
-  const tooltipLayout = tooltipNodeId
-    ? (visibleNodeLayouts.get(tooltipNodeId) ?? null)
+  const resolvedTooltipNodeId =
+    tooltipNodeId !== null && visibleNodeLayouts.has(tooltipNodeId)
+      ? tooltipNodeId
+      : null;
+  const tooltipLayout = resolvedTooltipNodeId
+    ? (visibleNodeLayouts.get(resolvedTooltipNodeId) ?? null)
     : null;
-  const tooltipPosition = useMemo(() => {
-    if (!tooltipLayout || !viewportRef.current) return null;
 
+  useLayoutEffect(() => {
+    if (!tooltipLayout) {
+      return;
+    }
+    const viewport = viewportRef.current;
+    if (!viewport) {
+      return;
+    }
     const { x, y } = getEffectivePos(
       tooltipLayout.resource.uniqueId,
       tooltipLayout.x,
       tooltipLayout.y,
     );
-    const viewport = viewportRef.current;
     const scaledX = x * zoom;
     const scaledY = y * zoom;
     const nodeWidthScaled = nodeWidth * zoom;
@@ -419,11 +409,36 @@ export function LineageGraphSurface({
       ),
     );
 
-    return {
-      left,
-      top,
-    };
-  }, [tooltipLayout, zoom, nodeWidth, nodeHeight, nodeOffsets, viewportTick]);
+    setTooltipPosition({ left, top });
+  }, [
+    tooltipLayout,
+    zoom,
+    nodeWidth,
+    nodeHeight,
+    viewportTick,
+    getEffectivePos,
+  ]);
+
+  if (visibleNodeLayouts.size === 0) {
+    return (
+      <div
+        className={`dependency-graph dependency-graph--empty dependency-graph--${displayMode}${fullscreen ? " dependency-graph--fullscreen" : ""}`}
+      >
+        <EmptyState
+          icon="↔"
+          headline="No lineage available"
+          subtext="This resource could not be placed on the lineage canvas."
+        />
+      </div>
+    );
+  }
+
+  const legendItems: LensLegendItem[] = getLensLegendItems(
+    lensMode,
+    nodeLayouts,
+  );
+  const highlightedIds = collectHighlightedGraphIds(hoveredId, visibleEdges);
+  const hasHoverFocus = highlightedIds.size > 0;
 
   return (
     <div

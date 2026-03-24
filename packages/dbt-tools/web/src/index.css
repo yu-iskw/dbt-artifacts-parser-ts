@@ -1,19 +1,19 @@
 :root {
   color-scheme: light;
   /* Foundation surfaces */
-  --bg: #edf1f5;
-  --bg-soft: #f7f8fb;
-  --panel: rgba(255, 255, 255, 0.94);
+  --bg: #f6f8fa;
+  --bg-soft: #ffffff;
+  --panel: #ffffff;
   --panel-strong: #ffffff;
-  --panel-border: rgba(29, 39, 51, 0.12);
+  --panel-border: rgba(31, 45, 61, 0.14);
   --panel-shadow: 0 16px 36px rgba(18, 26, 33, 0.06);
   /* Text hierarchy */
-  --text: #17212b;
-  --text-muted: #536273;
-  --text-soft: #708091;
+  --text: #0d1117;
+  --text-muted: #424a53;
+  --text-soft: #626c77;
   /* Brand + semantic status */
-  --accent: #1747b3;
-  --accent-soft: rgba(37, 88, 217, 0.12);
+  --accent: #0969da;
+  --accent-soft: rgba(9, 105, 218, 0.12);
   --mint: #2bb673;
   --mint-soft: rgba(43, 182, 115, 0.16);
   --amber: #f2a44b;
@@ -54,8 +54,8 @@
   --dbt-type-generic: #a6b4c6;
   --dbt-type-generic-soft: #435061;
   /* Graph surfaces */
-  --graph-bg-top: #16384b;
-  --graph-bg-bottom: #0f2838;
+  --graph-bg-top: #13181f;
+  --graph-bg-bottom: #0d1117;
   --graph-bg-accent: rgba(136, 196, 226, 0.12);
   --graph-panel: rgba(56, 88, 107, 0.9);
   --graph-panel-hover: rgba(70, 106, 127, 0.96);

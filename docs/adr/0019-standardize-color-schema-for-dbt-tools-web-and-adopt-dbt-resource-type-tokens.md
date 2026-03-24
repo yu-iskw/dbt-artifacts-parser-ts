@@ -6,6 +6,8 @@ Date: 2026-03-24
 
 Accepted
 
+Superseded-by [20. Neutral Slate color rebrand for dbt-tools web](0020-neutral-slate-color-rebrand-for-dbt-tools-web.md)
+
 Depends-on [18. Hybrid dbt-first catalog and runs workspace for dbt-tools web](0018-hybrid-dbt-first-catalog-and-runs-workspace-for-dbt-tools-web.md)
 
 ## Context
