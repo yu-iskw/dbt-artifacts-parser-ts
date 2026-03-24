@@ -20,6 +20,38 @@ export interface GanttItem {
 
 export type StatusTone = "positive" | "warning" | "danger" | "neutral";
 
+export interface ResourceTestStats {
+  pass: number;
+  fail: number;
+  error: number;
+}
+
+export interface MetricDefinition {
+  kind: "metric";
+  label: string | null;
+  description: string | null;
+  metricType: string | null;
+  expression: string | null;
+  sourceReference: string | null;
+  filters: string[];
+  timeGranularity: string | null;
+  measures: string[];
+  metrics: string[];
+}
+
+export interface SemanticModelDefinition {
+  kind: "semantic_model";
+  label: string | null;
+  description: string | null;
+  sourceReference: string | null;
+  defaultTimeDimension: string | null;
+  entities: string[];
+  measures: string[];
+  dimensions: string[];
+}
+
+export type ResourceDefinition = MetricDefinition | SemanticModelDefinition;
+
 export interface GraphSnapshot {
   totalNodes: number;
   totalEdges: number;
@@ -45,6 +77,7 @@ export interface ResourceNode {
   compiledCode?: string | null;
   /** Raw SQL source for this resource (available from manifest compiled_code / raw_code). */
   rawCode?: string | null;
+  definition?: ResourceDefinition | null;
   status: string | null;
   statusTone: StatusTone;
   executionTime: number | null;

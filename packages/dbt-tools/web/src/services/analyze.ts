@@ -1,4 +1,9 @@
-import type { AnalysisState } from "@web/types";
+import type {
+  AnalysisState,
+  MetricDefinition,
+  ResourceDefinition,
+  SemanticModelDefinition,
+} from "@web/types";
 
 const RESOURCE_TYPE_ORDER = [
   "model",
@@ -69,6 +74,94 @@ function resourceTypeLabel(resourceType: string): string {
     .join(" ");
 }
 
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function buildMetricDefinition(
+  attributes: Record<string, unknown>,
+): MetricDefinition {
+  const primaryMeasure =
+    typeof attributes.metric_measure === "string"
+      ? attributes.metric_measure
+      : null;
+  const measures = normalizeStringArray(attributes.metric_input_measures);
+
+  return {
+    kind: "metric",
+    label: typeof attributes.label === "string" ? attributes.label : null,
+    description:
+      typeof attributes.description === "string"
+        ? attributes.description
+        : null,
+    metricType:
+      typeof attributes.metric_type === "string"
+        ? attributes.metric_type
+        : null,
+    expression:
+      typeof attributes.metric_expression === "string"
+        ? attributes.metric_expression
+        : null,
+    sourceReference:
+      typeof attributes.metric_source_reference === "string"
+        ? attributes.metric_source_reference
+        : typeof attributes.metric_measure === "string"
+          ? attributes.metric_measure
+          : null,
+    filters: normalizeStringArray(attributes.metric_filters),
+    timeGranularity:
+      typeof attributes.metric_time_granularity === "string"
+        ? attributes.metric_time_granularity
+        : null,
+    measures:
+      measures.length > 0
+        ? measures
+        : primaryMeasure != null
+          ? [primaryMeasure]
+          : [],
+    metrics: normalizeStringArray(attributes.metric_input_metrics),
+  };
+}
+
+function buildSemanticModelDefinition(
+  attributes: Record<string, unknown>,
+): SemanticModelDefinition {
+  return {
+    kind: "semantic_model",
+    label: typeof attributes.label === "string" ? attributes.label : null,
+    description:
+      typeof attributes.description === "string"
+        ? attributes.description
+        : null,
+    sourceReference:
+      typeof attributes.semantic_model_reference === "string"
+        ? attributes.semantic_model_reference
+        : null,
+    defaultTimeDimension:
+      typeof attributes.semantic_model_default_time_dimension === "string"
+        ? attributes.semantic_model_default_time_dimension
+        : null,
+    entities: normalizeStringArray(attributes.semantic_model_entities),
+    measures: normalizeStringArray(attributes.semantic_model_measures),
+    dimensions: normalizeStringArray(attributes.semantic_model_dimensions),
+  };
+}
+
+function buildResourceDefinition(
+  resourceType: string,
+  attributes: Record<string, unknown>,
+): ResourceDefinition | null {
+  if (resourceType === "metric") {
+    return buildMetricDefinition(attributes);
+  }
+  if (resourceType === "semantic_model") {
+    return buildSemanticModelDefinition(attributes);
+  }
+  return null;
+}
+
 function sortByResourceType(a: string, b: string): number {
   const aIndex = RESOURCE_TYPE_ORDER.indexOf(a);
   const bIndex = RESOURCE_TYPE_ORDER.indexOf(b);
@@ -126,10 +219,28 @@ function buildResourcesAndDependencyIndex(
           typeof attributes.original_file_path === "string"
             ? attributes.original_file_path
             : null,
+        patchPath:
+          typeof attributes.patch_path === "string"
+            ? attributes.patch_path
+            : null,
+        database:
+          typeof attributes.database === "string" ? attributes.database : null,
+        schema:
+          typeof attributes.schema === "string" ? attributes.schema : null,
         description:
           typeof attributes.description === "string"
             ? attributes.description
             : null,
+        compiledCode:
+          typeof attributes.compiled_code === "string"
+            ? attributes.compiled_code
+            : null,
+        rawCode:
+          typeof attributes.raw_code === "string" ? attributes.raw_code : null,
+        definition: buildResourceDefinition(
+          String(attributes.resource_type || "unknown"),
+          attributes,
+        ),
         status: execution?.status ? statusLabel(execution.status) : null,
         statusTone: statusTone(execution?.status),
         executionTime:

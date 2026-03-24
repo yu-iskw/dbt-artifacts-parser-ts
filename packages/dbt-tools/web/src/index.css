@@ -197,8 +197,11 @@ code {
 /* Gantt display mode toggle */
 .gantt-controls {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .gantt-mode-toggle {
@@ -224,6 +227,38 @@ code {
 .gantt-mode-toggle button.active {
   background: var(--accent);
   color: white;
+}
+
+.gantt-timezone-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.35rem 0.28rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(35, 42, 52, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.gantt-timezone-select span {
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.gantt-timezone-select select {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  min-width: 9rem;
+  cursor: pointer;
+}
+
+.gantt-timezone-select select:focus {
+  outline: none;
 }
 
 /* Health chart view toggle */
@@ -2738,6 +2773,71 @@ details.timeline-filter-accordion .timeline-controls {
   overflow-x: auto;
   white-space: pre;
   color: var(--text);
+}
+
+.definition-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.definition-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.definition-list > span,
+.definition-block > span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.definition-list__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.definition-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.34rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(230, 236, 248, 0.85);
+  border: 1px solid rgba(35, 42, 52, 0.08);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.definition-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.definition-block pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px solid rgba(35, 42, 52, 0.08);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.definition-block p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.6;
 }
 
 .sql-token-keyword {

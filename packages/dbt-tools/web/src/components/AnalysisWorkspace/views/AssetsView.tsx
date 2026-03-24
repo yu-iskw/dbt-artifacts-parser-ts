@@ -1,6 +1,17 @@
-import { type Dispatch, type SetStateAction, useEffect, useMemo } from "react";
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+} from "react";
 import { EmptyState } from "../../EmptyState";
-import type { AnalysisState, ResourceNode } from "@web/types";
+import type {
+  AnalysisState,
+  MetricDefinition,
+  ResourceNode,
+  SemanticModelDefinition,
+} from "@web/types";
 import type {
   AssetViewState,
   LensMode,
@@ -127,6 +138,100 @@ export function SqlPanel({ sql }: { sql: string }) {
   );
 }
 
+function DefinitionList({
+  label,
+  values,
+}: {
+  label: string;
+  values: string[];
+}) {
+  if (values.length === 0) return null;
+  return (
+    <div className="definition-list">
+      <span>{label}</span>
+      <div className="definition-list__values">
+        {values.map((value) => (
+          <span key={value} className="definition-pill">
+            {value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function renderMetricDefinition(definition: MetricDefinition): ReactNode {
+  return (
+    <div className="definition-panel">
+      <div className="detail-grid">
+        <div className="detail-stat">
+          <span>Label</span>
+          <strong>{definition.label ?? "Not captured"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Metric type</span>
+          <strong>{definition.metricType ?? "Not captured"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Source</span>
+          <strong>{definition.sourceReference ?? "Not captured"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Time granularity</span>
+          <strong>{definition.timeGranularity ?? "Not captured"}</strong>
+        </div>
+      </div>
+      {definition.expression && (
+        <div className="definition-block">
+          <span>Expression</span>
+          <pre>{definition.expression}</pre>
+        </div>
+      )}
+      {definition.description && (
+        <div className="definition-block">
+          <span>Description</span>
+          <p>{definition.description}</p>
+        </div>
+      )}
+      <DefinitionList label="Measures" values={definition.measures} />
+      <DefinitionList label="Referenced metrics" values={definition.metrics} />
+      <DefinitionList label="Filters" values={definition.filters} />
+    </div>
+  );
+}
+
+function renderSemanticModelDefinition(
+  definition: SemanticModelDefinition,
+): ReactNode {
+  return (
+    <div className="definition-panel">
+      <div className="detail-grid">
+        <div className="detail-stat">
+          <span>Label</span>
+          <strong>{definition.label ?? "Not captured"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Source model</span>
+          <strong>{definition.sourceReference ?? "Not captured"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Default time dimension</span>
+          <strong>{definition.defaultTimeDimension ?? "Not captured"}</strong>
+        </div>
+      </div>
+      <DefinitionList label="Entities" values={definition.entities} />
+      <DefinitionList label="Measures" values={definition.measures} />
+      <DefinitionList label="Dimensions" values={definition.dimensions} />
+      {definition.description && (
+        <div className="definition-block">
+          <span>Description</span>
+          <p>{definition.description}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AssetsView({
   resource,
   analysis,
@@ -201,6 +306,9 @@ export function AssetsView({
 
   const dependencySummary = analysis.dependencyIndex[resource.uniqueId];
   const sqlText = resource.compiledCode ?? resource.rawCode;
+  const definition = resource.definition ?? null;
+  const showsDefinition =
+    definition?.kind === "metric" || definition?.kind === "semantic_model";
   const detailSubtitle = (
     <div className="resource-detail__subtitle">
       <ResourceTypeBadge resourceType={resource.resourceType} />
@@ -288,20 +396,36 @@ export function AssetsView({
       <LineagePanel {...lineagePanelProps} displayMode="summary" />
 
       <SectionCard
-        title="SQL"
+        title={showsDefinition ? "Definition" : "SQL"}
         subtitle={
-          resource.compiledCode
-            ? "Compiled SQL for the selected resource."
-            : "Raw SQL captured from the manifest."
+          showsDefinition
+            ? definition.kind === "metric"
+              ? "Structured metric definition captured from the manifest."
+              : "Structured semantic model definition captured from the manifest."
+            : resource.compiledCode
+              ? "Compiled SQL for the selected resource."
+              : "Raw SQL captured from the manifest."
         }
       >
-        {sqlText ? (
+        {showsDefinition ? (
+          definition.kind === "metric" ? (
+            renderMetricDefinition(definition)
+          ) : (
+            renderSemanticModelDefinition(definition)
+          )
+        ) : sqlText ? (
           <SqlPanel sql={sqlText} />
         ) : (
           <EmptyState
             icon="⌘"
-            headline="No SQL available"
-            subtext="This resource does not expose compiled or raw SQL in the current artifacts."
+            headline={
+              showsDefinition ? "No definition available" : "No SQL available"
+            }
+            subtext={
+              showsDefinition
+                ? "This resource does not expose enough definition metadata in the current artifacts."
+                : "This resource does not expose compiled or raw SQL in the current artifacts."
+            }
           />
         )}
       </SectionCard>

@@ -14,6 +14,7 @@ import {
   isDefaultTimelineResource,
   isDefaultTimelineExecution,
 } from "@web/lib/analysis-workspace/utils";
+import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
 import { SectionCard } from "../shared";
 import { OverviewActionListCard } from "../views/OverviewView";
 import { TimelineSearchControls } from "../views/ResultsView";
@@ -185,6 +186,10 @@ export function TimelineView({
     () => new Map(filteredData.map((item, i) => [item.unique_id, i])),
     [filteredData],
   );
+  const testStatsById = useMemo(
+    () => buildResourceTestStats(analysis.resources, analysis.dependencyIndex),
+    [analysis.dependencyIndex, analysis.resources],
+  );
 
   // Counts per status/type (unfiltered) — shared by legend and filter pills.
   const statusCounts = useMemo(() => {
@@ -262,6 +267,7 @@ export function TimelineView({
           runStartedAt={analysis.runStartedAt}
           dataIndexById={dataIndexById}
           dependencyIndex={analysis.dependencyIndex}
+          testStatsById={testStatsById}
         />
       </SectionCard>
     </div>

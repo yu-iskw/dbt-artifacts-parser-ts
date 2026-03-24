@@ -32,6 +32,7 @@ import {
   collectLeafIds,
   findNodeByLeafResourceId,
   flattenExplorerTree,
+  type ExplorerTreeNode,
 } from "@web/lib/analysis-workspace/explorerTree";
 import { ExplorerPane } from "./ExplorerPane";
 import { OverviewView } from "./views/OverviewView";
@@ -128,6 +129,27 @@ function WorkspaceContent({
   );
 }
 
+function collectDefaultExpandedBranchIds(
+  nodes: ExplorerTreeNode[],
+): Set<string> {
+  const expanded = new Set<string>();
+  const stack = [...nodes];
+
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node || node.kind !== "branch") continue;
+    stack.push(...node.children);
+
+    if (node.label.toLowerCase() !== "models") continue;
+    expanded.add(node.id);
+    for (const parentId of node.parentIds) {
+      expanded.add(parentId);
+    }
+  }
+
+  return expanded;
+}
+
 export function AnalysisWorkspace({
   analysis,
   activeView,
@@ -212,7 +234,11 @@ export function AnalysisWorkspace({
     if (assetViewState.resourceQuery.trim()) {
       return collectBranchIds(explorerTree);
     }
-    return new Set(selectedLeaf?.parentIds ?? []);
+    const expanded = collectDefaultExpandedBranchIds(explorerTree);
+    for (const parentId of selectedLeaf?.parentIds ?? []) {
+      expanded.add(parentId);
+    }
+    return expanded;
   }, [assetViewState.resourceQuery, explorerTree, selectedLeaf]);
 
   useEffect(() => {

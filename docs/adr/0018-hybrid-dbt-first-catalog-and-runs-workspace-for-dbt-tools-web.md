@@ -68,17 +68,26 @@ For large projects, these result surfaces should use a **queryable results store
 
 This keeps the product dbt-native and local-first without tying visible UI cost to total result volume.
 
+Timeline remains part of Runs, but it may expose secondary operational cues beyond raw execution status:
+
+- attached test health may appear alongside execution status to surface “run succeeded but tests failed” cases
+- timestamp mode may expose a viewer-controlled timezone selector because timeline inspection is an analysis workflow, not a raw artifact dump
+
 ### Catalog detail structure
 
 Catalog is the primary asset-inspection workspace. Selected assets should expose:
 
 - summary metadata
 - lineage
-- SQL
+- a type-appropriate detail surface
 
 These should be presented as a **unified inspection page with stacked sections**, not as tabbed sub-surfaces.
 
 This keeps discovery and deep inspection in one place instead of forcing users to jump between unrelated top-level pages or mode-switch inside a single asset.
+
+Non-SQL dbt resource types should not be forced through a SQL-shaped detail panel. Metrics and semantic models should render structured definition surfaces using manifest-backed metadata, while models, snapshots, and other SQL-backed resources continue to expose SQL where available.
+
+Lineage should remain useful even for isolated resources. When a selected asset has no related edges, the graph should still render the selected node rather than collapsing into an edge-only empty state.
 
 ### Visual direction
 
@@ -110,7 +119,7 @@ flowchart TB
         AssetPage["Unified asset page"]
         Summary["Summary section"]
         Lineage["Lineage section"]
-        SQL["SQL section"]
+        Detail["SQL or definition section"]
     end
 
     subgraph RunsDetail["Runs detail"]
@@ -132,7 +141,7 @@ flowchart TB
     Catalog --> AssetPage
     AssetPage --> Summary
     AssetPage --> Lineage
-    AssetPage --> SQL
+    AssetPage --> Detail
     Runs --> Results
     Results --> ResultStore
     ResultStore --> Worker
@@ -165,8 +174,11 @@ flowchart TB
 - The app has a clearer product story for mixed data teams.
 - Catalog becomes a durable home for metadata, lineage, and future trust fields.
 - Asset inspection becomes a continuous workflow instead of a tabbed mini-app.
+- Catalog can represent metrics and semantic models with definition-first detail surfaces instead of SQL placeholders.
+- Isolated resources still participate in lineage review through single-node rendering.
 - Runs becomes a single execution-analysis center instead of several disconnected destinations.
 - Runs results can scale without eager visible rendering of the full corpus.
+- Timeline can surface attached test health and viewer-selected timestamp context without abandoning execution-first semantics.
 - The redesign stays compatible with the existing artifact-first architecture.
 
 ### Negative

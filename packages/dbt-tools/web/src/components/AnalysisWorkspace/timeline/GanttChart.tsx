@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getResourceTypeColor, getStatusColor } from "@web/constants/colors";
-import type { GanttItem, ResourceConnectionSummary } from "@web/types";
+import type {
+  GanttItem,
+  ResourceConnectionSummary,
+  ResourceTestStats,
+} from "@web/types";
 
 interface GanttChartProps {
   data: GanttItem[];
@@ -10,6 +14,7 @@ interface GanttChartProps {
   dataIndexById?: Map<string, number>;
   /** Dependency index keyed by unique_id. */
   dependencyIndex?: Record<string, ResourceConnectionSummary>;
+  testStatsById?: Map<string, ResourceTestStats>;
   /** Whether to render dependency edges. Default: true. */
   showEdges?: boolean;
 }
@@ -31,6 +36,7 @@ const TOOLTIP_LABEL_STYLE: React.CSSProperties = {
   color: "var(--text-soft)",
   fontSize: "0.82rem",
 };
+const TIMELINE_TIMEZONE_STORAGE_KEY = "dbt-tools.timelineTimezone";
 
 // ─── Tick helpers ──────────────────────────────────────────────────────────
 type DisplayMode = "duration" | "timestamps";
@@ -43,12 +49,43 @@ function formatMs(ms: number): string {
 }
 
 /** Format as HH:MM:SS given an absolute epoch ms. */
-function formatTimestamp(epochMs: number): string {
-  const d = new Date(epochMs);
-  const hh = d.getHours().toString().padStart(2, "0");
-  const mm = d.getMinutes().toString().padStart(2, "0");
-  const ss = d.getSeconds().toString().padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
+function formatTimestamp(epochMs: number, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone,
+  }).format(new Date(epochMs));
+}
+
+function getAvailableTimeZones(): string[] {
+  const localTimeZone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const supportedValuesOf = (
+    Intl as Intl.DateTimeFormatConstructor & {
+      supportedValuesOf?: (key: string) => string[];
+    }
+  ).supportedValuesOf;
+  const supportedTimeZones = supportedValuesOf?.("timeZone") ?? [];
+  return Array.from(new Set([localTimeZone, "UTC", ...supportedTimeZones]));
+}
+
+function getInitialTimeZone(): string {
+  const localTimeZone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  try {
+    return (
+      window.localStorage.getItem(TIMELINE_TIMEZONE_STORAGE_KEY) ||
+      localTimeZone
+    );
+  } catch {
+    return localTimeZone;
+  }
+}
+
+function isPositiveStatus(status: string): boolean {
+  return ["success", "pass", "passed"].includes(status.trim().toLowerCase());
 }
 
 function computeTicks(maxEnd: number): Array<{ ms: number; label: string }> {
@@ -108,6 +145,7 @@ function drawRowLabels(
   labelW: number,
   displayMode: DisplayMode,
   runStartedAt: number | null | undefined,
+  timeZone: string,
   emphasis: number,
 ) {
   ctx.save();
@@ -123,11 +161,11 @@ function drawRowLabels(
 
   const startLabel =
     displayMode === "timestamps" && runStartedAt != null
-      ? formatTimestamp(runStartedAt + item.start)
+      ? formatTimestamp(runStartedAt + item.start, timeZone)
       : `+${formatMs(item.start)}`;
   const endLabel =
     displayMode === "timestamps" && runStartedAt != null
-      ? formatTimestamp(runStartedAt + item.end)
+      ? formatTimestamp(runStartedAt + item.end, timeZone)
       : `+${formatMs(item.end)}`;
   ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
   ctx.fillStyle = "#94a3b8";
@@ -144,6 +182,7 @@ function drawRowBar(
   labelW: number,
   emphasis: number,
   isHovered: boolean,
+  attachedTestStats: ResourceTestStats | undefined,
 ) {
   const barY = rowY + BAR_PAD;
   const barX = labelW + (item.start / maxEnd) * chartW;
@@ -155,6 +194,15 @@ function drawRowBar(
 
   ctx.fillStyle = getResourceTypeColor(item.resourceType);
   ctx.fillRect(barX, barY, 3, BAR_H);
+
+  if (
+    attachedTestStats &&
+    attachedTestStats.fail + attachedTestStats.error > 0 &&
+    isPositiveStatus(item.status)
+  ) {
+    ctx.fillStyle = "rgba(216, 96, 102, 0.9)";
+    fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
+  }
 
   if (isHovered) {
     ctx.globalAlpha = 1;
@@ -174,6 +222,8 @@ interface DrawGanttParams {
   focusIds: Set<string> | null;
   hoveredId: string | null;
   labelW?: number;
+  timeZone: string;
+  testStatsById?: Map<string, ResourceTestStats>;
 }
 
 function drawGantt(
@@ -187,6 +237,8 @@ function drawGantt(
     focusIds,
     hoveredId,
     labelW = LABEL_W,
+    timeZone,
+    testStatsById,
   }: DrawGanttParams,
 ) {
   const ctx = canvas.getContext("2d");
@@ -224,7 +276,7 @@ function drawGantt(
     // label — show wall-clock time if mode is timestamps and we have origin
     const label =
       displayMode === "timestamps" && runStartedAt != null
-        ? formatTimestamp(runStartedAt + tick.ms)
+        ? formatTimestamp(runStartedAt + tick.ms, timeZone)
         : tick.label;
     ctx.fillText(label, x, AXIS_TOP / 2);
   }
@@ -246,8 +298,27 @@ function drawGantt(
     const emphasis = isFocused ? 1 : 0.18;
 
     drawRowBackground(ctx, i, rowY, w, isFocused, isHovered);
-    drawRowLabels(ctx, item, rowY, labelW, displayMode, runStartedAt, emphasis);
-    drawRowBar(ctx, item, rowY, maxEnd, chartW, labelW, emphasis, isHovered);
+    drawRowLabels(
+      ctx,
+      item,
+      rowY,
+      labelW,
+      displayMode,
+      runStartedAt,
+      timeZone,
+      emphasis,
+    );
+    drawRowBar(
+      ctx,
+      item,
+      rowY,
+      maxEnd,
+      chartW,
+      labelW,
+      emphasis,
+      isHovered,
+      testStatsById?.get(item.unique_id),
+    );
   }
 }
 
@@ -343,9 +414,15 @@ function edgePath(
 function GanttModeToggle({
   activeMode,
   onChange,
+  activeTimeZone,
+  timeZones,
+  onTimeZoneChange,
 }: {
   activeMode: DisplayMode;
   onChange: (next: DisplayMode) => void;
+  activeTimeZone: string;
+  timeZones: string[];
+  onTimeZoneChange: (next: string) => void;
 }) {
   return (
     <div className="gantt-controls">
@@ -365,6 +442,21 @@ function GanttModeToggle({
           Timestamps
         </button>
       </div>
+      {activeMode === "timestamps" && (
+        <label className="gantt-timezone-select">
+          <span>Timezone</span>
+          <select
+            value={activeTimeZone}
+            onChange={(event) => onTimeZoneChange(event.target.value)}
+          >
+            {timeZones.map((timeZone) => (
+              <option key={timeZone} value={timeZone}>
+                {timeZone}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 }
@@ -436,10 +528,14 @@ function GanttTooltip({
   hover,
   runStartedAt,
   canShowTimestamps,
+  timeZone,
+  testStats,
 }: {
   hover: HoverState;
   runStartedAt: number | null | undefined;
   canShowTimestamps: boolean;
+  timeZone: string;
+  testStats?: ResourceTestStats;
 }) {
   return (
     <div
@@ -470,11 +566,11 @@ function GanttTooltip({
         <>
           <div>
             <span style={TOOLTIP_LABEL_STYLE}>Start: </span>
-            {formatTimestamp(runStartedAt + hover.item.start)}
+            {formatTimestamp(runStartedAt + hover.item.start, timeZone)}
           </div>
           <div>
             <span style={TOOLTIP_LABEL_STYLE}>End: </span>
-            {formatTimestamp(runStartedAt + hover.item.end)}
+            {formatTimestamp(runStartedAt + hover.item.end, timeZone)}
           </div>
         </>
       ) : (
@@ -493,6 +589,12 @@ function GanttTooltip({
         <span style={TOOLTIP_LABEL_STYLE}>Duration: </span>
         {formatMs(hover.item.duration)}
       </div>
+      {testStats && testStats.pass + testStats.fail + testStats.error > 0 && (
+        <div>
+          <span style={TOOLTIP_LABEL_STYLE}>Tests: </span>✓{testStats.pass} · ✗
+          {testStats.fail + testStats.error}
+        </div>
+      )}
     </div>
   );
 }
@@ -502,6 +604,7 @@ export function GanttChart({
   runStartedAt,
   dataIndexById,
   dependencyIndex,
+  testStatsById,
   showEdges = true,
 }: GanttChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -509,13 +612,23 @@ export function GanttChart({
   const [scrollTop, setScrollTop] = useState(0);
   const [hover, setHover] = useState<HoverState | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("duration");
+  const [timeZone, setTimeZone] = useState<string>(getInitialTimeZone);
   const [containerWidth, setContainerWidth] = useState(0);
   const [windowHeight, setWindowHeight] = useState(() =>
     typeof window === "undefined" ? 900 : window.innerHeight,
   );
+  const availableTimeZones = useMemo(() => getAvailableTimeZones(), []);
 
   const canShowTimestamps = runStartedAt != null;
   const activeMode: DisplayMode = canShowTimestamps ? displayMode : "duration";
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(TIMELINE_TIMEZONE_STORAGE_KEY, timeZone);
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [timeZone]);
 
   // Shrink the label gutter proportionally on narrow screens; cap at LABEL_W
   const effectiveLabelW =
@@ -590,6 +703,8 @@ export function GanttChart({
         focusIds: focusedIds,
         hoveredId: hover?.item.unique_id ?? null,
         labelW: effectiveLabelW,
+        timeZone,
+        testStatsById,
       });
     }
 
@@ -611,6 +726,8 @@ export function GanttChart({
     focusedIds,
     hover,
     effectiveLabelW,
+    timeZone,
+    testStatsById,
   ]);
 
   if (data.length === 0) {
@@ -624,7 +741,13 @@ export function GanttChart({
   return (
     <div className="gantt-shell">
       {canShowTimestamps && (
-        <GanttModeToggle activeMode={activeMode} onChange={setDisplayMode} />
+        <GanttModeToggle
+          activeMode={activeMode}
+          onChange={setDisplayMode}
+          activeTimeZone={timeZone}
+          timeZones={availableTimeZones}
+          onTimeZoneChange={setTimeZone}
+        />
       )}
 
       <section
@@ -689,6 +812,8 @@ export function GanttChart({
             hover={hover}
             runStartedAt={runStartedAt}
             canShowTimestamps={canShowTimestamps}
+            timeZone={timeZone}
+            testStats={testStatsById?.get(hover.item.unique_id)}
           />
         )}
       </section>

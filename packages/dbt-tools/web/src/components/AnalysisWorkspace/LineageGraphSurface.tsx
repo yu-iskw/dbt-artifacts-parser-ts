@@ -276,15 +276,15 @@ export function LineageGraphSurface({
     return () => viewport.removeEventListener("wheel", handler);
   }, []);
 
-  if (!hasRelatedNodes) {
+  if (nodeLayouts.size === 0) {
     return (
       <div
         className={`dependency-graph dependency-graph--empty dependency-graph--${displayMode}${fullscreen ? " dependency-graph--fullscreen" : ""}`}
       >
         <EmptyState
           icon="↔"
-          headline="No related dependencies"
-          subtext="This resource has no upstream or downstream nodes to visualize."
+          headline="No lineage available"
+          subtext="This resource could not be placed on the lineage canvas."
         />
       </div>
     );
