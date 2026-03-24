@@ -369,7 +369,7 @@ export function AssetsView({
   }
 
   const dependencySummary = analysis.dependencyIndex[resource.uniqueId];
-  const sqlText = resource.compiledCode ?? resource.rawCode;
+  const sqlText = resource.compiledCode ?? resource.rawCode ?? undefined;
   const definition = resource.definition ?? null;
   const showsDefinition =
     definition?.kind === "metric" || definition?.kind === "semantic_model";

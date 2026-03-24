@@ -186,7 +186,7 @@ function getInitialSidebarCollapsed(): boolean {
 function isNavigationTargetActive(
   target: SidebarNavigationTarget,
   activeView: WorkspaceView,
-  assetViewState: AssetViewState,
+  _assetViewState: AssetViewState,
   runsViewState: RunsViewState,
 ): boolean {
   if (activeView !== target.view) return false;

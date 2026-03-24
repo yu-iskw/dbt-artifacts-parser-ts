@@ -63,7 +63,7 @@ function getAvailableTimeZones(): string[] {
   const localTimeZone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const supportedValuesOf = (
-    Intl as Intl.DateTimeFormatConstructor & {
+    Intl as unknown as {
       supportedValuesOf?: (key: string) => string[];
     }
   ).supportedValuesOf;
