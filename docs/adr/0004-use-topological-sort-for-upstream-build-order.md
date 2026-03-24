@@ -22,7 +22,7 @@ Build order is meaningful only for **upstream** dependencies. Downstream depende
 
 ## Decision
 
-We use [graphology-dag](https://github.com/graphology/graphology-dag)'s `topologicalSort` for upstream build-order analysis. The approach:
+We use [graphology-dag](https://graphology.github.io/standard-library/dag.html)'s `topologicalSort` for upstream build-order analysis. The approach:
 
 1. Use `getUpstream()` to collect upstream nodes (and optionally limit depth).
 2. Build an **induced subgraph** containing only those nodes and the edges between them.

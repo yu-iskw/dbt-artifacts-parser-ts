@@ -28,8 +28,8 @@ Use this as a lightweight checklist to keep outputs consistent across teams. Pre
 
 ## Mitigation phrasing patterns
 
-- "Enforce schema at <boundary> for <payload> before <component>."
-- "Require authZ check for <action> on <resource> in <service>."
-- "Isolate <parser/component> in a sandbox with <resource limits>."
-- "Rate limit <endpoint> by <key> and apply burst caps."
-- "Encrypt <data> at rest using <key management> and rotate <keys>."
+- "Enforce schema at `<boundary>` for `<payload>` before `<component>`."
+- "Require authZ check for `<action>` on `<resource>` in `<service>`."
+- "Isolate `<parser/component>` in a sandbox with `<resource limits>`."
+- "Rate limit `<endpoint>` by `<key>` and apply burst caps."
+- "Encrypt `<data>` at rest using `<key management>` and rotate `<keys>`."

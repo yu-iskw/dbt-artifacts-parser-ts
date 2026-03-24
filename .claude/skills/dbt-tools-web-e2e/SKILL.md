@@ -48,4 +48,4 @@ Details: [Playwright conventions](references/playwright-conventions.md).
 
 - [Playwright conventions](references/playwright-conventions.md) — base URL, selectors, flakiness, CI settings
 - [Fixtures and paths](references/fixtures-and-paths.md) — canonical manifest/run_results paths and local fixtures
-- Product UI tone and stack: [`.codex/skills/dbt-tools-frontend/SKILL.md`](../../../.codex/skills/dbt-tools-frontend/SKILL.md)
+- Product UI tone and stack: [`.codex/skills/frontend-skill/SKILL.md`](../../../.codex/skills/frontend-skill/SKILL.md)
