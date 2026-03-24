@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   AnalysisWorkspace,
   type WorkspaceView,
-  type CatalogDetailTab,
   type RunsTab,
   type RunsKind,
   type OverviewFilterState,
@@ -22,7 +21,12 @@ interface SidebarNavigationTarget {
   id: string;
   label: string;
   view: WorkspaceView;
-  catalogTab?: CatalogDetailTab;
+  runsTab?: RunsTab;
+  runsKind?: RunsKind;
+}
+
+interface NavigationSelectionTarget {
+  view: WorkspaceView;
   runsTab?: RunsTab;
   runsKind?: RunsKind;
 }
@@ -106,7 +110,6 @@ const navigationItems: SidebarNavigationTarget[] = [
     id: "assets",
     view: "catalog",
     label: "Assets",
-    catalogTab: "summary",
   },
   {
     id: "models",
@@ -132,11 +135,6 @@ const navigationItems: SidebarNavigationTarget[] = [
 ];
 
 const VALID_VIEWS = new Set<WorkspaceView>(["overview", "catalog", "runs"]);
-const VALID_CATALOG_TABS = new Set<CatalogDetailTab>([
-  "summary",
-  "lineage",
-  "sql",
-]);
 const VALID_RUNS_TABS = new Set<RunsTab>(["results", "timeline"]);
 const VALID_RUNS_KINDS = new Set<RunsKind>(["models", "tests"]);
 
@@ -151,14 +149,6 @@ function parseViewFromSearch(search: string): WorkspaceView | null {
 
 function getInitialView(): WorkspaceView {
   return parseViewFromSearch(window.location.search) ?? "overview";
-}
-
-function parseCatalogDetailTab(search: string): CatalogDetailTab | null {
-  const raw = new URLSearchParams(search).get("tab");
-  if (raw && VALID_CATALOG_TABS.has(raw as CatalogDetailTab)) {
-    return raw as CatalogDetailTab;
-  }
-  return null;
 }
 
 function parseRunsTab(search: string): RunsTab | null {
@@ -303,7 +293,7 @@ function AppSidebar({
   runsViewState,
 }: {
   activeView: WorkspaceView;
-  setNavigationTarget: (target: SidebarNavigationTarget) => void;
+  setNavigationTarget: (target: NavigationSelectionTarget) => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (fn: (c: boolean) => boolean) => void;
   /** Called after any navigation action so the parent can close the mobile overlay. */
@@ -454,7 +444,6 @@ function AppContent() {
     resourceTypes: new Set(),
     resourceQuery: "",
     selectedResourceId: parseSelectedResourceId(window.location.search),
-    detailTab: parseCatalogDetailTab(window.location.search) ?? "summary",
     upstreamDepth: 2,
     downstreamDepth: 2,
     allDepsMode: false,
@@ -474,15 +463,8 @@ function AppContent() {
     });
   };
 
-  const setNavigationTarget = (target: SidebarNavigationTarget) => {
+  const setNavigationTarget = (target: NavigationSelectionTarget) => {
     setActiveViewRaw(target.view);
-    if (target.view === "catalog") {
-      setAssetViewState((current) => ({
-        ...current,
-        detailTab: target.catalogTab ?? "summary",
-      }));
-      return;
-    }
     if (target.view === "runs") {
       setRunsViewState((current) => ({
         ...current,
@@ -499,12 +481,12 @@ function AppContent() {
     const url = new URL(window.location.href);
     url.searchParams.set("view", activeView);
     if (activeView === "catalog") {
-      url.searchParams.set("tab", assetViewState.detailTab);
       if (assetViewState.selectedResourceId) {
         url.searchParams.set("resource", assetViewState.selectedResourceId);
       } else {
         url.searchParams.delete("resource");
       }
+      url.searchParams.delete("tab");
       url.searchParams.delete("kind");
     } else if (activeView === "runs") {
       url.searchParams.set("tab", runsViewState.tab);
@@ -522,7 +504,6 @@ function AppContent() {
     }
   }, [
     activeView,
-    assetViewState.detailTab,
     assetViewState.selectedResourceId,
     runsViewState.kind,
     runsViewState.tab,
@@ -542,7 +523,6 @@ function AppContent() {
       setAssetViewState((current) => ({
         ...current,
         selectedResourceId: parseSelectedResourceId(search),
-        detailTab: parseCatalogDetailTab(search) ?? current.detailTab,
       }));
     };
     window.addEventListener("popstate", onPopState);

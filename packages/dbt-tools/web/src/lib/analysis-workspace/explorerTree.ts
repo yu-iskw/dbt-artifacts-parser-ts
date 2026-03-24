@@ -9,6 +9,40 @@ export interface TestStats {
   error: number;
 }
 
+export function buildResourceTestStats(
+  resources: ResourceNode[],
+  dependencyIndex?: AnalysisState["dependencyIndex"],
+): Map<string, TestStats> {
+  const resolvedDependencyIndex = dependencyIndex ?? {};
+  const testResources = resources.filter((r) =>
+    TEST_RESOURCE_TYPES.has(r.resourceType),
+  );
+  const resourceTestStats = new Map<string, TestStats>();
+
+  for (const test of testResources) {
+    const testedIds =
+      resolvedDependencyIndex[test.uniqueId]?.upstream?.map(
+        (dependency) => dependency.uniqueId,
+      ) ?? [];
+
+    for (const resourceId of testedIds) {
+      const stats = resourceTestStats.get(resourceId) ?? {
+        pass: 0,
+        fail: 0,
+        error: 0,
+      };
+
+      if (test.statusTone === "positive") stats.pass += 1;
+      else if (test.statusTone === "danger") stats.error += 1;
+      else stats.fail += 1;
+
+      resourceTestStats.set(resourceId, stats);
+    }
+  }
+
+  return resourceTestStats;
+}
+
 export interface ExplorerTreeNode {
   id: string;
   label: string;
@@ -168,35 +202,13 @@ export function buildExplorerTree(
   dependencyIndex?: AnalysisState["dependencyIndex"],
 ): ExplorerTreeNode[] {
   const resolvedDependencyIndex = dependencyIndex ?? {};
-
-  const testResources = resources.filter((r) =>
-    TEST_RESOURCE_TYPES.has(r.resourceType),
-  );
   const nonTestResources = resources.filter(
     (r) => !TEST_RESOURCE_TYPES.has(r.resourceType),
   );
-
-  // Build resource-level test stats keyed by the tested model's uniqueId.
-  // Tests list their subject models as direct upstream deps in the dependency
-  // index — this is exact, unlike the previous path-prefix approximation.
-  const resourceTestStats = new Map<string, TestStats>();
-  for (const test of testResources) {
-    const testedIds =
-      resolvedDependencyIndex[test.uniqueId]?.upstream?.map(
-        (d) => d.uniqueId,
-      ) ?? [];
-    for (const modelId of testedIds) {
-      const s = resourceTestStats.get(modelId) ?? {
-        pass: 0,
-        fail: 0,
-        error: 0,
-      };
-      if (test.statusTone === "positive") s.pass++;
-      else if (test.statusTone === "danger") s.error++;
-      else s.fail++;
-      resourceTestStats.set(modelId, s);
-    }
-  }
+  const resourceTestStats = buildResourceTestStats(
+    resources,
+    resolvedDependencyIndex,
+  );
 
   // Aggregate leaf testStats upward to branch nodes (bottom-up recursion).
   // Returns the combined TestStats of the given node list.

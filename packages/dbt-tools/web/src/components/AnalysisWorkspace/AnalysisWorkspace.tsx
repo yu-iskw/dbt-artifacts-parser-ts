@@ -38,6 +38,7 @@ import { OverviewView } from "./views/OverviewView";
 import { AssetsView } from "./views/AssetsView";
 import { ResultsView } from "./views/ResultsView";
 import { TimelineView } from "./timeline/TimelineView";
+import { useRunsResultsSource } from "@web/hooks/useRunsResultsSource";
 
 interface WorkspaceContentProps {
   activeView: WorkspaceView;
@@ -72,6 +73,13 @@ function WorkspaceContent({
   onAssetViewStateChange,
   runsViewState,
 }: WorkspaceContentProps) {
+  const runsResults = useRunsResultsSource(
+    analysis.executions,
+    runsViewState.kind,
+    resultsFilters,
+    activeView === "runs" && runsViewState.tab === "results",
+  );
+
   if (activeView === "overview")
     return (
       <OverviewView
@@ -104,10 +112,18 @@ function WorkspaceContent({
     );
   return (
     <ResultsView
-      allRows={analysis.executions}
       tab={runsViewState.kind}
       filters={resultsFilters}
       setFilters={onResultsFiltersChange}
+      rows={runsResults.rows}
+      totalMatches={runsResults.totalMatches}
+      counts={runsResults.counts}
+      totalVisible={runsResults.totalVisible}
+      hasMore={runsResults.hasMore}
+      isLoading={runsResults.isLoading}
+      isIndexing={runsResults.isIndexing}
+      error={runsResults.error}
+      onLoadMore={runsResults.loadMore}
     />
   );
 }

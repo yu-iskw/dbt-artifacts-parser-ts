@@ -54,6 +54,35 @@ The graph background should remain **app-native**, not a copied dbt Docs backgro
 
 The graph may still use a darker canvas than the rest of the app when that improves lineage legibility, but those colors must be defined through the shared web token system.
 
+### Contrast guidance
+
+Graph contrast should prioritize **resource discrimination before stylistic subtlety**.
+
+That means:
+
+- graph background tokens should recede and remain less saturated than node fills
+- resource-type fills should be strong enough to stay distinct in dense clusters
+- node strokes and selected outlines should reinforce separation without becoming the primary visual signal
+- graph chrome such as legends, zoom controls, and summary cards should remain secondary to the nodes
+
+The web app should therefore prefer a calmer, darker canvas with stronger type fills over a brighter or more decorative surface.
+
+### Legend and node signal alignment
+
+Lineage legends should use the same displayed resource-type color family as the nodes they describe.
+
+That means:
+
+- legend swatches should match node fills closely enough that users do not have to mentally translate between the legend and the canvas
+- if node strokes are needed for separation, they may be reflected as secondary legend treatment, but the fill relationship should remain primary
+- resource-type color and node-health cues should complement one another rather than compete
+
+### Node-level quality signals
+
+When lineage needs to support issue scanning, node cards may surface compact quality signals directly inside the node.
+
+For the current lineage presentation, that means aggregated pass/fail-style test counts can appear alongside the resource label and type metadata so users can spot problematic nodes without relying on hover state alone.
+
 ### Architecture
 
 The token flow should work as follows:
@@ -80,6 +109,22 @@ flowchart TB
     Graph --> Surfaces
 ```
 
+The visual contrast relationship should work as follows:
+
+```mermaid
+flowchart LR
+    Background["Graph background tokens
+    recede / low saturation / low emphasis"]
+    Types["dbt resource-type tokens
+    strongest visual discrimination"]
+    Chrome["Graph chrome tokens
+    legend / controls / stat panels"]
+
+    Background --> Types
+    Background --> Chrome
+    Chrome --> Types
+```
+
 ## Alternatives considered
 
 1. **Graph-only palette tweak**
@@ -101,6 +146,7 @@ flowchart TB
 - The lineage graph becomes more dbt-native and easier to scan.
 - dbt resource-type colors become reusable design primitives instead of graph-only implementation details.
 - Graph surfaces can evolve without diverging from the app’s overall visual system.
+- Dense graph views have a clearer contrast rule to guide future palette adjustments.
 - Future catalog and governance surfaces have a clearer token foundation.
 
 ### Negative

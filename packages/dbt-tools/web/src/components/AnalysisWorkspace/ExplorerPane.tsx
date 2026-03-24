@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { EmptyState } from "../EmptyState";
 import type { ResourceNode } from "@web/types";
 import {
@@ -35,6 +36,18 @@ export interface ExplorerPaneProps {
   expandedNodeIds: Set<string>;
   toggleExpandedNode: (id: string) => void;
   setSelectedResourceId: (id: string | null) => void;
+}
+
+const EXPLORER_FILTERS_STORAGE_KEY = "dbt-tools.explorerFiltersExpanded";
+
+function getInitialFiltersExpanded(): boolean {
+  try {
+    const stored = window.localStorage.getItem(EXPLORER_FILTERS_STORAGE_KEY);
+    if (stored !== null) return stored === "true";
+  } catch {
+    // ignore localStorage failures
+  }
+  return false;
 }
 
 export function ExplorerModeIcon({ mode }: { mode: AssetExplorerMode }) {
@@ -130,6 +143,26 @@ export function ExplorerPane({
   toggleExpandedNode,
   setSelectedResourceId,
 }: ExplorerPaneProps) {
+  const [filtersExpanded, setFiltersExpanded] = useState<boolean>(
+    getInitialFiltersExpanded,
+  );
+  const setFiltersExpandedPersisted = (next: boolean) => {
+    setFiltersExpanded(next);
+    try {
+      window.localStorage.setItem(EXPLORER_FILTERS_STORAGE_KEY, String(next));
+    } catch {
+      // ignore localStorage failures
+    }
+  };
+  const activeFilterCount =
+    (resourceQuery.trim() ? 1 : 0) +
+    (status !== "all" ? 1 : 0) +
+    (activeResourceTypes.size > 0 ? 1 : 0);
+  const filterSummary =
+    activeFilterCount > 0
+      ? `${activeFilterCount} active`
+      : "Search, status, and type";
+
   return (
     <aside className="explorer-pane">
       <div className="explorer-pane__header">
@@ -173,65 +206,98 @@ export function ExplorerPane({
         ))}
       </div>
 
-      <label className="workspace-search">
-        <span>Search resources</span>
-        <input
-          value={resourceQuery}
-          onChange={(event) => setResourceQuery(event.target.value)}
-          placeholder="Filter tree by name, path, type, or id"
-        />
-      </label>
-
-      <div className="explorer-filter-stack">
-        <div className="explorer-filter-group">
-          <span className="explorer-filter-group__label">Execution status</span>
-          <div className="pill-row">
-            {(
-              [
-                ["all", "All"],
-                ["positive", "Success"],
-                ["warning", "Warn"],
-                ["danger", "Fail"],
-                ["neutral", "Not executed"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={status === value ? PILL_ACTIVE : PILL_BASE}
-                onClick={() => setStatus(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {availableResourceTypes.length > 0 && (
-          <div className="explorer-filter-group">
-            <span className="explorer-filter-group__label">
-              dbt resource type
+      <section className="explorer-filters" aria-label="Explorer filters">
+        <button
+          type="button"
+          className="explorer-filters__toggle"
+          aria-expanded={filtersExpanded}
+          onClick={() => setFiltersExpandedPersisted(!filtersExpanded)}
+        >
+          <span className="explorer-filters__toggle-copy">
+            <span className="explorer-filters__toggle-label">Filters</span>
+            <span className="explorer-filters__toggle-summary">
+              {filterSummary}
             </span>
-            <div className="pill-row">
-              {availableResourceTypes.map((type) => {
-                const active =
-                  activeResourceTypes.size === 0 ||
-                  activeResourceTypes.has(type);
-                return (
+          </span>
+          <span className="explorer-filters__toggle-meta">
+            {activeFilterCount > 0 && (
+              <span className="explorer-filters__badge">
+                {activeFilterCount}
+              </span>
+            )}
+            <span
+              className={`explorer-filters__chevron${filtersExpanded ? " explorer-filters__chevron--expanded" : ""}`}
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </span>
+        </button>
+
+        {filtersExpanded && (
+          <div className="explorer-filter-stack">
+            <label className="workspace-search">
+              <span>Search resources</span>
+              <input
+                value={resourceQuery}
+                onChange={(event) => setResourceQuery(event.target.value)}
+                placeholder="Filter tree by name, path, type, or id"
+              />
+            </label>
+
+            <div className="explorer-filter-group">
+              <span className="explorer-filter-group__label">
+                Execution status
+              </span>
+              <div className="pill-row">
+                {(
+                  [
+                    ["all", "All"],
+                    ["positive", "Success"],
+                    ["warning", "Warn"],
+                    ["danger", "Fail"],
+                    ["neutral", "Not executed"],
+                  ] as const
+                ).map(([value, label]) => (
                   <button
-                    key={type}
+                    key={value}
                     type="button"
-                    className={active ? PILL_ACTIVE : PILL_BASE}
-                    onClick={() => toggleResourceType(type)}
+                    className={status === value ? PILL_ACTIVE : PILL_BASE}
+                    onClick={() => setStatus(value)}
                   >
-                    {formatResourceTypeLabel(type)}
+                    {label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
+
+            {availableResourceTypes.length > 0 && (
+              <div className="explorer-filter-group">
+                <span className="explorer-filter-group__label">
+                  dbt resource type
+                </span>
+                <div className="pill-row">
+                  {availableResourceTypes.map((type) => {
+                    const active =
+                      activeResourceTypes.size === 0 ||
+                      activeResourceTypes.has(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        className={active ? PILL_ACTIVE : PILL_BASE}
+                        onClick={() => toggleResourceType(type)}
+                      >
+                        {formatResourceTypeLabel(type)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </div>
+      </section>
 
       <ResourceTypeSummaryBar resources={filteredResources} />
 

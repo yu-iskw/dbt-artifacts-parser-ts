@@ -26,9 +26,13 @@ import { SectionCard, formatResourceTypeLabel } from "./shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 
 const OVERLAY_VIEWPORT_MARGIN = 12;
-const OVERLAY_CURSOR_OFFSET = 14;
+const OVERLAY_CURSOR_OFFSET = 6;
 const TOOLTIP_OVERLAY_SIZE = { width: 280, height: 180 };
 const CONTEXT_MENU_OVERLAY_SIZE = { width: 220, height: 120 };
+
+function estimateBadgeWidth(label: string): number {
+  return 16 + label.length * 6.2;
+}
 
 function positionOverlay({
   anchorX,
@@ -57,6 +61,42 @@ function positionOverlay({
   if (y + height + margin > viewportHeight) {
     y = anchorY - height - offset;
   }
+
+  x = Math.min(
+    Math.max(margin, x),
+    Math.max(margin, viewportWidth - width - margin),
+  );
+  y = Math.min(
+    Math.max(margin, y),
+    Math.max(margin, viewportHeight - height - margin),
+  );
+
+  return { x, y };
+}
+
+function positionOverlayAgainstRect({
+  anchorRect,
+  width,
+  height,
+  offset = OVERLAY_CURSOR_OFFSET,
+  margin = OVERLAY_VIEWPORT_MARGIN,
+}: {
+  anchorRect: DOMRect;
+  width: number;
+  height: number;
+  offset?: number;
+  margin?: number;
+}) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const spaceRight = viewportWidth - anchorRect.right - margin;
+  const spaceLeft = anchorRect.left - margin;
+
+  let x =
+    spaceRight >= width + offset || spaceRight >= spaceLeft
+      ? anchorRect.right + offset
+      : anchorRect.left - width - offset;
+  let y = anchorRect.top + anchorRect.height / 2 - height / 2;
 
   x = Math.min(
     Math.max(margin, x),
@@ -278,7 +318,10 @@ export function LineageGraphSurface({
           <span key={item.key} className="lineage-legend__item">
             <span
               className="lineage-legend__swatch"
-              style={{ background: item.color }}
+              style={{
+                background: item.color,
+                borderColor: item.borderColor,
+              }}
             />
             {item.label}
           </span>
@@ -395,6 +438,17 @@ export function LineageGraphSurface({
                 node.x,
                 node.y,
               );
+              const passLabel = `✓${node.passCount}`;
+              const failLabel = `✗${node.failCount}`;
+              const passBadgeWidth = estimateBadgeWidth(passLabel);
+              const failBadgeWidth = estimateBadgeWidth(failLabel);
+              const badgeGap = 6;
+              const badgeY =
+                displayMode === "summary"
+                  ? y + nodeHeight - 18
+                  : y + nodeHeight - 21;
+              const badgeHeight = displayMode === "summary" ? 14 : 16;
+              const badgeRadius = badgeHeight / 2;
               return (
                 <g key={node.resource.uniqueId}>
                   <rect
@@ -408,19 +462,53 @@ export function LineageGraphSurface({
                   />
                   <text
                     x={x + 16}
-                    y={displayMode === "summary" ? y + 19 : y + 24}
+                    y={displayMode === "summary" ? y + 20 : y + 25}
                     className="dependency-graph__node-label"
                   >
                     {node.resource.name}
                   </text>
                   <text
                     x={x + 16}
-                    y={displayMode === "summary" ? y + 33 : y + 43}
+                    y={displayMode === "summary" ? y + 35 : y + 45}
                     className="dependency-graph__node-meta"
                   >
                     {node.side === "selected"
                       ? formatResourceTypeLabel(node.resource.resourceType)
                       : `${formatResourceTypeLabel(node.resource.resourceType)} · Depth ${node.depth}`}
+                  </text>
+                  <rect
+                    x={x + 16}
+                    y={badgeY}
+                    width={passBadgeWidth}
+                    height={badgeHeight}
+                    rx={badgeRadius}
+                    className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--pass"
+                  />
+                  <text
+                    x={x + 16 + passBadgeWidth / 2}
+                    y={badgeY + badgeHeight / 2}
+                    className="dependency-graph__node-stat dependency-graph__node-stat--pass"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {passLabel}
+                  </text>
+                  <rect
+                    x={x + 16 + passBadgeWidth + badgeGap}
+                    y={badgeY}
+                    width={failBadgeWidth}
+                    height={badgeHeight}
+                    rx={badgeRadius}
+                    className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
+                  />
+                  <text
+                    x={x + 16 + passBadgeWidth + badgeGap + failBadgeWidth / 2}
+                    y={badgeY + badgeHeight / 2}
+                    className="dependency-graph__node-stat dependency-graph__node-stat--fail"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {failLabel}
                   </text>
                 </g>
               );
@@ -465,9 +553,8 @@ export function LineageGraphSurface({
                   }}
                   onMouseEnter={(event) => {
                     setHoveredId(node.resource.uniqueId);
-                    const position = positionOverlay({
-                      anchorX: event.clientX,
-                      anchorY: event.clientY,
+                    const position = positionOverlayAgainstRect({
+                      anchorRect: event.currentTarget.getBoundingClientRect(),
                       width: TOOLTIP_OVERLAY_SIZE.width,
                       height: TOOLTIP_OVERLAY_SIZE.height,
                     });
@@ -751,7 +838,7 @@ export function LineagePanel({
         title={displayMode === "summary" ? "Lineage graph" : "Lineage"}
         subtitle={
           displayMode === "summary"
-            ? `dbt Docs-style upstream and downstream lineage for ${resource.name}.`
+            ? undefined
             : `Exact upstream and downstream lineage for ${resource.name}.`
         }
         headerRight={displayMode === "focused" ? depthToolbar() : undefined}

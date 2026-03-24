@@ -3,7 +3,6 @@ import type { AnalysisState, StatusTone } from "@web/types";
 
 export type WorkspaceView = "overview" | "catalog" | "runs";
 
-export type CatalogDetailTab = "summary" | "lineage" | "sql";
 export type RunsTab = "results" | "timeline";
 export type RunsKind = "models" | "tests";
 
@@ -34,7 +33,6 @@ export interface AssetViewState {
   resourceTypes: Set<string>;
   resourceQuery: string;
   selectedResourceId: string | null;
-  detailTab: CatalogDetailTab;
   // Lineage depth settings — persisted in URL for link sharing.
   upstreamDepth: number;
   downstreamDepth: number;

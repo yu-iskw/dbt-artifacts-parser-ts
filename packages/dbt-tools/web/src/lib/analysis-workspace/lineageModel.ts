@@ -1,5 +1,6 @@
 import type { AnalysisState, ResourceNode } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "./constants";
+import { buildResourceTestStats } from "./explorerTree";
 import type { LensMode } from "./types";
 
 export type LineageDisplayMode = "summary" | "focused";
@@ -11,6 +12,8 @@ export interface LineageGraphNodeLayout {
   column: number;
   depth: number;
   side: "upstream" | "selected" | "downstream";
+  passCount: number;
+  failCount: number;
 }
 
 export interface LineageGraphModel {
@@ -356,10 +359,14 @@ export function buildLineageGraphModel({
     ),
     dependencyIndex,
   ).filter((entry) => entry.resources.length > 0);
+  const resourceTestStats = buildResourceTestStats(
+    Array.from(resourceById.values()),
+    dependencyIndex,
+  );
 
   const columnCount = columnNodes.length;
   const nodeWidth = displayMode === "summary" ? 176 : 212;
-  const nodeHeight = displayMode === "summary" ? 46 : 62;
+  const nodeHeight = displayMode === "summary" ? 58 : 74;
   const nodeRadius = displayMode === "summary" ? 14 : 18;
   const columnGap = displayMode === "summary" ? 104 : 160;
   const rowGap = displayMode === "summary" ? 24 : 40;
@@ -394,6 +401,7 @@ export function buildLineageGraphModel({
         upstreamMap,
         downstreamMap,
       );
+      const nodeStats = resourceTestStats.get(node.uniqueId);
       nodeLayouts.set(node.uniqueId, {
         resource: node,
         x,
@@ -401,6 +409,8 @@ export function buildLineageGraphModel({
         column: entry.column,
         depth,
         side,
+        passCount: nodeStats?.pass ?? 0,
+        failCount: (nodeStats?.fail ?? 0) + (nodeStats?.error ?? 0),
       });
     });
   });
@@ -542,6 +552,7 @@ export interface LensLegendItem {
   key: string;
   label: string;
   color: string;
+  borderColor?: string;
 }
 
 function capitalizeFirst(s: string): string {
@@ -580,13 +591,22 @@ export function getLensLegendItems(
       return types.map((type) => ({
         key: type,
         label: formatResourceLabel(type),
-        color: TYPE_LENS_SOLID[type] ?? "#8e97a6",
+        color: TYPE_LENS_FILLS[type] ?? TYPE_LENS_NEUTRAL,
+        borderColor: TYPE_LENS_SOLID[type] ?? "#8e97a6",
       }));
     }
     case "coverage":
       return [
-        { key: "documented", label: "Documented", color: "#2bb673" },
-        { key: "undocumented", label: "No description", color: "#d86066" },
+        {
+          key: "documented",
+          label: "Documented",
+          color: "var(--status-positive)",
+        },
+        {
+          key: "undocumented",
+          label: "No description",
+          color: "var(--status-danger)",
+        },
       ];
   }
 }

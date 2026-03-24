@@ -31,43 +31,43 @@
   --status-neutral: var(--slate);
   --status-neutral-soft: var(--slate-soft);
   /* dbt resource types */
-  --dbt-type-source: #77c043;
-  --dbt-type-source-soft: rgba(119, 192, 67, 0.24);
-  --dbt-type-seed: #7a5af8;
-  --dbt-type-seed-soft: rgba(122, 90, 248, 0.22);
-  --dbt-type-snapshot: #ff8b3d;
-  --dbt-type-snapshot-soft: rgba(255, 139, 61, 0.24);
-  --dbt-type-model: #00a6c7;
-  --dbt-type-model-soft: rgba(0, 166, 199, 0.24);
-  --dbt-type-semantic-model: #5b8def;
-  --dbt-type-semantic-model-soft: rgba(91, 141, 239, 0.24);
-  --dbt-type-metric: #ff5c93;
-  --dbt-type-metric-soft: rgba(255, 92, 147, 0.24);
-  --dbt-type-exposure: #ff7b54;
-  --dbt-type-exposure-soft: rgba(255, 123, 84, 0.24);
-  --dbt-type-test: #8e97a6;
-  --dbt-type-test-soft: rgba(142, 151, 166, 0.22);
-  --dbt-type-macro: #8a6f5a;
-  --dbt-type-macro-soft: rgba(138, 111, 90, 0.22);
-  --dbt-type-operation: #8a6f5a;
-  --dbt-type-operation-soft: rgba(138, 111, 90, 0.22);
-  --dbt-type-generic: #8e97a6;
-  --dbt-type-generic-soft: rgba(142, 151, 166, 0.2);
+  --dbt-type-source: #9adf53;
+  --dbt-type-source-soft: #33561f;
+  --dbt-type-seed: #b18dff;
+  --dbt-type-seed-soft: #4c3675;
+  --dbt-type-snapshot: #ffaf61;
+  --dbt-type-snapshot-soft: #7b441f;
+  --dbt-type-model: #2ac7e6;
+  --dbt-type-model-soft: #125c6c;
+  --dbt-type-semantic-model: #76a3ff;
+  --dbt-type-semantic-model-soft: #274d85;
+  --dbt-type-metric: #ff5f9c;
+  --dbt-type-metric-soft: #7d2a52;
+  --dbt-type-exposure: #ff8d69;
+  --dbt-type-exposure-soft: #7d3f2d;
+  --dbt-type-test: #d0d9e4;
+  --dbt-type-test-soft: #455363;
+  --dbt-type-macro: #d7a87a;
+  --dbt-type-macro-soft: #674933;
+  --dbt-type-operation: #ba93ff;
+  --dbt-type-operation-soft: #563e82;
+  --dbt-type-generic: #a6b4c6;
+  --dbt-type-generic-soft: #435061;
   /* Graph surfaces */
-  --graph-bg-top: #134f61;
-  --graph-bg-bottom: #103f4d;
-  --graph-bg-accent: rgba(47, 135, 159, 0.18);
-  --graph-panel: rgba(8, 42, 54, 0.72);
-  --graph-panel-hover: rgba(10, 49, 62, 0.88);
-  --graph-panel-active: rgba(235, 250, 255, 0.16);
-  --graph-border: rgba(176, 223, 237, 0.1);
-  --graph-border-strong: rgba(214, 242, 250, 0.24);
-  --graph-text: #f8fdff;
-  --graph-text-muted: rgba(225, 240, 246, 0.8);
-  --graph-text-soft: rgba(214, 234, 242, 0.72);
-  --graph-edge: rgba(88, 192, 220, 0.34);
-  --graph-hotspot: rgba(221, 247, 255, 0.5);
-  --graph-node-stroke: rgba(255, 255, 255, 0.18);
+  --graph-bg-top: #1b4052;
+  --graph-bg-bottom: #133140;
+  --graph-bg-accent: rgba(130, 182, 208, 0.16);
+  --graph-panel: rgba(34, 69, 87, 0.78);
+  --graph-panel-hover: rgba(41, 79, 99, 0.9);
+  --graph-panel-active: rgba(236, 248, 255, 0.18);
+  --graph-border: rgba(206, 232, 242, 0.16);
+  --graph-border-strong: rgba(239, 249, 255, 0.4);
+  --graph-text: #f7fbff;
+  --graph-text-muted: rgba(222, 236, 244, 0.84);
+  --graph-text-soft: rgba(198, 220, 230, 0.76);
+  --graph-edge: rgba(101, 190, 226, 0.38);
+  --graph-hotspot: rgba(226, 246, 255, 0.56);
+  --graph-node-stroke: rgba(255, 255, 255, 0.26);
   --graph-node-selected-stroke: rgba(255, 255, 255, 0.92);
   --radius-lg: 28px;
   --radius-md: 20px;
@@ -995,9 +995,9 @@ code {
 .catalog-detail-hero {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
-  padding: 1.1rem 1.2rem 0.2rem;
+  padding: 1.1rem 1.2rem 0.1rem;
 }
 
 .catalog-detail-hero h3 {
@@ -1401,6 +1401,12 @@ details.timeline-filter-accordion .timeline-controls {
 .results-table__body {
   /* Now a virtualized scroll container — layout is managed by @tanstack/react-virtual */
   overflow-y: auto;
+}
+
+.results-table__progress {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-soft);
 }
 
 .results-table__row {
@@ -2220,7 +2226,7 @@ details.timeline-filter-accordion .timeline-controls {
   border-radius: 14px;
   background: var(--graph-panel);
   border: 1px solid var(--graph-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .lineage-legend__mode-label {
@@ -2247,7 +2253,7 @@ details.timeline-filter-accordion .timeline-controls {
   height: 11px;
   border-radius: 3px;
   flex-shrink: 0;
-  border: 1px solid var(--graph-node-stroke);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Toolbar above graph */
@@ -2278,18 +2284,18 @@ details.timeline-filter-accordion .timeline-controls {
   overflow: auto;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top, var(--graph-bg-accent), transparent 34%),
+    radial-gradient(circle at top, var(--graph-bg-accent), transparent 30%),
     linear-gradient(
       180deg,
       var(--graph-bg-top) 0%,
-      color-mix(in srgb, var(--graph-bg-top) 55%, var(--graph-bg-bottom) 45%)
+      color-mix(in srgb, var(--graph-bg-top) 48%, var(--graph-bg-bottom) 52%)
         54%,
       var(--graph-bg-bottom) 100%
     );
   border: 1px solid var(--graph-border);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 20px 40px rgba(8, 33, 43, 0.16);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 20px 40px rgba(18, 38, 50, 0.16);
   cursor: grab;
   min-height: 360px;
   user-select: none;
@@ -2322,11 +2328,12 @@ details.timeline-filter-accordion .timeline-controls {
 
 .dependency-graph__node {
   stroke: var(--graph-node-stroke);
-  stroke-width: 1;
+  stroke-width: 1.15;
   transition:
     fill 220ms ease,
-    opacity 200ms ease;
-  filter: drop-shadow(0 8px 14px rgba(5, 26, 34, 0.16));
+    opacity 200ms ease,
+    stroke 160ms ease;
+  filter: drop-shadow(0 10px 18px rgba(4, 14, 19, 0.24));
 }
 
 .dependency-graph__node--selected {
@@ -2341,24 +2348,55 @@ details.timeline-filter-accordion .timeline-controls {
 /* Node text */
 .dependency-graph__node-label {
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   fill: var(--graph-text);
   pointer-events: none;
 }
 
 .dependency-graph--summary .dependency-graph__node-label {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .dependency-graph__node-meta {
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 10.5px;
-  fill: var(--graph-text-muted);
+  font-size: 11px;
+  fill: var(--graph-text-soft);
   pointer-events: none;
 }
 
 .dependency-graph--summary .dependency-graph__node-meta {
+  font-size: 10px;
+}
+
+.dependency-graph__node-stat-pill {
+  pointer-events: none;
+}
+
+.dependency-graph__node-stat-pill--pass {
+  fill: var(--status-positive-soft);
+}
+
+.dependency-graph__node-stat-pill--fail {
+  fill: var(--status-danger-soft);
+}
+
+.dependency-graph__node-stat {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.dependency-graph__node-stat--pass {
+  fill: var(--status-positive);
+}
+
+.dependency-graph__node-stat--fail {
+  fill: var(--status-danger);
+}
+
+.dependency-graph--summary .dependency-graph__node-stat {
   font-size: 9px;
 }
 
@@ -2366,12 +2404,12 @@ details.timeline-filter-accordion .timeline-controls {
 .dependency-graph__edge {
   fill: none;
   stroke: var(--graph-edge);
-  stroke-width: 1.8;
+  stroke-width: 2;
   transition: opacity 200ms ease;
 }
 
 .dependency-graph__edge--dimmed {
-  opacity: 0.12;
+  opacity: 0.16;
 }
 
 /* Interactive hotspot layer */
@@ -2445,7 +2483,7 @@ details.timeline-filter-accordion .timeline-controls {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.98);
   box-shadow:
-    0 16px 32px rgba(17, 24, 39, 0.14),
+    0 18px 36px rgba(17, 24, 39, 0.16),
     inset 0 0 0 1px rgba(35, 42, 52, 0.1);
   backdrop-filter: blur(16px);
   pointer-events: none;
@@ -2917,7 +2955,7 @@ details.timeline-filter-accordion .timeline-controls {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  padding: 0 0.75rem 0.6rem;
+  padding: 0.15rem 0.75rem 0.75rem;
   flex-shrink: 0;
 }
 
@@ -2933,6 +2971,88 @@ details.timeline-filter-accordion .timeline-controls {
   color: var(--text-soft);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.explorer-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0 0.75rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.explorer-filters__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(35, 42, 52, 0.08);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.explorer-filters__toggle:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(35, 42, 52, 0.12);
+}
+
+.explorer-filters__toggle-copy,
+.explorer-filters__toggle-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.explorer-filters__toggle-copy {
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.explorer-filters__toggle-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.explorer-filters__toggle-summary {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.explorer-filters__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.explorer-filters__chevron {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  transition: transform 140ms ease;
+}
+
+.explorer-filters__chevron--expanded {
+  transform: rotate(180deg);
 }
 
 /* Resource type summary bar */

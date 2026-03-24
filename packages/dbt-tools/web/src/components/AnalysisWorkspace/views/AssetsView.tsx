@@ -3,7 +3,6 @@ import { EmptyState } from "../../EmptyState";
 import type { AnalysisState, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
-  CatalogDetailTab,
   LensMode,
 } from "@web/lib/analysis-workspace/types";
 import { SectionCard, ResourceTypeBadge } from "../shared";
@@ -202,7 +201,6 @@ export function AssetsView({
 
   const dependencySummary = analysis.dependencyIndex[resource.uniqueId];
   const sqlText = resource.compiledCode ?? resource.rawCode;
-  const detailTab = assetViewState.detailTab;
   const detailSubtitle = (
     <div className="resource-detail__subtitle">
       <ResourceTypeBadge resourceType={resource.resourceType} />
@@ -211,11 +209,6 @@ export function AssetsView({
       </span>
     </div>
   );
-  const detailTabs: Array<{ value: CatalogDetailTab; label: string }> = [
-    { value: "summary", label: "Summary" },
-    { value: "lineage", label: "Lineage" },
-    { value: "sql", label: "SQL" },
-  ];
   const lineagePanelProps = {
     resource,
     dependencySummary,
@@ -240,116 +233,78 @@ export function AssetsView({
           <h3>{resource.name}</h3>
           {detailSubtitle}
         </div>
-        <div
-          className="workspace-segmented-control"
-          role="tablist"
-          aria-label="Catalog detail tab"
-        >
-          {detailTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              role="tab"
-              aria-selected={detailTab === tab.value}
-              className={
-                detailTab === tab.value
-                  ? "workspace-segmented-control__button workspace-segmented-control__button--active"
-                  : "workspace-segmented-control__button"
-              }
-              onClick={() =>
-                onAssetViewStateChange((current) => ({
-                  ...current,
-                  detailTab: tab.value,
-                }))
-              }
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </section>
 
-      {detailTab === "summary" && (
-        <>
-          <SectionCard
-            title="Asset summary"
-            subtitle="Core execution and discovery context for the selected asset."
-          >
-            <div className="detail-grid">
-              <div className="detail-stat">
-                <span>Status</span>
-                <strong>{resource.status ?? "Not executed"}</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Execution time</span>
-                <strong>{formatSeconds(resource.executionTime)}</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Thread</span>
-                <strong>{resource.threadId ?? "n/a"}</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Path</span>
-                <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Upstream</span>
-                <strong>{dependencySummary?.upstream.length ?? 0}</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Downstream</span>
-                <strong>{dependencySummary?.downstream.length ?? 0}</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Owner</span>
-                <strong>Not captured</strong>
-              </div>
-              <div className="detail-stat">
-                <span>Health</span>
-                <strong>{resource.status ?? "Unknown"}</strong>
-              </div>
-            </div>
-            {resource.description ? (
-              <p className="resource-spotlight__description">
-                {resource.description}
-              </p>
-            ) : (
-              <p className="resource-spotlight__description resource-spotlight__description--muted">
-                No description was captured for this asset. Catalog-oriented
-                metadata can surface here when present in the manifest.
-              </p>
-            )}
-          </SectionCard>
-
-          <LineagePanel {...lineagePanelProps} displayMode="summary" />
-        </>
-      )}
-
-      {detailTab === "lineage" && (
-        <LineagePanel {...lineagePanelProps} displayMode="focused" />
-      )}
-
-      {detailTab === "sql" &&
-        (sqlText ? (
-          <SectionCard
-            title="SQL"
-            subtitle={
-              resource.compiledCode
-                ? "Compiled SQL for the selected resource."
-                : "Raw SQL captured from the manifest."
-            }
-          >
-            <SqlPanel sql={sqlText} />
-          </SectionCard>
-        ) : (
-          <div className="workspace-card">
-            <EmptyState
-              icon="⌘"
-              headline="No SQL available"
-              subtext="This resource does not expose compiled or raw SQL in the current artifacts."
-            />
+      <SectionCard
+        title="Asset summary"
+        subtitle="Core execution and discovery context for the selected asset."
+      >
+        <div className="detail-grid">
+          <div className="detail-stat">
+            <span>Status</span>
+            <strong>{resource.status ?? "Not executed"}</strong>
           </div>
-        ))}
+          <div className="detail-stat">
+            <span>Execution time</span>
+            <strong>{formatSeconds(resource.executionTime)}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Thread</span>
+            <strong>{resource.threadId ?? "n/a"}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Path</span>
+            <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Upstream</span>
+            <strong>{dependencySummary?.upstream.length ?? 0}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Downstream</span>
+            <strong>{dependencySummary?.downstream.length ?? 0}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Owner</span>
+            <strong>Not captured</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Health</span>
+            <strong>{resource.status ?? "Unknown"}</strong>
+          </div>
+        </div>
+        {resource.description ? (
+          <p className="resource-spotlight__description">
+            {resource.description}
+          </p>
+        ) : (
+          <p className="resource-spotlight__description resource-spotlight__description--muted">
+            No description was captured for this asset. Catalog-oriented
+            metadata can surface here when present in the manifest.
+          </p>
+        )}
+      </SectionCard>
+
+      <LineagePanel {...lineagePanelProps} displayMode="summary" />
+
+      <SectionCard
+        title="SQL"
+        subtitle={
+          resource.compiledCode
+            ? "Compiled SQL for the selected resource."
+            : "Raw SQL captured from the manifest."
+        }
+      >
+        {sqlText ? (
+          <SqlPanel sql={sqlText} />
+        ) : (
+          <EmptyState
+            icon="⌘"
+            headline="No SQL available"
+            subtext="This resource does not expose compiled or raw SQL in the current artifacts."
+          />
+        )}
+      </SectionCard>
     </div>
   );
 }

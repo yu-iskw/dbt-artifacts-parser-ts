@@ -56,6 +56,18 @@ Replace the previous multi-view structure with three primary destinations:
 
 The sidebar may still expose familiar workflow labels such as `Assets`, `Lineage`, `Models`, `Tests`, and `Timeline` as grouped child links, provided they map into the `Catalog` and `Runs` architecture rather than reintroducing them as top-level view types.
 
+### Runs detail structure
+
+Runs is the execution-analysis center, but `Models` and `Tests` should not depend on eager visible rendering or eager main-thread filtering of the full result corpus.
+
+For large projects, these result surfaces should use a **queryable results store with incremental revelation**:
+
+- full-corpus counts remain available immediately
+- matching rows are revealed in batches as users scroll
+- heavy indexing and query work may run off the main thread while preserving the artifact-first model
+
+This keeps the product dbt-native and local-first without tying visible UI cost to total result volume.
+
 ### Catalog detail structure
 
 Catalog is the primary asset-inspection workspace. Selected assets should expose:
@@ -64,7 +76,9 @@ Catalog is the primary asset-inspection workspace. Selected assets should expose
 - lineage
 - SQL
 
-This keeps discovery and deep inspection in one place instead of forcing users to jump between unrelated top-level pages.
+These should be presented as a **unified inspection page with stacked sections**, not as tabbed sub-surfaces.
+
+This keeps discovery and deep inspection in one place instead of forcing users to jump between unrelated top-level pages or mode-switch inside a single asset.
 
 ### Visual direction
 
@@ -93,13 +107,17 @@ flowchart TB
     end
 
     subgraph CatalogDetail["Catalog detail"]
-        Summary["Summary"]
-        Lineage["Lineage"]
-        SQL["SQL"]
+        AssetPage["Unified asset page"]
+        Summary["Summary section"]
+        Lineage["Lineage section"]
+        SQL["SQL section"]
     end
 
     subgraph RunsDetail["Runs detail"]
-        Results["Results"]
+        Results["Results shell"]
+        ResultStore["Queryable results store"]
+        Worker["Worker-backed index/query"]
+        Reveal["Incremental reveal (100 at a time)"]
         Timeline["Timeline"]
     end
 
@@ -111,10 +129,14 @@ flowchart TB
     Sidebar --> Overview
     Sidebar --> Catalog
     Sidebar --> Runs
-    Catalog --> Summary
-    Catalog --> Lineage
-    Catalog --> SQL
+    Catalog --> AssetPage
+    AssetPage --> Summary
+    AssetPage --> Lineage
+    AssetPage --> SQL
     Runs --> Results
+    Results --> ResultStore
+    ResultStore --> Worker
+    ResultStore --> Reveal
     Runs --> Timeline
     Analyze --> Overview
     Analyze --> Catalog
@@ -142,7 +164,9 @@ flowchart TB
 
 - The app has a clearer product story for mixed data teams.
 - Catalog becomes a durable home for metadata, lineage, and future trust fields.
+- Asset inspection becomes a continuous workflow instead of a tabbed mini-app.
 - Runs becomes a single execution-analysis center instead of several disconnected destinations.
+- Runs results can scale without eager visible rendering of the full corpus.
 - The redesign stays compatible with the existing artifact-first architecture.
 
 ### Negative

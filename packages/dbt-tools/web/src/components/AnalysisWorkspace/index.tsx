@@ -1,6 +1,5 @@
 export type {
   WorkspaceView,
-  CatalogDetailTab,
   DashboardStatusFilter,
   AssetExplorerMode,
   OverviewFilterState,

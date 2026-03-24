@@ -1,6 +1,30 @@
 import { describe, it, expect } from "vitest";
-import { clampDepth, collectDependencyIdsByDepth } from "./lineageModel";
+import type { ResourceNode } from "@web/types";
+import {
+  TYPE_LENS_FILLS,
+  buildLineageGraphModel,
+  clampDepth,
+  collectDependencyIdsByDepth,
+  getLensLegendItems,
+} from "./lineageModel";
 import type { DependencyIndex } from "./lineageModel";
+
+function makeResource(overrides: Partial<ResourceNode> = {}): ResourceNode {
+  return {
+    uniqueId: overrides.uniqueId ?? "model.jaffle_shop.orders",
+    name: overrides.name ?? "orders",
+    resourceType: overrides.resourceType ?? "model",
+    packageName: overrides.packageName ?? "jaffle_shop",
+    path: overrides.path ?? "models/orders.sql",
+    originalFilePath: overrides.originalFilePath ?? "models/orders.sql",
+    description: overrides.description ?? null,
+    status: overrides.status ?? "success",
+    statusTone: overrides.statusTone ?? "positive",
+    executionTime: overrides.executionTime ?? 1.2,
+    threadId: overrides.threadId ?? "Thread-1",
+    ...overrides,
+  };
+}
 
 describe("clampDepth", () => {
   it("clamps below 0", () => expect(clampDepth(-1)).toBe(0));
@@ -36,5 +60,110 @@ describe("collectDependencyIdsByDepth", () => {
     );
     expect([...result.keys()]).toContain("model.p.a");
     expect(result.get("model.p.a")).toBe(1);
+  });
+});
+
+describe("buildLineageGraphModel", () => {
+  it("attaches aggregated pass and fail counts to lineage nodes", () => {
+    const resource = makeResource();
+    const passTest = makeResource({
+      uniqueId: "test.jaffle_shop.unique_orders",
+      name: "unique_orders",
+      resourceType: "test",
+      path: "models/orders.yml",
+      originalFilePath: "models/orders.yml",
+      statusTone: "positive",
+      status: "pass",
+    });
+    const failTest = makeResource({
+      uniqueId: "test.jaffle_shop.not_null_orders",
+      name: "not_null_orders",
+      resourceType: "test",
+      path: "models/orders.yml",
+      originalFilePath: "models/orders.yml",
+      statusTone: "danger",
+      status: "error",
+    });
+
+    const dependencyIndex: DependencyIndex = {
+      [resource.uniqueId]: {
+        upstreamCount: 0,
+        downstreamCount: 0,
+        upstream: [],
+        downstream: [],
+      },
+      [passTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: [
+          {
+            uniqueId: resource.uniqueId,
+            name: resource.name,
+            resourceType: resource.resourceType,
+            depth: 1,
+          },
+        ],
+        downstream: [],
+      },
+      [failTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: [
+          {
+            uniqueId: resource.uniqueId,
+            name: resource.name,
+            resourceType: resource.resourceType,
+            depth: 1,
+          },
+        ],
+        downstream: [],
+      },
+    };
+
+    const model = buildLineageGraphModel({
+      resource,
+      dependencySummary: dependencyIndex[resource.uniqueId],
+      dependencyIndex,
+      resourceById: new Map([
+        [resource.uniqueId, resource],
+        [passTest.uniqueId, passTest],
+        [failTest.uniqueId, failTest],
+      ]),
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      displayMode: "summary",
+    });
+
+    expect(model.nodeLayouts.get(resource.uniqueId)?.passCount).toBe(1);
+    expect(model.nodeLayouts.get(resource.uniqueId)?.failCount).toBe(1);
+  });
+});
+
+describe("getLensLegendItems", () => {
+  it("uses the same fill tokens for type legend swatches as graph nodes", () => {
+    const resource = makeResource();
+    const model = buildLineageGraphModel({
+      resource,
+      dependencySummary: {
+        upstreamCount: 0,
+        downstreamCount: 0,
+        upstream: [],
+        downstream: [],
+      },
+      dependencyIndex: {},
+      resourceById: new Map([[resource.uniqueId, resource]]),
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      displayMode: "summary",
+    });
+
+    expect(getLensLegendItems("type", model.nodeLayouts)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "model",
+          color: TYPE_LENS_FILLS.model,
+        }),
+      ]),
+    );
   });
 });

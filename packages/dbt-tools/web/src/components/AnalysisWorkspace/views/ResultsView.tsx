@@ -1,25 +1,16 @@
-import {
-  type Dispatch,
-  type SetStateAction,
-  useDeferredValue,
-  useRef,
-} from "react";
+import { type Dispatch, type SetStateAction, useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { EmptyState } from "../../EmptyState";
 import type { ExecutionRow } from "@web/types";
-import {
-  PILL_ACTIVE,
-  PILL_BASE,
-  TEST_RESOURCE_TYPES,
-} from "@web/lib/analysis-workspace/constants";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import type {
   DashboardStatusFilter,
   ResultsFilterState,
   TimelineFilterState,
   RunsKind,
 } from "@web/lib/analysis-workspace/types";
+import type { ResultsStatusCounts } from "@web/lib/analysis-workspace/resultsDataSource";
 import {
-  matchesExecution,
   formatSeconds,
   badgeClassName,
 } from "@web/lib/analysis-workspace/utils";
@@ -29,59 +20,80 @@ export type ResultTab = "models" | "tests";
 
 /** Self-contained results view for a single tab — driven by the nav view. */
 export function ResultsView({
-  allRows,
+  rows,
   tab,
   filters,
   setFilters,
+  counts,
+  totalMatches,
+  totalVisible,
+  hasMore,
+  isLoading,
+  isIndexing,
+  error,
+  onLoadMore,
   onTabChange,
 }: {
-  allRows: ExecutionRow[];
+  rows: ExecutionRow[];
   tab: RunsKind;
   filters: ResultsFilterState;
   setFilters: Dispatch<SetStateAction<ResultsFilterState>>;
+  counts: ResultsStatusCounts;
+  totalMatches: number;
+  totalVisible: number;
+  hasMore: boolean;
+  isLoading: boolean;
+  isIndexing: boolean;
+  error: string | null;
+  onLoadMore: () => void;
   onTabChange?: (tab: RunsKind) => void;
 }) {
-  const deferredQuery = useDeferredValue(filters.query);
   const resultsBodyRef = useRef<HTMLDivElement>(null);
-
-  const tabRows = allRows.filter((row) =>
-    tab === "tests"
-      ? TEST_RESOURCE_TYPES.has(row.resourceType)
-      : !TEST_RESOURCE_TYPES.has(row.resourceType),
-  );
-
-  const filteredRows = tabRows
-    .filter(
-      (row) => filters.status === "all" || row.statusTone === filters.status,
-    )
-    .filter((row) => matchesExecution(row, deferredQuery));
 
   // TanStack Virtual exposes functions that React Compiler cannot memoize safely; upstream pattern.
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
   const virtualizer = useVirtualizer({
-    count: filteredRows.length,
+    count: rows.length,
     getScrollElement: () => resultsBodyRef.current,
     estimateSize: () => 76,
     overscan: 10,
   });
 
+  useEffect(() => {
+    const scrollElement = resultsBodyRef.current;
+    if (!scrollElement) return;
+    const maybeLoadMore = () => {
+      const remaining =
+        scrollElement.scrollHeight -
+        scrollElement.scrollTop -
+        scrollElement.clientHeight;
+      if (remaining < 220 && hasMore && !isLoading && !isIndexing) {
+        onLoadMore();
+      }
+    };
+    scrollElement.addEventListener("scroll", maybeLoadMore);
+    maybeLoadMore();
+    return () => scrollElement.removeEventListener("scroll", maybeLoadMore);
+  }, [hasMore, isIndexing, isLoading, onLoadMore, rows.length]);
+
   const filterLabels = [
-    { value: "all", label: `All (${tabRows.length})` },
+    { value: "all", label: `All (${counts.all})` },
     {
       value: "positive",
-      label: `Healthy (${tabRows.filter((r) => r.statusTone === "positive").length})`,
+      label: `Healthy (${counts.positive})`,
     },
     {
       value: "warning",
-      label: `Warnings (${tabRows.filter((r) => r.statusTone === "warning").length})`,
+      label: `Warnings (${counts.warning})`,
     },
     {
       value: "danger",
-      label: `Errors (${tabRows.filter((r) => r.statusTone === "danger").length})`,
+      label: `Errors (${counts.danger})`,
     },
   ];
 
   const isTestTab = tab === "tests";
+  const hasRowsInTab = counts.all > 0;
 
   return (
     <div className="workspace-view">
@@ -165,7 +177,7 @@ export function ResultsView({
             ref={resultsBodyRef}
             className="results-table__body"
             style={{
-              height: Math.min(560, Math.max(120, filteredRows.length * 76)),
+              height: Math.min(560, Math.max(120, rows.length * 76)),
               overflowY: "auto",
               position: "relative",
             }}
@@ -177,7 +189,8 @@ export function ResultsView({
               }}
             >
               {virtualizer.getVirtualItems().map((virtualRow) => {
-                const row = filteredRows[virtualRow.index];
+                const row = rows[virtualRow.index];
+                if (!row) return null;
                 return (
                   <div
                     key={row.uniqueId}
@@ -207,8 +220,20 @@ export function ResultsView({
               })}
             </div>
 
-            {filteredRows.length === 0 &&
-              (tabRows.length === 0 ? (
+            {rows.length === 0 &&
+              (error ? (
+                <EmptyState
+                  icon="⚠"
+                  headline="Could not load result rows"
+                  subtext={error}
+                />
+              ) : isIndexing || isLoading ? (
+                <EmptyState
+                  icon="⏳"
+                  headline="Loading result rows"
+                  subtext="Preparing the current result slice."
+                />
+              ) : !hasRowsInTab ? (
                 <EmptyState
                   icon={isTestTab ? "🧪" : "📋"}
                   headline={
@@ -231,6 +256,10 @@ export function ResultsView({
               ))}
           </div>
         </div>
+        <p className="results-table__progress">
+          Showing {totalVisible} of {totalMatches} matching rows
+          {hasMore ? " · scroll to load more" : ""}
+        </p>
       </SectionCard>
     </div>
   );
