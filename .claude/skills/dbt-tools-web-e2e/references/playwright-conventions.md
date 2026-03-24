@@ -5,13 +5,16 @@ Source of truth: [`packages/dbt-tools/web/playwright.config.ts`](../../../../pac
 ## Server and base URL
 
 - **`baseURL`:** `http://localhost:4173`
-- **`webServer`:** `pnpm exec vite build && pnpm exec vite preview` in the web package (working directory is the package when Playwright runs from there).
+- **`webServer`:** `vite preview` on port `4173` only (see config). **`dist/` must exist** before preview starts—run `pnpm build` (or `pnpm --filter @dbt-tools/web build`) first. The GitHub **Test** workflow builds the monorepo before the sharded E2E jobs.
 - Tests always hit the **preview** server. Do not assume HMR, dev-only env, or behaviors that differ between `pnpm dev` and `vite preview` unless you explicitly verify both.
 
 ## Projects and reporting
 
 - **Browser project:** Chromium (`Desktop Chrome`) only.
-- **Parallelism:** `fullyParallel: true`; in CI, `workers: 1`, `retries: 2`.
+- **Parallelism:** `fullyParallel: true`. **`workers`:** Playwright’s default locally; in CI, **2** workers to avoid overloading the single `vite preview` process (raise only after profiling).
+- **Retries:** `1` in CI, `0` locally — balances flake tolerance vs wall time on failures.
+- **Reporters:** `github` + `line` when `CI` is set; `html` locally.
+- **CI:** `.github/workflows/test.yml` runs E2E in **two shards** (`--shard=1/2`, `--shard=2/2`), each with its own `webServer`, plus a **Playwright browser cache** on `~/.cache/ms-playwright`.
 - **Traces:** `trace: "on-first-retry"` — useful when debugging flakes in CI.
 
 ## Selector priority
@@ -26,8 +29,13 @@ Avoid long CSS selectors tied to layout or third-party class names.
 ## Waits and timeouts
 
 - Prefer **`expect(locator).toBeVisible()`** and other `expect` auto-waiting assertions over fixed sleeps.
-- Use explicit **`timeout`** on `expect` when the app performs heavy work (e.g. large artifact parse); keep values realistic.
+- Use explicit **`timeout`** on `expect` when the app performs heavy work (e.g. large artifact parse, virtualized tables, canvas). Keep **`loadWorkspace`**’s Overview button wait at **30s**; it also asserts the **Overview** header within **10s** after navigation.
 - Avoid `page.waitForTimeout` except as a last resort; if used, comment why a condition-based wait is impossible.
+
+## Preload and explorer helpers
+
+- [`e2e/helpers/preload.ts`](../../../../packages/dbt-tools/web/e2e/helpers/preload.ts) registers `/api/*` mocks with **`page.route`** (Vite preview + Playwright). **`mockPreloadContext`** applies the same handlers to each **existing** `Page` on a `BrowserContext`; new pages still need **`mockPreload(page)`** before navigating to the app.
+- Catalog **explorer filters** (search box, execution status pills) start **collapsed** — expand the **Explorer filters** region first when a spec targets those controls.
 
 ## Anti-patterns
 

@@ -3,25 +3,19 @@ import { loadWorkspace } from "./helpers/preload";
 
 /** Duplicated string literals consolidated for sonarjs/no-duplicate-string */
 const APP_SIDEBAR = "#app-sidebar";
-const HEADING_RUN_ANALYSIS = "Run analysis";
-
+/** Primary sidebar items — `heading` matches app header/workspace toolbar title (`activeNavigationItem.label`). */
 const NAV_VIEWS = [
-  { label: "Overview", heading: "Run overview" },
-  { label: "Catalog", heading: "Catalog workspace" },
-  { label: "Runs", heading: HEADING_RUN_ANALYSIS },
-] as const;
-const NAV_CHILDREN = [
-  "Assets",
-  "Lineage",
-  "Models",
-  "Tests",
-  "Timeline",
+  { label: "Overview", heading: "Overview" },
+  { label: "Assets", heading: "Assets" },
+  { label: "Models", heading: "Models" },
+  { label: "Tests", heading: "Tests" },
+  { label: "Timeline", heading: "Timeline" },
 ] as const;
 const SIDEBAR_COLLAPSE_LABEL = "Collapse sidebar";
 const SIDEBAR_EXPAND_LABEL = "Expand sidebar";
 
 test.describe("sidebar navigation", () => {
-  test("all 3 nav buttons are visible", async ({ page }) => {
+  test("all primary nav buttons are visible", async ({ page }) => {
     await page.goto("/");
     for (const { label } of NAV_VIEWS) {
       await expect(
@@ -32,15 +26,13 @@ test.describe("sidebar navigation", () => {
     }
   });
 
-  test("expanded sidebar shows grouped child links", async ({ page }) => {
+  test("expanded sidebar shows primary nav entries", async ({ page }) => {
     await loadWorkspace(page);
     await page.getByRole("button", { name: SIDEBAR_EXPAND_LABEL }).click();
 
-    for (const label of NAV_CHILDREN) {
+    for (const { label } of NAV_VIEWS) {
       await expect(
-        page
-          .locator(APP_SIDEBAR)
-          .getByRole("button", { name: label, exact: true }),
+        page.locator(APP_SIDEBAR).getByText(label, { exact: true }).first(),
       ).toBeVisible();
     }
   });
@@ -78,23 +70,19 @@ test.describe("sidebar navigation", () => {
       // multiple levels (h1 app header, h2 workspace toolbar, h3 section card).
       await expect(
         page.getByRole("heading", { name: heading }).first(),
-      ).toBeVisible({
-        timeout: 5_000,
-      });
+      ).toBeVisible({ timeout: 10_000 });
     }
   });
 
   test("view transitions update the URL ?view param", async ({ page }) => {
     await loadWorkspace(page);
 
-    const views = ["catalog", "runs", "overview"] as const;
-    for (const view of views) {
-      const label =
-        NAV_VIEWS.find(
-          (v) =>
-            v.label.toLowerCase() === view ||
-            (v.label === "Overview" && view === "overview"),
-        )?.label ?? view.charAt(0).toUpperCase() + view.slice(1);
+    const steps = [
+      { view: "catalog", label: "Assets" as const },
+      { view: "runs", label: "Models" as const },
+      { view: "overview", label: "Overview" as const },
+    ];
+    for (const { view, label } of steps) {
       await page
         .locator(APP_SIDEBAR)
         .getByRole("button", { name: label, exact: true })
@@ -105,7 +93,7 @@ test.describe("sidebar navigation", () => {
     }
   });
 
-  test("child links deep-link to the correct parent state", async ({
+  test("primary sidebar entries deep-link views and runs state", async ({
     page,
   }) => {
     await loadWorkspace(page);
@@ -116,14 +104,6 @@ test.describe("sidebar navigation", () => {
       .getByRole("button", { name: "Assets", exact: true })
       .click();
     await expect(page).toHaveURL(/view=catalog/);
-    await expect(page).toHaveURL(/tab=summary/);
-
-    await page
-      .locator(APP_SIDEBAR)
-      .getByRole("button", { name: "Lineage", exact: true })
-      .click();
-    await expect(page).toHaveURL(/view=catalog/);
-    await expect(page).toHaveURL(/tab=lineage/);
 
     await page
       .locator(APP_SIDEBAR)
@@ -167,18 +147,11 @@ test.describe("sidebar navigation", () => {
     expect(stored).toBe("true");
   });
 
-  test("collapsed sidebar hides child links", async ({ page }) => {
+  test("sidebar starts collapsed after workspace load", async ({ page }) => {
     await loadWorkspace(page);
     await expect(
-      page
-        .locator(APP_SIDEBAR)
-        .getByRole("button", { name: "Assets", exact: true }),
-    ).not.toBeVisible();
-    await expect(
-      page
-        .locator(APP_SIDEBAR)
-        .getByRole("button", { name: "Timeline", exact: true }),
-    ).not.toBeVisible();
+      page.locator(`${APP_SIDEBAR}.app-sidebar--collapsed`),
+    ).toBeVisible();
   });
 
   test("sidebar expanded state persists across reload", async ({ page }) => {
@@ -208,19 +181,18 @@ test.describe("sidebar navigation", () => {
     // Use the sidebar nav label selector to avoid matching tree branch buttons
     await page
       .locator(APP_SIDEBAR)
-      .getByRole("button", { name: "Catalog", exact: true })
+      .getByRole("button", { name: "Assets", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Catalog workspace" }),
+      page.getByRole("heading", { name: "Assets" }).first(),
     ).toBeVisible();
 
-    // Navigate to Runs via the sidebar.
     await page
       .locator(APP_SIDEBAR)
-      .getByRole("button", { name: "Runs", exact: true })
+      .getByRole("button", { name: "Models", exact: true })
       .click();
     await expect(
-      page.getByRole("heading", { name: HEADING_RUN_ANALYSIS }),
+      page.getByRole("heading", { name: "Models" }).first(),
     ).toBeVisible();
 
     await page.goBack();
@@ -235,14 +207,13 @@ test.describe("sidebar navigation", () => {
     await expect(
       page
         .locator(APP_SIDEBAR)
-        .getByRole("button", { name: "Runs", exact: true }),
+        .getByRole("button", { name: "Timeline", exact: true }),
     ).toBeEnabled({ timeout: 30_000 });
     await expect(
-      page.getByRole("heading", { name: HEADING_RUN_ANALYSIS }),
+      page.getByRole("heading", { name: "Timeline" }).first(),
     ).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("tab", { name: "Timeline" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    await expect(
+      page.getByRole("heading", { name: "Execution timeline" }).first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });

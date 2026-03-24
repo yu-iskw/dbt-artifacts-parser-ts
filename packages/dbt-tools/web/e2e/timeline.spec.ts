@@ -7,22 +7,16 @@ const LEGEND_ITEM_SELECTOR = ".gantt-legend__item";
 test.describe("timeline / Gantt chart view", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
-    await page.getByRole("button", { name: "Runs" }).click();
-    await page.getByRole("tab", { name: "Timeline" }).click();
+    await page.getByRole("button", { name: "Timeline", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "Run analysis" }).first(),
+      page.getByRole("heading", { name: "Timeline" }).first(),
     ).toBeVisible();
   });
 
-  test("shows 'Execution timeline' section heading", async ({ page }) => {
-    // Use .first() because "Execution timeline" appears at both h1 (app header)
-    // and h3 (SectionCard inside TimelineView).
+  test("shows execution timeline heading and subtitle", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: "Execution timeline" }).first(),
     ).toBeVisible();
-  });
-
-  test("shows subtitle text", async ({ page }) => {
     await expect(
       page.getByText("Relative start and duration for each executed node."),
     ).toBeVisible();
@@ -45,16 +39,11 @@ test.describe("timeline / Gantt chart view", () => {
     await expect(canvas).toBeVisible({ timeout: 10_000 });
   });
 
-  test("legend shows Status section", async ({ page }) => {
+  test("Gantt legend shows Status and Type sections with items", async ({
+    page,
+  }) => {
     await expect(page.getByText("Status").first()).toBeVisible();
-  });
-
-  test("legend shows Type section", async ({ page }) => {
     await expect(page.getByText("Type").first()).toBeVisible();
-  });
-
-  test("legend status buttons are visible", async ({ page }) => {
-    // At least one status legend item rendered
     await expect(page.locator(LEGEND_ITEM_SELECTOR).first()).toBeVisible({
       timeout: 5_000,
     });

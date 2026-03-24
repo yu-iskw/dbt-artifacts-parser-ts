@@ -38,7 +38,7 @@ This skill covers **deterministic** automation (specs + CI-style runs). It does 
 
 ## Preview build constraint
 
-Playwright starts **`vite build` + `vite preview`** (see `playwright.config.ts`), so tests exercise the **production preview** bundle on `http://localhost:4173`, not `pnpm dev`.
+Playwright starts **`vite preview`** on `http://localhost:4173` (see `playwright.config.ts`). **`dist/` must already exist**—run `pnpm build` / `pnpm --filter @dbt-tools/web build` first, or rely on the **Test** workflow which builds before E2E. Tests exercise the **production preview** bundle, not `pnpm dev`.
 
 Some flows may **fail or be skipped** in preview while they work in dev—for example, code paths that assume Node `require` or dev-only bundling. Do **not** remove `test.skip` or weaken assertions without **fixing the underlying preview/bundle issue**. Document new skips with a short comment pointing to the root cause.
 
