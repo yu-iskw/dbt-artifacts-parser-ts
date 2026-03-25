@@ -6,11 +6,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const MANIFEST_PATH = path.resolve(
   __dirname,
-  "../../../../dbt-artifacts-parser/resources/manifest/v12/jaffle_shop/manifest_1.10.json",
+  "../../../../dbt-artifacts-parser/resources/manifest/v12/jaffle_shop/manifest_1.11.json",
 );
 export const RUN_RESULTS_PATH = path.resolve(
   __dirname,
-  "../../../../dbt-artifacts-parser/resources/run_results/v6/jaffle_shop/run_results.json",
+  "../../../../dbt-artifacts-parser/resources/run_results/v6/jaffle_shop/run_results_1.11.json",
 );
 
 /** Register `/api/*` mocks on a single page (reliable with Vite preview; use before `goto`). */

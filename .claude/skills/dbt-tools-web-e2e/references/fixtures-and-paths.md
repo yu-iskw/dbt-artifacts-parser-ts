@@ -6,10 +6,10 @@ Specs live under `packages/dbt-tools/web/e2e/`. Resolve paths from the spec file
 
 Used by [`analyze-flow.spec.ts`](../../../../packages/dbt-tools/web/e2e/analyze-flow.spec.ts):
 
-| Role           | Path (from repo root)                                                                 |
-| -------------- | ------------------------------------------------------------------------------------- |
-| Manifest v12   | `packages/dbt-artifacts-parser/resources/manifest/v12/jaffle_shop/manifest_1.10.json` |
-| Run results v6 | `packages/dbt-artifacts-parser/resources/run_results/v6/jaffle_shop/run_results.json` |
+| Role           | Path (from repo root)                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------ |
+| Manifest v12   | `packages/dbt-artifacts-parser/resources/manifest/v12/jaffle_shop/manifest_1.11.json`      |
+| Run results v6 | `packages/dbt-artifacts-parser/resources/run_results/v6/jaffle_shop/run_results_1.11.json` |
 
 Resolve from `e2e/` with enough `..` segments to reach the repo layout (see existing spec for the exact `path.resolve` pattern).
 
