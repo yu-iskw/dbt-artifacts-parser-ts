@@ -1,13 +1,16 @@
 import type { AnalysisState, StatusTone } from "@web/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
+import type { AssetTab, WorkspaceView } from "@web/lib/analysis-workspace/types";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import { EmptyState } from "../../../EmptyState";
 import { OverviewScopeBadge } from "./OverviewPanel";
 
 export function OverviewAttentionCard({
   derived,
+  onNavigateTo,
 }: {
   derived: OverviewDerivedState;
+  onNavigateTo?: (view: WorkspaceView) => void;
 }) {
   const tone: StatusTone =
     derived.failingNodes > 0
@@ -43,6 +46,17 @@ export function OverviewAttentionCard({
         </div>
         <p>{followup}</p>
       </div>
+      {onNavigateTo && (
+        <div className="overview-module__footer">
+          <button
+            type="button"
+            className="overview-module__cta"
+            onClick={() => onNavigateTo("runs")}
+          >
+            Open Runs →
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -52,11 +66,13 @@ export function OverviewActionListCard({
   title = "Bottlenecks",
   subtitle = "Longest-running nodes in the filtered execution slice.",
   embedded = false,
+  onNavigateTo,
 }: {
   derived: OverviewDerivedState;
   title?: string;
   subtitle?: string;
   embedded?: boolean;
+  onNavigateTo?: (view: WorkspaceView) => void;
 }) {
   const topRows = derived.topBottlenecks;
 
@@ -97,6 +113,17 @@ export function OverviewActionListCard({
           subtext="No executions match the current dashboard filters."
         />
       )}
+      {onNavigateTo && !embedded && (
+        <div className="overview-module__footer">
+          <button
+            type="button"
+            className="overview-module__cta"
+            onClick={() => onNavigateTo("timeline")}
+          >
+            Open Timeline →
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -104,9 +131,14 @@ export function OverviewActionListCard({
 export function OverviewCriticalPathCard({
   analysis,
   filtered,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   filtered: boolean;
+  onNavigateTo?: (
+    view: WorkspaceView,
+    options?: { assetTab?: AssetTab },
+  ) => void;
 }) {
   const criticalPathLength = analysis.summary.critical_path?.path.length ?? 0;
 
@@ -133,6 +165,17 @@ export function OverviewCriticalPathCard({
           <strong>{analysis.graphSummary.totalEdges}</strong>
         </div>
       </div>
+      {onNavigateTo && (
+        <div className="overview-module__footer">
+          <button
+            type="button"
+            className="overview-module__cta"
+            onClick={() => onNavigateTo("inventory", { assetTab: "lineage" })}
+          >
+            Open Lineage →
+          </button>
+        </div>
+      )}
     </section>
   );
 }

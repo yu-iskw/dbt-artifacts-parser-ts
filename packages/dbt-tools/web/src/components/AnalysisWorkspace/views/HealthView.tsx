@@ -11,7 +11,7 @@ import type {
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { hasOverviewFilters } from "@web/lib/analysis-workspace/utils";
 import { EmptyState } from "../../EmptyState";
-import { OverviewStatusBanner } from "./overview/OverviewBanner";
+import { RunSummaryStrip } from "./overview/OverviewBanner";
 import {
   OverviewActionListCard,
   OverviewAttentionCard,
@@ -24,14 +24,16 @@ import { GraphCompositionCard } from "./overview/GraphCompositionCard";
 import { OverviewExecutionContextBand } from "./overview/OverviewExecutionContextBand";
 
 /**
- * Health — the primary "what needs attention now?" lens.
+ * Health — four-band triage-first layout.
  *
- * This replaces the old Overview page with a cleaner information hierarchy:
- *   1. Hero strip   — workspace-level posture signals (moved from App shell)
- *   2. Run status   — banner with health title and filter controls
- *   3. Primary grid — Attention | Bottlenecks | Critical Path
- *   4. Status chart — execution donut (supporting context)
- *   5. Structural   — Coverage + graph composition (passive/bottom)
+ *   Band 1 — Compact lens header    (title, desc)
+ *   Band 2 — Run summary strip      (posture, runtime, source, per-type counts)
+ *   Band 3 — Triage band            (Attention | Bottlenecks | Critical path)
+ *                                    each with embedded contextual navigation CTAs
+ *   Band 4 — Supporting evidence    (filters → execution breakdown → context → structure)
+ *
+ * Navigation strategy: contextual "Open X" actions live inside the module that
+ * motivates that drilldown. No standalone quick-nav button rows.
  */
 export function HealthView({
   analysis,
@@ -39,7 +41,7 @@ export function HealthView({
   analysisSource,
   filters,
   setFilters,
-  workspaceSignals,
+  workspaceSignals: _workspaceSignals,
   onNavigateTo,
 }: {
   analysis: AnalysisState;
@@ -86,10 +88,9 @@ export function HealthView({
 
   return (
     <div className="workspace-view health-view">
-      {/* ── Layer B: Lens header ── */}
+      {/* ── Band 1: Compact lens header ── */}
       <div className="lens-header">
         <div className="lens-header__title">
-          <p className="eyebrow">Workspace lens</p>
           <h2>Health</h2>
           <p className="lens-header__desc">
             Run posture, critical issues, and dependency pressure at a glance.
@@ -98,32 +99,42 @@ export function HealthView({
         {filtered && <span className="lens-header__badge">Filtered view</span>}
       </div>
 
-      {/* ── Hero strip: workspace-level signals ── */}
-      {workspaceSignals.length > 0 && (
-        <section className="health-hero-strip" aria-label="Workspace signals">
-          {workspaceSignals.map((signal) => (
-            <article
-              key={signal.label}
-              className={`signal-card signal-card--${signal.tone}`}
-            >
-              <p className="signal-card__label">{signal.label}</p>
-              <strong>{signal.value}</strong>
-              <span>{signal.detail}</span>
-            </article>
-          ))}
-        </section>
-      )}
+      {/* ── Band 2: Run summary strip ── */}
+      <RunSummaryStrip
+        analysis={analysis}
+        projectName={projectName}
+        analysisSource={analysisSource}
+        derived={derived}
+        filtered={filtered}
+      />
 
-      {/* ── Run status banner + filters ── */}
-      <section className="health-section health-section--status">
-        <OverviewStatusBanner
-          analysis={analysis}
-          projectName={projectName}
-          analysisSource={analysisSource}
-          derived={derived}
-          filtered={filtered}
-          embedded
-        />
+      {/* ── Band 3: Triage band — the primary decision row ── */}
+      <section className="health-grid" aria-label="Run triage">
+        <div className="health-grid__col health-grid__col--attention">
+          <OverviewAttentionCard
+            derived={derived}
+            onNavigateTo={onNavigateTo}
+          />
+        </div>
+        <div className="health-grid__col health-grid__col--bottlenecks">
+          <OverviewActionListCard
+            derived={derived}
+            onNavigateTo={onNavigateTo}
+          />
+        </div>
+        <div className="health-grid__col health-grid__col--critical">
+          <OverviewCriticalPathCard
+            analysis={analysis}
+            filtered={filtered}
+            onNavigateTo={onNavigateTo}
+          />
+        </div>
+      </section>
+
+      {/* ── Band 4: Supporting evidence ── */}
+
+      {/* 4a — Filter controls */}
+      <section className="health-section health-section--filters">
         <OverviewFilterBar
           filters={filters}
           setFilters={setFilters}
@@ -132,53 +143,7 @@ export function HealthView({
         />
       </section>
 
-      {/* ── Primary 3-column triage grid ── */}
-      <section className="health-grid" aria-label="Run triage">
-        <div className="health-grid__col health-grid__col--attention">
-          <OverviewAttentionCard derived={derived} />
-        </div>
-        <div className="health-grid__col health-grid__col--bottlenecks">
-          <OverviewActionListCard derived={derived} />
-        </div>
-        <div className="health-grid__col health-grid__col--critical">
-          <OverviewCriticalPathCard analysis={analysis} filtered={filtered} />
-        </div>
-      </section>
-
-      <section className="health-section health-section--actions">
-        <div className="workspace-pill-row">
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() => onNavigateTo("runs")}
-          >
-            Open Runs
-          </button>
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() => onNavigateTo("timeline")}
-          >
-            Open Timeline
-          </button>
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() => onNavigateTo("inventory")}
-          >
-            Browse Inventory
-          </button>
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() => onNavigateTo("inventory", { assetTab: "lineage" })}
-          >
-            Open Lineage
-          </button>
-        </div>
-      </section>
-
-      {/* ── Execution donut (supporting context) ── */}
+      {/* 4b — Execution breakdown */}
       <section className="health-section health-section--execution">
         <div className="health-section__header">
           <h3>Execution breakdown</h3>
@@ -198,7 +163,7 @@ export function HealthView({
         )}
       </section>
 
-      {/* ── Execution context band ── */}
+      {/* 4c — Execution context */}
       <section className="health-section health-section--context">
         <div className="health-section__header">
           <h3>Execution context</h3>
@@ -213,7 +178,7 @@ export function HealthView({
         />
       </section>
 
-      {/* ── Structural health (passive, bottom band) ── */}
+      {/* 4d — Structural health */}
       <section className="health-section health-section--structure">
         <div className="health-section__header">
           <h3>Structural health</h3>

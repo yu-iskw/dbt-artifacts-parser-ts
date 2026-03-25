@@ -187,3 +187,80 @@ export function OverviewStatusBanner({
     </section>
   );
 }
+
+/**
+ * RunSummaryStrip — Band 2 of the Health page.
+ *
+ * A single compact horizontal band that replaces:
+ *   - the health-hero-strip (workspace signal cards)
+ *   - the OverviewStatusBanner (run title + summary chips)
+ *
+ * Reads as one coherent run summary:
+ *   [Posture] | [Runtime] | [Mode] | [Models] | [Tests] | …
+ */
+export function RunSummaryStrip({
+  analysis,
+  projectName,
+  analysisSource,
+  derived,
+  filtered,
+}: {
+  analysis: AnalysisState;
+  projectName: string | null;
+  analysisSource: "preload" | "upload" | null;
+  derived: OverviewDerivedState;
+  filtered: boolean;
+}) {
+  const banner = buildOverviewBannerModel(
+    analysis,
+    projectName,
+    analysisSource,
+    derived,
+    filtered,
+  );
+
+  const modeLabel =
+    analysisSource === "preload"
+      ? "Live target"
+      : analysisSource === "upload"
+        ? "Local upload"
+        : "Artifacts";
+
+  return (
+    <div className={`run-summary-strip run-summary-strip--${banner.tone}`} aria-label="Run summary">
+      {/* Posture — leftmost, tone-prominent */}
+      <div className="run-summary-strip__item run-summary-strip__item--posture">
+        <span>{banner.title}</span>
+      </div>
+
+      {/* Runtime */}
+      <div className="run-summary-strip__item">
+        <span className="run-summary-strip__label">Runtime</span>
+        <span className="run-summary-strip__value">
+          {formatSeconds(
+            filtered
+              ? derived.filteredExecutionTime
+              : analysis.summary.total_execution_time,
+          )}
+        </span>
+      </div>
+
+      {/* Source / mode */}
+      <div className="run-summary-strip__item">
+        <span className="run-summary-strip__label">Source</span>
+        <span className="run-summary-strip__value">{modeLabel}</span>
+      </div>
+
+      {/* Per-type resource chips */}
+      {banner.chips.slice(1).map((chip) => (
+        <div key={chip.label} className="run-summary-strip__item">
+          <span className="run-summary-strip__label">{chip.label}</span>
+          <span className="run-summary-strip__value">{chip.value}</span>
+          {chip.detail && (
+            <span className="run-summary-strip__detail">{chip.detail}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
