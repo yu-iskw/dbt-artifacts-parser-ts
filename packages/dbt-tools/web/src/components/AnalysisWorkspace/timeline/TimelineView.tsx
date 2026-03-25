@@ -24,6 +24,18 @@ import { EntityInspector, SectionCard, WorkspaceScaffold } from "../shared";
 import { OverviewActionListCard } from "../views/OverviewView";
 import { TimelineSearchControls } from "../views/ResultsView";
 
+type NavigateToHandler = (
+  view: WorkspaceView,
+  options?: {
+    resourceId?: string;
+    executionId?: string;
+    assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
+    rootResourceId?: string;
+  },
+) => void;
+
+type ExecutionRow = AnalysisState["executions"][number];
+
 function getDefaultTimelineActiveTypes(presentTypes: string[]): Set<string> {
   return new Set(
     presentTypes.filter(
@@ -40,6 +52,181 @@ function setsEqual(left: Set<string>, right: Set<string>): boolean {
   return true;
 }
 
+function TimelineInspector({
+  selectedRow,
+  relatedResource,
+  onNavigateTo,
+}: {
+  selectedRow: ExecutionRow | null;
+  relatedResource: AnalysisState["resources"][number] | null;
+  onNavigateTo: NavigateToHandler;
+}) {
+  return (
+    <EntityInspector
+      title={selectedRow?.name ?? null}
+      typeLabel={selectedRow?.resourceType ?? null}
+      status={
+        selectedRow ? (
+          <span className={`badge badge--${selectedRow.statusTone}`}>
+            {selectedRow.status}
+          </span>
+        ) : undefined
+      }
+      stats={[
+        {
+          label: "Duration",
+          value: selectedRow ? formatSeconds(selectedRow.executionTime) : "n/a",
+        },
+        { label: "Thread", value: selectedRow?.threadId ?? "n/a" },
+        {
+          label: "Start",
+          value:
+            selectedRow?.start != null
+              ? `${selectedRow.start.toFixed(2)}s`
+              : "n/a",
+        },
+      ]}
+      sections={[
+        { label: "Path", value: selectedRow?.path ?? "n/a" },
+        { label: "Unique ID", value: selectedRow?.uniqueId ?? "n/a" },
+      ]}
+      actions={
+        selectedRow
+          ? [
+              {
+                label: "Open asset",
+                onClick: () =>
+                  onNavigateTo("inventory", {
+                    resourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                    assetTab: "summary",
+                  }),
+                disabled: !relatedResource,
+              },
+              {
+                label: "Open in Runs",
+                onClick: () =>
+                  onNavigateTo("runs", {
+                    resourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                    executionId: selectedRow.uniqueId,
+                  }),
+              },
+              {
+                label: "Open in Lineage",
+                onClick: () =>
+                  onNavigateTo("lineage", {
+                    resourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                    rootResourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                  }),
+                disabled: !relatedResource,
+              },
+            ]
+          : undefined
+      }
+      emptyMessage="Select a node to inspect runtime evidence"
+    />
+  );
+}
+
+function TimelineSurface({
+  analysis,
+  filters,
+  defaultActiveTypes,
+  effectiveActiveTypes,
+  filteredData,
+  filteredExecutionRows,
+  statusCounts,
+  typeCounts,
+  hasActiveFilters,
+  dataIndexById,
+  testStatsById,
+  setFilters,
+  toggleStatus,
+  toggleType,
+  onInvestigationSelectionChange,
+}: {
+  analysis: AnalysisState;
+  filters: TimelineFilterState;
+  defaultActiveTypes: Set<string>;
+  effectiveActiveTypes: Set<string>;
+  filteredData: GanttItem[];
+  filteredExecutionRows: ExecutionRow[];
+  statusCounts: Record<string, number>;
+  typeCounts: Record<string, number>;
+  hasActiveFilters: boolean;
+  dataIndexById: Map<string, number>;
+  testStatsById: ReturnType<typeof buildResourceTestStats>;
+  setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+  toggleStatus: (status: string) => void;
+  toggleType: (type: string) => void;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
+}) {
+  return (
+    <SectionCard
+      title="Execution timeline"
+      subtitle="Relative start and duration for each executed node."
+    >
+      <OverviewActionListCard
+        derived={{
+          ...buildOverviewDerivedState(analysis, {
+            status: "all",
+            resourceTypes: new Set(),
+            query: "",
+          }),
+          filteredExecutions: filteredExecutionRows,
+          filteredExecutionTime: filteredExecutionRows.reduce(
+            (sum, row) => sum + row.executionTime,
+            0,
+          ),
+          topBottlenecks: [...filteredExecutionRows]
+            .sort((a, b) => b.executionTime - a.executionTime)
+            .slice(0, 5),
+        }}
+        title="Bottlenecks"
+        subtitle="Independent runtime hotspots in the current timeline slice."
+      />
+      <GanttLegend
+        statusCounts={statusCounts}
+        typeCounts={typeCounts}
+        activeStatuses={filters.activeStatuses}
+        activeTypes={effectiveActiveTypes}
+        onToggleStatus={toggleStatus}
+        onToggleType={toggleType}
+      />
+      <TimelineSearchControls
+        filters={filters}
+        defaultActiveTypes={defaultActiveTypes}
+        hasActiveFilters={hasActiveFilters}
+        setFilters={setFilters}
+      />
+      <GanttChart
+        data={filteredData}
+        runStartedAt={analysis.runStartedAt}
+        dataIndexById={dataIndexById}
+        dependencyIndex={analysis.dependencyIndex}
+        testStatsById={testStatsById}
+        selectedId={filters.selectedExecutionId}
+        onSelect={(id) => {
+          setFilters((current) => ({ ...current, selectedExecutionId: id }));
+          onInvestigationSelectionChange((current) => ({
+            ...current,
+            selectedExecutionId: id,
+            selectedResourceId:
+              analysis.resources.find((resource) => resource.uniqueId === id)
+                ?.uniqueId ?? current.selectedResourceId,
+            sourceLens: "timeline",
+          }));
+        }}
+      />
+    </SectionCard>
+  );
+}
+
 export function TimelineView({
   analysis,
   filters,
@@ -53,15 +240,7 @@ export function TimelineView({
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
-  onNavigateTo: (
-    view: WorkspaceView,
-    options?: {
-      resourceId?: string;
-      executionId?: string;
-      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
-      rootResourceId?: string;
-    },
-  ) => void;
+  onNavigateTo: NavigateToHandler;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -240,139 +419,36 @@ export function TimelineView({
     hasTypeOverride ||
     filters.query.length > 0;
 
-  const inspector = (
-    <EntityInspector
-      title={selectedRow?.name ?? null}
-      typeLabel={selectedRow?.resourceType ?? null}
-      status={
-        selectedRow ? (
-          <span className={`badge badge--${selectedRow.statusTone}`}>
-            {selectedRow.status}
-          </span>
-        ) : undefined
-      }
-      stats={[
-        {
-          label: "Duration",
-          value: selectedRow ? formatSeconds(selectedRow.executionTime) : "n/a",
-        },
-        { label: "Thread", value: selectedRow?.threadId ?? "n/a" },
-        {
-          label: "Start",
-          value:
-            selectedRow?.start != null
-              ? `${selectedRow.start.toFixed(2)}s`
-              : "n/a",
-        },
-      ]}
-      sections={[
-        { label: "Path", value: selectedRow?.path ?? "n/a" },
-        { label: "Unique ID", value: selectedRow?.uniqueId ?? "n/a" },
-      ]}
-      actions={
-        selectedRow
-          ? [
-              {
-                label: "Open asset",
-                onClick: () =>
-                  onNavigateTo("inventory", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    assetTab: "summary",
-                  }),
-                disabled: !relatedResource,
-              },
-              {
-                label: "Open in Runs",
-                onClick: () =>
-                  onNavigateTo("runs", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    executionId: selectedRow.uniqueId,
-                  }),
-              },
-              {
-                label: "Open in Lineage",
-                onClick: () =>
-                  onNavigateTo("lineage", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    rootResourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                  }),
-                disabled: !relatedResource,
-              },
-            ]
-          : undefined
-      }
-      emptyMessage="Select a node to inspect runtime evidence"
-    />
-  );
-
   return (
     <WorkspaceScaffold
       title="Timeline"
       description="Runtime timing, concurrency, bottlenecks, and execution order."
-      inspector={inspector}
+      inspector={
+        <TimelineInspector
+          selectedRow={selectedRow}
+          relatedResource={relatedResource}
+          onNavigateTo={onNavigateTo}
+        />
+      }
       className="timeline-view"
     >
-      <SectionCard
-        title="Execution timeline"
-        subtitle="Relative start and duration for each executed node."
-      >
-        <OverviewActionListCard
-          derived={{
-            ...buildOverviewDerivedState(analysis, {
-              status: "all",
-              resourceTypes: new Set(),
-              query: "",
-            }),
-            filteredExecutions: filteredExecutionRows,
-            filteredExecutionTime: filteredExecutionRows.reduce(
-              (sum, row) => sum + row.executionTime,
-              0,
-            ),
-            topBottlenecks: [...filteredExecutionRows]
-              .sort((a, b) => b.executionTime - a.executionTime)
-              .slice(0, 5),
-          }}
-          title="Bottlenecks"
-          subtitle="Independent runtime hotspots in the current timeline slice."
-        />
-        <GanttLegend
-          statusCounts={statusCounts}
-          typeCounts={typeCounts}
-          activeStatuses={filters.activeStatuses}
-          activeTypes={effectiveActiveTypes}
-          onToggleStatus={toggleStatus}
-          onToggleType={toggleType}
-        />
-        <TimelineSearchControls
-          filters={filters}
-          defaultActiveTypes={defaultActiveTypes}
-          hasActiveFilters={hasActiveFilters}
-          setFilters={setFilters}
-        />
-        <GanttChart
-          data={filteredData}
-          runStartedAt={analysis.runStartedAt}
-          dataIndexById={dataIndexById}
-          dependencyIndex={analysis.dependencyIndex}
-          testStatsById={testStatsById}
-          selectedId={filters.selectedExecutionId}
-          onSelect={(id) => {
-            setFilters((current) => ({ ...current, selectedExecutionId: id }));
-            onInvestigationSelectionChange((current) => ({
-              ...current,
-              selectedExecutionId: id,
-              selectedResourceId:
-                analysis.resources.find((resource) => resource.uniqueId === id)
-                  ?.uniqueId ?? current.selectedResourceId,
-              sourceLens: "timeline",
-            }));
-          }}
-        />
-      </SectionCard>
+      <TimelineSurface
+        analysis={analysis}
+        filters={filters}
+        defaultActiveTypes={defaultActiveTypes}
+        effectiveActiveTypes={effectiveActiveTypes}
+        filteredData={filteredData}
+        filteredExecutionRows={filteredExecutionRows}
+        statusCounts={statusCounts}
+        typeCounts={typeCounts}
+        hasActiveFilters={hasActiveFilters}
+        dataIndexById={dataIndexById}
+        testStatsById={testStatsById}
+        setFilters={setFilters}
+        toggleStatus={toggleStatus}
+        toggleType={toggleType}
+        onInvestigationSelectionChange={onInvestigationSelectionChange}
+      />
     </WorkspaceScaffold>
   );
 }

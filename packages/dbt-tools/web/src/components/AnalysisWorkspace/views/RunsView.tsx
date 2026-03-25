@@ -37,82 +37,118 @@ function facetKeyMap(
   return summary.facets;
 }
 
-export function RunsView({
-  analysis,
+type NavigateToHandler = (
+  view: WorkspaceView,
+  options?: {
+    resourceId?: string;
+    executionId?: string;
+    assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
+    rootResourceId?: string;
+  },
+) => void;
+
+type RunsRow = AnalysisState["executions"][number];
+type RunsResultsState = ReturnType<typeof useRunsResultsSource>;
+
+function RunsToolbar({
   runsViewState,
   onRunsViewStateChange,
-  onInvestigationSelectionChange,
-  onNavigateTo,
 }: {
-  analysis: AnalysisState;
   runsViewState: RunsViewState;
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
-  onInvestigationSelectionChange: Dispatch<
-    SetStateAction<InvestigationSelectionState>
-  >;
-  onNavigateTo: (
-    view: WorkspaceView,
-    options?: {
-      resourceId?: string;
-      executionId?: string;
-      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
-      rootResourceId?: string;
-    },
-  ) => void;
 }) {
-  const resultsBodyRef = useRef<HTMLDivElement>(null);
-  const runsResults = useRunsResultsSource(
-    analysis.executions,
-    runsViewState,
-    true,
+  return (
+    <div className="runs-toolbar">
+      <label className="workspace-search workspace-search--compact">
+        <span>Search</span>
+        <input
+          value={runsViewState.query}
+          onChange={(e) =>
+            onRunsViewStateChange((current) => ({
+              ...current,
+              query: e.target.value,
+            }))
+          }
+          placeholder="Filter by name, type, status, thread…"
+        />
+      </label>
+      <label className="workspace-search workspace-search--compact">
+        <span>Sort</span>
+        <select
+          value={runsViewState.sortBy}
+          onChange={(e) =>
+            onRunsViewStateChange((current) => ({
+              ...current,
+              sortBy: e.target.value as RunsViewState["sortBy"],
+            }))
+          }
+        >
+          <option value="attention">Attention</option>
+          <option value="duration">Duration</option>
+          <option value="name">Name</option>
+          <option value="status">Status</option>
+          <option value="start">Start</option>
+        </select>
+      </label>
+    </div>
   );
-  const selectedRow =
-    runsResults.rows.find(
-      (row) => row.uniqueId === runsViewState.selectedExecutionId,
-    ) ??
-    analysis.executions.find(
-      (row) => row.uniqueId === runsViewState.selectedExecutionId,
-    ) ??
-    null;
+}
 
-  const relatedResource =
-    selectedRow != null
-      ? (analysis.resources.find(
-          (resource) => resource.uniqueId === selectedRow.uniqueId,
-        ) ?? null)
-      : null;
+function RunsFacets({
+  runsViewState,
+  runsResults,
+  onRunsViewStateChange,
+}: {
+  runsViewState: RunsViewState;
+  runsResults: RunsResultsState;
+  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
+}) {
+  return (
+    <div className="runs-facets">
+      {FACETS.map((facet) => {
+        const counts = facetKeyMap(runsResults.summary);
+        const active =
+          (facet.kind != null && runsViewState.kind === facet.kind) ||
+          (facet.status != null && runsViewState.status === facet.status) ||
+          (facet.kind == null &&
+            facet.status == null &&
+            runsViewState.kind === "all" &&
+            runsViewState.status === "all");
+        return (
+          <button
+            key={facet.label}
+            type="button"
+            className={
+              active
+                ? "workspace-pill workspace-pill--active"
+                : "workspace-pill"
+            }
+            onClick={() =>
+              onRunsViewStateChange((current) => ({
+                ...current,
+                kind: facet.kind ?? "all",
+                status: facet.status ?? "all",
+              }))
+            }
+          >
+            {facet.label} ({counts[facet.countKey]})
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
-  const virtualizer = useVirtualizer({
-    count: runsResults.rows.length,
-    getScrollElement: () => resultsBodyRef.current,
-    estimateSize: () => 76,
-    overscan: 10,
-  });
-
-  useEffect(() => {
-    const scrollElement = resultsBodyRef.current;
-    if (!scrollElement) return;
-    const maybeLoadMore = () => {
-      const remaining =
-        scrollElement.scrollHeight -
-        scrollElement.scrollTop -
-        scrollElement.clientHeight;
-      if (
-        remaining < 220 &&
-        runsResults.hasMore &&
-        !runsResults.isLoading &&
-        !runsResults.isIndexing
-      ) {
-        runsResults.loadMore();
-      }
-    };
-    scrollElement.addEventListener("scroll", maybeLoadMore);
-    maybeLoadMore();
-    return () => scrollElement.removeEventListener("scroll", maybeLoadMore);
-  }, [runsResults]);
-
-  const inspector = (
+function RunsInspector({
+  selectedRow,
+  relatedResource,
+  onNavigateTo,
+}: {
+  selectedRow: RunsRow | null;
+  relatedResource: AnalysisState["resources"][number] | null;
+  onNavigateTo: NavigateToHandler;
+}) {
+  return (
     <EntityInspector
       title={selectedRow?.name ?? null}
       typeLabel={selectedRow?.resourceType ?? null}
@@ -174,159 +210,203 @@ export function RunsView({
       emptyMessage="Select a run item to inspect"
     />
   );
+}
 
-  const toolbar = (
-    <div className="runs-toolbar">
-      <label className="workspace-search workspace-search--compact">
-        <span>Search</span>
-        <input
-          value={runsViewState.query}
-          onChange={(e) =>
-            onRunsViewStateChange((current) => ({
-              ...current,
-              query: e.target.value,
-            }))
-          }
-          placeholder="Filter by name, type, status, thread…"
-        />
-      </label>
-      <label className="workspace-search workspace-search--compact">
-        <span>Sort</span>
-        <select
-          value={runsViewState.sortBy}
-          onChange={(e) =>
-            onRunsViewStateChange((current) => ({
-              ...current,
-              sortBy: e.target.value as RunsViewState["sortBy"],
-            }))
-          }
+function RunsResultsTable({
+  analysis,
+  runsResults,
+  runsViewState,
+  resultsBodyRef,
+  virtualizer,
+  onRunsViewStateChange,
+  onInvestigationSelectionChange,
+}: {
+  analysis: AnalysisState;
+  runsResults: RunsResultsState;
+  runsViewState: RunsViewState;
+  resultsBodyRef: React.RefObject<HTMLDivElement>;
+  virtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>;
+  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
+}) {
+  return (
+    <div className="results-table">
+      <div className="results-table__header">
+        <span>Item</span>
+        <span>Type</span>
+        <span>Status</span>
+        <span>Duration</span>
+        <span>Thread</span>
+      </div>
+      <div
+        ref={resultsBodyRef}
+        className="results-table__body"
+        style={{
+          height: Math.min(560, Math.max(120, runsResults.rows.length * 76)),
+          overflowY: "auto",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{ height: virtualizer.getTotalSize(), position: "relative" }}
         >
-          <option value="attention">Attention</option>
-          <option value="duration">Duration</option>
-          <option value="name">Name</option>
-          <option value="status">Status</option>
-          <option value="start">Start</option>
-        </select>
-      </label>
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const row = runsResults.rows[virtualRow.index];
+            if (!row) return null;
+            const isActive = row.uniqueId === runsViewState.selectedExecutionId;
+            return (
+              <button
+                key={row.uniqueId}
+                type="button"
+                className={`results-table__row${isActive ? " results-table__row--active" : ""}`}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+                onClick={() => {
+                  const nextResource =
+                    analysis.resources.find(
+                      (resource) => resource.uniqueId === row.uniqueId,
+                    ) ?? null;
+                  onRunsViewStateChange((current) => ({
+                    ...current,
+                    selectedExecutionId: row.uniqueId,
+                  }));
+                  onInvestigationSelectionChange((current) => ({
+                    ...current,
+                    selectedExecutionId: row.uniqueId,
+                    selectedResourceId: nextResource?.uniqueId ?? row.uniqueId,
+                    sourceLens: "runs",
+                  }));
+                }}
+              >
+                <span>
+                  <strong>{row.name}</strong>
+                </span>
+                <span>{row.resourceType}</span>
+                <span>
+                  <span className={badgeClassName(row.statusTone)}>
+                    {row.status}
+                  </span>
+                </span>
+                <span>{formatSeconds(row.executionTime)}</span>
+                <span>{row.threadId ?? "n/a"}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
+}
 
-  const leadingPane = (
-    <div className="runs-facets">
-      {FACETS.map((facet) => {
-        const counts = facetKeyMap(runsResults.summary);
-        const active =
-          (facet.kind != null && runsViewState.kind === facet.kind) ||
-          (facet.status != null && runsViewState.status === facet.status) ||
-          (facet.kind == null &&
-            facet.status == null &&
-            runsViewState.kind === "all" &&
-            runsViewState.status === "all");
-        return (
-          <button
-            key={facet.label}
-            type="button"
-            className={
-              active
-                ? "workspace-pill workspace-pill--active"
-                : "workspace-pill"
-            }
-            onClick={() =>
-              onRunsViewStateChange((current) => ({
-                ...current,
-                kind: facet.kind ?? "all",
-                status: facet.status ?? "all",
-              }))
-            }
-          >
-            {facet.label} ({counts[facet.countKey]})
-          </button>
-        );
-      })}
-    </div>
+export function RunsView({
+  analysis,
+  runsViewState,
+  onRunsViewStateChange,
+  onInvestigationSelectionChange,
+  onNavigateTo,
+}: {
+  analysis: AnalysisState;
+  runsViewState: RunsViewState;
+  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
+  onNavigateTo: NavigateToHandler;
+}) {
+  const resultsBodyRef = useRef<HTMLDivElement>(null);
+  const runsResults = useRunsResultsSource(
+    analysis.executions,
+    runsViewState,
+    true,
   );
+  const selectedRow =
+    runsResults.rows.find(
+      (row) => row.uniqueId === runsViewState.selectedExecutionId,
+    ) ??
+    analysis.executions.find(
+      (row) => row.uniqueId === runsViewState.selectedExecutionId,
+    ) ??
+    null;
+
+  const relatedResource =
+    selectedRow != null
+      ? (analysis.resources.find(
+          (resource) => resource.uniqueId === selectedRow.uniqueId,
+        ) ?? null)
+      : null;
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
+  const virtualizer = useVirtualizer({
+    count: runsResults.rows.length,
+    getScrollElement: () => resultsBodyRef.current,
+    estimateSize: () => 76,
+    overscan: 10,
+  });
+
+  useEffect(() => {
+    const scrollElement = resultsBodyRef.current;
+    if (!scrollElement) return;
+    const maybeLoadMore = () => {
+      const remaining =
+        scrollElement.scrollHeight -
+        scrollElement.scrollTop -
+        scrollElement.clientHeight;
+      if (
+        remaining < 220 &&
+        runsResults.hasMore &&
+        !runsResults.isLoading &&
+        !runsResults.isIndexing
+      ) {
+        runsResults.loadMore();
+      }
+    };
+    scrollElement.addEventListener("scroll", maybeLoadMore);
+    maybeLoadMore();
+    return () => scrollElement.removeEventListener("scroll", maybeLoadMore);
+  }, [runsResults]);
 
   return (
     <WorkspaceScaffold
       title="Runs"
       description="Execution and quality evidence across models, tests, seeds, snapshots, and operations."
-      toolbar={toolbar}
-      leadingPane={leadingPane}
-      inspector={inspector}
+      toolbar={
+        <RunsToolbar
+          runsViewState={runsViewState}
+          onRunsViewStateChange={onRunsViewStateChange}
+        />
+      }
+      leadingPane={
+        <RunsFacets
+          runsViewState={runsViewState}
+          runsResults={runsResults}
+          onRunsViewStateChange={onRunsViewStateChange}
+        />
+      }
+      inspector={
+        <RunsInspector
+          selectedRow={selectedRow}
+          relatedResource={relatedResource}
+          onNavigateTo={onNavigateTo}
+        />
+      }
       className="runs-view"
     >
-      <div className="results-table">
-        <div className="results-table__header">
-          <span>Item</span>
-          <span>Type</span>
-          <span>Status</span>
-          <span>Duration</span>
-          <span>Thread</span>
-        </div>
-        <div
-          ref={resultsBodyRef}
-          className="results-table__body"
-          style={{
-            height: Math.min(560, Math.max(120, runsResults.rows.length * 76)),
-            overflowY: "auto",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{ height: virtualizer.getTotalSize(), position: "relative" }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = runsResults.rows[virtualRow.index];
-              if (!row) return null;
-              const isActive =
-                row.uniqueId === runsViewState.selectedExecutionId;
-              return (
-                <button
-                  key={row.uniqueId}
-                  type="button"
-                  className={`results-table__row${isActive ? " results-table__row--active" : ""}`}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  onClick={() => {
-                    const nextResource =
-                      analysis.resources.find(
-                        (resource) => resource.uniqueId === row.uniqueId,
-                      ) ?? null;
-                    onRunsViewStateChange((current) => ({
-                      ...current,
-                      selectedExecutionId: row.uniqueId,
-                    }));
-                    onInvestigationSelectionChange((current) => ({
-                      ...current,
-                      selectedExecutionId: row.uniqueId,
-                      selectedResourceId:
-                        nextResource?.uniqueId ?? row.uniqueId,
-                      sourceLens: "runs",
-                    }));
-                  }}
-                >
-                  <span>
-                    <strong>{row.name}</strong>
-                  </span>
-                  <span>{row.resourceType}</span>
-                  <span>
-                    <span className={badgeClassName(row.statusTone)}>
-                      {row.status}
-                    </span>
-                  </span>
-                  <span>{formatSeconds(row.executionTime)}</span>
-                  <span>{row.threadId ?? "n/a"}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <RunsResultsTable
+        analysis={analysis}
+        runsResults={runsResults}
+        runsViewState={runsViewState}
+        resultsBodyRef={resultsBodyRef}
+        virtualizer={virtualizer}
+        onRunsViewStateChange={onRunsViewStateChange}
+        onInvestigationSelectionChange={onInvestigationSelectionChange}
+      />
     </WorkspaceScaffold>
   );
 }

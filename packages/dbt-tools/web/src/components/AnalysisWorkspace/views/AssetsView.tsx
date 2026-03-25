@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { EmptyState } from "../../EmptyState";
 import type {
@@ -459,6 +460,7 @@ export function AssetsView({
         typeof value === "function" ? value(cur.activeLegendKeys) : value,
     }));
   const activeTab = assetViewState.activeTab;
+  const [isLineageDialogOpen, setLineageDialogOpen] = useState(false);
   const sectionRefs = useRef<Record<AssetSectionId, HTMLElement | null>>({
     summary: null,
     lineage: null,
@@ -547,15 +549,6 @@ export function AssetsView({
             type="button"
             className="workspace-pill"
             onClick={() =>
-              onNavigateTo("runs", { resourceId: resource.uniqueId })
-            }
-          >
-            Open in Runs
-          </button>
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() =>
               onNavigateTo("timeline", {
                 resourceId: resource.uniqueId,
                 executionId: resource.uniqueId,
@@ -567,14 +560,9 @@ export function AssetsView({
           <button
             type="button"
             className="workspace-pill"
-            onClick={() =>
-              onNavigateTo("lineage", {
-                resourceId: resource.uniqueId,
-                rootResourceId: resource.uniqueId,
-              })
-            }
+            onClick={() => setLineageDialogOpen(true)}
           >
-            Open in Lineage
+            Expand lineage
           </button>
         </div>
       </section>
@@ -600,7 +588,12 @@ export function AssetsView({
             }}
             className="asset-workspace__section"
           >
-            <LineagePanel {...lineagePanelProps} displayMode="summary" />
+            <LineagePanel
+              {...lineagePanelProps}
+              displayMode="summary"
+              openFullscreen={isLineageDialogOpen}
+              onFullscreenChange={setLineageDialogOpen}
+            />
           </section>
 
           <section

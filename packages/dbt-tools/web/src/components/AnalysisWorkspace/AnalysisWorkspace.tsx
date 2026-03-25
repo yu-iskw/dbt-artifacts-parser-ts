@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type {
   AnalysisWorkspaceProps,
+  AssetViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import {
   buildExplorerTree,
+  collectAncestorBranchIdsForResource,
   collectBranchIds,
   collectLeafIds,
   flattenExplorerTree,
@@ -98,9 +100,41 @@ export function AnalysisWorkspace({
       projectName,
     ],
   );
-  const expandedNodeIds = useMemo(
+  const allBranchIds = useMemo(
     () => collectBranchIds(explorerTree),
     [explorerTree],
+  );
+  const initializedExplorerModeRef = useRef<
+    AssetViewState["explorerMode"] | null
+  >(null);
+  const previousSelectedResourceIdRef = useRef<string | null>(
+    assetViewState.selectedResourceId,
+  );
+
+  useEffect(() => {
+    if (explorerTree.length === 0) return;
+    if (initializedExplorerModeRef.current === assetViewState.explorerMode)
+      return;
+    initializedExplorerModeRef.current = assetViewState.explorerMode;
+    onAssetViewStateChange((current) => ({
+      ...current,
+      expandedNodeIds: new Set(allBranchIds),
+    }));
+  }, [
+    allBranchIds,
+    assetViewState.explorerMode,
+    explorerTree.length,
+    onAssetViewStateChange,
+  ]);
+
+  const expandedNodeIds = useMemo(
+    () =>
+      new Set(
+        [...assetViewState.expandedNodeIds].filter((id) =>
+          allBranchIds.has(id),
+        ),
+      ),
+    [allBranchIds, assetViewState.expandedNodeIds],
   );
   const treeRows = useMemo(
     () => flattenExplorerTree(explorerTree, expandedNodeIds),
@@ -118,6 +152,31 @@ export function AnalysisWorkspace({
     analysis.resources.find(
       (resource) => resource.uniqueId === selectedResourceId,
     ) ?? null;
+
+  useEffect(() => {
+    const currentSelectedId = assetViewState.selectedResourceId;
+    const previousSelectedId = previousSelectedResourceIdRef.current;
+    previousSelectedResourceIdRef.current = currentSelectedId;
+
+    if (!currentSelectedId || currentSelectedId === previousSelectedId) return;
+    if (visibleLeafIds.includes(currentSelectedId)) return;
+
+    const ancestorIds = collectAncestorBranchIdsForResource(
+      explorerTree,
+      currentSelectedId,
+    );
+    if (ancestorIds.size === 0) return;
+
+    onAssetViewStateChange((current) => ({
+      ...current,
+      expandedNodeIds: new Set([...current.expandedNodeIds, ...ancestorIds]),
+    }));
+  }, [
+    assetViewState.selectedResourceId,
+    explorerTree,
+    onAssetViewStateChange,
+    visibleLeafIds,
+  ]);
 
   const explorerPane = usesExplorerPane(activeView) ? (
     <ExplorerPane
@@ -155,7 +214,14 @@ export function AnalysisWorkspace({
       }
       selectedResourceId={selectedResourceId}
       expandedNodeIds={expandedNodeIds}
-      toggleExpandedNode={() => undefined}
+      toggleExpandedNode={(id) =>
+        onAssetViewStateChange((current) => {
+          const next = new Set(current.expandedNodeIds);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return { ...current, expandedNodeIds: next };
+        })
+      }
       setSelectedResourceId={(value) => {
         onAssetViewStateChange((current) => ({
           ...current,

@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
 import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import {
@@ -29,6 +29,8 @@ export function LineagePanel({
   setActiveLegendKeys,
   onSelectResource,
   displayMode = "focused",
+  openFullscreen = false,
+  onFullscreenChange,
 }: {
   resource: ResourceNode;
   dependencySummary: AnalysisState["dependencyIndex"][string] | undefined;
@@ -46,9 +48,20 @@ export function LineagePanel({
   setActiveLegendKeys: Dispatch<SetStateAction<Set<string>>>;
   onSelectResource: (id: string) => void;
   displayMode?: LineageDisplayMode;
+  openFullscreen?: boolean;
+  onFullscreenChange?: (open: boolean) => void;
 }) {
   const [isFullscreenOpen, setFullscreenOpen] = useState(false);
   const ALL_DEPS_DEPTH = 20;
+
+  useEffect(() => {
+    setFullscreenOpen(openFullscreen);
+  }, [openFullscreen]);
+
+  const setFullscreen = (open: boolean) => {
+    setFullscreenOpen(open);
+    onFullscreenChange?.(open);
+  };
 
   const toggleLegendKey = (key: string) => {
     setActiveLegendKeys((current) => {
@@ -121,7 +134,7 @@ export function LineagePanel({
         <button
           type="button"
           className="workspace-pill"
-          onClick={() => setFullscreenOpen(false)}
+          onClick={() => setFullscreen(false)}
         >
           Close
         </button>
@@ -130,7 +143,7 @@ export function LineagePanel({
           <button
             type="button"
             className="workspace-pill"
-            onClick={() => setFullscreenOpen(true)}
+            onClick={() => setFullscreen(true)}
           >
             Expand
           </button>
@@ -182,7 +195,7 @@ export function LineagePanel({
             type="button"
             className="lineage-dialog__backdrop"
             aria-label="Close lineage graph"
-            onClick={() => setFullscreenOpen(false)}
+            onClick={() => setFullscreen(false)}
           />
           <section className="lineage-dialog__panel">
             <div className="lineage-dialog__header">

@@ -56,6 +56,7 @@ export interface TimelineFilterState {
 export interface AssetViewState {
   activeTab: AssetTab;
   selectedResourceId: string | null;
+  expandedNodeIds: Set<string>;
   explorerMode: AssetExplorerMode;
   status: DashboardStatusFilter;
   resourceTypes: Set<string>;

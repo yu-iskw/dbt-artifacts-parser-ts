@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildExplorerTree,
+  collectAncestorBranchIdsForResource,
   flattenExplorerTree,
   findNodeByLeafResourceId,
   collectLeafIds,
@@ -71,5 +72,36 @@ describe("findNodeByLeafResourceId", () => {
     const node = findNodeByLeafResourceId(tree, "model.jaffle_shop.orders");
     expect(node).not.toBeNull();
     expect(node?.resource?.uniqueId).toBe("model.jaffle_shop.orders");
+  });
+});
+
+describe("collectAncestorBranchIdsForResource", () => {
+  it("returns ancestor branch ids for an existing resource", () => {
+    const resources = [
+      makeResource({
+        name: "orders",
+        originalFilePath: "models/marts/orders.sql",
+      }),
+    ];
+    const tree = buildExplorerTree(resources, "project", "jaffle_shop");
+    const ids = collectAncestorBranchIdsForResource(
+      tree,
+      "model.jaffle_shop.orders",
+    );
+    expect(ids.size).toBeGreaterThan(0);
+    expect(
+      [...ids].some((id) => id.includes("jaffle_shop/models/marts")),
+    ).toBeTruthy();
+  });
+
+  it("returns an empty set for a missing resource", () => {
+    const tree = buildExplorerTree(
+      [makeResource({ name: "orders" })],
+      "project",
+      "jaffle_shop",
+    );
+    expect(
+      collectAncestorBranchIdsForResource(tree, "model.jaffle_shop.missing"),
+    ).toEqual(new Set());
   });
 });

@@ -66,6 +66,7 @@ function AppContent() {
   });
   const [assetViewState, setAssetViewState] = useState<AssetViewState>({
     activeTab: parseAssetTab(window.location.search) ?? "summary",
+    expandedNodeIds: new Set(),
     explorerMode: "project",
     status: "all",
     resourceTypes: new Set(),
