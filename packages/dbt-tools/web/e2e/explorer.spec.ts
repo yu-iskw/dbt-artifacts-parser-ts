@@ -7,6 +7,11 @@ const BRANCH_LABEL_SELECTOR = ".explorer-tree__label";
 const MACRO_LEAF_NAME = "bigquery__cents_to_dollars";
 const MACROS_BRANCH_NAME = "macros";
 const PRODUCTS_MODEL_TITLE = "model.jaffle_shop.products";
+const INVENTORY_BROWSE_COPY =
+  "Browse, filter, and inspect all workspace assets.";
+const LINEAGE_GRAPH_HEADING = "Lineage graph";
+const EXPAND_LINEAGE_LABEL = "Expand lineage";
+const OPEN_IN_TIMELINE_LABEL = "Open in Timeline";
 
 test.describe("inventory workspace", () => {
   test.beforeEach(async ({ page }) => {
@@ -20,24 +25,33 @@ test.describe("inventory workspace", () => {
   test("shows explorer and stacked selected asset sections", async ({
     page,
   }) => {
-    await expect(
-      page.getByText("Browse, filter, and inspect all workspace assets."),
-    ).toBeVisible();
     await expect(page.locator(LEAF_SELECTOR).first()).toBeVisible();
     await page.locator(LEAF_SELECTOR).first().click();
+    await expect(page.getByText(INVENTORY_BROWSE_COPY)).toHaveCount(0);
     await expect(page.locator(".workspace-scaffold__inspector")).toHaveCount(0);
     await expect(page.getByLabel("Asset sections")).toHaveCount(0);
     await expect(page.getByText("Asset summary")).toBeVisible();
     await expect(page.getByText("Asset details")).toHaveCount(0);
     const assetActions = page.locator(".asset-hero__actions");
     await expect(assetActions).not.toContainText("Open in Runs");
-    for (const action of ["Open in Timeline", "Expand lineage"]) {
+    await expect(assetActions).toContainText(OPEN_IN_TIMELINE_LABEL);
+    await expect(assetActions).not.toContainText(EXPAND_LINEAGE_LABEL);
+    const lineageCard = page.locator(".asset-workspace__section").filter({
+      has: page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
+    });
+    await expect(
+      lineageCard.getByRole("button", {
+        name: EXPAND_LINEAGE_LABEL,
+        exact: true,
+      }),
+    ).toBeVisible();
+    for (const action of [OPEN_IN_TIMELINE_LABEL]) {
       await expect(
         assetActions.getByRole("button", { name: action, exact: true }),
       ).toBeVisible();
     }
     await expect(
-      page.getByRole("heading", { name: "Lineage graph" }).first(),
+      page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Runtime" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Tests" })).toBeVisible();
@@ -131,7 +145,7 @@ test.describe("inventory workspace", () => {
       "/?view=inventory&resource=model.jaffle_shop.products&assetTab=lineage",
     );
     await expect(
-      page.getByRole("heading", { name: "Lineage graph" }).first(),
+      page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
     ).toBeVisible();
     const lineageNodeStats = page.locator(".dependency-graph__node-stat");
     await expect(lineageNodeStats.first()).toContainText(/\d+/);
@@ -146,18 +160,31 @@ test.describe("inventory workspace", () => {
     page,
   }) => {
     await page.locator(LEAF_SELECTOR).first().click();
-    await page
-      .getByRole("button", { name: "Expand lineage", exact: true })
+    const lineageCard = page.locator(".asset-workspace__section").filter({
+      has: page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
+    });
+    await lineageCard
+      .getByRole("button", { name: EXPAND_LINEAGE_LABEL, exact: true })
       .click();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
     const dialogPanel = page.locator(".lineage-dialog__panel");
     await expect(dialogPanel).toBeVisible();
-    const panelBox = await dialogPanel.boundingBox();
-    const explorerPanel = page.getByRole("complementary").first();
-    const explorerBox = await explorerPanel.boundingBox();
-    expect(panelBox?.width ?? 0).toBeGreaterThan(
-      (explorerBox?.width ?? 0) * 1.75,
-    );
+    const backdrop = page.locator(".lineage-dialog__backdrop");
+    await expect(backdrop).toBeVisible();
+    const dialogRect = await dialog.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    });
+    const panelRect = await dialogPanel.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    });
+    const viewport = page.viewportSize();
+    expect(dialogRect.width).toBeGreaterThan((viewport?.width ?? 0) * 0.9);
+    expect(dialogRect.height).toBeGreaterThan((viewport?.height ?? 0) * 0.9);
+    expect(panelRect.width).toBeGreaterThan((viewport?.width ?? 0) * 0.85);
+    expect(panelRect.height).toBeGreaterThan((viewport?.height ?? 0) * 0.8);
     const closeButton = page.locator(".lineage-dialog__close");
     await expect(closeButton).toBeVisible();
     await expect(

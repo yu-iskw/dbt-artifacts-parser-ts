@@ -1789,6 +1789,7 @@
 }
 
 .asset-workspace {
+  position: relative;
   gap: 1rem;
 }
 

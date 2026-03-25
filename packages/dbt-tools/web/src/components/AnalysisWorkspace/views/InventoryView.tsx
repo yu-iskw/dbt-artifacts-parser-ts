@@ -49,6 +49,7 @@ export function InventoryView({
       title="Inventory"
       description="Browse, filter, and inspect all workspace assets."
       className="inventory-view"
+      suppressHeader={resource != null}
     >
       {resource ? (
         <AssetsView

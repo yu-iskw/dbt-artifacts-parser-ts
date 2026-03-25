@@ -557,13 +557,6 @@ export function AssetsView({
           >
             Open in Timeline
           </button>
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() => setLineageDialogOpen(true)}
-          >
-            Expand lineage
-          </button>
         </div>
       </section>
       <div className="asset-workspace__body">

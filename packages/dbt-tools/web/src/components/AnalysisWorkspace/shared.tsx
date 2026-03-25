@@ -139,6 +139,7 @@ export function WorkspaceScaffold({
   children,
   inspector,
   className = "",
+  suppressHeader = false,
 }: {
   title: string;
   description: string;
@@ -147,16 +148,19 @@ export function WorkspaceScaffold({
   children: ReactNode;
   inspector?: ReactNode;
   className?: string;
+  suppressHeader?: boolean;
 }) {
   return (
     <div className={`workspace-view workspace-scaffold ${className}`.trim()}>
-      <div className="lens-header">
-        <div className="lens-header__title">
-          <p className="eyebrow">Workspace lens</p>
-          <h2>{title}</h2>
-          <p className="lens-header__desc">{description}</p>
+      {!suppressHeader ? (
+        <div className="lens-header">
+          <div className="lens-header__title">
+            <p className="eyebrow">Workspace lens</p>
+            <h2>{title}</h2>
+            <p className="lens-header__desc">{description}</p>
+          </div>
         </div>
-      </div>
+      ) : null}
       {toolbar ? (
         <div className="workspace-scaffold__toolbar">{toolbar}</div>
       ) : null}

@@ -14,3 +14,19 @@ if (r.status !== 0 || r.error) {
   );
   process.exit(1);
 }
+
+const queryPack = process.argv[2];
+
+if (queryPack) {
+  const resolve = spawnSync("codeql", ["resolve", "queries", queryPack], {
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+
+  if (resolve.status !== 0 || resolve.error) {
+    console.error(`CodeQL query pack '${queryPack}' is not available locally.`);
+    console.error("Run the download-enabled analyze script once when online:");
+    console.error("  pnpm codeql:analyze:download");
+    process.exit(1);
+  }
+}
