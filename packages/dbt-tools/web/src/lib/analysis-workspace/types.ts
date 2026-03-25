@@ -62,6 +62,17 @@ export interface TimelineFilterState {
    * (dependent) edges from the manifest graph.
    */
   showTimelineDependents: boolean;
+  /**
+   * When true: draw every direct upstream edge for the focused node. When false
+   * (default), show a ranked subset up to TIMELINE_MAX_UPSTREAM_EDGES.
+   */
+  showAllTimelineUpstreamEdges: boolean;
+  /**
+   * When true: draw every direct downstream edge for the focused node. When false
+   * (default), show a ranked subset up to TIMELINE_MAX_DOWNSTREAM_EDGES.
+   * Only applies while `showTimelineDependents` is true.
+   */
+  showAllTimelineDownstreamEdges: boolean;
 }
 
 export interface AssetViewState {

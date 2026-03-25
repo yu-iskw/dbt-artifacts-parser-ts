@@ -34,6 +34,7 @@ export function GanttChartFrame({
   onSelect,
   onPointer,
   onHoverClear,
+  dependencyEdgeHint,
 }: {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -61,6 +62,7 @@ export function GanttChartFrame({
   onSelect?: (id: string | null) => void;
   onPointer: (e: MouseEvent<HTMLDivElement>, mode: "move" | "click") => void;
   onHoverClear: () => void;
+  dependencyEdgeHint?: string;
 }) {
   return (
     <section
@@ -132,6 +134,7 @@ export function GanttChartFrame({
           canShowTimestamps={canShowTimestamps}
           timeZone={timeZone}
           testStats={testStatsById?.get(hover.item.unique_id)}
+          dependencyEdgeHint={dependencyEdgeHint}
         />
       )}
     </section>

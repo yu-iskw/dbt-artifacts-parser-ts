@@ -9,12 +9,15 @@ export function GanttTooltip({
   canShowTimestamps,
   timeZone,
   testStats,
+  dependencyEdgeHint,
 }: {
   hover: HoverState;
   runStartedAt: number | null | undefined;
   canShowTimestamps: boolean;
   timeZone: string;
   testStats?: ResourceTestStats;
+  /** Shown when compact upstream capping hides some direct dependencies. */
+  dependencyEdgeHint?: string;
 }) {
   return (
     <div
@@ -72,6 +75,11 @@ export function GanttTooltip({
         <div>
           <span style={TOOLTIP_LABEL_STYLE}>Tests: </span>✓{testStats.pass} · ✗
           {testStats.fail + testStats.error}
+        </div>
+      )}
+      {dependencyEdgeHint && (
+        <div style={{ marginTop: "0.35rem" }}>
+          <span style={TOOLTIP_LABEL_STYLE}>{dependencyEdgeHint}</span>
         </div>
       )}
     </div>

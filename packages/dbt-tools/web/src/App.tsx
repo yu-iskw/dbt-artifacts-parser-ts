@@ -74,7 +74,9 @@ function AppContent() {
         selectedExecutionId: selected,
         showTests: true,
         failuresOnly: false,
-        showTimelineDependents: false,
+        showTimelineDependents: true,
+        showAllTimelineUpstreamEdges: false,
+        showAllTimelineDownstreamEdges: false,
       };
     },
   );

@@ -18,12 +18,13 @@ import {
   type DisplayMode,
 } from "./constants";
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
-import { getFocusTimelineEdges } from "./edgeGeometry";
 import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
 import { bundleRowHeight, computeRowLayout } from "./ganttChartHelpers";
-import { hitTestBundle, type BundleLayout, type HoverState } from "./hitTest";
+import { applyGanttPointerInteraction } from "./ganttPointerInteraction";
+import type { BundleLayout, HoverState } from "./hitTest";
 import { useGanttCanvasDraw } from "./useGanttCanvasDraw";
+import { useGanttFocusEdges } from "./useGanttFocusEdges";
 
 export { getFailureBundleIds } from "./ganttChartHelpers";
 
@@ -38,6 +39,10 @@ export interface GanttChartProps {
   showTests?: boolean;
   /** When true, one-hop outbound edges from the focused node are drawn. */
   showDependents?: boolean;
+  /** When true, draw every direct upstream edge; otherwise cap at TIMELINE_MAX_UPSTREAM_EDGES. */
+  showAllUpstream?: boolean;
+  /** When true, draw every direct downstream edge; otherwise cap at TIMELINE_MAX_DOWNSTREAM_EDGES. */
+  showAllDownstream?: boolean;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
 }
@@ -49,6 +54,8 @@ export function GanttChart({
   testStatsById,
   showTests = true,
   showDependents = false,
+  showAllUpstream = false,
+  showAllDownstream = false,
   selectedId = null,
   onSelect,
 }: GanttChartProps) {
@@ -137,17 +144,16 @@ export function GanttChart({
   /** Selection wins over hover for which dependency edges are shown. */
   const edgeFocusId = selectedId ?? hover?.item.unique_id ?? null;
 
-  const edges = useMemo(
-    () =>
-      getFocusTimelineEdges(
-        edgeFocusId,
-        timelineAdjacency,
-        itemById,
-        bundleIndexById,
-        { includeDownstream: showDependents },
-      ),
-    [edgeFocusId, timelineAdjacency, itemById, bundleIndexById, showDependents],
-  );
+  const { edges, dependencyEdgeHint } = useGanttFocusEdges({
+    edgeFocusId,
+    timelineAdjacency,
+    itemById,
+    bundleIndexById,
+    showDependents,
+    showAllUpstream,
+    showAllDownstream,
+    hoverUniqueId: hover?.item.unique_id,
+  });
 
   const focusedIds = useMemo(() => {
     if (!edgeFocusId) return null;
@@ -210,25 +216,16 @@ export function GanttChart({
     e: React.MouseEvent<HTMLDivElement>,
     mode: "move" | "click",
   ) {
-    const hit = hitTestBundle(
-      e,
+    applyGanttPointerInteraction(e, mode, {
       bundles,
       layout,
       scrollTop,
       maxEnd,
       effectiveLabelW,
-      canvasRef.current,
-    );
-    if (!hit) {
-      if (mode === "move") setHover(null);
-      else onSelect?.(null);
-      return;
-    }
-    if (mode === "move") {
-      setHover({ item: hit.item, x: hit.x, y: hit.y });
-      return;
-    }
-    onSelect?.(hit.item.unique_id);
+      canvas: canvasRef.current,
+      setHover,
+      onSelect,
+    });
   }
 
   return (
@@ -270,6 +267,7 @@ export function GanttChart({
         onSelect={onSelect}
         onPointer={handlePointerInteraction}
         onHoverClear={() => setHover(null)}
+        dependencyEdgeHint={dependencyEdgeHint}
       />
     </div>
   );

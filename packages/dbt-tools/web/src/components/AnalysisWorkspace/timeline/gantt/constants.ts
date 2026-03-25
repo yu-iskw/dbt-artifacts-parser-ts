@@ -32,4 +32,10 @@ export const TIMELINE_TIMEZONE_STORAGE_KEY = "dbt-tools.timelineTimezone";
 /** Show a hint when the timeline has this many bundle rows (parents). */
 export const TIMELINE_BUNDLE_COUNT_WARNING = 20_000;
 
+/** Max direct upstream edges drawn in compact timeline focus mode. */
+export const TIMELINE_MAX_UPSTREAM_EDGES = 8;
+
+/** Max direct downstream edges drawn in compact timeline focus mode. */
+export const TIMELINE_MAX_DOWNSTREAM_EDGES = 8;
+
 export type DisplayMode = "duration" | "timestamps";

@@ -27,6 +27,12 @@ interface GanttLegendProps {
   /** One-hop downstream edges when a parcel is focused. */
   showTimelineDependents?: boolean;
   onToggleShowTimelineDependents?: () => void;
+  /** Draw all direct upstream edges when focused (vs ranked cap). */
+  showAllTimelineUpstreamEdges?: boolean;
+  onToggleShowAllTimelineUpstreamEdges?: () => void;
+  /** Draw all direct downstream edges when focused (vs ranked cap). Requires Dependents. */
+  showAllTimelineDownstreamEdges?: boolean;
+  onToggleShowAllTimelineDownstreamEdges?: () => void;
 }
 
 const SWATCH_STYLE: CSSProperties = {
@@ -41,6 +47,107 @@ const LEGEND_ITEM_ACTIVE_CLASS = " gantt-legend__item--active";
 
 type ThemeHex = ReturnType<typeof getThemeHex>;
 
+function TimelineGraphLegendToggles({
+  themeHex,
+  showTimelineDependents,
+  onToggleShowTimelineDependents,
+  showAllTimelineUpstreamEdges,
+  onToggleShowAllTimelineUpstreamEdges,
+  showAllTimelineDownstreamEdges,
+  onToggleShowAllTimelineDownstreamEdges,
+}: {
+  themeHex: ThemeHex;
+  showTimelineDependents?: boolean;
+  onToggleShowTimelineDependents?: () => void;
+  showAllTimelineUpstreamEdges?: boolean;
+  onToggleShowAllTimelineUpstreamEdges?: () => void;
+  showAllTimelineDownstreamEdges?: boolean;
+  onToggleShowAllTimelineDownstreamEdges?: () => void;
+}) {
+  if (
+    onToggleShowTimelineDependents == null &&
+    onToggleShowAllTimelineUpstreamEdges == null &&
+    onToggleShowAllTimelineDownstreamEdges == null
+  ) {
+    return null;
+  }
+
+  return (
+    <>
+      {onToggleShowTimelineDependents != null && (
+        <button
+          type="button"
+          className={`gantt-legend__item${showTimelineDependents ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+          onClick={onToggleShowTimelineDependents}
+          title={
+            showTimelineDependents
+              ? "Hide dependent edges (1 hop)"
+              : "Show dependent edges (1 hop) when a node is focused"
+          }
+          aria-pressed={showTimelineDependents ?? false}
+        >
+          <span
+            style={{
+              ...SWATCH_STYLE,
+              background: themeHex.accent,
+              borderRadius: 50,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">Dependents</span>
+        </button>
+      )}
+      {onToggleShowAllTimelineUpstreamEdges != null && (
+        <button
+          type="button"
+          className={`gantt-legend__item${showAllTimelineUpstreamEdges ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+          onClick={onToggleShowAllTimelineUpstreamEdges}
+          title={
+            showAllTimelineUpstreamEdges
+              ? "Use compact upstream edges (ranked, capped)"
+              : "Show all direct upstream edges when a node is focused"
+          }
+          aria-pressed={showAllTimelineUpstreamEdges ?? false}
+        >
+          <span
+            style={{
+              ...SWATCH_STYLE,
+              background: themeHex.slate,
+              borderRadius: 50,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">All upstream</span>
+        </button>
+      )}
+      {onToggleShowAllTimelineDownstreamEdges != null &&
+        showTimelineDependents && (
+          <button
+            type="button"
+            className={`gantt-legend__item${showAllTimelineDownstreamEdges ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+            onClick={onToggleShowAllTimelineDownstreamEdges}
+            title={
+              showAllTimelineDownstreamEdges
+                ? "Use compact downstream edges (ranked, capped)"
+                : "Show all direct downstream edges when a node is focused"
+            }
+            aria-pressed={showAllTimelineDownstreamEdges ?? false}
+          >
+            <span
+              style={{
+                ...SWATCH_STYLE,
+                background: themeHex.amber,
+                borderRadius: 50,
+              }}
+              aria-hidden
+            />
+            <span className="gantt-legend__name">All downstream</span>
+          </button>
+        )}
+    </>
+  );
+}
+
 function GanttLegendActionRow({
   themeHex,
   showTests,
@@ -49,6 +156,10 @@ function GanttLegendActionRow({
   onToggleFailuresOnly,
   showTimelineDependents,
   onToggleShowTimelineDependents,
+  showAllTimelineUpstreamEdges,
+  onToggleShowAllTimelineUpstreamEdges,
+  showAllTimelineDownstreamEdges,
+  onToggleShowAllTimelineDownstreamEdges,
 }: {
   themeHex: ThemeHex;
   showTests?: boolean;
@@ -57,11 +168,17 @@ function GanttLegendActionRow({
   onToggleFailuresOnly?: () => void;
   showTimelineDependents?: boolean;
   onToggleShowTimelineDependents?: () => void;
+  showAllTimelineUpstreamEdges?: boolean;
+  onToggleShowAllTimelineUpstreamEdges?: () => void;
+  showAllTimelineDownstreamEdges?: boolean;
+  onToggleShowAllTimelineDownstreamEdges?: () => void;
 }) {
   if (
     onToggleShowTests == null &&
     onToggleFailuresOnly == null &&
-    onToggleShowTimelineDependents == null
+    onToggleShowTimelineDependents == null &&
+    onToggleShowAllTimelineUpstreamEdges == null &&
+    onToggleShowAllTimelineDownstreamEdges == null
   ) {
     return null;
   }
@@ -110,29 +227,19 @@ function GanttLegendActionRow({
           <span className="gantt-legend__name">Failures only</span>
         </button>
       )}
-      {onToggleShowTimelineDependents != null && (
-        <button
-          type="button"
-          className={`gantt-legend__item${showTimelineDependents ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
-          onClick={onToggleShowTimelineDependents}
-          title={
-            showTimelineDependents
-              ? "Hide dependent edges (1 hop)"
-              : "Show dependent edges (1 hop) when a node is focused"
-          }
-          aria-pressed={showTimelineDependents ?? false}
-        >
-          <span
-            style={{
-              ...SWATCH_STYLE,
-              background: themeHex.accent,
-              borderRadius: 50,
-            }}
-            aria-hidden
-          />
-          <span className="gantt-legend__name">Dependents</span>
-        </button>
-      )}
+      <TimelineGraphLegendToggles
+        themeHex={themeHex}
+        showTimelineDependents={showTimelineDependents}
+        onToggleShowTimelineDependents={onToggleShowTimelineDependents}
+        showAllTimelineUpstreamEdges={showAllTimelineUpstreamEdges}
+        onToggleShowAllTimelineUpstreamEdges={
+          onToggleShowAllTimelineUpstreamEdges
+        }
+        showAllTimelineDownstreamEdges={showAllTimelineDownstreamEdges}
+        onToggleShowAllTimelineDownstreamEdges={
+          onToggleShowAllTimelineDownstreamEdges
+        }
+      />
     </div>
   );
 }
@@ -150,6 +257,10 @@ export function GanttLegend({
   onToggleFailuresOnly,
   showTimelineDependents,
   onToggleShowTimelineDependents,
+  showAllTimelineUpstreamEdges,
+  onToggleShowAllTimelineUpstreamEdges,
+  showAllTimelineDownstreamEdges,
+  onToggleShowAllTimelineDownstreamEdges,
 }: GanttLegendProps) {
   const theme = useSyncedDocumentTheme();
   const themeHex = getThemeHex(theme);
@@ -165,7 +276,9 @@ export function GanttLegend({
     visibleTypes.length > 0 ||
     onToggleShowTests != null ||
     onToggleFailuresOnly != null ||
-    onToggleShowTimelineDependents != null;
+    onToggleShowTimelineDependents != null ||
+    onToggleShowAllTimelineUpstreamEdges != null ||
+    onToggleShowAllTimelineDownstreamEdges != null;
 
   if (!hasAnything) return null;
 
@@ -234,6 +347,14 @@ export function GanttLegend({
         onToggleFailuresOnly={onToggleFailuresOnly}
         showTimelineDependents={showTimelineDependents}
         onToggleShowTimelineDependents={onToggleShowTimelineDependents}
+        showAllTimelineUpstreamEdges={showAllTimelineUpstreamEdges}
+        onToggleShowAllTimelineUpstreamEdges={
+          onToggleShowAllTimelineUpstreamEdges
+        }
+        showAllTimelineDownstreamEdges={showAllTimelineDownstreamEdges}
+        onToggleShowAllTimelineDownstreamEdges={
+          onToggleShowAllTimelineDownstreamEdges
+        }
       />
     </div>
   );

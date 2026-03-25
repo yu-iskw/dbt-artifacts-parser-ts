@@ -110,6 +110,20 @@ function TimelineSurface({
             showTimelineDependents: !c.showTimelineDependents,
           }))
         }
+        showAllTimelineUpstreamEdges={filters.showAllTimelineUpstreamEdges}
+        onToggleShowAllTimelineUpstreamEdges={() =>
+          setFilters((c) => ({
+            ...c,
+            showAllTimelineUpstreamEdges: !c.showAllTimelineUpstreamEdges,
+          }))
+        }
+        showAllTimelineDownstreamEdges={filters.showAllTimelineDownstreamEdges}
+        onToggleShowAllTimelineDownstreamEdges={() =>
+          setFilters((c) => ({
+            ...c,
+            showAllTimelineDownstreamEdges: !c.showAllTimelineDownstreamEdges,
+          }))
+        }
       />
       <TimelineSearchControls
         filters={filters}
@@ -130,6 +144,8 @@ function TimelineSurface({
         testStatsById={testStatsById}
         showTests={filters.showTests}
         showDependents={filters.showTimelineDependents}
+        showAllUpstream={filters.showAllTimelineUpstreamEdges}
+        showAllDownstream={filters.showAllTimelineDownstreamEdges}
         selectedId={filters.selectedExecutionId}
         onSelect={(id) => {
           setFilters((current) => ({ ...current, selectedExecutionId: id }));
