@@ -345,12 +345,13 @@ export function TimelineSearchControls({
             type="button"
             className={PILL_BASE}
             onClick={() => {
-              setFilters({
+              setFilters((current) => ({
+                ...current,
                 query: "",
                 activeStatuses: new Set(),
                 activeTypes: new Set(defaultActiveTypes),
                 selectedExecutionId: null,
-              });
+              }));
             }}
           >
             Clear all filters
