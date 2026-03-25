@@ -54,6 +54,12 @@ export class ManifestGraph {
   /**
    * Add nodes from manifest to the graph
    */
+  /** Map relation_name (lowercase) to unique_id when present on manifest entries. */
+  private registerRelationName(uniqueId: string, relationName: unknown): void {
+    if (!relationName) return;
+    this.relationMap.set((relationName as string).toLowerCase(), uniqueId);
+  }
+
   private addNodes(manifest: ParsedManifest): void {
     this.addNodeEntries(manifest.nodes);
     this.addSourceEntries(manifest.sources);
@@ -96,12 +102,7 @@ export class ManifestGraph {
           undefined,
         ...(materialized != null ? { materialized } : {}),
       });
-      if (nodeAny.relation_name) {
-        this.relationMap.set(
-          (nodeAny.relation_name as string).toLowerCase(),
-          uniqueId,
-        );
-      }
+      this.registerRelationName(uniqueId, nodeAny.relation_name);
     }
   }
 
@@ -122,12 +123,7 @@ export class ManifestGraph {
         tags: (sourceAny.tags as string[]) || undefined,
         description: (sourceAny.description as string) || undefined,
       });
-      if (sourceAny.relation_name) {
-        this.relationMap.set(
-          (sourceAny.relation_name as string).toLowerCase(),
-          uniqueId,
-        );
-      }
+      this.registerRelationName(uniqueId, sourceAny.relation_name);
     }
   }
 
@@ -301,7 +297,6 @@ export class ManifestGraph {
   private addEdges(manifest: ParsedManifest): void {
     if (manifest.parent_map) {
       this.addEdgesFromParentMap(manifest.parent_map);
-      return;
     }
     this.addEdgesFromNodeDependsOn(manifest.nodes);
     this.addEdgesFromExposureDependsOn(manifest.exposures);

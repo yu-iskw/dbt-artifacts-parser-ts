@@ -15,6 +15,8 @@ import {
 import {
   AXIS_TOP,
   ROW_H,
+  TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION,
+  TIMELINE_EXTENDED_MAX_HOPS,
   TIMELINE_MAX_DOWNSTREAM_EDGES,
   TIMELINE_MAX_UPSTREAM_EDGES,
 } from "./constants";
@@ -172,7 +174,7 @@ describe("getFocusTimelineEdges", () => {
         maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
         showAllDownstream: false,
         maxDownstreamEdges: TIMELINE_MAX_DOWNSTREAM_EDGES,
-      }),
+      }).edges,
     ).toEqual([]);
   });
 
@@ -201,17 +203,21 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       { ...fullUpstreamOpts, includeDownstream: false },
-    );
+    ).edges;
     expect(up).toHaveLength(2);
     expect(up).toContainEqual({
       fromId: "model.a",
       toId: "test.rel",
       tier: "primary",
+      hop: 1,
+      leg: "upstream",
     });
     expect(up).toContainEqual({
       fromId: "model.b",
       toId: "test.rel",
       tier: "primary",
+      hop: 1,
+      leg: "upstream",
     });
 
     const withDown = getFocusTimelineEdges(
@@ -220,7 +226,7 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       { ...fullUpstreamOpts, includeDownstream: true },
-    );
+    ).edges;
     expect(withDown.some((e) => e.tier === "downstream")).toBe(false);
 
     const idx = new Map<string, number>([
@@ -235,11 +241,13 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       idx,
       { ...fullUpstreamOpts, includeDownstream: true },
-    );
+    ).edges;
     expect(withC).toContainEqual({
       fromId: "test.rel",
       toId: "model.c",
       tier: "downstream",
+      hop: 1,
+      leg: "downstream",
     });
   });
 
@@ -265,16 +273,20 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       fullUpstreamOpts,
-    );
+    ).edges;
     expect(edges).toContainEqual({
       fromId: "test.t1",
       toId: "test.t2",
       tier: "secondary",
+      hop: 1,
+      leg: "upstream",
     });
     expect(edges).toContainEqual({
       fromId: "model.p",
       toId: "test.t2",
       tier: "primary",
+      hop: 1,
+      leg: "upstream",
     });
   });
 
@@ -306,8 +318,10 @@ describe("getFocusTimelineEdges", () => {
         showAllDownstream: false,
         maxDownstreamEdges: TIMELINE_MAX_DOWNSTREAM_EDGES,
       },
-    );
-    expect(compact.filter((e) => e.tier !== "downstream")).toHaveLength(8);
+    ).edges;
+    expect(
+      compact.filter((e) => e.hop === 1 && e.leg === "upstream"),
+    ).toHaveLength(8);
 
     const full = getFocusTimelineEdges(
       "model.focus",
@@ -321,8 +335,10 @@ describe("getFocusTimelineEdges", () => {
         showAllDownstream: false,
         maxDownstreamEdges: TIMELINE_MAX_DOWNSTREAM_EDGES,
       },
-    );
-    expect(full.filter((e) => e.tier !== "downstream")).toHaveLength(12);
+    ).edges;
+    expect(
+      full.filter((e) => e.hop === 1 && e.leg === "upstream"),
+    ).toHaveLength(12);
   });
 
   it("caps downstream edges in compact mode", () => {
@@ -353,8 +369,10 @@ describe("getFocusTimelineEdges", () => {
         showAllDownstream: false,
         maxDownstreamEdges: 8,
       },
-    );
-    expect(compact.filter((e) => e.tier === "downstream")).toHaveLength(8);
+    ).edges;
+    expect(
+      compact.filter((e) => e.hop === 1 && e.leg === "downstream"),
+    ).toHaveLength(8);
 
     const full = getFocusTimelineEdges(
       "model.focus",
@@ -368,8 +386,78 @@ describe("getFocusTimelineEdges", () => {
         showAllDownstream: true,
         maxDownstreamEdges: 8,
       },
+    ).edges;
+    expect(
+      full.filter((e) => e.hop === 1 && e.leg === "downstream"),
+    ).toHaveLength(12);
+  });
+
+  it("adds hop-2 upstream and downstream when extendedDeps is enabled", () => {
+    const a = model("model.a", 0, 50);
+    const b = model("model.b", 60, 120);
+    const focus = model("model.focus", 200, 300);
+    const c = model("model.c", 400, 450);
+    const d = model("model.d", 500, 600);
+    const items = [a, b, focus, c, d];
+    const itemById = new Map(items.map((i) => [i.unique_id, i]));
+    const bundleIndexById = new Map(items.map((x, i) => [x.unique_id, i]));
+
+    const timelineAdjacency: Record<string, TimelineAdjacencyEntry> = {
+      "model.focus": { inbound: ["model.b"], outbound: ["model.c"] },
+      "model.b": { inbound: ["model.a"], outbound: ["model.focus"] },
+      "model.a": { inbound: [], outbound: ["model.b"] },
+      "model.c": { inbound: ["model.focus"], outbound: ["model.d"] },
+      "model.d": { inbound: ["model.c"], outbound: [] },
+    };
+
+    const { edges, extendedTruncated } = getFocusTimelineEdges(
+      "model.focus",
+      timelineAdjacency,
+      itemById,
+      bundleIndexById,
+      {
+        includeDownstream: true,
+        showAllUpstream: true,
+        maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
+        showAllDownstream: true,
+        maxDownstreamEdges: TIMELINE_MAX_DOWNSTREAM_EDGES,
+        extendedDeps: {
+          enabled: true,
+          maxHops: TIMELINE_EXTENDED_MAX_HOPS,
+          maxEdgesPerDirection: TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION,
+        },
+      },
     );
-    expect(full.filter((e) => e.tier === "downstream")).toHaveLength(12);
+
+    expect(extendedTruncated).toBe(false);
+    expect(edges).toContainEqual({
+      fromId: "model.a",
+      toId: "model.b",
+      tier: "primary",
+      hop: 2,
+      leg: "upstream",
+    });
+    expect(edges).toContainEqual({
+      fromId: "model.b",
+      toId: "model.focus",
+      tier: "primary",
+      hop: 1,
+      leg: "upstream",
+    });
+    expect(edges).toContainEqual({
+      fromId: "model.focus",
+      toId: "model.c",
+      tier: "downstream",
+      hop: 1,
+      leg: "downstream",
+    });
+    expect(edges).toContainEqual({
+      fromId: "model.c",
+      toId: "model.d",
+      tier: "downstream",
+      hop: 2,
+      leg: "downstream",
+    });
   });
 });
 
@@ -407,7 +495,13 @@ describe("parcelCenterY and focusEdgePath", () => {
     const rowOffsets = [0, ROW_H];
 
     const d = focusEdgePath({
-      edge: { fromId: "a", toId: "b", tier: "primary" },
+      edge: {
+        fromId: "a",
+        toId: "b",
+        tier: "primary",
+        hop: 1,
+        leg: "upstream",
+      },
       itemById,
       bundleIndexById,
       bundles,

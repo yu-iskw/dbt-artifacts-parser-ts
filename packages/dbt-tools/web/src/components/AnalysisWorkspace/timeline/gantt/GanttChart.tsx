@@ -43,6 +43,8 @@ export interface GanttChartProps {
   showAllUpstream?: boolean;
   /** When true, draw every direct downstream edge; otherwise cap at TIMELINE_MAX_DOWNSTREAM_EDGES. */
   showAllDownstream?: boolean;
+  /** When true, add capped multi-hop edges (hop ≥ 2) for the focused node. */
+  showExtendedDeps?: boolean;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
 }
@@ -56,6 +58,7 @@ export function GanttChart({
   showDependents = false,
   showAllUpstream = false,
   showAllDownstream = false,
+  showExtendedDeps = false,
   selectedId = null,
   onSelect,
 }: GanttChartProps) {
@@ -152,6 +155,7 @@ export function GanttChart({
     showDependents,
     showAllUpstream,
     showAllDownstream,
+    showExtendedDeps,
     hoverUniqueId: hover?.item.unique_id,
   });
 

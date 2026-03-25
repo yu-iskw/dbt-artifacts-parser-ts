@@ -38,4 +38,13 @@ export const TIMELINE_MAX_UPSTREAM_EDGES = 8;
 /** Max direct downstream edges drawn in compact timeline focus mode. */
 export const TIMELINE_MAX_DOWNSTREAM_EDGES = 8;
 
+/** Max hop index when collecting extended (multi-hop) timeline focus edges. */
+export const TIMELINE_EXTENDED_MAX_HOPS = 3;
+
+/**
+ * Max extended edges per direction (upstream vs downstream), separate from
+ * one-hop caps. See ADR 0025.
+ */
+export const TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION = 12;
+
 export type DisplayMode = "duration" | "timestamps";

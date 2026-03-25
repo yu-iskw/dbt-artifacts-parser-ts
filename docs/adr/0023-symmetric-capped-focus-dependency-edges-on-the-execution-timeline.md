@@ -12,6 +12,10 @@ Depends on [18. Hybrid dbt-first catalog and runs workspace for dbt-tools web](0
 
 Related to [15. MVC-style layering for web app](0015-mvc-style-layering-for-web-app.md) (timeline UI and pure geometry helpers live in the web view layer)
 
+Extended by [25. Optional multi-hop capped focus edges on the execution timeline](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)
+
+Amended by [25. Optional multi-hop capped focus edges on the execution timeline](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)
+
 ## Context
 
 ADR-0017 positions the timeline as part of an investigation workflow: focused nodes should help users understand **why** a resource matters in the run, not only when it executed. ADR-0018 keeps Runs (including the timeline) as an execution-analysis surface.
@@ -32,10 +36,10 @@ That asymmetry was easy to read as broken graph data: focusing a **producer** hi
    When dependents are enabled, outbound neighbors on the visible timeline are **ranked** and **capped** using the same structural idea as inbound edges (`TIMELINE_MAX_DOWNSTREAM_EDGES`, aligned with the upstream cap constant). A legend toggle **`showAllTimelineDownstreamEdges`** mirrors **All upstream** (`TimelineFilterState`, `GanttLegend.tsx`, `GanttChart.tsx`).
 
 3. **Geometry and options**  
-   `getFocusTimelineEdges` in `edgeGeometry.ts` takes extended options (`showAllDownstream`, `maxDownstreamEdges`). Shared capping uses `applyNeighborCap`. Outbound order uses `rankOutboundNeighborIds` (sibling-test grouping where applicable, resource-type rank, temporal proximity to the focus end, then id). `countOutboundOnTimeline` supports hints and tests.
+   `getFocusTimelineEdges` in `edgeGeometry.ts` returns `{ edges, extendedTruncated }` and takes options including `showAllDownstream`, `maxDownstreamEdges`, and `extendedDeps` (see [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)). Each `FocusTimelineEdge` carries `hop` (1 for direct neighbors) and `leg` (`upstream` | `downstream`). Shared capping uses `applyNeighborCap`. Outbound order uses `rankOutboundNeighborIds` (sibling-test grouping where applicable, resource-type rank, temporal proximity to the focus end, then id). `countOutboundOnTimeline` supports hints and tests.
 
 4. **Tooltip hints**  
-   When the user hovers the focused row and a cap hides neighbors, the tooltip may show **“Showing K of N direct dependencies”** and/or **“Showing K of N direct dependents”** (`useGanttFocusEdges.ts`).
+   When the user hovers the focused row and a cap hides **direct** neighbors, the tooltip may show sentences like **“Showing K of N direct dependencies.”** and/or **“Showing K of N direct dependents.”** (`useGanttFocusEdges.ts`). Extended-mode truncation copy is covered in ADR 0025.
 
 5. **Data contract unchanged**  
    Edges are only drawn between ids present in the **current filtered** timeline bundle index. Adjacency remains `timelineAdjacency` from `services/analyze.ts`.
@@ -43,7 +47,7 @@ That asymmetry was easy to read as broken graph data: focusing a **producer** hi
 ### Non-decisions
 
 - Ranking and caps are **display-only**; they do not change dbt build order or manifest semantics.
-- Multi-hop dependency bands on the timeline are out of scope for this ADR.
+- This ADR is the contract for **one-hop** focus edges (defaults, ranking, caps). **Optional** capped multi-hop segments (`hop ≥ 2`) are a separate, opt-in mode documented in [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md).
 
 ### Architecture
 
@@ -53,6 +57,7 @@ flowchart TB
     dep[showTimelineDependents]
     allUp[showAllTimelineUpstreamEdges]
     allDown[showAllTimelineDownstreamEdges]
+    ext[showTimelineExtendedDeps]
   end
   subgraph chart [GanttChart]
     gc[Chart and bundle index]
@@ -63,7 +68,7 @@ flowchart TB
   filters --> chart
   chart --> geo
   adj[timelineAdjacency from analyze] --> geo
-  geo --> canvas[Canvas focus edges]
+  geo --> svg[GanttEdgeLayer SVG paths]
 ```
 
 ## Consequences
@@ -71,4 +76,4 @@ flowchart TB
 - **Easier mental model**: Focusing either end of a direct manifest edge tends to reveal that edge when both rows are visible, reducing false “missing edge” reports.
 - **Bounded clutter**: High fan-out nodes stay usable in the default compact mode; power users can expand via **All upstream** / **All downstream**.
 - **More legend surface**: Users who want a minimal canvas can still turn **Dependents** off.
-- **Maintenance**: Changes to cap sizes, rank keys, or filter defaults should stay aligned with tests in `edgeGeometry.test.ts` and any tooltip copy in the Gantt stack.
+- **Maintenance**: Changes to cap sizes, rank keys, or filter defaults should stay aligned with tests in `edgeGeometry.test.ts`, tooltip copy in `useGanttFocusEdges.ts`, and focus-edge rendering in `GanttEdgeLayer.tsx`.

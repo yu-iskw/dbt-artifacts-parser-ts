@@ -9,37 +9,33 @@ import {
   ROW_H,
   TEST_BAR_H,
   TEST_LANE_H,
+  TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION,
+  TIMELINE_EXTENDED_MAX_HOPS,
 } from "./constants";
 
 export type FocusEdgeTier = "primary" | "secondary" | "downstream";
+
+export type FocusEdgeLeg = "upstream" | "downstream";
 
 export interface FocusTimelineEdge {
   fromId: string;
   toId: string;
   tier: FocusEdgeTier;
+  /** 1 = direct neighbor of focus; 2+ = extended multi-hop segment. */
+  hop: number;
+  leg: FocusEdgeLeg;
 }
 
-function isSiblingTestUpstream(
-  upstreamItem: GanttItem | undefined,
+/** True when both items are tests under the same parent model (display tier hint). */
+function isSiblingTestNeighbor(
+  neighbor: GanttItem | undefined,
   focusItem: GanttItem | undefined,
 ): boolean {
-  if (!upstreamItem || !focusItem) return false;
+  if (!neighbor || !focusItem) return false;
   if (!TEST_RESOURCE_TYPES.has(focusItem.resourceType)) return false;
-  if (!TEST_RESOURCE_TYPES.has(upstreamItem.resourceType)) return false;
-  if (focusItem.parentId == null || upstreamItem.parentId == null) return false;
-  return focusItem.parentId === upstreamItem.parentId;
-}
-
-function isSiblingTestDownstream(
-  downstreamItem: GanttItem | undefined,
-  focusItem: GanttItem | undefined,
-): boolean {
-  if (!downstreamItem || !focusItem) return false;
-  if (!TEST_RESOURCE_TYPES.has(focusItem.resourceType)) return false;
-  if (!TEST_RESOURCE_TYPES.has(downstreamItem.resourceType)) return false;
-  if (focusItem.parentId == null || downstreamItem.parentId == null)
-    return false;
-  return focusItem.parentId === downstreamItem.parentId;
+  if (!TEST_RESOURCE_TYPES.has(neighbor.resourceType)) return false;
+  if (focusItem.parentId == null || neighbor.parentId == null) return false;
+  return focusItem.parentId === neighbor.parentId;
 }
 
 /** Display-only priority for ranking upstream parcels (lower = earlier in sort). */
@@ -75,8 +71,8 @@ export function rankInboundNeighborIds(
   return [...inboundOnTimeline].sort((a, b) => {
     const ia = itemById.get(a);
     const ib = itemById.get(b);
-    const sa = isSiblingTestUpstream(ia, focusItem) ? 0 : 1;
-    const sb = isSiblingTestUpstream(ib, focusItem) ? 0 : 1;
+    const sa = isSiblingTestNeighbor(ia, focusItem) ? 0 : 1;
+    const sb = isSiblingTestNeighbor(ib, focusItem) ? 0 : 1;
     if (sa !== sb) return sa - sb;
 
     const ra = resourceTypeRank(ia?.resourceType);
@@ -125,8 +121,8 @@ export function rankOutboundNeighborIds(
   return [...outboundOnTimeline].sort((a, b) => {
     const ia = itemById.get(a);
     const ib = itemById.get(b);
-    const sa = isSiblingTestDownstream(ia, focusItem) ? 0 : 1;
-    const sb = isSiblingTestDownstream(ib, focusItem) ? 0 : 1;
+    const sa = isSiblingTestNeighbor(ia, focusItem) ? 0 : 1;
+    const sb = isSiblingTestNeighbor(ib, focusItem) ? 0 : 1;
     if (sa !== sb) return sa - sb;
 
     const ra = resourceTypeRank(ia?.resourceType);
@@ -151,6 +147,150 @@ export interface FocusTimelineEdgesOptions {
   showAllDownstream: boolean;
   /** When `showAllDownstream` is false, at most this many downstream edges. */
   maxDownstreamEdges: number;
+  /** Optional multi-hop segments (hop ≥ 2), capped separately from one-hop. */
+  extendedDeps?: {
+    enabled: boolean;
+    maxHops?: number;
+    maxEdgesPerDirection?: number;
+  };
+}
+
+export interface FocusTimelineEdgesResult {
+  edges: FocusTimelineEdge[];
+  /** True if extended BFS hit a per-direction cap (hop ≥ 2 only). */
+  extendedTruncated: boolean;
+}
+
+function focusEdgeDedupeKey(
+  e: Pick<FocusTimelineEdge, "fromId" | "toId">,
+): string {
+  return `${e.fromId}\t${e.toId}`;
+}
+
+function compareFocusEdges(a: FocusTimelineEdge, b: FocusTimelineEdge): number {
+  if (a.hop !== b.hop) return a.hop - b.hop;
+  const legA = a.leg === "upstream" ? 0 : 1;
+  const legB = b.leg === "upstream" ? 0 : 1;
+  if (legA !== legB) return legA - legB;
+  const cf = a.fromId.localeCompare(b.fromId);
+  if (cf !== 0) return cf;
+  return a.toId.localeCompare(b.toId);
+}
+
+type ExtendedBfsDirection = "upstream" | "downstream";
+
+interface ExtendedBfsVisitCtx {
+  hop: number;
+  direction: ExtendedBfsDirection;
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>;
+  inTimeline: (id: string) => boolean;
+  seen: Set<string>;
+  edges: FocusTimelineEdge[];
+  maxEdges: number;
+  nextFrontier: Set<string>;
+}
+
+function visitExtendedNeighborsForVertex(
+  v: string,
+  ctx: ExtendedBfsVisitCtx,
+): boolean {
+  const entry = ctx.timelineAdjacency[v];
+  if (!entry) return false;
+  const neighbors =
+    ctx.direction === "upstream" ? entry.inbound : entry.outbound;
+  for (const n of neighbors) {
+    if (!ctx.inTimeline(n)) continue;
+    const fromId = ctx.direction === "upstream" ? n : v;
+    const toId = ctx.direction === "upstream" ? v : n;
+    const key = focusEdgeDedupeKey({ fromId, toId });
+    if (ctx.seen.has(key)) continue;
+    ctx.seen.add(key);
+    if (ctx.hop >= 2) {
+      ctx.edges.push({
+        fromId,
+        toId,
+        tier: ctx.direction === "upstream" ? "primary" : "downstream",
+        hop: ctx.hop,
+        leg: ctx.direction,
+      });
+      if (ctx.edges.length >= ctx.maxEdges) return true;
+    }
+    ctx.nextFrontier.add(n);
+  }
+  return false;
+}
+
+function collectExtendedEdgesBfs(
+  focusId: string,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>,
+  bundleIndexById: Map<string, number>,
+  maxHops: number,
+  maxEdges: number,
+  direction: ExtendedBfsDirection,
+): { edges: FocusTimelineEdge[]; truncated: boolean } {
+  const inTimeline = (id: string) => bundleIndexById.has(id);
+  const seen = new Set<string>();
+  const edges: FocusTimelineEdge[] = [];
+  let truncated = false;
+  let frontier = new Set<string>([focusId]);
+
+  for (let hop = 1; hop <= maxHops && edges.length < maxEdges; hop++) {
+    const nextFrontier = new Set<string>();
+    const visitCtx: ExtendedBfsVisitCtx = {
+      hop,
+      direction,
+      timelineAdjacency,
+      inTimeline,
+      seen,
+      edges,
+      maxEdges,
+      nextFrontier,
+    };
+    for (const v of frontier) {
+      truncated = visitExtendedNeighborsForVertex(v, visitCtx);
+      if (truncated) break;
+    }
+    frontier = nextFrontier;
+    if (truncated || frontier.size === 0) break;
+  }
+
+  return { edges, truncated };
+}
+
+/** Extended upstream edges only (hop ≥ 2): BFS backward from focus using inbound lists. */
+export function collectExtendedUpstreamEdges(
+  focusId: string,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>,
+  bundleIndexById: Map<string, number>,
+  maxHops: number,
+  maxEdges: number,
+): { edges: FocusTimelineEdge[]; truncated: boolean } {
+  return collectExtendedEdgesBfs(
+    focusId,
+    timelineAdjacency,
+    bundleIndexById,
+    maxHops,
+    maxEdges,
+    "upstream",
+  );
+}
+
+/** Extended downstream edges only (hop ≥ 2): BFS forward from focus using outbound lists. */
+export function collectExtendedDownstreamEdges(
+  focusId: string,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>,
+  bundleIndexById: Map<string, number>,
+  maxHops: number,
+  maxEdges: number,
+): { edges: FocusTimelineEdge[]; truncated: boolean } {
+  return collectExtendedEdgesBfs(
+    focusId,
+    timelineAdjacency,
+    bundleIndexById,
+    maxHops,
+    maxEdges,
+    "downstream",
+  );
 }
 
 /** Count of manifest inbound neighbors that appear on the current timeline. */
@@ -186,7 +326,7 @@ export function countOutboundOnTimeline(
 }
 
 /**
- * One-hop dependency edges for the focused executed node only (O(degree)).
+ * One-hop dependency edges plus optional extended (hop ≥ 2) segments for the focused node.
  * Upstream: manifest inbound neighbors → focus (ranked + optionally capped).
  * Downstream: focus → outbound (ranked + optionally capped, optional).
  */
@@ -196,14 +336,18 @@ export function getFocusTimelineEdges(
   itemById: Map<string, GanttItem>,
   bundleIndexById: Map<string, number>,
   options: FocusTimelineEdgesOptions,
-): FocusTimelineEdge[] {
-  if (!focusId || !timelineAdjacency) return [];
+): FocusTimelineEdgesResult {
+  if (!focusId || !timelineAdjacency) {
+    return { edges: [], extendedTruncated: false };
+  }
   const entry = timelineAdjacency[focusId];
   const focusItem = itemById.get(focusId);
-  if (!entry || !focusItem || !bundleIndexById.has(focusId)) return [];
+  if (!entry || !focusItem || !bundleIndexById.has(focusId)) {
+    return { edges: [], extendedTruncated: false };
+  }
 
   const inTimeline = (id: string) => bundleIndexById.has(id);
-  const edges: FocusTimelineEdge[] = [];
+  const oneHop: FocusTimelineEdge[] = [];
 
   const candidates = entry.inbound.filter((u) => inTimeline(u));
   const ranked = rankInboundNeighborIds(candidates, focusItem, itemById);
@@ -215,10 +359,16 @@ export function getFocusTimelineEdges(
 
   for (const u of capped) {
     const upstreamItem = itemById.get(u);
-    const tier: FocusEdgeTier = isSiblingTestUpstream(upstreamItem, focusItem)
+    const tier: FocusEdgeTier = isSiblingTestNeighbor(upstreamItem, focusItem)
       ? "secondary"
       : "primary";
-    edges.push({ fromId: u, toId: focusId, tier });
+    oneHop.push({
+      fromId: u,
+      toId: focusId,
+      tier,
+      hop: 1,
+      leg: "upstream",
+    });
   }
 
   if (options.includeDownstream) {
@@ -234,11 +384,61 @@ export function getFocusTimelineEdges(
       options.maxDownstreamEdges,
     );
     for (const v of cappedDown) {
-      edges.push({ fromId: focusId, toId: v, tier: "downstream" });
+      oneHop.push({
+        fromId: focusId,
+        toId: v,
+        tier: "downstream",
+        hop: 1,
+        leg: "downstream",
+      });
     }
   }
 
-  return edges;
+  const ext = options.extendedDeps;
+  if (!ext?.enabled) {
+    return {
+      edges: [...oneHop].sort(compareFocusEdges),
+      extendedTruncated: false,
+    };
+  }
+
+  const maxHops = ext.maxHops ?? TIMELINE_EXTENDED_MAX_HOPS;
+  const perDir =
+    ext.maxEdgesPerDirection ?? TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION;
+
+  const upExt = collectExtendedUpstreamEdges(
+    focusId,
+    timelineAdjacency,
+    bundleIndexById,
+    maxHops,
+    perDir,
+  );
+  const downExt = options.includeDownstream
+    ? collectExtendedDownstreamEdges(
+        focusId,
+        timelineAdjacency,
+        bundleIndexById,
+        maxHops,
+        perDir,
+      )
+    : { edges: [] as FocusTimelineEdge[], truncated: false };
+
+  const merged = new Map<string, FocusTimelineEdge>();
+  for (const e of oneHop) merged.set(focusEdgeDedupeKey(e), e);
+  for (const e of upExt.edges) {
+    const k = focusEdgeDedupeKey(e);
+    if (!merged.has(k)) merged.set(k, e);
+  }
+  for (const e of downExt.edges) {
+    const k = focusEdgeDedupeKey(e);
+    if (!merged.has(k)) merged.set(k, e);
+  }
+
+  const edges = [...merged.values()].sort(compareFocusEdges);
+  return {
+    edges,
+    extendedTruncated: upExt.truncated || downExt.truncated,
+  };
 }
 
 /** Vertical center (viewport coords) of a parcel's timing bar / test chip. */

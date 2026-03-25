@@ -7,6 +7,63 @@ import { type FocusTimelineEdge, focusEdgePath } from "./edgeGeometry";
 const MARKER_W = 8;
 const MARKER_H = 8;
 
+function focusEdgeVisualProps(
+  edge: FocusTimelineEdge,
+  t: ReturnType<typeof getThemeHex>,
+  markerIds: {
+    primary: string;
+    secondary: string;
+    downstream: string;
+  },
+) {
+  const hop = edge.hop ?? 1;
+  if (hop >= 2) {
+    if (edge.leg === "upstream") {
+      return {
+        stroke: t.slate,
+        strokeWidth: 1,
+        strokeDasharray: "3 4",
+        opacity: 0.36,
+        markerEnd: `url(#${markerIds.secondary})`,
+      };
+    }
+    return {
+      stroke: t.accent,
+      strokeWidth: 1,
+      strokeDasharray: "4 5",
+      opacity: 0.4,
+      markerEnd: `url(#${markerIds.downstream})`,
+    };
+  }
+
+  switch (edge.tier) {
+    case "secondary":
+      return {
+        stroke: t.slate,
+        strokeWidth: 1,
+        strokeDasharray: "4 3",
+        opacity: 0.42,
+        markerEnd: `url(#${markerIds.secondary})`,
+      };
+    case "downstream":
+      return {
+        stroke: t.accent,
+        strokeWidth: 1.5,
+        strokeDasharray: "5 4",
+        opacity: 0.62,
+        markerEnd: `url(#${markerIds.downstream})`,
+      };
+    default:
+      return {
+        stroke: t.accent,
+        strokeWidth: 2,
+        strokeDasharray: "6 4",
+        opacity: 0.88,
+        markerEnd: `url(#${markerIds.primary})`,
+      };
+  }
+}
+
 function ArrowMarker({ id, fill }: { id: string; fill: string }) {
   return (
     <marker
@@ -99,29 +156,16 @@ export function GanttEdgeLayer({
         });
         if (!d) return null;
 
-        const tier = edge.tier;
-        const stroke =
-          tier === "secondary"
-            ? t.slate
-            : tier === "downstream"
-              ? t.accent
-              : t.accent;
-        const strokeWidth =
-          tier === "secondary" ? 1 : tier === "downstream" ? 1.5 : 2;
-        const strokeDasharray =
-          tier === "secondary" ? "4 3" : tier === "downstream" ? "5 4" : "6 4";
-        const opacity =
-          tier === "secondary" ? 0.42 : tier === "downstream" ? 0.62 : 0.88;
-        const markerEnd =
-          tier === "secondary"
-            ? `url(#${markerSecondary})`
-            : tier === "downstream"
-              ? `url(#${markerDownstream})`
-              : `url(#${markerPrimary})`;
+        const { stroke, strokeWidth, strokeDasharray, opacity, markerEnd } =
+          focusEdgeVisualProps(edge, t, {
+            primary: markerPrimary,
+            secondary: markerSecondary,
+            downstream: markerDownstream,
+          });
 
         return (
           <path
-            key={`${edge.fromId}-${edge.toId}-${edge.tier}-${i}`}
+            key={`${edge.fromId}-${edge.toId}-${edge.tier}-${edge.hop}-${edge.leg}-${i}`}
             d={d}
             stroke={stroke}
             strokeWidth={strokeWidth}

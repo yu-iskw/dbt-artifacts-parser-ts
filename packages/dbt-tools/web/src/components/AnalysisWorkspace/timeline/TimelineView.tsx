@@ -138,6 +138,13 @@ function TimelineSurface({
             showAllTimelineDownstreamEdges: !c.showAllTimelineDownstreamEdges,
           }))
         }
+        showTimelineExtendedDeps={filters.showTimelineExtendedDeps}
+        onToggleShowTimelineExtendedDeps={() =>
+          setFilters((c) => ({
+            ...c,
+            showTimelineExtendedDeps: !c.showTimelineExtendedDeps,
+          }))
+        }
         showCompileExecuteLegend={showCompileExecuteLegend}
       />
       <TimelineSearchControls
@@ -161,6 +168,7 @@ function TimelineSurface({
         showDependents={filters.showTimelineDependents}
         showAllUpstream={filters.showAllTimelineUpstreamEdges}
         showAllDownstream={filters.showAllTimelineDownstreamEdges}
+        showExtendedDeps={filters.showTimelineExtendedDeps}
         selectedId={filters.selectedExecutionId}
         onSelect={(id) => {
           setFilters((current) => ({ ...current, selectedExecutionId: id }));

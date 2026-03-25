@@ -73,6 +73,11 @@ export interface TimelineFilterState {
    * Only applies while `showTimelineDependents` is true.
    */
   showAllTimelineDownstreamEdges: boolean;
+  /**
+   * When true: add capped multi-hop dependency edges (hop ≥ 2) for the focused
+   * node via BFS over timelineAdjacency. Default false.
+   */
+  showTimelineExtendedDeps: boolean;
 }
 
 export interface AssetViewState {
