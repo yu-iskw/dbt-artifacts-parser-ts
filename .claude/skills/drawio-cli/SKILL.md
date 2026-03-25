@@ -26,9 +26,11 @@ compatibility: Requires draw.io Desktop for CLI export (-x). macOS default /Appl
 4. **Export (optional)**
    - Resolve the CLI (see **CLI resolution** below). Set `DRAWIO_CMD` to the resolved binary when it is not on `PATH`.
    - Run:
+
      ```bash
      "$DRAWIO_CMD" -x -f <format> -e -b 10 -o <output> <input.drawio>
      ```
+
    - **Flags:** `-x` export; `-f` format (`png`, `svg`, `pdf`, `jpg`); `-e` embed diagram XML in png/svg/pdf; `-b` border (px); `-t` transparent background (PNG); `-s` scale; `--width` / `--height` fit (aspect preserved).
    - **Naming:** use double extensions for embedded outputs: `name.drawio.png`, `name.drawio.svg`, `name.drawio.pdf`.
    - **jpg:** no `--embed-diagram` support per draw.io CLI behavior; prefer png/svg/pdf when editability matters.
@@ -73,9 +75,9 @@ With `adaptiveColors="auto"`, default stroke/fill/font colors adapt in dark mode
 
 ## External references
 
-- Style reference: https://www.drawio.com/doc/faq/drawio-style-reference.html
-- XSD: https://www.drawio.com/assets/mxfile.xsd
+- Style reference: <https://www.drawio.com/doc/faq/drawio-style-reference.html>
+- XSD: <https://www.drawio.com/assets/mxfile.xsd>
 
 ## Upstream alignment
 
-Workflow and XML rules align with the jgraph draw.io MCP CLI skill: https://raw.githubusercontent.com/jgraph/drawio-mcp/refs/heads/main/skill-cli/drawio/SKILL.md — reconcile with that source when export flags or behavior change.
+Workflow and XML rules align with the jgraph draw.io MCP CLI skill: <https://raw.githubusercontent.com/jgraph/drawio-mcp/refs/heads/main/skill-cli/drawio/SKILL.md> — reconcile with that source when export flags or behavior change.
