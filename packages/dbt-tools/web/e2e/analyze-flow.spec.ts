@@ -50,9 +50,10 @@ test.describe("analyze flow", () => {
     await page.locator(MANIFEST_INPUT).setInputFiles(invalidJsonPath);
     await page.locator(RUN_RESULTS_INPUT).setInputFiles(RUN_RESULTS_PATH);
     await page.getByRole("button", { name: ANALYZE_BUTTON_LABEL }).click();
-    await expect(
-      page.getByText(/Not a manifest|Failed to parse|invalid/i),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(".error-banner").first()).toContainText(
+      /Not a manifest|Failed to parse/i,
+      { timeout: 15_000 },
+    );
   });
 
   test("mockPreload helper is sufficient to enable nav", async ({ page }) => {

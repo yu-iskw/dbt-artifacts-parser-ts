@@ -59,19 +59,6 @@ export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
     );
   }
 
-  // Lineage — graph nodes
-  if (id === "lineage") {
-    return (
-      <svg {...svgProps}>
-        <circle cx="5.5" cy="6.5" r="2" />
-        <circle cx="5.5" cy="17.5" r="2" />
-        <circle cx="18.5" cy="12" r="2" />
-        <path d="M7.5 6.5 Q13 6.5 16.5 12" />
-        <path d="M7.5 17.5 Q13 17.5 16.5 12" />
-      </svg>
-    );
-  }
-
   // Fallback — generic bars
   return (
     <svg {...svgProps}>

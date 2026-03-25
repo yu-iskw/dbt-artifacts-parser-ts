@@ -3,6 +3,7 @@ import { useDeferredValue, useMemo } from "react";
 import type { AnalysisState } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import type {
+  AssetTab,
   OverviewFilterState,
   WorkspaceSignal,
   WorkspaceView,
@@ -53,6 +54,7 @@ export function HealthView({
       resourceId?: string;
       executionId?: string;
       rootResourceId?: string;
+      assetTab?: AssetTab;
     },
   ) => void;
 }) {
@@ -169,7 +171,7 @@ export function HealthView({
           <button
             type="button"
             className="workspace-pill"
-            onClick={() => onNavigateTo("lineage")}
+            onClick={() => onNavigateTo("inventory", { assetTab: "lineage" })}
           >
             Open Lineage
           </button>

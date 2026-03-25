@@ -7,7 +7,6 @@ const NAV_VIEWS = [
   { label: "Inventory", heading: "Inventory", view: "inventory" },
   { label: "Runs", heading: "Runs", view: "runs" },
   { label: "Timeline", heading: "Timeline", view: "timeline" },
-  { label: "Lineage", heading: "Lineage", view: "lineage" },
 ] as const;
 
 test.describe("sidebar navigation", () => {
@@ -62,5 +61,33 @@ test.describe("sidebar navigation", () => {
       page.getByRole("heading", { name: "Timeline" }).first(),
     ).toBeVisible();
     await expect(page).toHaveURL(/view=timeline/);
+  });
+
+  test("legacy lineage URL opens Inventory with lineage tab", async ({
+    page,
+  }) => {
+    await loadWorkspace(page);
+    await page.goto(
+      "/?view=lineage&resource=model.jaffle_shop.orders&up=2&down=2&lens=type",
+    );
+    await expect(
+      page.getByRole("heading", { name: "Lineage graph" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/view=inventory/);
+    await expect(page).toHaveURL(/assetTab=lineage/);
+    await expect(page).toHaveURL(/[?&]up=2/);
+    await expect(page).toHaveURL(/[?&]lens=type/);
+  });
+
+  test("legacy dependencies URL opens Inventory with lineage tab", async ({
+    page,
+  }) => {
+    await loadWorkspace(page);
+    await page.goto("/?view=dependencies&resource=model.jaffle_shop.orders");
+    await expect(
+      page.getByRole("heading", { name: "Lineage graph" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/view=inventory/);
+    await expect(page).toHaveURL(/assetTab=lineage/);
   });
 });

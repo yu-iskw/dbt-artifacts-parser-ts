@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useMemo, useState } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
@@ -44,6 +45,31 @@ export function InventoryView({
     },
   ) => void;
 }) {
+  const sortedResources = useMemo(
+    () => [...analysis.resources].sort((a, b) => a.name.localeCompare(b.name)),
+    [analysis.resources],
+  );
+  const [quickResourceId, setQuickResourceId] = useState("");
+
+  const openLineageForResource = (id: string) => {
+    if (!id) return;
+    onAssetViewStateChange((c) => ({
+      ...c,
+      selectedResourceId: id,
+      activeTab: "lineage",
+    }));
+    onLineageViewStateChange((c) => ({
+      ...c,
+      rootResourceId: id,
+      selectedResourceId: id,
+    }));
+    onInvestigationSelectionChange((c) => ({
+      ...c,
+      selectedResourceId: id,
+      sourceLens: "inventory",
+    }));
+  };
+
   return (
     <WorkspaceScaffold
       title="Inventory"
@@ -71,11 +97,46 @@ export function InventoryView({
         />
       ) : (
         <div className="inventory-empty-state">
-          <EmptyState
-            icon="◱"
-            headline="Select an asset to inspect"
-            subtext="Use the browser panel on the left to find and select a model, source, seed, or other asset."
-          />
+          <div className="inventory-empty-state__inner">
+            <EmptyState
+              icon="◱"
+              headline="Select an asset to inspect"
+              subtext="Use the browser panel on the left to find and select a model, source, seed, or other asset."
+            />
+            <div
+              className="inventory-empty-state__lineage-pick"
+              role="group"
+              aria-label="Jump to lineage for an asset"
+            >
+              <label
+                className="inventory-empty-state__lineage-label"
+                htmlFor="inventory-lineage-root"
+              >
+                Or open the lineage graph for an asset
+              </label>
+              <select
+                id="inventory-lineage-root"
+                className="inventory-empty-state__lineage-select"
+                value={quickResourceId}
+                onChange={(e) => setQuickResourceId(e.target.value)}
+              >
+                <option value="">Choose an asset…</option>
+                {sortedResources.map((entry) => (
+                  <option key={entry.uniqueId} value={entry.uniqueId}>
+                    {entry.name} ({entry.resourceType})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="workspace-pill"
+                disabled={!quickResourceId}
+                onClick={() => openLineageForResource(quickResourceId)}
+              >
+                Open lineage graph
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </WorkspaceScaffold>
