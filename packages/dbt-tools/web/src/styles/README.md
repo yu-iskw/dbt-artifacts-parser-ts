@@ -1,0 +1,27 @@
+# Web app styles (`@dbt-tools/web`)
+
+## Import order
+
+`src/index.css` is the only stylesheet entry from `main.tsx`. It imports slices in this order:
+
+1. **`tokens.css`** — `:root`, `[data-theme="dark"]`, and CSS variable aliases only.
+2. **`base.css`** — global element rules (`*`, `html`, `body`, etc.).
+3. **`app-shell.css`** — layout shell (sidebar, frame, header) and many analyzer/landing rules that sat **before** the lineage section in the original monolith. Shell and workspace selectors are interleaved there on purpose: **cascade order matches the old `index.css`**.
+4. **`ui-primitives.css`** — spinner, skeleton, tooltip, toast, empty state, plus blocks that followed them in the monolith (sidebar link icons, signals, upload/overview landing). Kept in one file to avoid reordering rules.
+5. **`lineage-graph.css`** — dependency graph, lineage viewport, graph toolbars/menus.
+6. **`workspace.css`** — explorer tree, overview modules/bands, type donut, shared legend rows.
+
+Do not change `@import` order without checking for specificity/cascade regressions.
+
+## CSS ↔ TypeScript colors
+
+Canvas and chart code cannot read CSS variables directly in all paths. **`src/constants/themeColors.ts` mirrors** the chart-related custom properties in `tokens.css` (light and dark). When you change chart or graph palette tokens, update **both** places until a codegen pipeline (ADR 0022 Phase 2) exists.
+
+## Two different `STATUS_COLORS` names
+
+The codebase uses the name `STATUS_COLORS` in more than one place:
+
+- **`src/constants/colors.ts`** — execution / run status colors for the app shell and general UI.
+- **`src/lib/analysis-workspace/constants.ts`** — **StatusTone** palettes for charts (Gantt, donut, etc.), aligned with analysis-workspace semantics.
+
+They are intentionally separate domains; renaming one to reduce confusion is a follow-up decision (would touch many imports).
