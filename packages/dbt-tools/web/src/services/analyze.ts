@@ -325,6 +325,29 @@ function buildStatusBreakdown(
     .sort((a, b) => b.count - a.count);
 }
 
+/** Minimal graphology surface for timeline neighbor lists. */
+interface NeighborGraph {
+  hasNode(id: string): boolean;
+  inboundNeighbors(id: string): Iterable<string>;
+  outboundNeighbors(id: string): Iterable<string>;
+}
+
+function buildTimelineAdjacency(
+  graphologyGraph: NeighborGraph,
+  executedUniqueIds: string[],
+): AnalysisState["timelineAdjacency"] {
+  const out: AnalysisState["timelineAdjacency"] = {};
+  for (const id of executedUniqueIds) {
+    out[id] = graphologyGraph.hasNode(id)
+      ? {
+          inbound: [...graphologyGraph.inboundNeighbors(id)],
+          outbound: [...graphologyGraph.outboundNeighbors(id)],
+        }
+      : { inbound: [], outbound: [] };
+  }
+  return out;
+}
+
 function buildThreadStats(
   executions: Array<{ threadId: string | null; executionTime: number }>,
 ) {
@@ -464,6 +487,11 @@ export async function analyzeArtifacts(
     };
   });
 
+  const timelineAdjacency = buildTimelineAdjacency(
+    graphologyGraph as NeighborGraph,
+    enrichedGanttData.map((g) => g.unique_id),
+  );
+
   const executions = nodeExecutions
     .map((execution) => {
       const attrs = graphologyGraph.hasNode(execution.unique_id)
@@ -521,6 +549,7 @@ export async function analyzeArtifacts(
     statusBreakdown,
     threadStats,
     dependencyIndex,
+    timelineAdjacency,
     selectedResourceId,
   };
 }

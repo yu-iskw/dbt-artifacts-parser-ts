@@ -64,61 +64,6 @@ export function fillRoundRect(
 type CanvasPalette = ReturnType<typeof getCanvasColors>;
 
 // ---------------------------------------------------------------------------
-// Bundle hull
-// ---------------------------------------------------------------------------
-
-interface DrawBundleHullParams {
-  ctx: CanvasRenderingContext2D;
-  bundle: BundleRow;
-  rowY: number;
-  rowHeight: number;
-  labelW: number;
-  chartW: number;
-  maxEnd: number;
-  palette: CanvasPalette;
-  testsInHull: boolean;
-  showTests: boolean;
-  emphasis: number;
-}
-
-function drawBundleHull({
-  ctx,
-  bundle,
-  rowY,
-  rowHeight,
-  labelW,
-  chartW,
-  maxEnd,
-  palette,
-  testsInHull,
-  showTests,
-  emphasis,
-}: DrawBundleHullParams) {
-  const items: GanttItem[] = [
-    bundle.item,
-    ...(showTests && testsInHull ? bundle.tests : []),
-  ];
-  if (items.length === 0) return;
-
-  const hullStart = Math.min(...items.map((i) => i.start));
-  const hullEnd = Math.max(...items.map((i) => i.end));
-  const hullX = labelW + (hullStart / maxEnd) * chartW;
-  const hullW = Math.max(4, ((hullEnd - hullStart) / maxEnd) * chartW);
-  const hullY = rowY + BUNDLE_HULL_PAD / 2;
-  const hullH = rowHeight - BUNDLE_HULL_PAD;
-
-  ctx.save();
-  ctx.globalAlpha = 0.55 * emphasis;
-  ctx.strokeStyle = palette.hullStroke;
-  ctx.lineWidth = 1;
-  ctx.fillStyle = palette.hullFill;
-  roundRectPath(ctx, hullX, hullY, hullW, hullH, 6);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
-// ---------------------------------------------------------------------------
 // Row background
 // ---------------------------------------------------------------------------
 
@@ -386,63 +331,6 @@ function drawGanttAxisTicks({
   }
 }
 
-interface DrawGanttHullPassParams {
-  ctx: CanvasRenderingContext2D;
-  bundles: BundleRow[];
-  rowOffsets: number[];
-  rowHeights: number[];
-  visStart: number;
-  visEnd: number;
-  scrollTop: number;
-  labelW: number;
-  chartW: number;
-  maxEnd: number;
-  palette: CanvasPalette;
-  showTests: boolean;
-  focusIds: Set<string> | null;
-}
-
-function drawGanttHullPass(p: DrawGanttHullPassParams): void {
-  const {
-    ctx,
-    bundles,
-    rowOffsets,
-    rowHeights,
-    visStart,
-    visEnd,
-    scrollTop,
-    labelW,
-    chartW,
-    maxEnd,
-    palette,
-    showTests,
-    focusIds,
-  } = p;
-  for (let i = visStart; i <= visEnd; i++) {
-    const bundle = bundles[i];
-    if (!bundle) continue;
-    const rowY = AXIS_TOP + (rowOffsets[i] ?? 0) - scrollTop;
-    const isFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
-    const testsInHull = showTests && bundle.tests.length > 0;
-
-    if (bundle.tests.length > 0) {
-      drawBundleHull({
-        ctx,
-        bundle,
-        rowY,
-        rowHeight: rowHeights[i] ?? ROW_H,
-        labelW,
-        chartW,
-        maxEnd,
-        palette,
-        testsInHull,
-        showTests,
-        emphasis: isFocused ? 1 : 0.18,
-      });
-    }
-  }
-}
-
 interface DrawGanttVisibleRowParams {
   ctx: CanvasRenderingContext2D;
   bundle: BundleRow;
@@ -484,11 +372,15 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     showTests,
   } = p;
 
+  const rowHasFocus =
+    focusIds == null ||
+    focusIds.has(bundle.item.unique_id) ||
+    bundle.lanes.some((l) => focusIds.has(l.item.unique_id));
   const isFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
   const isHovered = hoveredId === bundle.item.unique_id;
   const emphasis = isFocused ? 1 : 0.18;
 
-  drawRowBackground(ctx, rowIndex, rowY, w, isFocused, isHovered, palette);
+  drawRowBackground(ctx, rowIndex, rowY, w, rowHasFocus, isHovered, palette);
 
   drawRowLabels({
     ctx,
@@ -522,7 +414,7 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
   for (const { item: test, lane } of bundle.lanes) {
     const chipY = rowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
     const testHovered = hoveredId === test.unique_id;
-    const testFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
+    const testFocused = focusIds == null || focusIds.has(test.unique_id);
     drawTestChip({
       ctx,
       test,
@@ -602,22 +494,6 @@ export function drawGantt(
   const visEnd = findLastVisible(rowOffsets, rowHeights, scrollTop, contentH);
 
   ctx.textBaseline = "middle";
-
-  drawGanttHullPass({
-    ctx,
-    bundles,
-    rowOffsets,
-    rowHeights,
-    visStart,
-    visEnd,
-    scrollTop,
-    labelW,
-    chartW,
-    maxEnd,
-    palette,
-    showTests,
-    focusIds,
-  });
 
   for (let i = visStart; i <= visEnd; i++) {
     const bundle = bundles[i];

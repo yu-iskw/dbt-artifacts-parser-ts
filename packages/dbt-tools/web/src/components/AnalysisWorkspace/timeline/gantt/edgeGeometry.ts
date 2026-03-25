@@ -1,129 +1,164 @@
-import type { GanttItem, ResourceConnectionSummary } from "@web/types";
+import type { GanttItem, TimelineAdjacencyEntry } from "@web/types";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
-import { AXIS_TOP, BAR_H, BAR_PAD, ROW_H } from "./constants";
+import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
+import {
+  AXIS_TOP,
+  BAR_H,
+  BAR_PAD,
+  BUNDLE_HULL_PAD,
+  ROW_H,
+  TEST_BAR_H,
+  TEST_LANE_H,
+} from "./constants";
 
-export interface Edge {
-  sourceRow: number;
-  targetRow: number;
+export type FocusEdgeTier = "primary" | "secondary" | "downstream";
+
+export interface FocusTimelineEdge {
+  fromId: string;
+  toId: string;
+  tier: FocusEdgeTier;
 }
 
-// ---------------------------------------------------------------------------
-// Bundle-level edges (default — one edge per unique bundle pair)
-// ---------------------------------------------------------------------------
+function isSiblingTestUpstream(
+  upstreamItem: GanttItem | undefined,
+  focusItem: GanttItem | undefined,
+): boolean {
+  if (!upstreamItem || !focusItem) return false;
+  if (!TEST_RESOURCE_TYPES.has(focusItem.resourceType)) return false;
+  if (!TEST_RESOURCE_TYPES.has(upstreamItem.resourceType)) return false;
+  if (focusItem.parentId == null || upstreamItem.parentId == null) return false;
+  return focusItem.parentId === upstreamItem.parentId;
+}
 
 /**
- * Compute deduplicated bundle-to-bundle edges for the visible range.
- *
- * Each edge goes from the right edge of the source bundle's parent bar to the
- * left edge of the target bundle's parent bar (same geometry as node-level
- * edges, but one per unique bundle pair).
+ * One-hop dependency edges for the focused executed node only (O(degree)).
+ * Upstream: manifest inbound neighbors → focus. Downstream: focus → outbound (optional).
  */
-export function getBundleEdges(
-  bundles: BundleRow[],
-  visStart: number,
-  visEnd: number,
-  dependencyIndex: Record<string, ResourceConnectionSummary>,
+export function getFocusTimelineEdges(
+  focusId: string | null,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry> | undefined,
+  itemById: Map<string, GanttItem>,
   bundleIndexById: Map<string, number>,
-): Edge[] {
-  const visibleSet = new Set<number>();
-  for (let i = visStart; i <= visEnd; i++) {
-    visibleSet.add(i);
+  options: { includeDownstream: boolean },
+): FocusTimelineEdge[] {
+  if (!focusId || !timelineAdjacency) return [];
+  const entry = timelineAdjacency[focusId];
+  const focusItem = itemById.get(focusId);
+  if (!entry || !focusItem || !bundleIndexById.has(focusId)) return [];
+
+  const inTimeline = (id: string) => bundleIndexById.has(id);
+  const edges: FocusTimelineEdge[] = [];
+
+  for (const u of entry.inbound) {
+    if (!inTimeline(u)) continue;
+    const upstreamItem = itemById.get(u);
+    const tier: FocusEdgeTier = isSiblingTestUpstream(upstreamItem, focusItem)
+      ? "secondary"
+      : "primary";
+    edges.push({ fromId: u, toId: focusId, tier });
   }
 
-  const seen = new Set<string>();
-  const edges: Edge[] = [];
-
-  for (let i = visStart; i <= visEnd; i++) {
-    const bundle = bundles[i];
-    if (!bundle) continue;
-    const deps = dependencyIndex[bundle.item.unique_id];
-    if (!deps) continue;
-
-    for (const upstream of deps.upstream) {
-      const sourceIdx = bundleIndexById.get(upstream.uniqueId);
-      if (sourceIdx === undefined || sourceIdx === i) continue;
-      if (!visibleSet.has(sourceIdx)) continue;
-
-      const key = `${sourceIdx}:${i}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      edges.push({ sourceRow: sourceIdx, targetRow: i });
+  if (options.includeDownstream) {
+    for (const v of entry.outbound) {
+      if (!inTimeline(v)) continue;
+      edges.push({ fromId: focusId, toId: v, tier: "downstream" });
     }
   }
 
   return edges;
 }
 
-// ---------------------------------------------------------------------------
-// Node-level edges (used in focus mode)
-// ---------------------------------------------------------------------------
+/** Vertical center (viewport coords) of a parcel's timing bar / test chip. */
+export function parcelCenterY(
+  bundleIndex: number,
+  uniqueId: string,
+  bundles: BundleRow[],
+  rowOffsets: number[],
+  scrollTop: number,
+  showTests: boolean,
+): number | null {
+  const bundle = bundles[bundleIndex];
+  if (!bundle) return null;
+  const rowY = AXIS_TOP + (rowOffsets[bundleIndex] ?? 0) - scrollTop;
 
-export function getEdgesForVisibleRows(
-  data: GanttItem[],
-  visStart: number,
-  visEnd: number,
-  dependencyIndex: Record<string, ResourceConnectionSummary>,
-  dataIndexById: Map<string, number>,
-): Edge[] {
-  const visibleIds = new Set<string>();
-  for (let i = visStart; i <= visEnd; i++) {
-    const item = data[i];
-    if (item) visibleIds.add(item.unique_id);
+  if (bundle.item.unique_id === uniqueId) {
+    return rowY + BAR_PAD + BAR_H / 2;
   }
 
-  const edges: Edge[] = [];
-  for (let i = visStart; i <= visEnd; i++) {
-    const item = data[i];
-    if (!item) continue;
-    const deps = dependencyIndex[item.unique_id];
-    if (!deps) continue;
-    for (const upstreamId of deps.upstream.map((d) => d.uniqueId)) {
-      if (!visibleIds.has(upstreamId)) continue;
-      const sourceRow = dataIndexById.get(upstreamId);
-      if (sourceRow === undefined) continue;
-      edges.push({ sourceRow, targetRow: i });
+  if (!showTests) return null;
+  for (const { item: test, lane } of bundle.lanes) {
+    if (test.unique_id === uniqueId) {
+      const chipY = rowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
+      return chipY + TEST_BAR_H / 2;
     }
   }
-  return edges;
+
+  return null;
 }
 
-// ---------------------------------------------------------------------------
-// Edge path — shared by both bundle and node-level edges
-// ---------------------------------------------------------------------------
+export interface FocusEdgePathParams {
+  edge: FocusTimelineEdge;
+  itemById: Map<string, GanttItem>;
+  bundleIndexById: Map<string, number>;
+  bundles: BundleRow[];
+  rowOffsets: number[];
+  scrollTop: number;
+  showTests: boolean;
+  effectiveLabelW: number;
+  maxEnd: number;
+  chartW: number;
+}
 
 /**
- * Compute a cubic-bezier SVG path from the end of the source bar to the
- * start of the target bar. Accepts an array of GanttItems ordered by row
- * index (pass `bundles.map(b => b.item)` for bundle-level edges).
- *
- * `rowOffsets` — cumulative Y pixel offset per row (content-area relative,
- * excluding AXIS_TOP). When omitted, uniform ROW_H is assumed (legacy).
+ * Cubic-bezier path from the right edge of `fromItem` to the left edge of `toItem`.
  */
-export function edgePath(
-  edge: Edge,
-  data: GanttItem[],
-  effectiveLabelW: number,
-  maxEnd: number,
-  chartW: number,
-  scrollTop: number,
-  rowOffsets?: number[],
-): string {
-  const src = data[edge.sourceRow];
-  const tgt = data[edge.targetRow];
-  if (!src || !tgt) return "";
+export function focusEdgePath(p: FocusEdgePathParams): string {
+  const {
+    edge,
+    itemById,
+    bundleIndexById,
+    bundles,
+    rowOffsets,
+    scrollTop,
+    showTests,
+    effectiveLabelW,
+    maxEnd,
+    chartW,
+  } = p;
+  const fromItem = itemById.get(edge.fromId);
+  const toItem = itemById.get(edge.toId);
+  const fromRow = bundleIndexById.get(edge.fromId);
+  const toRow = bundleIndexById.get(edge.toId);
+  if (
+    fromItem == null ||
+    toItem == null ||
+    fromRow === undefined ||
+    toRow === undefined
+  ) {
+    return "";
+  }
 
-  const srcOffsetY = rowOffsets
-    ? (rowOffsets[edge.sourceRow] ?? edge.sourceRow * ROW_H)
-    : edge.sourceRow * ROW_H;
-  const tgtOffsetY = rowOffsets
-    ? (rowOffsets[edge.targetRow] ?? edge.targetRow * ROW_H)
-    : edge.targetRow * ROW_H;
+  const sy = parcelCenterY(
+    fromRow,
+    edge.fromId,
+    bundles,
+    rowOffsets,
+    scrollTop,
+    showTests,
+  );
+  const ty = parcelCenterY(
+    toRow,
+    edge.toId,
+    bundles,
+    rowOffsets,
+    scrollTop,
+    showTests,
+  );
+  if (sy == null || ty == null) return "";
 
-  const sx = effectiveLabelW + ((src.start + src.duration) / maxEnd) * chartW;
-  const sy = AXIS_TOP + srcOffsetY + BAR_PAD + BAR_H / 2 - scrollTop;
-  const tx = effectiveLabelW + (tgt.start / maxEnd) * chartW;
-  const ty = AXIS_TOP + tgtOffsetY + BAR_PAD + BAR_H / 2 - scrollTop;
+  const sx =
+    effectiveLabelW + ((fromItem.start + fromItem.duration) / maxEnd) * chartW;
+  const tx = effectiveLabelW + (toItem.start / maxEnd) * chartW;
   const cx = Math.abs(tx - sx) * 0.4;
 
   return `M${sx},${sy} C${sx + cx},${sy} ${tx - cx},${ty} ${tx},${ty}`;

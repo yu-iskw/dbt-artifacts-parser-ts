@@ -140,6 +140,15 @@ export interface ResourceConnectionSummary {
   downstream: DependencyPreview[];
 }
 
+/**
+ * Immediate manifest graph neighbors for executed timeline nodes only.
+ * Edges follow ManifestGraph: inbound = depends_on (upstream of this node).
+ */
+export interface TimelineAdjacencyEntry {
+  inbound: string[];
+  outbound: string[];
+}
+
 export interface AnalysisState {
   summary: ExecutionSummary;
   /** Project name from manifest metadata, or null for older manifests. */
@@ -155,6 +164,8 @@ export interface AnalysisState {
   statusBreakdown: StatusBreakdownItem[];
   threadStats: ThreadStat[];
   dependencyIndex: Record<string, ResourceConnectionSummary>;
+  /** Per-executed-node inbound/outbound unique_ids from the manifest graph. */
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>;
   selectedResourceId: string | null;
   /** dbt invocation ID from the run_results metadata (if available). */
   invocationId?: string | null;

@@ -351,6 +351,7 @@ export function TimelineSearchControls({
                 activeStatuses: new Set(),
                 activeTypes: new Set(defaultActiveTypes),
                 selectedExecutionId: null,
+                showTimelineDependents: false,
               }));
             }}
           >

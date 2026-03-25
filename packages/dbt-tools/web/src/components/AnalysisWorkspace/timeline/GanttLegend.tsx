@@ -24,6 +24,9 @@ interface GanttLegendProps {
   /** Whether the view is in failures-only mode. */
   failuresOnly?: boolean;
   onToggleFailuresOnly?: () => void;
+  /** One-hop downstream edges when a parcel is focused. */
+  showTimelineDependents?: boolean;
+  onToggleShowTimelineDependents?: () => void;
 }
 
 const SWATCH_STYLE: CSSProperties = {
@@ -36,6 +39,104 @@ const SWATCH_STYLE: CSSProperties = {
 
 const LEGEND_ITEM_ACTIVE_CLASS = " gantt-legend__item--active";
 
+type ThemeHex = ReturnType<typeof getThemeHex>;
+
+function GanttLegendActionRow({
+  themeHex,
+  showTests,
+  onToggleShowTests,
+  failuresOnly,
+  onToggleFailuresOnly,
+  showTimelineDependents,
+  onToggleShowTimelineDependents,
+}: {
+  themeHex: ThemeHex;
+  showTests?: boolean;
+  onToggleShowTests?: () => void;
+  failuresOnly?: boolean;
+  onToggleFailuresOnly?: () => void;
+  showTimelineDependents?: boolean;
+  onToggleShowTimelineDependents?: () => void;
+}) {
+  if (
+    onToggleShowTests == null &&
+    onToggleFailuresOnly == null &&
+    onToggleShowTimelineDependents == null
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="gantt-legend__group gantt-legend__group--actions">
+      {onToggleShowTests != null && (
+        <button
+          type="button"
+          className={`gantt-legend__item${showTests ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+          onClick={onToggleShowTests}
+          title={showTests ? "Hide test chips" : "Show test chips"}
+          aria-pressed={showTests ?? false}
+        >
+          <span
+            style={{
+              ...SWATCH_STYLE,
+              background: themeHex.mint,
+              borderRadius: 50,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">Tests</span>
+        </button>
+      )}
+      {onToggleFailuresOnly != null && (
+        <button
+          type="button"
+          className={`gantt-legend__item${failuresOnly ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+          onClick={onToggleFailuresOnly}
+          title={
+            failuresOnly
+              ? "Show all parent rows"
+              : "Show only parents with errors or failing tests"
+          }
+          aria-pressed={failuresOnly ?? false}
+        >
+          <span
+            style={{
+              ...SWATCH_STYLE,
+              background: themeHex.rose,
+              borderRadius: 50,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">Failures only</span>
+        </button>
+      )}
+      {onToggleShowTimelineDependents != null && (
+        <button
+          type="button"
+          className={`gantt-legend__item${showTimelineDependents ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+          onClick={onToggleShowTimelineDependents}
+          title={
+            showTimelineDependents
+              ? "Hide dependent edges (1 hop)"
+              : "Show dependent edges (1 hop) when a node is focused"
+          }
+          aria-pressed={showTimelineDependents ?? false}
+        >
+          <span
+            style={{
+              ...SWATCH_STYLE,
+              background: themeHex.accent,
+              borderRadius: 50,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">Dependents</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function GanttLegend({
   statusCounts,
   typeCounts,
@@ -47,6 +148,8 @@ export function GanttLegend({
   onToggleShowTests,
   failuresOnly,
   onToggleFailuresOnly,
+  showTimelineDependents,
+  onToggleShowTimelineDependents,
 }: GanttLegendProps) {
   const theme = useSyncedDocumentTheme();
   const themeHex = getThemeHex(theme);
@@ -61,7 +164,8 @@ export function GanttLegend({
     visibleStatuses.length > 0 ||
     visibleTypes.length > 0 ||
     onToggleShowTests != null ||
-    onToggleFailuresOnly != null;
+    onToggleFailuresOnly != null ||
+    onToggleShowTimelineDependents != null;
 
   if (!hasAnything) return null;
 
@@ -122,52 +226,15 @@ export function GanttLegend({
         </div>
       )}
 
-      {(onToggleShowTests != null || onToggleFailuresOnly != null) && (
-        <div className="gantt-legend__group gantt-legend__group--actions">
-          {onToggleShowTests != null && (
-            <button
-              type="button"
-              className={`gantt-legend__item${showTests ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
-              onClick={onToggleShowTests}
-              title={showTests ? "Hide test chips" : "Show test chips"}
-              aria-pressed={showTests ?? false}
-            >
-              <span
-                style={{
-                  ...SWATCH_STYLE,
-                  background: themeHex.mint,
-                  borderRadius: 50,
-                }}
-                aria-hidden
-              />
-              <span className="gantt-legend__name">Tests</span>
-            </button>
-          )}
-          {onToggleFailuresOnly != null && (
-            <button
-              type="button"
-              className={`gantt-legend__item${failuresOnly ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
-              onClick={onToggleFailuresOnly}
-              title={
-                failuresOnly
-                  ? "Show all parent rows"
-                  : "Show only parents with errors or failing tests"
-              }
-              aria-pressed={failuresOnly ?? false}
-            >
-              <span
-                style={{
-                  ...SWATCH_STYLE,
-                  background: themeHex.rose,
-                  borderRadius: 50,
-                }}
-                aria-hidden
-              />
-              <span className="gantt-legend__name">Failures only</span>
-            </button>
-          )}
-        </div>
-      )}
+      <GanttLegendActionRow
+        themeHex={themeHex}
+        showTests={showTests}
+        onToggleShowTests={onToggleShowTests}
+        failuresOnly={failuresOnly}
+        onToggleFailuresOnly={onToggleFailuresOnly}
+        showTimelineDependents={showTimelineDependents}
+        onToggleShowTimelineDependents={onToggleShowTimelineDependents}
+      />
     </div>
   );
 }

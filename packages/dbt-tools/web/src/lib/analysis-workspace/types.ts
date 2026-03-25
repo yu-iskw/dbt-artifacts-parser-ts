@@ -57,6 +57,11 @@ export interface TimelineFilterState {
    * passing ones. Does not remove passing bundles from the view.
    */
   failuresOnly: boolean;
+  /**
+   * When true: while a timeline parcel is focused, also draw one-hop outbound
+   * (dependent) edges from the manifest graph.
+   */
+  showTimelineDependents: boolean;
 }
 
 export interface AssetViewState {

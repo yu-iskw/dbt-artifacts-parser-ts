@@ -103,6 +103,13 @@ function TimelineSurface({
         onToggleFailuresOnly={() =>
           setFilters((c) => ({ ...c, failuresOnly: !c.failuresOnly }))
         }
+        showTimelineDependents={filters.showTimelineDependents}
+        onToggleShowTimelineDependents={() =>
+          setFilters((c) => ({
+            ...c,
+            showTimelineDependents: !c.showTimelineDependents,
+          }))
+        }
       />
       <TimelineSearchControls
         filters={filters}
@@ -119,9 +126,10 @@ function TimelineSurface({
       <GanttChart
         data={filteredData}
         runStartedAt={analysis.runStartedAt}
-        dependencyIndex={analysis.dependencyIndex}
+        timelineAdjacency={analysis.timelineAdjacency}
         testStatsById={testStatsById}
         showTests={filters.showTests}
+        showDependents={filters.showTimelineDependents}
         selectedId={filters.selectedExecutionId}
         onSelect={(id) => {
           setFilters((current) => ({ ...current, selectedExecutionId: id }));
@@ -129,8 +137,11 @@ function TimelineSurface({
             ...current,
             selectedExecutionId: id,
             selectedResourceId:
-              analysis.resources.find((resource) => resource.uniqueId === id)
-                ?.uniqueId ?? current.selectedResourceId,
+              id == null
+                ? current.selectedResourceId
+                : (analysis.resources.find(
+                    (resource) => resource.uniqueId === id,
+                  )?.uniqueId ?? current.selectedResourceId),
             sourceLens: "timeline",
           }));
         }}

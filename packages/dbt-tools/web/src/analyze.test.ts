@@ -33,6 +33,21 @@ describe("analyzeArtifacts", () => {
     expect(result.threadStats.length).toBeGreaterThan(0);
     expect(result.selectedResourceId).not.toBeNull();
     expect(result.dependencyIndex[result.selectedResourceId!]).toBeDefined();
+    expect(result.timelineAdjacency).toBeDefined();
+    expect(Object.keys(result.timelineAdjacency).length).toBeGreaterThan(0);
+    for (const row of result.ganttData) {
+      expect(result.timelineAdjacency[row.unique_id]).toBeDefined();
+      expect(
+        Array.isArray(result.timelineAdjacency[row.unique_id]!.inbound),
+      ).toBe(true);
+      expect(
+        Array.isArray(result.timelineAdjacency[row.unique_id]!.outbound),
+      ).toBe(true);
+    }
+    const anyInbound = result.ganttData.some(
+      (g) => (result.timelineAdjacency[g.unique_id]?.inbound.length ?? 0) > 0,
+    );
+    expect(anyInbound).toBe(true);
   });
 
   it("throws for invalid manifest JSON", async () => {

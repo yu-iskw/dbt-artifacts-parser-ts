@@ -3,8 +3,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 import type {
   GanttItem,
-  ResourceConnectionSummary,
   ResourceTestStats,
+  TimelineAdjacencyEntry,
 } from "@web/types";
 import { groupIntoBundles } from "@web/lib/analysis-workspace/bundleLayout";
 import {
@@ -18,15 +18,10 @@ import {
   type DisplayMode,
 } from "./constants";
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
-import { getBundleEdges } from "./edgeGeometry";
-import { GanttEdgeLayer } from "./GanttEdgeLayer";
+import { getFocusTimelineEdges } from "./edgeGeometry";
+import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
-import { GanttTooltip } from "./GanttTooltip";
-import {
-  bundleRowHeight,
-  computeRowLayout,
-  computeVisRange,
-} from "./ganttChartHelpers";
+import { bundleRowHeight, computeRowLayout } from "./ganttChartHelpers";
 import { hitTestBundle, type BundleLayout, type HoverState } from "./hitTest";
 import { useGanttCanvasDraw } from "./useGanttCanvasDraw";
 
@@ -36,24 +31,24 @@ export interface GanttChartProps {
   data: GanttItem[];
   /** Absolute epoch-ms of the earliest executed node — enables wall-clock timestamps. */
   runStartedAt?: number | null;
-  /** Dependency index keyed by unique_id. */
-  dependencyIndex?: Record<string, ResourceConnectionSummary>;
+  /** Immediate manifest neighbors for executed timeline nodes (from analyze). */
+  timelineAdjacency?: Record<string, TimelineAdjacencyEntry>;
   testStatsById?: Map<string, ResourceTestStats>;
-  /** Whether to render dependency edges. Default: true. */
-  showEdges?: boolean;
   /** Whether to show test chips inside bundle rows. Default: true. */
   showTests?: boolean;
+  /** When true, one-hop outbound edges from the focused node are drawn. */
+  showDependents?: boolean;
   selectedId?: string | null;
-  onSelect?: (id: string) => void;
+  onSelect?: (id: string | null) => void;
 }
 
 export function GanttChart({
   data,
   runStartedAt,
-  dependencyIndex,
+  timelineAdjacency,
   testStatsById,
-  showEdges = true,
   showTests = true,
+  showDependents = false,
   selectedId = null,
   onSelect,
 }: GanttChartProps) {
@@ -91,6 +86,12 @@ export function GanttChart({
     [bundles, showTests],
   );
 
+  const itemById = useMemo(() => {
+    const m = new Map<string, GanttItem>();
+    for (const item of data) m.set(item.unique_id, item);
+    return m;
+  }, [data]);
+
   // TanStack Virtual drives scroll metrics; sizes come from bundle data (see bundleRowHeight).
   // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer is intentionally non-memoized per TanStack
   const virtualizer = useVirtualizer({
@@ -124,10 +125,39 @@ export function GanttChart({
     return map;
   }, [bundles]);
 
-  const maxEnd = useMemo(
-    () => Math.max(...bundles.map((b) => b.item.end), 1),
-    [bundles],
+  const maxEnd = useMemo(() => {
+    let m = 1;
+    for (const b of bundles) {
+      m = Math.max(m, b.item.end);
+      for (const t of b.tests) m = Math.max(m, t.end);
+    }
+    return m;
+  }, [bundles]);
+
+  /** Selection wins over hover for which dependency edges are shown. */
+  const edgeFocusId = selectedId ?? hover?.item.unique_id ?? null;
+
+  const edges = useMemo(
+    () =>
+      getFocusTimelineEdges(
+        edgeFocusId,
+        timelineAdjacency,
+        itemById,
+        bundleIndexById,
+        { includeDownstream: showDependents },
+      ),
+    [edgeFocusId, timelineAdjacency, itemById, bundleIndexById, showDependents],
   );
+
+  const focusedIds = useMemo(() => {
+    if (!edgeFocusId) return null;
+    const s = new Set<string>([edgeFocusId]);
+    for (const e of edges) {
+      s.add(e.fromId);
+      s.add(e.toId);
+    }
+    return s;
+  }, [edgeFocusId, edges]);
 
   const totalScrollH = AXIS_TOP + virtualizer.getTotalSize();
   const maxViewportH = Math.max(
@@ -148,42 +178,6 @@ export function GanttChart({
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
-  const { visStart, visEnd } = useMemo(() => {
-    const items = virtualizer.getVirtualItems();
-    if (items.length > 0 && bundles.length > 0) {
-      const first = items[0]!.index;
-      const last = items[items.length - 1]!.index;
-      return {
-        visStart: Math.max(0, first - 1),
-        visEnd: Math.min(bundles.length - 1, last + 1),
-      };
-    }
-    return computeVisRange(rowOffsets, scrollTop, viewportH, bundles.length);
-  }, [bundles.length, rowOffsets, scrollTop, viewportH, virtualizer]);
-
-  const edges = useMemo(() => {
-    if (!showEdges || !dependencyIndex || bundles.length === 0) return [];
-    return getBundleEdges(
-      bundles,
-      visStart,
-      visEnd,
-      dependencyIndex,
-      bundleIndexById,
-    );
-  }, [showEdges, dependencyIndex, bundles, visStart, visEnd, bundleIndexById]);
-
-  const focusedIds = useMemo(() => {
-    const activeId = selectedId ?? hover?.item.unique_id ?? null;
-    if (!activeId || !dependencyIndex) return null;
-    const relation = dependencyIndex[activeId];
-    if (!relation) return new Set([activeId]);
-    return new Set([
-      activeId,
-      ...relation.upstream.map((d) => d.uniqueId),
-      ...relation.downstream.map((d) => d.uniqueId),
-    ]);
-  }, [dependencyIndex, hover, selectedId]);
 
   useGanttCanvasDraw({
     canvasRef,
@@ -227,13 +221,14 @@ export function GanttChart({
     );
     if (!hit) {
       if (mode === "move") setHover(null);
+      else onSelect?.(null);
       return;
     }
     if (mode === "move") {
       setHover({ item: hit.item, x: hit.x, y: hit.y });
       return;
     }
-    if (onSelect) onSelect(hit.item.unique_id);
+    onSelect?.(hit.item.unique_id);
   }
 
   return (
@@ -248,75 +243,34 @@ export function GanttChart({
         />
       )}
 
-      <section
-        className="chart-frame"
-        style={{ position: "relative", userSelect: "none" }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: viewportH,
-            pointerEvents: "none",
-            display: "block",
-          }}
-        />
-
-        <GanttEdgeLayer
-          edges={edges}
-          bundles={bundles}
-          rowOffsets={rowOffsets}
-          focusedIds={focusedIds}
-          canvasWidth={containerWidth > 0 ? containerWidth : 600}
-          effectiveLabelW={effectiveLabelW}
-          maxEnd={maxEnd}
-          scrollTop={scrollTop}
-          viewportH={viewportH}
-          theme={theme}
-        />
-
-        {
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- chart viewport hit-test + scroll
-          <div
-            ref={scrollRef}
-            className="chart-frame__viewport"
-            role="region"
-            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard scroll / activation
-            tabIndex={0}
-            aria-label="Timeline chart viewport — use arrow keys to scroll"
-            style={{
-              position: "relative",
-              height: viewportH,
-              overflowY: needsScroll ? "auto" : "hidden",
-            }}
-            onMouseMove={(e) => handlePointerInteraction(e, "move")}
-            onClick={(e) => handlePointerInteraction(e, "click")}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter" && e.key !== " ") return;
-              e.preventDefault();
-              const activeId = hover?.item.unique_id ?? selectedId;
-              if (!activeId || !onSelect) return;
-              onSelect(activeId);
-            }}
-            onMouseLeave={() => setHover(null)}
-          >
-            <div style={{ height: totalScrollH }} />
-          </div>
-        }
-
-        {hover && (
-          <GanttTooltip
-            hover={hover}
-            runStartedAt={runStartedAt}
-            canShowTimestamps={canShowTimestamps}
-            timeZone={timeZone}
-            testStats={testStatsById?.get(hover.item.unique_id)}
-          />
-        )}
-      </section>
+      <GanttChartFrame
+        canvasRef={canvasRef}
+        scrollRef={scrollRef}
+        edges={edges}
+        edgeFocusId={edgeFocusId}
+        itemById={itemById}
+        bundleIndexById={bundleIndexById}
+        bundles={bundles}
+        rowOffsets={rowOffsets}
+        containerWidth={containerWidth}
+        effectiveLabelW={effectiveLabelW}
+        maxEnd={maxEnd}
+        scrollTop={scrollTop}
+        viewportH={viewportH}
+        needsScroll={needsScroll}
+        totalScrollH={totalScrollH}
+        theme={theme}
+        showTests={showTests}
+        hover={hover}
+        runStartedAt={runStartedAt}
+        canShowTimestamps={canShowTimestamps}
+        timeZone={timeZone}
+        testStatsById={testStatsById}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        onPointer={handlePointerInteraction}
+        onHoverClear={() => setHover(null)}
+      />
     </div>
   );
 }

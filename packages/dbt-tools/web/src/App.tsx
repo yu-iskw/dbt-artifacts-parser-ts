@@ -74,6 +74,7 @@ function AppContent() {
         selectedExecutionId: selected,
         showTests: true,
         failuresOnly: false,
+        showTimelineDependents: false,
       };
     },
   );

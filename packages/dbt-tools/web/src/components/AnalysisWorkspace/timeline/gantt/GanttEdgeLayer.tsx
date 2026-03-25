@@ -1,39 +1,69 @@
 import { type ThemeMode, getThemeHex } from "@web/constants/themeColors";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { GanttItem } from "@web/types";
 import { X_PAD } from "./constants";
-import { type Edge, edgePath } from "./edgeGeometry";
+import { type FocusTimelineEdge, focusEdgePath } from "./edgeGeometry";
+
+const MARKER_W = 8;
+const MARKER_H = 8;
+
+function ArrowMarker({ id, fill }: { id: string; fill: string }) {
+  return (
+    <marker
+      id={id}
+      viewBox={`0 0 ${MARKER_W} ${MARKER_H}`}
+      refX={MARKER_W - 0.5}
+      refY={MARKER_H / 2}
+      markerWidth={MARKER_W}
+      markerHeight={MARKER_H}
+      orient="auto"
+      markerUnits="userSpaceOnUse"
+    >
+      <path
+        d={`M0,0 L${MARKER_W},${MARKER_H / 2} L0,${MARKER_H} Z`}
+        fill={fill}
+      />
+    </marker>
+  );
+}
 
 export function GanttEdgeLayer({
   edges,
+  focusId,
+  itemById,
+  bundleIndexById,
   bundles,
   rowOffsets,
-  focusedIds,
   canvasWidth,
   effectiveLabelW,
   maxEnd,
   scrollTop,
   viewportH,
   theme = "light",
+  showTests = true,
 }: {
-  edges: Edge[];
-  /** Bundle rows — used to look up parent item positions for edge drawing. */
+  edges: FocusTimelineEdge[];
+  focusId: string | null;
+  itemById: Map<string, GanttItem>;
+  bundleIndexById: Map<string, number>;
   bundles: BundleRow[];
-  /** Cumulative Y pixel offset per bundle (content-area relative, excl. AXIS_TOP). */
   rowOffsets: number[];
-  focusedIds: Set<string> | null;
   canvasWidth: number;
   effectiveLabelW: number;
   maxEnd: number;
   scrollTop: number;
   viewportH: number;
   theme?: ThemeMode;
+  showTests?: boolean;
 }) {
-  const accent = getThemeHex(theme).accent;
-  if (edges.length === 0) return null;
+  if (focusId == null || edges.length === 0) return null;
+
+  const t = getThemeHex(theme);
   const approxChartW = canvasWidth - effectiveLabelW - X_PAD;
 
-  // Edge paths use parent item positions (bundles[i].item)
-  const parentItems = bundles.map((b) => b.item);
+  const markerPrimary = "gantt-edge-mk-primary";
+  const markerSecondary = "gantt-edge-mk-secondary";
+  const markerDownstream = "gantt-edge-mk-downstream";
 
   return (
     <svg
@@ -49,32 +79,56 @@ export function GanttEdgeLayer({
       }}
       aria-hidden
     >
+      <defs>
+        <ArrowMarker id={markerPrimary} fill={t.accent} />
+        <ArrowMarker id={markerSecondary} fill={t.slate} />
+        <ArrowMarker id={markerDownstream} fill={t.accent} />
+      </defs>
       {edges.map((edge, i) => {
-        const srcBundle = bundles[edge.sourceRow];
-        const tgtBundle = bundles[edge.targetRow];
-        if (!srcBundle || !tgtBundle) return null;
+        const d = focusEdgePath({
+          edge,
+          itemById,
+          bundleIndexById,
+          bundles,
+          rowOffsets,
+          scrollTop,
+          showTests,
+          effectiveLabelW,
+          maxEnd,
+          chartW: approxChartW,
+        });
+        if (!d) return null;
 
-        const edgeFocused =
-          focusedIds == null ||
-          (focusedIds.has(srcBundle.item.unique_id) &&
-            focusedIds.has(tgtBundle.item.unique_id));
+        const tier = edge.tier;
+        const stroke =
+          tier === "secondary"
+            ? t.slate
+            : tier === "downstream"
+              ? t.accent
+              : t.accent;
+        const strokeWidth =
+          tier === "secondary" ? 1 : tier === "downstream" ? 1.5 : 2;
+        const strokeDasharray =
+          tier === "secondary" ? "4 3" : tier === "downstream" ? "5 4" : "6 4";
+        const opacity =
+          tier === "secondary" ? 0.42 : tier === "downstream" ? 0.62 : 0.88;
+        const markerEnd =
+          tier === "secondary"
+            ? `url(#${markerSecondary})`
+            : tier === "downstream"
+              ? `url(#${markerDownstream})`
+              : `url(#${markerPrimary})`;
 
         return (
           <path
-            key={i}
-            d={edgePath(
-              edge,
-              parentItems,
-              effectiveLabelW,
-              maxEnd,
-              approxChartW,
-              scrollTop,
-              rowOffsets,
-            )}
-            stroke={accent}
-            strokeWidth={edgeFocused ? 1.6 : 1.1}
+            key={`${edge.fromId}-${edge.toId}-${edge.tier}-${i}`}
+            d={d}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeDasharray={strokeDasharray}
             fill="none"
-            opacity={edgeFocused ? 0.55 : 0.1}
+            opacity={opacity}
+            markerEnd={markerEnd}
           />
         );
       })}
