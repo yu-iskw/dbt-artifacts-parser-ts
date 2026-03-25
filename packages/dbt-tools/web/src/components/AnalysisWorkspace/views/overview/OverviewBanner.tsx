@@ -227,7 +227,10 @@ export function RunSummaryStrip({
         : "Artifacts";
 
   return (
-    <div className={`run-summary-strip run-summary-strip--${banner.tone}`} aria-label="Run summary">
+    <div
+      className={`run-summary-strip run-summary-strip--${banner.tone}`}
+      aria-label="Run summary"
+    >
       {/* Posture — leftmost, tone-prominent */}
       <div className="run-summary-strip__item run-summary-strip__item--posture">
         <span>{banner.title}</span>

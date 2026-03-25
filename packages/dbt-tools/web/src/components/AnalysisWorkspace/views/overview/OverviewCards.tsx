@@ -1,6 +1,9 @@
 import type { AnalysisState, StatusTone } from "@web/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
-import type { AssetTab, WorkspaceView } from "@web/lib/analysis-workspace/types";
+import type {
+  AssetTab,
+  WorkspaceView,
+} from "@web/lib/analysis-workspace/types";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import { EmptyState } from "../../../EmptyState";
 import { OverviewScopeBadge } from "./OverviewPanel";

@@ -1089,8 +1089,12 @@
   overflow-x: auto;
 }
 
-.run-summary-strip--warning { border-left-color: var(--warning-fg); }
-.run-summary-strip--danger  { border-left-color: var(--danger-fg); }
+.run-summary-strip--warning {
+  border-left-color: var(--warning-fg);
+}
+.run-summary-strip--danger {
+  border-left-color: var(--danger-fg);
+}
 
 .run-summary-strip__item {
   display: flex;
