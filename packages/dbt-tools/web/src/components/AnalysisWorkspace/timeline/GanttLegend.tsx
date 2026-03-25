@@ -4,6 +4,7 @@ import {
   getResourceTypeColor,
   getStatusColor,
 } from "@web/constants/colors";
+import { THEME_HEX } from "@web/constants/themeColors";
 
 interface GanttLegendProps {
   /** Count per status key (lowercase). Only entries with count > 0 are shown. */
@@ -86,7 +87,7 @@ export function GanttLegend({
                 <span
                   style={{
                     ...SWATCH_STYLE,
-                    background: "#e2e8f0",
+                    background: THEME_HEX.bg,
                     borderLeft: `3px solid ${color}`,
                     borderRadius: 0,
                   }}

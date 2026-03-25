@@ -1,11 +1,12 @@
+import { THEME_HEX } from "@web/constants/themeColors";
 import type { StatusTone } from "@web/types";
 import type { WorkspaceView, AssetExplorerMode } from "./types";
 
 export const STATUS_COLORS: Record<StatusTone, string> = {
-  positive: "#2bb673",
-  warning: "#f2a44b",
-  danger: "#d86066",
-  neutral: "#8e97a6",
+  positive: THEME_HEX.mint,
+  warning: THEME_HEX.amber,
+  danger: THEME_HEX.rose,
+  neutral: THEME_HEX.slate,
 };
 
 export const PILL_ACTIVE = "workspace-pill workspace-pill--active";

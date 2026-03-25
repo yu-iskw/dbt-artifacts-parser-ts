@@ -2,14 +2,15 @@ import type {
   ExecutionSummary,
   BottleneckResult,
 } from "@dbt-tools/core/browser";
+import { THEME_HEX } from "@web/constants/themeColors";
 
 interface RunSummaryProps {
   summary: ExecutionSummary;
   bottlenecks: BottleneckResult | undefined;
 }
 
-const CARD_BG = "#f8fafc";
-const CARD_BORDER = "1px solid #e2e8f0";
+const CARD_BG = THEME_HEX.bg;
+const CARD_BORDER = "1px solid rgba(15, 23, 42, 0.1)";
 const CELL_PADDING = "0.5rem 0.75rem";
 
 const CARD_STYLE = {
@@ -28,7 +29,7 @@ function formatSeconds(s: number): string {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div style={CARD_STYLE}>
-      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>
+      <div style={{ fontSize: 12, color: THEME_HEX.textSoft, marginBottom: 4 }}>
         {label}
       </div>
       <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>{value}</div>
@@ -44,7 +45,7 @@ function BottleneckTable({ bottlenecks }: { bottlenecks: BottleneckResult }) {
         width: "100%",
         borderCollapse: "collapse",
         fontSize: 14,
-        background: "#fff",
+        background: THEME_HEX.bgSoft,
         border: CARD_BORDER,
         borderRadius: 8,
         overflow: "hidden",
