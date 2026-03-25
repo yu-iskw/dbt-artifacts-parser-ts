@@ -228,19 +228,19 @@
   --dbt-type-test-soft: rgba(134, 144, 170, 0.22);
 
   /* Graph surface aliases (Dark) */
-  --graph-bg-top: var(--bg-canvas);
-  --graph-bg-bottom: var(--bg-code);
-  --graph-bg-accent: var(--bg-accent-soft);
-  --graph-panel: var(--bg-surface);
-  --graph-panel-hover: var(--bg-surface-muted);
-  --graph-panel-active: var(--bg-selection-soft);
-  --graph-border: var(--border-subtle);
-  --graph-border-strong: var(--border-strong);
-  --graph-text: var(--text-primary);
-  --graph-text-muted: var(--text-secondary);
-  --graph-text-soft: var(--text-tertiary);
-  --graph-edge: var(--border-default);
-  --graph-hotspot: var(--bg-accent-soft);
-  --graph-node-stroke: var(--border-subtle);
+  --graph-bg-top: #dde2ea;
+  --graph-bg-bottom: #cfd6e1;
+  --graph-bg-accent: rgba(175, 184, 205, 0.22);
+  --graph-panel: #e7ebf3;
+  --graph-panel-hover: #dfe5ef;
+  --graph-panel-active: #d6deec;
+  --graph-border: #aab4c6;
+  --graph-border-strong: #8896af;
+  --graph-text: #171c28;
+  --graph-text-muted: #465066;
+  --graph-text-soft: #647087;
+  --graph-edge: #8794aa;
+  --graph-hotspot: rgba(99, 91, 255, 0.18);
+  --graph-node-stroke: #aab4c6;
   --graph-node-selected-stroke: var(--accent-primary);
 }
