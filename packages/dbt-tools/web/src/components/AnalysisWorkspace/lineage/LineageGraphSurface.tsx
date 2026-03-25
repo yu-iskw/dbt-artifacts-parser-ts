@@ -476,13 +476,9 @@ export function LineageGraphSurface({
                           : undefined
                       }
                       strokeWidth={node.side === "selected" ? 3 : 0}
-                      fill={
-                        lensMode === "type"
-                          ? `var(--dbt-type-${node.resource.resourceType.replace(/_/g, "-")})`
-                          : lensMode === "status"
-                            ? getLensNodeFill(node.resource, lensMode)
-                            : `var(--dbt-type-${node.resource.resourceType.replace(/_/g, "-")})`
-                      }
+                      style={{
+                        fill: getLensNodeFill(node.resource, lensMode),
+                      }}
                     />
                     <text
                       x={x + 16}

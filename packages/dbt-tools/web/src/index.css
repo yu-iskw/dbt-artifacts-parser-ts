@@ -2573,7 +2573,6 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .dependency-graph__node {
-  fill: var(--graph-panel);
   stroke: var(--graph-node-stroke);
   stroke-width: 2;
   transition:
@@ -2622,11 +2621,11 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .dependency-graph__node-stat-pill--pass {
-  fill: var(--status-positive-soft);
+  fill: var(--bg-success-soft);
 }
 
 .dependency-graph__node-stat-pill--fail {
-  fill: var(--status-danger-soft);
+  fill: var(--bg-danger-soft);
 }
 
 .dependency-graph__node-stat {
@@ -2637,19 +2636,19 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .dependency-graph__node-stat--pass {
-  fill: var(--status-positive);
+  fill: var(--text-success);
 }
 
 .dependency-graph__node-stat--fail {
-  fill: var(--status-danger);
+  fill: var(--text-danger);
 }
 
 .dependency-graph__node-stat-pill--neutral {
-  fill: var(--status-neutral-soft);
+  fill: var(--bg-surface-muted);
 }
 
 .dependency-graph__node-stat--neutral {
-  fill: var(--status-neutral);
+  fill: var(--text-secondary);
 }
 
 .dependency-graph--summary .dependency-graph__node-stat {

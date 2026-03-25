@@ -483,14 +483,16 @@ export function getLineageGraphTypes(
 
 /** Soft pastel fill colors for the status lens (applied inline on SVG rects). */
 export const STATUS_LENS_FILLS: Record<string, string> = {
-  positive: "var(--status-positive-soft)",
-  warning: "var(--status-warning-soft)",
-  danger: "var(--status-danger-soft)",
-  neutral: "var(--status-neutral-soft)",
+  positive: "var(--bg-success-soft)",
+  warning: "var(--bg-warning-soft)",
+  danger: "var(--bg-danger-soft)",
+  neutral: "var(--bg-surface-muted)",
 };
 
 // status lens used to be here
 
+const COVERAGE_DOCUMENTED_FILL = "var(--bg-success-soft)";
+const COVERAGE_UNDOCUMENTED_FILL = "var(--bg-danger-soft)";
 const TYPE_LENS_NEUTRAL = "var(--dbt-type-generic-soft)";
 const TYPE_LENS_MUTED = "var(--dbt-type-macro-soft)";
 
@@ -532,15 +534,13 @@ export function getLensNodeFill(
 ): string {
   switch (lensMode) {
     case "status":
-      return `var(--status-${resource.statusTone ?? "neutral"})`;
+      return STATUS_LENS_FILLS[resource.statusTone ?? "neutral"];
     case "type":
-      return (
-        TYPE_LENS_SOLID[resource.resourceType] ?? "var(--dbt-type-generic)"
-      );
+      return TYPE_LENS_FILLS[resource.resourceType] ?? TYPE_LENS_NEUTRAL;
     case "coverage":
       return resource.description
-        ? "var(--status-positive)"
-        : "var(--status-danger)";
+        ? COVERAGE_DOCUMENTED_FILL
+        : COVERAGE_UNDOCUMENTED_FILL;
   }
 }
 
@@ -591,7 +591,7 @@ export function getLensLegendItems(
       return order.map((t) => ({
         key: t,
         label: capitalizeFirst(t),
-        color: `var(--status-${t})`,
+        color: STATUS_LENS_FILLS[t],
       }));
     }
     case "type": {
@@ -608,12 +608,12 @@ export function getLensLegendItems(
         {
           key: "documented",
           label: "Documented",
-          color: "var(--status-positive)",
+          color: COVERAGE_DOCUMENTED_FILL,
         },
         {
           key: "undocumented",
           label: "No description",
-          color: "var(--status-danger)",
+          color: COVERAGE_UNDOCUMENTED_FILL,
         },
       ];
   }
