@@ -23,7 +23,6 @@ export const navigationItems: SidebarNavigationTarget[] = [
   { id: "inventory", view: "inventory", label: "Inventory" },
   { id: "runs", view: "runs", label: "Runs" },
   { id: "timeline", view: "timeline", label: "Timeline" },
-  { id: "lineage", view: "lineage", label: "Lineage" },
 ];
 
 const VALID_VIEWS = new Set<WorkspaceView>([
@@ -31,7 +30,6 @@ const VALID_VIEWS = new Set<WorkspaceView>([
   "inventory",
   "runs",
   "timeline",
-  "lineage",
   "overview",
   "catalog",
   "execution",
@@ -39,6 +37,12 @@ const VALID_VIEWS = new Set<WorkspaceView>([
   "dependencies",
   "search",
 ]);
+
+/** Legacy URLs: ?view=lineage or ?view=dependencies open Inventory with the Lineage tab. */
+export function viewParamImpliesInventoryLineageTab(search: string): boolean {
+  const raw = new URLSearchParams(search).get("view");
+  return raw === "lineage" || raw === "dependencies";
+}
 
 export function resolveView(raw: string): WorkspaceView {
   switch (raw) {
@@ -50,12 +54,12 @@ export function resolveView(raw: string): WorkspaceView {
     case "quality":
       return "runs";
     case "dependencies":
-      return "lineage";
+    case "lineage":
+      return "inventory";
     case "search":
       return "inventory";
     case "runs":
     case "timeline":
-    case "lineage":
     case "inventory":
     case "health":
       return raw;
@@ -67,8 +71,10 @@ export function resolveView(raw: string): WorkspaceView {
 export function parseViewFromSearch(search: string): WorkspaceView | null {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
-  if (raw && VALID_VIEWS.has(raw as WorkspaceView)) {
-    if (raw === "runs" && params.get("tab") === "timeline") return "timeline";
+  if (!raw) return null;
+  if (raw === "runs" && params.get("tab") === "timeline") return "timeline";
+  if (raw === "lineage" || raw === "dependencies") return "inventory";
+  if (VALID_VIEWS.has(raw as WorkspaceView)) {
     return resolveView(raw);
   }
   return null;
@@ -82,6 +88,7 @@ export function parseSelectedResourceId(search: string): string | null {
   return new URLSearchParams(search).get("resource");
 }
 
+/** `selected` query param: execution id on Runs/Timeline; graph node id when Inventory lineage tab. */
 export function parseSelectedExecutionId(search: string): string | null {
   return new URLSearchParams(search).get("selected");
 }
@@ -100,6 +107,16 @@ export function parseAssetTab(
     return raw;
   }
   return null;
+}
+
+/** Asset tab for first paint: explicit assetTab wins; else lineage/deps views imply lineage tab. */
+export function getInitialAssetTab(
+  search: string,
+): AssetViewState["activeTab"] {
+  return (
+    parseAssetTab(search) ??
+    (viewParamImpliesInventoryLineageTab(search) ? "lineage" : "summary")
+  );
 }
 
 export function parseRunsKind(search: string): RunsViewState["kind"] | null {
@@ -123,6 +140,56 @@ export function parseLineageLensMode(
   const raw = new URLSearchParams(search).get("lens");
   if (raw === "status" || raw === "type" || raw === "coverage") return raw;
   return null;
+}
+
+export function parseLineageUpstreamDepth(search: string): number | null {
+  const raw = new URLSearchParams(search).get("up");
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function parseLineageDownstreamDepth(search: string): number | null {
+  const raw = new URLSearchParams(search).get("down");
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function parseLineageAllDepsMode(search: string): boolean | null {
+  const raw = new URLSearchParams(search).get("allDeps");
+  if (raw === "1") return true;
+  if (raw === "0") return false;
+  return null;
+}
+
+function clampLineageDepth(value: number): number {
+  return Math.max(0, Math.min(10, value));
+}
+
+export function buildInitialLineageViewState(search: string): LineageViewState {
+  const resourceId = parseSelectedResourceId(search);
+  const selectedParam = new URLSearchParams(search).get("selected");
+  const explicitTab = parseAssetTab(search);
+  const lineageLike =
+    viewParamImpliesInventoryLineageTab(search) || explicitTab === "lineage";
+
+  const up = parseLineageUpstreamDepth(search);
+  const down = parseLineageDownstreamDepth(search);
+  const allDeps = parseLineageAllDepsMode(search);
+  const lens = parseLineageLensMode(search);
+
+  return {
+    rootResourceId: resourceId,
+    selectedResourceId: lineageLike
+      ? (selectedParam ?? resourceId)
+      : resourceId,
+    upstreamDepth: clampLineageDepth(up ?? 2),
+    downstreamDepth: clampLineageDepth(down ?? 2),
+    allDepsMode: allDeps ?? false,
+    lensMode: lens ?? "type",
+    activeLegendKeys: new Set(),
+  };
 }
 
 export const SIDEBAR_STORAGE_KEY = "dbt-tools.sidebarCollapsed";

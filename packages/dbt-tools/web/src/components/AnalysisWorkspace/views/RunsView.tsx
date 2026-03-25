@@ -199,10 +199,11 @@ function RunsSelectionSummary({
           {
             label: "Open in Lineage",
             onClick: () =>
-              onNavigateTo("lineage", {
+              onNavigateTo("inventory", {
                 resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
                 rootResourceId:
                   relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                assetTab: "lineage",
               }),
             disabled: !relatedResource,
           },

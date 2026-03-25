@@ -1435,6 +1435,37 @@
   flex: 1;
 }
 
+.inventory-empty-state__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 28rem;
+  padding: 1.5rem;
+}
+
+.inventory-empty-state__lineage-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.inventory-empty-state__lineage-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.inventory-empty-state__lineage-select {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, #ccc);
+  background: var(--surface-elevated, #fff);
+  color: inherit;
+}
+
 /* ─── Dependencies lens ──────────────────────────────────────────────────────── */
 .dependencies-view {
   display: flex;

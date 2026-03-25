@@ -11,7 +11,6 @@ export type WorkspaceView =
   | "inventory"
   | "runs"
   | "timeline"
-  | "lineage"
   // legacy — redirect targets below
   | "overview"
   | "catalog"

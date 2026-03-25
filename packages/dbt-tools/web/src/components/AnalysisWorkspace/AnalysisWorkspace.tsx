@@ -23,7 +23,6 @@ import { HealthView } from "./views/HealthView";
 import { InventoryView } from "./views/InventoryView";
 import { TimelineView } from "./timeline/TimelineView";
 import { RunsView } from "./views/RunsView";
-import { LineageView } from "./views/LineageView";
 
 function usesExplorerPane(view: WorkspaceView): boolean {
   return view === "inventory";
@@ -56,6 +55,7 @@ export function AnalysisWorkspace({
   onNavigateTo,
   workspaceSignals,
 }: AnalysisWorkspaceProps) {
+  void investigationSelection;
   const projectName =
     analysis.projectName ?? deriveProjectName(analysis.executions);
 
@@ -289,16 +289,6 @@ export function AnalysisWorkspace({
             filters={timelineFilters}
             setFilters={onTimelineFiltersChange}
             onInvestigationSelectionChange={onInvestigationSelectionChange}
-          />
-        )}
-        {activeView === "lineage" && (
-          <LineageView
-            analysis={analysis}
-            lineageViewState={lineageViewState}
-            onLineageViewStateChange={onLineageViewStateChange}
-            investigationSelection={investigationSelection}
-            onInvestigationSelectionChange={onInvestigationSelectionChange}
-            onNavigateTo={onNavigateTo}
           />
         )}
       </div>

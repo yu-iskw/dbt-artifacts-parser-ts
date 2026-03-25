@@ -13,9 +13,10 @@ import {
 } from "./components/AnalysisWorkspace";
 import { AppSidebar } from "./components/AppShell/AppSidebar";
 import {
+  buildInitialLineageViewState,
+  getInitialAssetTab,
   getInitialSidebarCollapsed,
   getInitialView,
-  parseAssetTab,
   parseRunsKind,
   parseSelectedExecutionId,
   parseSelectedResourceId,
@@ -33,7 +34,7 @@ import { useTheme } from "./hooks/useTheme";
 import { matchesResource } from "./lib/analysis-workspace/utils";
 import type { AnalysisState } from "@web/types";
 
-/* eslint-disable max-lines-per-function, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity */
+/* eslint-disable max-lines-per-function, sonarjs/cognitive-complexity */
 function AppContent() {
   const { toast } = useToast();
   const {
@@ -58,56 +59,75 @@ function AppContent() {
     resourceTypes: new Set(),
     query: "",
   });
-  const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>({
-    query: "",
-    activeStatuses: new Set(),
-    activeTypes: new Set(),
-    selectedExecutionId: parseSelectedExecutionId(window.location.search),
+  const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>(
+    () => {
+      const search = window.location.search;
+      const view = parseViewFromSearch(search);
+      const selected =
+        view === "runs" || view === "timeline"
+          ? parseSelectedExecutionId(search)
+          : null;
+      return {
+        query: "",
+        activeStatuses: new Set(),
+        activeTypes: new Set(),
+        selectedExecutionId: selected,
+      };
+    },
+  );
+  const [assetViewState, setAssetViewState] = useState<AssetViewState>(() => {
+    const search = window.location.search;
+    return {
+      activeTab: getInitialAssetTab(search),
+      expandedNodeIds: new Set(),
+      explorerMode: "project",
+      status: "all",
+      resourceTypes: new Set(),
+      resourceQuery: "",
+      selectedResourceId: parseSelectedResourceId(search),
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      allDepsMode: false,
+      lensMode: "type",
+      activeLegendKeys: new Set(),
+    };
   });
-  const [assetViewState, setAssetViewState] = useState<AssetViewState>({
-    activeTab: parseAssetTab(window.location.search) ?? "summary",
-    expandedNodeIds: new Set(),
-    explorerMode: "project",
-    status: "all",
-    resourceTypes: new Set(),
-    resourceQuery: "",
-    selectedResourceId: parseSelectedResourceId(window.location.search),
-    upstreamDepth: 2,
-    downstreamDepth: 2,
-    allDepsMode: false,
-    lensMode: "type",
-    activeLegendKeys: new Set(),
+  const [runsViewState, setRunsViewState] = useState<RunsViewState>(() => {
+    const search = window.location.search;
+    const view = parseViewFromSearch(search);
+    return {
+      kind: parseRunsKind(search) ?? "all",
+      status: "all",
+      query: "",
+      resourceTypes: new Set(),
+      threadIds: new Set(),
+      durationBand: "all",
+      sortBy: "attention",
+      groupBy: "none",
+      selectedExecutionId:
+        view === "runs" ? parseSelectedExecutionId(search) : null,
+    };
   });
-  const [runsViewState, setRunsViewState] = useState<RunsViewState>({
-    kind: parseRunsKind(window.location.search) ?? "all",
-    status: "all",
-    query: "",
-    resourceTypes: new Set(),
-    threadIds: new Set(),
-    durationBand: "all",
-    sortBy: "attention",
-    groupBy: "none",
-    selectedExecutionId: parseSelectedExecutionId(window.location.search),
-  });
-  const [lineageViewState, setLineageViewState] = useState<LineageViewState>({
-    rootResourceId: parseSelectedResourceId(window.location.search),
-    selectedResourceId: parseSelectedResourceId(window.location.search),
-    upstreamDepth: 2,
-    downstreamDepth: 2,
-    allDepsMode: false,
-    lensMode: "type",
-    activeLegendKeys: new Set(),
-  });
+  const [lineageViewState, setLineageViewState] = useState<LineageViewState>(
+    () => buildInitialLineageViewState(window.location.search),
+  );
   const [searchState, setSearchState] = useState<SearchState>({
     query: "",
     recentResourceIds: [],
     isOpen: false,
   });
   const [investigationSelection, setInvestigationSelection] =
-    useState<InvestigationSelectionState>({
-      selectedResourceId: parseSelectedResourceId(window.location.search),
-      selectedExecutionId: parseSelectedExecutionId(window.location.search),
-      sourceLens: null,
+    useState<InvestigationSelectionState>(() => {
+      const search = window.location.search;
+      const view = parseViewFromSearch(search) ?? "health";
+      const resourceId = parseSelectedResourceId(search);
+      const selectedParam = parseSelectedExecutionId(search);
+      return {
+        selectedResourceId: resourceId,
+        selectedExecutionId:
+          view === "runs" || view === "timeline" ? selectedParam : null,
+        sourceLens: null,
+      };
     });
 
   const setSidebarCollapsed: (fn: (c: boolean) => boolean) => void = (fn) => {
@@ -150,6 +170,11 @@ function AppContent() {
           current.rootResourceId,
         selectedResourceId: options.resourceId ?? current.selectedResourceId,
       }));
+    } else if (options?.assetTab && view === "inventory") {
+      setAssetViewState((current) => ({
+        ...current,
+        activeTab: options.assetTab ?? current.activeTab,
+      }));
     }
     if (options?.executionId) {
       setRunsViewState((current) => ({
@@ -186,7 +211,26 @@ function AppContent() {
       }
       url.searchParams.set("assetTab", assetViewState.activeTab);
       url.searchParams.delete("kind");
-      url.searchParams.delete("selected");
+      if (assetViewState.activeTab === "lineage") {
+        if (lineageViewState.selectedResourceId) {
+          url.searchParams.set("selected", lineageViewState.selectedResourceId);
+        } else {
+          url.searchParams.delete("selected");
+        }
+        url.searchParams.set("up", String(lineageViewState.upstreamDepth));
+        url.searchParams.set("down", String(lineageViewState.downstreamDepth));
+        url.searchParams.set(
+          "allDeps",
+          lineageViewState.allDepsMode ? "1" : "0",
+        );
+        url.searchParams.set("lens", lineageViewState.lensMode);
+      } else {
+        url.searchParams.delete("selected");
+        url.searchParams.delete("up");
+        url.searchParams.delete("down");
+        url.searchParams.delete("allDeps");
+        url.searchParams.delete("lens");
+      }
     } else if (activeView === "runs") {
       url.searchParams.set("kind", runsViewState.kind);
       if (runsViewState.selectedExecutionId) {
@@ -196,6 +240,10 @@ function AppContent() {
       }
       url.searchParams.delete("resource");
       url.searchParams.delete("assetTab");
+      url.searchParams.delete("up");
+      url.searchParams.delete("down");
+      url.searchParams.delete("allDeps");
+      url.searchParams.delete("lens");
     } else if (activeView === "timeline") {
       if (timelineFilters.selectedExecutionId) {
         url.searchParams.set("selected", timelineFilters.selectedExecutionId);
@@ -205,28 +253,19 @@ function AppContent() {
       url.searchParams.delete("resource");
       url.searchParams.delete("assetTab");
       url.searchParams.delete("kind");
-    } else if (activeView === "lineage") {
-      if (lineageViewState.rootResourceId) {
-        url.searchParams.set("resource", lineageViewState.rootResourceId);
-      } else {
-        url.searchParams.delete("resource");
-      }
-      if (lineageViewState.selectedResourceId) {
-        url.searchParams.set("selected", lineageViewState.selectedResourceId);
-      } else {
-        url.searchParams.delete("selected");
-      }
-      url.searchParams.set("up", String(lineageViewState.upstreamDepth));
-      url.searchParams.set("down", String(lineageViewState.downstreamDepth));
-      url.searchParams.set("allDeps", lineageViewState.allDepsMode ? "1" : "0");
-      url.searchParams.set("lens", lineageViewState.lensMode);
-      url.searchParams.delete("assetTab");
-      url.searchParams.delete("kind");
+      url.searchParams.delete("up");
+      url.searchParams.delete("down");
+      url.searchParams.delete("allDeps");
+      url.searchParams.delete("lens");
     } else {
       url.searchParams.delete("resource");
       url.searchParams.delete("assetTab");
       url.searchParams.delete("selected");
       url.searchParams.delete("kind");
+      url.searchParams.delete("up");
+      url.searchParams.delete("down");
+      url.searchParams.delete("allDeps");
+      url.searchParams.delete("lens");
     }
 
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
@@ -248,30 +287,29 @@ function AppContent() {
       const view = parseViewFromSearch(search);
       if (view) setActiveViewRaw(view);
       const resourceId = parseSelectedResourceId(search);
-      const selectedId = parseSelectedExecutionId(search);
+      const selectedParam = parseSelectedExecutionId(search);
+
       setAssetViewState((current) => ({
         ...current,
         selectedResourceId: resourceId,
-        activeTab: parseAssetTab(search) ?? current.activeTab,
+        activeTab: getInitialAssetTab(search),
       }));
       setRunsViewState((current) => ({
         ...current,
         kind: parseRunsKind(search) ?? current.kind,
-        selectedExecutionId: selectedId,
+        selectedExecutionId: view === "runs" ? selectedParam : null,
       }));
       setTimelineFilters((current) => ({
         ...current,
-        selectedExecutionId: selectedId,
+        selectedExecutionId: view === "timeline" ? selectedParam : null,
       }));
-      setLineageViewState((current) => ({
-        ...current,
-        rootResourceId: resourceId,
-        selectedResourceId: selectedId ?? resourceId,
-      }));
+      setLineageViewState(() => buildInitialLineageViewState(search));
       setInvestigationSelection((current) => ({
         ...current,
         selectedResourceId: resourceId,
-        selectedExecutionId: selectedId,
+        selectedExecutionId:
+          view === "runs" || view === "timeline" ? selectedParam : null,
+        sourceLens: current.sourceLens,
       }));
     };
     window.addEventListener("popstate", onPopState);
@@ -526,7 +564,6 @@ function AppContent() {
     </div>
   );
 }
-/* eslint-enable max-lines-per-function, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity */
 
 export default function App() {
   return (

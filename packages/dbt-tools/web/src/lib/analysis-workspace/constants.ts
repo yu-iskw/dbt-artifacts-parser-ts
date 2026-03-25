@@ -57,7 +57,6 @@ export const VIEW_TITLES: Record<WorkspaceView, string> = {
   inventory: "Inventory",
   runs: "Runs",
   timeline: "Timeline",
-  lineage: "Lineage",
   // Legacy views (backward compat)
   execution: "Execution",
   quality: "Quality",
