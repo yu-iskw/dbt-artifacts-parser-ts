@@ -597,7 +597,7 @@ export function getLensLegendItems(
         .map((t) => ({
           key: t,
           label: capitalizeFirst(t),
-          color: STATUS_LENS_SOLID[t] ?? "#8e97a6",
+          color: STATUS_LENS_SOLID[t] ?? "var(--status-neutral)",
         }));
     }
     case "type": {
@@ -606,7 +606,7 @@ export function getLensLegendItems(
         key: type,
         label: formatResourceLabel(type),
         color: TYPE_LENS_FILLS[type] ?? TYPE_LENS_NEUTRAL,
-        borderColor: TYPE_LENS_SOLID[type] ?? "#8e97a6",
+        borderColor: TYPE_LENS_SOLID[type] ?? "var(--dbt-type-generic)",
       }));
     }
     case "coverage":

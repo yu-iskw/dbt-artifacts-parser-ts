@@ -1,3 +1,4 @@
+import { THEME_HEX } from "@web/constants/themeColors";
 import type { GanttItem } from "@web/types";
 import { X_PAD } from "./constants";
 import { type Edge, edgePath } from "./edgeGeometry";
@@ -54,7 +55,7 @@ export function GanttEdgeLayer({
               approxChartW,
               scrollTop,
             )}
-            stroke="#3b82f6"
+            stroke={THEME_HEX.accent}
             strokeWidth={edgeFocused ? 1.6 : 1.1}
             fill="none"
             opacity={edgeFocused ? 0.55 : 0.1}

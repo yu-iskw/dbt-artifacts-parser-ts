@@ -1,4 +1,5 @@
 import { getResourceTypeColor, getStatusColor } from "@web/constants/colors";
+import { CANVAS } from "@web/constants/themeColors";
 import type { GanttItem, ResourceTestStats } from "@web/types";
 import {
   AXIS_TOP,
@@ -47,7 +48,7 @@ function drawRowBackground(
   isHovered: boolean,
 ) {
   if (rowIndex % 2 !== 0) return;
-  ctx.fillStyle = isHovered ? "rgba(37,88,217,0.07)" : "rgba(248,250,252,0.55)";
+  ctx.fillStyle = isHovered ? CANVAS.rowStripeHover : CANVAS.rowStripe;
   ctx.globalAlpha = isFocused ? 1 : 0.35;
   ctx.fillRect(0, rowY, width, ROW_H);
   ctx.globalAlpha = 1;
@@ -71,7 +72,7 @@ function drawRowLabels(
   ctx.textAlign = "left";
 
   ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
-  ctx.fillStyle = "#394251";
+  ctx.fillStyle = CANVAS.labelText;
   ctx.fillText(item.name || item.unique_id, 2, rowY + NAME_Y);
 
   const startLabel =
@@ -83,7 +84,7 @@ function drawRowLabels(
       ? formatTimestamp(runStartedAt + item.end, timeZone)
       : `+${formatMs(item.end)}`;
   ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
-  ctx.fillStyle = "#94a3b8";
+  ctx.fillStyle = CANVAS.metaText;
   ctx.fillText(`${startLabel} → ${endLabel}`, 2, rowY + TIME_Y);
   ctx.restore();
 }
@@ -127,13 +128,13 @@ function drawRowBar({
     attachedTestStats.fail + attachedTestStats.error > 0 &&
     isPositiveStatus(item.status)
   ) {
-    ctx.fillStyle = "rgba(216, 96, 102, 0.9)";
+    ctx.fillStyle = CANVAS.testFailStripe;
     fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
   }
 
   if (isHovered) {
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = "rgba(37, 88, 217, 0.65)";
+    ctx.strokeStyle = CANVAS.barHoverStroke;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(barX - 0.5, barY - 0.5, barW + 1, BAR_H + 1);
   }
@@ -187,11 +188,11 @@ export function drawGantt(
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "#8e97a6";
+  ctx.fillStyle = CANVAS.axisTick;
 
   for (const tick of ticks) {
     const x = labelW + (tick.ms / maxEnd) * chartW;
-    ctx.strokeStyle = "rgba(35,42,52,0.07)";
+    ctx.strokeStyle = CANVAS.gridLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, AXIS_TOP);
