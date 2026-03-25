@@ -7,7 +7,6 @@ import {
   BAR_H,
   BAR_PAD,
   BUNDLE_HULL_PAD,
-  CHEVRON_W,
   LABEL_W,
   MIN_CHIP_W,
   NAME_Y,
@@ -68,22 +67,36 @@ type CanvasPalette = ReturnType<typeof getCanvasColors>;
 // Bundle hull
 // ---------------------------------------------------------------------------
 
-function drawBundleHull(
-  ctx: CanvasRenderingContext2D,
-  bundle: BundleRow,
-  rowY: number,
-  rowHeight: number,
-  labelW: number,
-  chartW: number,
-  maxEnd: number,
-  palette: CanvasPalette,
-  isExpanded: boolean,
-  showTests: boolean,
-  emphasis: number,
-) {
+interface DrawBundleHullParams {
+  ctx: CanvasRenderingContext2D;
+  bundle: BundleRow;
+  rowY: number;
+  rowHeight: number;
+  labelW: number;
+  chartW: number;
+  maxEnd: number;
+  palette: CanvasPalette;
+  testsInHull: boolean;
+  showTests: boolean;
+  emphasis: number;
+}
+
+function drawBundleHull({
+  ctx,
+  bundle,
+  rowY,
+  rowHeight,
+  labelW,
+  chartW,
+  maxEnd,
+  palette,
+  testsInHull,
+  showTests,
+  emphasis,
+}: DrawBundleHullParams) {
   const items: GanttItem[] = [
     bundle.item,
-    ...(showTests && isExpanded ? bundle.tests : []),
+    ...(showTests && testsInHull ? bundle.tests : []),
   ];
   if (items.length === 0) return;
 
@@ -123,44 +136,6 @@ function drawRowBackground(
   ctx.globalAlpha = isFocused ? 1 : 0.35;
   ctx.fillRect(0, rowY, width, ROW_H);
   ctx.globalAlpha = 1;
-}
-
-// ---------------------------------------------------------------------------
-// Chevron
-// ---------------------------------------------------------------------------
-
-function drawChevron(
-  ctx: CanvasRenderingContext2D,
-  rowY: number,
-  isExpanded: boolean,
-  emphasis: number,
-  palette: CanvasPalette,
-) {
-  const cx = CHEVRON_W / 2;
-  const cy = rowY + ROW_H / 2;
-
-  ctx.save();
-  ctx.globalAlpha = 0.7 * emphasis;
-  ctx.strokeStyle = palette.metaText;
-  ctx.lineWidth = 1.5;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.beginPath();
-
-  if (isExpanded) {
-    // ▼  down chevron
-    ctx.moveTo(cx - 4, cy - 2);
-    ctx.lineTo(cx, cy + 2);
-    ctx.lineTo(cx + 4, cy - 2);
-  } else {
-    // ▶  right chevron
-    ctx.moveTo(cx - 2, cy - 4);
-    ctx.lineTo(cx + 2, cy);
-    ctx.lineTo(cx - 2, cy + 4);
-  }
-
-  ctx.stroke();
-  ctx.restore();
 }
 
 // ---------------------------------------------------------------------------
@@ -281,18 +256,31 @@ function drawRowBar({
 // Test chip
 // ---------------------------------------------------------------------------
 
-function drawTestChip(
-  ctx: CanvasRenderingContext2D,
-  test: GanttItem,
-  chipY: number,
-  maxEnd: number,
-  chartW: number,
-  labelW: number,
-  palette: CanvasPalette,
-  theme: ThemeMode,
-  emphasis: number,
-  isHovered: boolean,
-) {
+interface DrawTestChipParams {
+  ctx: CanvasRenderingContext2D;
+  test: GanttItem;
+  chipY: number;
+  maxEnd: number;
+  chartW: number;
+  labelW: number;
+  palette: CanvasPalette;
+  theme: ThemeMode;
+  emphasis: number;
+  isHovered: boolean;
+}
+
+function drawTestChip({
+  ctx,
+  test,
+  chipY,
+  maxEnd,
+  chartW,
+  labelW,
+  palette,
+  theme,
+  emphasis,
+  isHovered,
+}: DrawTestChipParams) {
   const chipX = labelW + (test.start / maxEnd) * chartW;
   const chipW = Math.max(MIN_CHIP_W, (test.duration / maxEnd) * chartW);
   const chipH = TEST_BAR_H;
@@ -324,37 +312,230 @@ function drawTestChip(
 }
 
 // ---------------------------------------------------------------------------
-// Collapsed test badge (shown to the right of parent bar when not expanded)
+// drawGantt helpers (keeps main entry shallow for complexity limits)
 // ---------------------------------------------------------------------------
 
-function drawTestBadge(
-  ctx: CanvasRenderingContext2D,
-  bundle: BundleRow,
-  rowY: number,
-  maxEnd: number,
-  chartW: number,
+function initGanttCanvas(
+  canvas: HTMLCanvasElement,
   labelW: number,
-  palette: CanvasPalette,
-  emphasis: number,
-) {
-  if (bundle.tests.length === 0) return;
-  const passCount = bundle.tests.filter((t) => isPositiveStatus(t.status))
-    .length;
-  const failCount = bundle.tests.length - passCount;
-  const label = failCount > 0 ? `${passCount}✓ ${failCount}✗` : `${passCount}✓`;
+): {
+  ctx: CanvasRenderingContext2D;
+  w: number;
+  h: number;
+  chartW: number;
+} | null {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = rect.width;
+  const h = rect.height;
+  if (w === 0 || h === 0) return null;
 
-  const parentEndX = labelW + (bundle.item.end / maxEnd) * chartW;
-  const badgeX = parentEndX + 4;
-  const badgeY = rowY + BAR_PAD + BAR_H / 2;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
 
-  ctx.save();
-  ctx.globalAlpha = 0.75 * emphasis;
-  ctx.font = '9px "IBM Plex Mono", "Fira Mono", monospace';
-  ctx.fillStyle = failCount > 0 ? palette.testFailStripe : palette.metaText;
-  ctx.textAlign = "left";
+  const chartW = w - labelW - X_PAD;
+  return { ctx, w, h, chartW };
+}
+
+interface DrawGanttAxisTicksParams {
+  ctx: CanvasRenderingContext2D;
+  labelW: number;
+  chartW: number;
+  h: number;
+  maxEnd: number;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  timeZone: string;
+  palette: CanvasPalette;
+}
+
+function drawGanttAxisTicks({
+  ctx,
+  labelW,
+  chartW,
+  h,
+  maxEnd,
+  displayMode,
+  runStartedAt,
+  timeZone,
+  palette,
+}: DrawGanttAxisTicksParams): void {
+  const ticks = computeTicks(maxEnd);
+  ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, badgeX, badgeY);
-  ctx.restore();
+  ctx.fillStyle = palette.axisTick;
+
+  for (const tick of ticks) {
+    const x = labelW + (tick.ms / maxEnd) * chartW;
+    ctx.strokeStyle = palette.gridLine;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, AXIS_TOP);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+    const label =
+      displayMode === "timestamps" && runStartedAt != null
+        ? formatTimestamp(runStartedAt + tick.ms, timeZone)
+        : tick.label;
+    ctx.fillText(label, x, AXIS_TOP / 2);
+  }
+}
+
+interface DrawGanttHullPassParams {
+  ctx: CanvasRenderingContext2D;
+  bundles: BundleRow[];
+  rowOffsets: number[];
+  rowHeights: number[];
+  visStart: number;
+  visEnd: number;
+  scrollTop: number;
+  labelW: number;
+  chartW: number;
+  maxEnd: number;
+  palette: CanvasPalette;
+  showTests: boolean;
+  focusIds: Set<string> | null;
+}
+
+function drawGanttHullPass(p: DrawGanttHullPassParams): void {
+  const {
+    ctx,
+    bundles,
+    rowOffsets,
+    rowHeights,
+    visStart,
+    visEnd,
+    scrollTop,
+    labelW,
+    chartW,
+    maxEnd,
+    palette,
+    showTests,
+    focusIds,
+  } = p;
+  for (let i = visStart; i <= visEnd; i++) {
+    const bundle = bundles[i];
+    if (!bundle) continue;
+    const rowY = AXIS_TOP + (rowOffsets[i] ?? 0) - scrollTop;
+    const isFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
+    const testsInHull = showTests && bundle.tests.length > 0;
+
+    if (bundle.tests.length > 0) {
+      drawBundleHull({
+        ctx,
+        bundle,
+        rowY,
+        rowHeight: rowHeights[i] ?? ROW_H,
+        labelW,
+        chartW,
+        maxEnd,
+        palette,
+        testsInHull,
+        showTests,
+        emphasis: isFocused ? 1 : 0.18,
+      });
+    }
+  }
+}
+
+interface DrawGanttVisibleRowParams {
+  ctx: CanvasRenderingContext2D;
+  bundle: BundleRow;
+  rowIndex: number;
+  rowY: number;
+  w: number;
+  labelW: number;
+  chartW: number;
+  maxEnd: number;
+  focusIds: Set<string> | null;
+  hoveredId: string | null;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  timeZone: string;
+  theme: ThemeMode;
+  palette: CanvasPalette;
+  testStatsById?: Map<string, ResourceTestStats>;
+  showTests: boolean;
+}
+
+function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
+  const {
+    ctx,
+    bundle,
+    rowIndex,
+    rowY,
+    w,
+    labelW,
+    chartW,
+    maxEnd,
+    focusIds,
+    hoveredId,
+    displayMode,
+    runStartedAt,
+    timeZone,
+    theme,
+    palette,
+    testStatsById,
+    showTests,
+  } = p;
+
+  const isFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
+  const isHovered = hoveredId === bundle.item.unique_id;
+  const emphasis = isFocused ? 1 : 0.18;
+
+  drawRowBackground(ctx, rowIndex, rowY, w, isFocused, isHovered, palette);
+
+  drawRowLabels({
+    ctx,
+    item: bundle.item,
+    rowY,
+    labelW,
+    xOffset: 0,
+    displayMode,
+    runStartedAt,
+    timeZone,
+    emphasis,
+    palette,
+  });
+
+  drawRowBar({
+    ctx,
+    item: bundle.item,
+    rowY,
+    maxEnd,
+    chartW,
+    labelW,
+    emphasis,
+    isHovered,
+    attachedTestStats: testStatsById?.get(bundle.item.unique_id),
+    palette,
+    theme,
+  });
+
+  if (!showTests || bundle.lanes.length === 0) return;
+
+  for (const { item: test, lane } of bundle.lanes) {
+    const chipY = rowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
+    const testHovered = hoveredId === test.unique_id;
+    const testFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
+    drawTestChip({
+      ctx,
+      test,
+      chipY,
+      maxEnd,
+      chartW,
+      labelW,
+      palette,
+      theme,
+      emphasis: testFocused ? 1 : 0.18,
+      isHovered: testHovered,
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -382,7 +563,6 @@ export function drawGantt(
   bundles: BundleRow[],
   rowOffsets: number[],
   rowHeights: number[],
-  expandedIds: Set<string>,
   {
     scrollTop,
     maxEnd,
@@ -397,161 +577,71 @@ export function drawGantt(
     showTests = true,
   }: DrawGanttParams,
 ) {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  const prepared = initGanttCanvas(canvas, labelW);
+  if (!prepared) return;
 
+  const { ctx, w, h, chartW } = prepared;
   const palette = getCanvasColors(theme);
 
-  const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  const w = rect.width;
-  const h = rect.height;
-  if (w === 0 || h === 0) return;
-
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
-
-  const chartW = w - labelW - X_PAD;
-
-  // Draw axis ticks + grid lines
-  const ticks = computeTicks(maxEnd);
-  ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = palette.axisTick;
-
-  for (const tick of ticks) {
-    const x = labelW + (tick.ms / maxEnd) * chartW;
-    ctx.strokeStyle = palette.gridLine;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, AXIS_TOP);
-    ctx.lineTo(x, h);
-    ctx.stroke();
-    const label =
-      displayMode === "timestamps" && runStartedAt != null
-        ? formatTimestamp(runStartedAt + tick.ms, timeZone)
-        : tick.label;
-    ctx.fillText(label, x, AXIS_TOP / 2);
-  }
+  drawGanttAxisTicks({
+    ctx,
+    labelW,
+    chartW,
+    h,
+    maxEnd,
+    displayMode,
+    runStartedAt,
+    timeZone,
+    palette,
+  });
 
   if (bundles.length === 0) return;
 
-  // Find visible bundle range using rowOffsets
   const contentH = h - AXIS_TOP;
   const visStart = findFirstVisible(rowOffsets, scrollTop);
   const visEnd = findLastVisible(rowOffsets, rowHeights, scrollTop, contentH);
 
   ctx.textBaseline = "middle";
 
-  // Pass 1: bundle hulls (drawn under everything else)
+  drawGanttHullPass({
+    ctx,
+    bundles,
+    rowOffsets,
+    rowHeights,
+    visStart,
+    visEnd,
+    scrollTop,
+    labelW,
+    chartW,
+    maxEnd,
+    palette,
+    showTests,
+    focusIds,
+  });
+
   for (let i = visStart; i <= visEnd; i++) {
     const bundle = bundles[i];
     if (!bundle) continue;
     const rowY = AXIS_TOP + (rowOffsets[i] ?? 0) - scrollTop;
-    const isFocused =
-      focusIds == null || focusIds.has(bundle.item.unique_id);
-    const isExpanded = expandedIds.has(bundle.item.unique_id);
-
-    if (bundle.tests.length > 0) {
-      drawBundleHull(
-        ctx,
-        bundle,
-        rowY,
-        rowHeights[i] ?? ROW_H,
-        labelW,
-        chartW,
-        maxEnd,
-        palette,
-        isExpanded,
-        showTests,
-        isFocused ? 1 : 0.18,
-      );
-    }
-  }
-
-  // Pass 2: row backgrounds, labels, parent bars, test chips
-  for (let i = visStart; i <= visEnd; i++) {
-    const bundle = bundles[i];
-    if (!bundle) continue;
-    const rowY = AXIS_TOP + (rowOffsets[i] ?? 0) - scrollTop;
-    const isFocused =
-      focusIds == null || focusIds.has(bundle.item.unique_id);
-    const isHovered = hoveredId === bundle.item.unique_id;
-    const emphasis = isFocused ? 1 : 0.18;
-    const isExpanded = expandedIds.has(bundle.item.unique_id);
-
-    drawRowBackground(ctx, i, rowY, w, isFocused, isHovered, palette);
-
-    // Chevron for bundles with tests
-    if (bundle.tests.length > 0) {
-      drawChevron(ctx, rowY, isExpanded, emphasis, palette);
-    }
-
-    const labelXOffset = bundle.tests.length > 0 ? CHEVRON_W : 0;
-    drawRowLabels({
+    drawGanttVisibleRow({
       ctx,
-      item: bundle.item,
+      bundle,
+      rowIndex: i,
       rowY,
+      w,
       labelW,
-      xOffset: labelXOffset,
+      chartW,
+      maxEnd,
+      focusIds,
+      hoveredId,
       displayMode,
       runStartedAt,
       timeZone,
-      emphasis,
-      palette,
-    });
-
-    drawRowBar({
-      ctx,
-      item: bundle.item,
-      rowY,
-      maxEnd,
-      chartW,
-      labelW,
-      emphasis,
-      isHovered,
-      attachedTestStats: testStatsById?.get(bundle.item.unique_id),
-      palette,
       theme,
+      palette,
+      testStatsById,
+      showTests,
     });
-
-    if (showTests) {
-      if (isExpanded && bundle.lanes.length > 0) {
-        for (const { item: test, lane } of bundle.lanes) {
-          const chipY =
-            rowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
-          const testHovered = hoveredId === test.unique_id;
-          const testFocused =
-            focusIds == null || focusIds.has(bundle.item.unique_id);
-          drawTestChip(
-            ctx,
-            test,
-            chipY,
-            maxEnd,
-            chartW,
-            labelW,
-            palette,
-            theme,
-            testFocused ? 1 : 0.18,
-            testHovered,
-          );
-        }
-      } else if (!isExpanded && bundle.tests.length > 0) {
-        drawTestBadge(
-          ctx,
-          bundle,
-          rowY,
-          maxEnd,
-          chartW,
-          labelW,
-          palette,
-          emphasis,
-        );
-      }
-    }
   }
 }
 

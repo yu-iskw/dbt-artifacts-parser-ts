@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/** Preview port; override if 4173 is already taken locally (e.g. another `vite preview`). */
+const e2ePort = Number(process.env.PLAYWRIGHT_E2E_PORT ?? "4173");
+const e2eOrigin = `http://127.0.0.1:${e2ePort}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -10,12 +14,12 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? [["github"], ["line"]] : "html",
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: e2eOrigin,
     trace: "on-first-retry",
   },
   webServer: {
-    command: "./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173",
-    url: "http://localhost:4173",
+    command: `./node_modules/.bin/vite preview --host 127.0.0.1 --port ${e2ePort}`,
+    url: e2eOrigin,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

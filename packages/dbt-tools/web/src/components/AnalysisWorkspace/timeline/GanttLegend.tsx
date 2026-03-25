@@ -34,6 +34,8 @@ const SWATCH_STYLE: CSSProperties = {
   flexShrink: 0,
 };
 
+const LEGEND_ITEM_ACTIVE_CLASS = " gantt-legend__item--active";
+
 export function GanttLegend({
   statusCounts,
   typeCounts,
@@ -76,7 +78,7 @@ export function GanttLegend({
               <button
                 key={status}
                 type="button"
-                className={`gantt-legend__item${isActive ? " gantt-legend__item--active" : ""}`}
+                className={`gantt-legend__item${isActive ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
                 onClick={() => onToggleStatus?.(status)}
                 title={`${status} (${count})`}
               >
@@ -100,7 +102,7 @@ export function GanttLegend({
               <button
                 key={type}
                 type="button"
-                className={`gantt-legend__item${isActive ? " gantt-legend__item--active" : ""}`}
+                className={`gantt-legend__item${isActive ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
                 onClick={() => onToggleType?.(type)}
                 title={`${type} (${count})`}
               >
@@ -125,7 +127,7 @@ export function GanttLegend({
           {onToggleShowTests != null && (
             <button
               type="button"
-              className={`gantt-legend__item${showTests ? " gantt-legend__item--active" : ""}`}
+              className={`gantt-legend__item${showTests ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
               onClick={onToggleShowTests}
               title={showTests ? "Hide test chips" : "Show test chips"}
               aria-pressed={showTests ?? false}
@@ -144,12 +146,12 @@ export function GanttLegend({
           {onToggleFailuresOnly != null && (
             <button
               type="button"
-              className={`gantt-legend__item${failuresOnly ? " gantt-legend__item--active" : ""}`}
+              className={`gantt-legend__item${failuresOnly ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
               onClick={onToggleFailuresOnly}
               title={
                 failuresOnly
-                  ? "Show all bundles"
-                  : "Expand failing bundles only"
+                  ? "Show all parent rows"
+                  : "Show only parents with errors or failing tests"
               }
               aria-pressed={failuresOnly ?? false}
             >

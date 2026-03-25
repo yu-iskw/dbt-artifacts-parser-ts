@@ -19,7 +19,7 @@ export interface HoverState {
 export interface BundleLayout {
   rowOffsets: number[];
   rowHeights: number[];
-  expandedIds: Set<string>;
+  showTests: boolean;
 }
 
 /**
@@ -54,8 +54,6 @@ export function findBundleAtOffset(
  * Hit-test the Gantt chart with bundles.
  *
  * Returns the bar (parent or test chip) under the cursor, or null.
- * Also returns `isChevron: true` when the click landed in the label area of a
- * bundle that has tests (so the caller can trigger expand/collapse).
  */
 export function hitTestBundle(
   event: MouseEvent<HTMLDivElement>,
@@ -65,8 +63,8 @@ export function hitTestBundle(
   maxEnd: number,
   effectiveLabelW: number,
   canvas: HTMLCanvasElement | null,
-): { item: GanttItem; x: number; y: number; isChevron: boolean } | null {
-  const { rowOffsets, rowHeights, expandedIds } = layout;
+): { item: GanttItem; x: number; y: number } | null {
+  const { rowOffsets, rowHeights, showTests } = layout;
   if (!canvas) return null;
   const rect = event.currentTarget.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
@@ -81,28 +79,22 @@ export function hitTestBundle(
   const bundle = bundles[bundleIdx];
   if (!bundle) return null;
 
-  // Chevron / label area click → caller should toggle expand
-  if (mouseX < effectiveLabelW && bundle.tests.length > 0) {
-    return {
-      item: bundle.item,
-      x: mouseX,
-      y: mouseY,
-      isChevron: true,
-    };
-  }
-
   const chartW = canvas.getBoundingClientRect().width - effectiveLabelW - X_PAD;
   const bundleRowY = AXIS_TOP + (rowOffsets[bundleIdx] ?? 0) - scrollTop;
+
+  // Label column: select parent
+  if (mouseX < effectiveLabelW) {
+    return { item: bundle.item, x: mouseX, y: mouseY };
+  }
 
   // Check parent bar
   const barX = effectiveLabelW + (bundle.item.start / maxEnd) * chartW;
   const barW = Math.max(2, (bundle.item.duration / maxEnd) * chartW);
   if (mouseX >= barX && mouseX <= barX + barW) {
-    return { item: bundle.item, x: mouseX, y: mouseY, isChevron: false };
+    return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
-  // Check test chips (only if expanded)
-  if (expandedIds.has(bundle.item.unique_id)) {
+  if (showTests && bundle.lanes.length > 0) {
     for (const { item: test, lane } of bundle.lanes) {
       const chipX = effectiveLabelW + (test.start / maxEnd) * chartW;
       const chipW = Math.max(2, (test.duration / maxEnd) * chartW);
@@ -115,7 +107,7 @@ export function hitTestBundle(
         mouseY >= chipY &&
         mouseY <= chipY + chipH
       ) {
-        return { item: test, x: mouseX, y: mouseY, isChevron: false };
+        return { item: test, x: mouseX, y: mouseY };
       }
     }
   }

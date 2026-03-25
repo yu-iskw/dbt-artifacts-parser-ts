@@ -68,9 +68,10 @@ export function groupIntoBundles(items: GanttItem[]): BundleRow[] {
  * algorithm (earliest-start first). Tests that do not overlap share a lane;
  * concurrent tests are placed in separate lanes.
  */
-function assignLanes(
-  tests: GanttItem[],
-): { lanes: TestLane[]; laneCount: number } {
+function assignLanes(tests: GanttItem[]): {
+  lanes: TestLane[];
+  laneCount: number;
+} {
   if (tests.length === 0) return { lanes: [], laneCount: 0 };
 
   const sorted = [...tests].sort((a, b) => a.start - b.start);

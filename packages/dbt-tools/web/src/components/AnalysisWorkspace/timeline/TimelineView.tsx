@@ -2,26 +2,23 @@ import {
   type Dispatch,
   type SetStateAction,
   useDeferredValue,
-  useEffect,
   useMemo,
-  useRef,
 } from "react";
-import { GanttChart, getFailureBundleIds } from "./GanttChart";
+import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
+import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
+import { isPositiveStatus } from "./gantt/formatting";
 import type { AnalysisState, GanttItem } from "@web/types";
 import type {
   InvestigationSelectionState,
   TimelineFilterState,
 } from "@web/lib/analysis-workspace/types";
-import {
-  TEST_RESOURCE_TYPES,
-} from "@web/lib/analysis-workspace/constants";
+import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
   deriveProjectName,
   isDefaultTimelineResource,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { groupIntoBundles } from "@web/lib/analysis-workspace/bundleLayout";
 import { SectionCard, WorkspaceScaffold } from "../shared";
 import { TimelineSearchControls } from "../views/ResultsView";
 
@@ -41,12 +38,25 @@ function setsEqual(left: Set<string>, right: Set<string>): boolean {
   return true;
 }
 
+function parentHasFailureSignal(
+  item: GanttItem,
+  childTests: GanttItem[],
+  testStatsById: ReturnType<typeof buildResourceTestStats>,
+): boolean {
+  const stats = testStatsById.get(item.unique_id);
+  const hasTestFail = stats
+    ? stats.fail + stats.error > 0
+    : childTests.some((t) => !isPositiveStatus(t.status));
+  return !isPositiveStatus(item.status) || hasTestFail;
+}
+
 function TimelineSurface({
   analysis,
   filters,
   defaultActiveTypes,
   effectiveActiveTypes,
   filteredData,
+  bundleRowCount,
   statusCounts,
   typeCounts,
   hasActiveFilters,
@@ -61,6 +71,7 @@ function TimelineSurface({
   defaultActiveTypes: Set<string>;
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
+  bundleRowCount: number;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   hasActiveFilters: boolean;
@@ -99,6 +110,12 @@ function TimelineSurface({
         hasActiveFilters={hasActiveFilters}
         setFilters={setFilters}
       />
+      {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
+        <p className="timeline-large-dataset-hint" role="status">
+          Showing {bundleRowCount.toLocaleString()} timeline rows. Use search or
+          type and status filters to narrow the list.
+        </p>
+      ) : null}
       <GanttChart
         data={filteredData}
         runStartedAt={analysis.runStartedAt}
@@ -178,6 +195,27 @@ export function TimelineView({
     });
   }
 
+  const testStatsById = useMemo(
+    () => buildResourceTestStats(analysis.resources, analysis.dependencyIndex),
+    [analysis.dependencyIndex, analysis.resources],
+  );
+
+  const testsByParentId = useMemo(() => {
+    const m = new Map<string, GanttItem[]>();
+    for (const item of analysis.ganttData) {
+      if (
+        !TEST_RESOURCE_TYPES.has(item.resourceType) ||
+        item.parentId == null
+      ) {
+        continue;
+      }
+      const list = m.get(item.parentId) ?? [];
+      list.push(item);
+      m.set(item.parentId, list);
+    }
+    return m;
+  }, [analysis.ganttData]);
+
   // Filter parent (non-test) items
   const filteredParents: GanttItem[] = useMemo(
     () =>
@@ -213,6 +251,12 @@ export function TimelineView({
             return false;
           }
         }
+        if (filters.failuresOnly) {
+          const childTests = testsByParentId.get(item.unique_id) ?? [];
+          if (!parentHasFailureSignal(item, childTests, testStatsById)) {
+            return false;
+          }
+        }
         return true;
       }),
     [
@@ -220,8 +264,11 @@ export function TimelineView({
       deferredQuery,
       effectiveActiveTypes,
       filters.activeStatuses,
+      filters.failuresOnly,
       filters.activeTypes.size,
       projectName,
+      testStatsById,
+      testsByParentId,
     ],
   );
 
@@ -248,30 +295,6 @@ export function TimelineView({
     () => [...filteredParents, ...filteredTests],
     [filteredParents, filteredTests],
   );
-
-  const testStatsById = useMemo(
-    () => buildResourceTestStats(analysis.resources, analysis.dependencyIndex),
-    [analysis.dependencyIndex, analysis.resources],
-  );
-
-  // Auto-expand failing bundles when failuresOnly is active.
-  // We use a ref to avoid triggering re-renders from within GanttChart.
-  const failureBundleIds = useMemo(() => {
-    if (!filters.failuresOnly) return null;
-    const bundles = groupIntoBundles(filteredData);
-    return getFailureBundleIds(bundles, testStatsById);
-  }, [filters.failuresOnly, filteredData, testStatsById]);
-
-  // Propagate failureBundleIds into GanttChart via a DOM event-based approach
-  // is complex; instead we store them on filters for the chart to read.
-  // (The actual expand state lives inside GanttChart; failuresOnly only signals
-  // which bundles *should* be expanded — GanttChart reads this via a useEffect.)
-  const prevFailuresOnly = useRef(filters.failuresOnly);
-  useEffect(() => {
-    // When failuresOnly is toggled on, auto-expand all failure bundles.
-    // We do this by signaling via a special filter field — GanttChart handles it.
-    prevFailuresOnly.current = filters.failuresOnly;
-  }, [filters.failuresOnly]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -300,10 +323,6 @@ export function TimelineView({
     hasTypeOverride ||
     filters.query.length > 0;
 
-  // Suppress unused variable warning — failureBundleIds is used for future
-  // GanttChart prop when expand-from-parent is wired up.
-  void failureBundleIds;
-
   return (
     <WorkspaceScaffold
       title="Timeline"
@@ -316,6 +335,7 @@ export function TimelineView({
         defaultActiveTypes={defaultActiveTypes}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
+        bundleRowCount={filteredParents.length}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
         hasActiveFilters={hasActiveFilters}

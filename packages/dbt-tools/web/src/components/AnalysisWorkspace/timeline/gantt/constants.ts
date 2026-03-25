@@ -19,8 +19,6 @@ export const BUNDLE_HULL_PAD = 5;
 export const TEST_BAR_H = 10;
 /** Total height per test lane row (chip + inter-lane gap). */
 export const TEST_LANE_H = TEST_BAR_H + 4;
-/** Width reserved on the left of the label column for the expand chevron. */
-export const CHEVRON_W = 16;
 /** Minimum rendered width for a test chip (px). */
 export const MIN_CHIP_W = 4;
 
@@ -30,5 +28,8 @@ export const TOOLTIP_LABEL_STYLE: CSSProperties = {
 };
 
 export const TIMELINE_TIMEZONE_STORAGE_KEY = "dbt-tools.timelineTimezone";
+
+/** Show a hint when the timeline has this many bundle rows (parents). */
+export const TIMELINE_BUNDLE_COUNT_WARNING = 20_000;
 
 export type DisplayMode = "duration" | "timestamps";

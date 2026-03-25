@@ -16,7 +16,7 @@
     "dev:debug": "DBT_DEBUG=1 vite",
     "dev:target": "DBT_TARGET=./target vite",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "pnpm build && playwright test"
   },
   "dependencies": {
     "@dbt-tools/core": "workspace:*",

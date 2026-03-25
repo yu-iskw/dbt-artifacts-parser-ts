@@ -385,6 +385,8 @@ export async function analyzeArtifacts(
       : null;
 
   const summary = analyzer.getSummary();
+  // Timeline rows are executed nodes from this run (with timing), not the full
+  // project catalog. Large projects still have one row per executed parent.
   const ganttData = analyzer.getGanttData();
   const nodeExecutions = analyzer.getNodeExecutions();
 

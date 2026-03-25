@@ -1289,6 +1289,13 @@
   color: var(--text-soft);
 }
 
+.timeline-large-dataset-hint {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin: 0 0 0.75rem;
+  line-height: 1.35;
+}
+
 /* Timeline filter accordion */
 .timeline-filter-accordion {
   margin-bottom: 0.5rem;
