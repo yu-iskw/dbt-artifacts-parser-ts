@@ -50,6 +50,13 @@ export interface TimelineFilterState {
   activeStatuses: Set<string>;
   activeTypes: Set<string>;
   selectedExecutionId: string | null;
+  /** Show test chips inside bundle rows. Default true. */
+  showTests: boolean;
+  /**
+   * When true: auto-expand all bundles with failures and visually collapse
+   * passing ones. Does not remove passing bundles from the view.
+   */
+  failuresOnly: boolean;
 }
 
 export interface AssetViewState {

@@ -413,19 +413,43 @@ export async function analyzeArtifacts(
 
   const graphologyGraph = graph.getGraph();
 
-  // Enrich each GanttItem with its resource_type, packageName, and path from
-  // the manifest graph.
+  // Enrich each GanttItem with its resource_type, packageName, path, and
+  // parentId (for test nodes) from the manifest graph.
   const enrichedGanttData = ganttData.map((item) => {
     const attrs = graphologyGraph.hasNode(item.unique_id)
       ? graphologyGraph.getNodeAttributes(item.unique_id)
       : undefined;
     const rtRaw = attrs?.resource_type;
+    const resourceType =
+      typeof rtRaw === "string" && rtRaw
+        ? rtRaw
+        : inferResourceTypeFromId(item.unique_id);
+
+    // Resolve parent for test nodes via the manifest graph upstream edges.
+    // Tests reference their tested node via depends_on.nodes (depth=1 upstream).
+    let parentId: string | null = null;
+    if (resourceType === "test" || resourceType === "unit_test") {
+      const upstream = (graph as unknown as GraphLike).getUpstream(
+        item.unique_id,
+      );
+      // Prefer depth-1 (direct) upstream; fall back to any depth.
+      const direct = upstream.filter((u) => u.depth === 1);
+      const candidates = direct.length > 0 ? direct : upstream;
+      for (const u of candidates) {
+        const uAttrs = graphologyGraph.hasNode(u.nodeId)
+          ? graphologyGraph.getNodeAttributes(u.nodeId)
+          : undefined;
+        const uType = String(uAttrs?.resource_type ?? "");
+        if (uType !== "test" && uType !== "unit_test" && uType !== "") {
+          parentId = u.nodeId;
+          break;
+        }
+      }
+    }
+
     return {
       ...item,
-      resourceType:
-        typeof rtRaw === "string" && rtRaw
-          ? rtRaw
-          : inferResourceTypeFromId(item.unique_id),
+      resourceType,
       packageName:
         typeof attrs?.package_name === "string" ? attrs.package_name : "",
       path:
@@ -434,6 +458,7 @@ export async function analyzeArtifacts(
           : typeof attrs?.path === "string"
             ? attrs.path
             : null,
+      parentId,
     };
   });
 

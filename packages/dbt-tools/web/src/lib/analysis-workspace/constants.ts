@@ -34,6 +34,7 @@ export const PRIMARY_TIMELINE_TYPES = new Set([
   "seed",
   "snapshot",
   "source",
+  "source_freshness",
   "test",
   "unit_test",
   "metric",

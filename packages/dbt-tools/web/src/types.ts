@@ -16,6 +16,12 @@ export interface GanttItem {
   packageName: string;
   /** Source file path for this node (populated from the manifest graph). */
   path: string | null;
+  /**
+   * unique_id of the parent resource for test/unit_test nodes (the model, seed,
+   * source, or snapshot being tested). Resolved from depends_on.nodes in the
+   * manifest graph. null for non-test resources or when parentage is ambiguous.
+   */
+  parentId: string | null;
 }
 
 export type StatusTone = "positive" | "warning" | "danger" | "neutral";

@@ -105,6 +105,10 @@ export const CANVAS_LIGHT = {
   gridLine: "#E6E9F0",
   barHoverStroke: THEME_HEX_LIGHT.accent,
   testFailStripe: "rgba(192, 53, 43, 0.9)",
+  /** Bundle hull stroke — light neutral border. */
+  hullStroke: "#C8CEDB",
+  /** Bundle hull fill — near-transparent background. */
+  hullFill: "rgba(230, 233, 240, 0.35)",
 } as const;
 
 export const CANVAS_DARK = {
@@ -116,6 +120,10 @@ export const CANVAS_DARK = {
   gridLine: "#262E47",
   barHoverStroke: THEME_HEX_DARK.accent,
   testFailStripe: "rgba(255, 141, 134, 0.88)",
+  /** Bundle hull stroke — dark neutral border. */
+  hullStroke: "#2E3759",
+  /** Bundle hull fill — near-transparent background. */
+  hullFill: "rgba(38, 46, 71, 0.4)",
 } as const;
 
 export function getCanvasColors(theme: ThemeMode) {

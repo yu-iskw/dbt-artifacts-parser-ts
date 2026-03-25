@@ -1,11 +1,12 @@
 import { type ThemeMode, getThemeHex } from "@web/constants/themeColors";
-import type { GanttItem } from "@web/types";
+import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import { X_PAD } from "./constants";
 import { type Edge, edgePath } from "./edgeGeometry";
 
 export function GanttEdgeLayer({
   edges,
-  data,
+  bundles,
+  rowOffsets,
   focusedIds,
   canvasWidth,
   effectiveLabelW,
@@ -15,7 +16,10 @@ export function GanttEdgeLayer({
   theme = "light",
 }: {
   edges: Edge[];
-  data: GanttItem[];
+  /** Bundle rows — used to look up parent item positions for edge drawing. */
+  bundles: BundleRow[];
+  /** Cumulative Y pixel offset per bundle (content-area relative, excl. AXIS_TOP). */
+  rowOffsets: number[];
   focusedIds: Set<string> | null;
   canvasWidth: number;
   effectiveLabelW: number;
@@ -27,6 +31,9 @@ export function GanttEdgeLayer({
   const accent = getThemeHex(theme).accent;
   if (edges.length === 0) return null;
   const approxChartW = canvasWidth - effectiveLabelW - X_PAD;
+
+  // Edge paths use parent item positions (bundles[i].item)
+  const parentItems = bundles.map((b) => b.item);
 
   return (
     <svg
@@ -43,20 +50,26 @@ export function GanttEdgeLayer({
       aria-hidden
     >
       {edges.map((edge, i) => {
+        const srcBundle = bundles[edge.sourceRow];
+        const tgtBundle = bundles[edge.targetRow];
+        if (!srcBundle || !tgtBundle) return null;
+
         const edgeFocused =
           focusedIds == null ||
-          (focusedIds.has(data[edge.sourceRow].unique_id) &&
-            focusedIds.has(data[edge.targetRow].unique_id));
+          (focusedIds.has(srcBundle.item.unique_id) &&
+            focusedIds.has(tgtBundle.item.unique_id));
+
         return (
           <path
             key={i}
             d={edgePath(
               edge,
-              data,
+              parentItems,
               effectiveLabelW,
               maxEnd,
               approxChartW,
               scrollTop,
+              rowOffsets,
             )}
             stroke={accent}
             strokeWidth={edgeFocused ? 1.6 : 1.1}

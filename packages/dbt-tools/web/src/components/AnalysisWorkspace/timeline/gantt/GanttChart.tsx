@@ -5,46 +5,100 @@ import type {
   ResourceConnectionSummary,
   ResourceTestStats,
 } from "@web/types";
+import {
+  groupIntoBundles,
+  type BundleRow,
+} from "@web/lib/analysis-workspace/bundleLayout";
 import { drawGantt } from "./canvasDraw";
 import {
   AXIS_TOP,
+  BUNDLE_HULL_PAD,
   LABEL_W,
   MAX_VIEWPORT_RATIO,
   MIN_VIEWPORT_H,
   ROW_H,
+  TEST_LANE_H,
   TIMELINE_TIMEZONE_STORAGE_KEY,
   VIEWPORT_SCREEN_PADDING,
   type DisplayMode,
 } from "./constants";
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
-import { getEdgesForVisibleRows } from "./edgeGeometry";
+import { getBundleEdges } from "./edgeGeometry";
 import { GanttEdgeLayer } from "./GanttEdgeLayer";
 import { GanttModeToggle } from "./GanttModeToggle";
 import { GanttTooltip } from "./GanttTooltip";
-import { hitTestBar, type HoverState } from "./hitTest";
+import { hitTestBundle, type BundleLayout, type HoverState } from "./hitTest";
 
 export interface GanttChartProps {
   data: GanttItem[];
   /** Absolute epoch-ms of the earliest executed node — enables wall-clock timestamps. */
   runStartedAt?: number | null;
-  /** O(1) lookup from unique_id → row index (pass from TimelineView). */
-  dataIndexById?: Map<string, number>;
   /** Dependency index keyed by unique_id. */
   dependencyIndex?: Record<string, ResourceConnectionSummary>;
   testStatsById?: Map<string, ResourceTestStats>;
   /** Whether to render dependency edges. Default: true. */
   showEdges?: boolean;
+  /** Whether to show test chips inside bundle rows. Default: true. */
+  showTests?: boolean;
   selectedId?: string | null;
   onSelect?: (id: string) => void;
 }
 
+// ---------------------------------------------------------------------------
+// Pure helpers (outside component to avoid re-creation on render)
+// ---------------------------------------------------------------------------
+
+function computeRowLayout(
+  bundles: BundleRow[],
+  expandedIds: Set<string>,
+  showTests: boolean,
+): { rowOffsets: number[]; rowHeights: number[]; totalHeight: number } {
+  const rowOffsets: number[] = [];
+  const rowHeights: number[] = [];
+  let total = 0;
+  for (const bundle of bundles) {
+    rowOffsets.push(total);
+    const isExpanded = expandedIds.has(bundle.item.unique_id);
+    const h =
+      isExpanded && showTests && bundle.laneCount > 0
+        ? ROW_H + BUNDLE_HULL_PAD + bundle.laneCount * TEST_LANE_H + BUNDLE_HULL_PAD
+        : ROW_H;
+    rowHeights.push(h);
+    total += h;
+  }
+  return { rowOffsets, rowHeights, totalHeight: total };
+}
+
+function computeVisRange(
+  rowOffsets: number[],
+  scrollTop: number,
+  viewportH: number,
+  bundleCount: number,
+): { visStart: number; visEnd: number } {
+  const bottom = scrollTop + viewportH - AXIS_TOP;
+  let start = 0;
+  while (start < bundleCount - 1 && (rowOffsets[start + 1] ?? 0) <= scrollTop) {
+    start++;
+  }
+  start = Math.max(0, start - 1);
+  let end = start;
+  while (end < bundleCount - 1 && (rowOffsets[end] ?? 0) < bottom) {
+    end++;
+  }
+  return { visStart: start, visEnd: Math.min(end, bundleCount - 1) };
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export function GanttChart({
   data,
   runStartedAt,
-  dataIndexById,
   dependencyIndex,
   testStatsById,
   showEdges = true,
+  showTests = true,
   selectedId = null,
   onSelect,
 }: GanttChartProps) {
@@ -58,6 +112,7 @@ export function GanttChart({
   const [windowHeight, setWindowHeight] = useState(() =>
     typeof window === "undefined" ? 900 : window.innerHeight,
   );
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const availableTimeZones = useMemo(() => getAvailableTimeZones(), []);
 
   const canShowTimestamps = runStartedAt != null;
@@ -76,19 +131,42 @@ export function GanttChart({
       ? Math.max(80, Math.min(LABEL_W, Math.round(containerWidth * 0.35)))
       : LABEL_W;
 
-  const maxEnd = Math.max(...data.map((d) => d.end), 1);
-  const totalScrollH = data.length * ROW_H + AXIS_TOP;
-  const maxViewportHeight = Math.max(
+  const bundles = useMemo(() => groupIntoBundles(data), [data]);
+  const { rowOffsets, rowHeights, totalHeight } = useMemo(
+    () => computeRowLayout(bundles, expandedIds, showTests),
+    [bundles, expandedIds, showTests],
+  );
+
+  const layout: BundleLayout = useMemo(
+    () => ({ rowOffsets, rowHeights, expandedIds }),
+    [rowOffsets, rowHeights, expandedIds],
+  );
+
+  const bundleIndexById = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = 0; i < bundles.length; i++) {
+      const bundle = bundles[i];
+      if (!bundle) continue;
+      map.set(bundle.item.unique_id, i);
+      for (const test of bundle.tests) map.set(test.unique_id, i);
+    }
+    return map;
+  }, [bundles]);
+
+  const maxEnd = useMemo(
+    () => Math.max(...bundles.map((b) => b.item.end), 1),
+    [bundles],
+  );
+
+  const totalScrollH = totalHeight + AXIS_TOP;
+  const maxViewportH = Math.max(
     MIN_VIEWPORT_H,
     Math.min(
       windowHeight - VIEWPORT_SCREEN_PADDING,
       Math.round(windowHeight * MAX_VIEWPORT_RATIO),
     ),
   );
-  const viewportH = Math.max(
-    MIN_VIEWPORT_H,
-    Math.min(maxViewportHeight, totalScrollH),
-  );
+  const viewportH = Math.max(MIN_VIEWPORT_H, Math.min(maxViewportH, totalScrollH));
   const needsScroll = totalScrollH > viewportH;
 
   useEffect(() => {
@@ -97,39 +175,23 @@ export function GanttChart({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const visStart = Math.max(0, Math.floor(scrollTop / ROW_H));
-  const visEnd = Math.min(
-    data.length - 1,
-    Math.ceil((scrollTop + viewportH - AXIS_TOP) / ROW_H),
+  const { visStart, visEnd } = useMemo(
+    () => computeVisRange(rowOffsets, scrollTop, viewportH, bundles.length),
+    [rowOffsets, scrollTop, viewportH, bundles.length],
   );
 
   const edges = useMemo(() => {
-    if (!showEdges || !dependencyIndex || !dataIndexById || data.length === 0) {
-      return [];
-    }
-    return getEdgesForVisibleRows(
-      data,
-      visStart,
-      visEnd,
-      dependencyIndex,
-      dataIndexById,
-    );
-  }, [showEdges, dependencyIndex, dataIndexById, data, visStart, visEnd]);
+    if (!showEdges || !dependencyIndex || bundles.length === 0) return [];
+    return getBundleEdges(bundles, visStart, visEnd, dependencyIndex, bundleIndexById);
+  }, [showEdges, dependencyIndex, bundles, visStart, visEnd, bundleIndexById]);
 
   const focusedIds = useMemo(() => {
-    if (selectedId && dependencyIndex?.[selectedId]) {
-      const relation = dependencyIndex[selectedId];
-      return new Set([
-        selectedId,
-        ...relation.upstream.map((d) => d.uniqueId),
-        ...relation.downstream.map((d) => d.uniqueId),
-      ]);
-    }
-    if (!hover?.item || !dependencyIndex) return null;
-    const relation = dependencyIndex[hover.item.unique_id];
-    if (!relation) return new Set([hover.item.unique_id]);
+    const activeId = selectedId ?? hover?.item.unique_id ?? null;
+    if (!activeId || !dependencyIndex) return null;
+    const relation = dependencyIndex[activeId];
+    if (!relation) return new Set([activeId]);
     return new Set([
-      hover.item.unique_id,
+      activeId,
       ...relation.upstream.map((d) => d.uniqueId),
       ...relation.downstream.map((d) => d.uniqueId),
     ]);
@@ -137,10 +199,10 @@ export function GanttChart({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || data.length === 0) return;
+    if (!canvas || bundles.length === 0) return;
 
     function draw() {
-      drawGantt(canvas!, data, {
+      drawGantt(canvas!, bundles, rowOffsets, rowHeights, expandedIds, {
         scrollTop,
         maxEnd,
         displayMode: activeMode,
@@ -151,11 +213,11 @@ export function GanttChart({
         timeZone,
         testStatsById,
         theme,
+        showTests,
       });
     }
 
     draw();
-
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) setContainerWidth(entry.contentRect.width);
@@ -164,20 +226,12 @@ export function GanttChart({
     ro.observe(canvas);
     return () => ro.disconnect();
   }, [
-    data,
-    scrollTop,
-    maxEnd,
-    activeMode,
-    runStartedAt,
-    focusedIds,
-    hover,
-    effectiveLabelW,
-    timeZone,
-    testStatsById,
-    theme,
+    bundles, rowOffsets, rowHeights, expandedIds, scrollTop, maxEnd, activeMode,
+    runStartedAt, focusedIds, hover, effectiveLabelW, timeZone, testStatsById,
+    theme, showTests,
   ]);
 
-  if (data.length === 0) {
+  if (bundles.length === 0) {
     return (
       <div className="empty-state empty-state--chart">
         No Gantt data (run_results may lack timing info)
@@ -185,8 +239,38 @@ export function GanttChart({
     );
   }
 
+  function toggleExpand(bundleId: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(bundleId)) next.delete(bundleId);
+      else next.add(bundleId);
+      return next;
+    });
+  }
+
+  function handlePointerInteraction(
+    e: React.MouseEvent<HTMLDivElement>,
+    mode: "move" | "click",
+  ) {
+    const hit = hitTestBundle(e, bundles, layout, scrollTop, maxEnd, effectiveLabelW, canvasRef.current);
+    if (!hit) {
+      if (mode === "move") setHover(null);
+      return;
+    }
+    if (mode === "move") {
+      setHover(hit.isChevron ? null : { item: hit.item, x: hit.x, y: hit.y });
+      return;
+    }
+    // click
+    if (hit.isChevron) {
+      toggleExpand(hit.item.unique_id);
+    } else if (onSelect) {
+      onSelect(hit.item.unique_id);
+    }
+  }
+
   return (
-    <div className="gantt-shell">
+    <div className="gantt-shell" role="tree" aria-label="Execution timeline">
       {canShowTimestamps && (
         <GanttModeToggle
           activeMode={activeMode}
@@ -197,26 +281,20 @@ export function GanttChart({
         />
       )}
 
-      <section
-        className="chart-frame"
-        style={{ position: "relative", userSelect: "none" }}
-      >
+      <section className="chart-frame" style={{ position: "relative", userSelect: "none" }}>
         <canvas
           ref={canvasRef}
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: viewportH,
-            pointerEvents: "none",
-            display: "block",
+            position: "absolute", top: 0, left: 0,
+            width: "100%", height: viewportH,
+            pointerEvents: "none", display: "block",
           }}
         />
 
         <GanttEdgeLayer
           edges={edges}
-          data={data}
+          bundles={bundles}
+          rowOffsets={rowOffsets}
           focusedIds={focusedIds}
           canvasWidth={containerWidth > 0 ? containerWidth : 600}
           effectiveLabelW={effectiveLabelW}
@@ -228,47 +306,25 @@ export function GanttChart({
 
         <div
           className="chart-frame__viewport"
-          role="button"
+          role="presentation"
           tabIndex={0}
-          aria-label="Timeline chart viewport"
-          style={{
-            position: "relative",
-            height: viewportH,
-            overflowY: needsScroll ? "scroll" : "hidden",
-          }}
+          aria-label="Timeline chart viewport — use arrow keys to scroll"
+          style={{ position: "relative", height: viewportH, overflowY: needsScroll ? "scroll" : "hidden" }}
           onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-          onMouseMove={(e) =>
-            setHover(
-              hitTestBar(
-                e,
-                data,
-                scrollTop,
-                maxEnd,
-                effectiveLabelW,
-                canvasRef.current,
-              ),
-            )
-          }
-          onClick={(e) => {
-            const hit = hitTestBar(
-              e,
-              data,
-              scrollTop,
-              maxEnd,
-              effectiveLabelW,
-              canvasRef.current,
-            );
-            if (hit?.item && onSelect) {
-              onSelect(hit.item.unique_id);
-            }
-          }}
+          onMouseMove={(e) => handlePointerInteraction(e, "move")}
+          onClick={(e) => handlePointerInteraction(e, "click")}
           onKeyDown={(e) => {
-            if (!onSelect) return;
             if (e.key !== "Enter" && e.key !== " ") return;
-            const targetId = hover?.item.unique_id ?? selectedId;
-            if (!targetId) return;
             e.preventDefault();
-            onSelect(targetId);
+            const activeId = hover?.item.unique_id ?? selectedId;
+            if (!activeId) return;
+            const idx = bundleIndexById.get(activeId);
+            const bundle = idx !== undefined ? bundles[idx] : undefined;
+            if (bundle && bundle.tests.length > 0) {
+              toggleExpand(bundle.item.unique_id);
+            } else if (onSelect && activeId) {
+              onSelect(activeId);
+            }
           }}
           onMouseLeave={() => setHover(null)}
         >
@@ -287,4 +343,30 @@ export function GanttChart({
       </section>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Helper: identify bundles that should be auto-expanded in failuresOnly mode
+// ---------------------------------------------------------------------------
+
+export function getFailureBundleIds(
+  bundles: BundleRow[],
+  testStatsById?: Map<string, ResourceTestStats>,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const bundle of bundles) {
+    const stats = testStatsById?.get(bundle.item.unique_id);
+    const hasTestFail = stats
+      ? stats.fail + stats.error > 0
+      : bundle.tests.some((t) => !isPositiveStatus(t.status));
+    if (!isPositiveStatus(bundle.item.status) || hasTestFail) {
+      ids.add(bundle.item.unique_id);
+    }
+  }
+  return ids;
+}
+
+function isPositiveStatus(status: string): boolean {
+  const s = status.toLowerCase();
+  return s === "success" || s === "pass" || s === "passed";
 }

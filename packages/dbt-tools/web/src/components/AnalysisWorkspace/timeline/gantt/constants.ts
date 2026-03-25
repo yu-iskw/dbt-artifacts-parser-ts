@@ -12,6 +12,18 @@ export const MIN_VIEWPORT_H = 240;
 export const VIEWPORT_SCREEN_PADDING = 320;
 export const MAX_VIEWPORT_RATIO = 0.78;
 
+// Bundle / test-chip layout
+/** Inner vertical padding inside a bundle hull. */
+export const BUNDLE_HULL_PAD = 5;
+/** Height of each test chip bar. */
+export const TEST_BAR_H = 10;
+/** Total height per test lane row (chip + inter-lane gap). */
+export const TEST_LANE_H = TEST_BAR_H + 4;
+/** Width reserved on the left of the label column for the expand chevron. */
+export const CHEVRON_W = 16;
+/** Minimum rendered width for a test chip (px). */
+export const MIN_CHIP_W = 4;
+
 export const TOOLTIP_LABEL_STYLE: CSSProperties = {
   color: "var(--text-soft)",
   fontSize: "0.82rem",

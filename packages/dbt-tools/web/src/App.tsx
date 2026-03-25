@@ -72,6 +72,8 @@ function AppContent() {
         activeStatuses: new Set(),
         activeTypes: new Set(),
         selectedExecutionId: selected,
+        showTests: true,
+        failuresOnly: false,
       };
     },
   );
