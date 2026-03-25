@@ -14,16 +14,14 @@ test.describe("runs workspace", () => {
     await expect(
       page.getByText("Execution and quality evidence"),
     ).toBeVisible();
+    await expect(page.locator(".workspace-scaffold__leading")).toHaveCount(0);
+    await expect(page.locator(".workspace-scaffold__inspector")).toHaveCount(0);
     await expect(
       page.getByPlaceholder("Filter by name, type, status, thread…"),
     ).toBeVisible();
-    await expect(page.locator(".results-table__header")).toContainText([
-      "Item",
-      "Type",
-      "Status",
-      "Duration",
-      "Thread",
-    ]);
+    await expect(page.locator(".results-table__header")).toContainText(
+      /Item.*Type.*Status.*Duration.*Thread/s,
+    );
   });
 
   test("shows expected facets", async ({ page }) => {
@@ -44,9 +42,10 @@ test.describe("runs workspace", () => {
     }
   });
 
-  test("selecting a row opens the inspector", async ({ page }) => {
+  test("selecting a row shows inline selection actions", async ({ page }) => {
     await expect(page.locator(".results-table__row").first()).toBeVisible();
     await page.locator(".results-table__row").first().click();
+    await expect(page.getByText("Selected run item")).toBeVisible();
     await expect(page.getByText("Open in Timeline")).toBeVisible();
     await expect(page.getByText("Open in Inventory")).toBeVisible();
   });

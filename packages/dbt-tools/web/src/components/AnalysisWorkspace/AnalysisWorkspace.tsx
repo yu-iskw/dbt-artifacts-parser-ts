@@ -289,7 +289,6 @@ export function AnalysisWorkspace({
             filters={timelineFilters}
             setFilters={onTimelineFiltersChange}
             onInvestigationSelectionChange={onInvestigationSelectionChange}
-            onNavigateTo={onNavigateTo}
           />
         )}
         {activeView === "lineage" && (

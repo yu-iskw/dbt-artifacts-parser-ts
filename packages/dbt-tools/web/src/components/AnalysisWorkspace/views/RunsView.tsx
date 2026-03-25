@@ -12,7 +12,7 @@ import {
   badgeClassName,
   formatSeconds,
 } from "@web/lib/analysis-workspace/utils";
-import { EntityInspector, WorkspaceScaffold } from "../shared";
+import { QuickJumpActions, WorkspaceScaffold } from "../shared";
 
 const FACETS: {
   kind?: RunsKind;
@@ -52,50 +52,6 @@ type RunsResultsState = ReturnType<typeof useRunsResultsSource>;
 
 function RunsToolbar({
   runsViewState,
-  onRunsViewStateChange,
-}: {
-  runsViewState: RunsViewState;
-  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
-}) {
-  return (
-    <div className="runs-toolbar">
-      <label className="workspace-search workspace-search--compact">
-        <span>Search</span>
-        <input
-          value={runsViewState.query}
-          onChange={(e) =>
-            onRunsViewStateChange((current) => ({
-              ...current,
-              query: e.target.value,
-            }))
-          }
-          placeholder="Filter by name, type, status, thread…"
-        />
-      </label>
-      <label className="workspace-search workspace-search--compact">
-        <span>Sort</span>
-        <select
-          value={runsViewState.sortBy}
-          onChange={(e) =>
-            onRunsViewStateChange((current) => ({
-              ...current,
-              sortBy: e.target.value as RunsViewState["sortBy"],
-            }))
-          }
-        >
-          <option value="attention">Attention</option>
-          <option value="duration">Duration</option>
-          <option value="name">Name</option>
-          <option value="status">Status</option>
-          <option value="start">Start</option>
-        </select>
-      </label>
-    </div>
-  );
-}
-
-function RunsFacets({
-  runsViewState,
   runsResults,
   onRunsViewStateChange,
 }: {
@@ -104,42 +60,77 @@ function RunsFacets({
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
 }) {
   return (
-    <div className="runs-facets">
-      {FACETS.map((facet) => {
-        const counts = facetKeyMap(runsResults.summary);
-        const active =
-          (facet.kind != null && runsViewState.kind === facet.kind) ||
-          (facet.status != null && runsViewState.status === facet.status) ||
-          (facet.kind == null &&
-            facet.status == null &&
-            runsViewState.kind === "all" &&
-            runsViewState.status === "all");
-        return (
-          <button
-            key={facet.label}
-            type="button"
-            className={
-              active
-                ? "workspace-pill workspace-pill--active"
-                : "workspace-pill"
-            }
-            onClick={() =>
+    <div className="runs-toolbar runs-toolbar--stacked">
+      <div className="runs-toolbar__row">
+        <label className="workspace-search workspace-search--compact">
+          <span>Search</span>
+          <input
+            value={runsViewState.query}
+            onChange={(e) =>
               onRunsViewStateChange((current) => ({
                 ...current,
-                kind: facet.kind ?? "all",
-                status: facet.status ?? "all",
+                query: e.target.value,
+              }))
+            }
+            placeholder="Filter by name, type, status, thread…"
+          />
+        </label>
+        <label className="workspace-search workspace-search--compact">
+          <span>Sort</span>
+          <select
+            value={runsViewState.sortBy}
+            onChange={(e) =>
+              onRunsViewStateChange((current) => ({
+                ...current,
+                sortBy: e.target.value as RunsViewState["sortBy"],
               }))
             }
           >
-            {facet.label} ({counts[facet.countKey]})
-          </button>
-        );
-      })}
+            <option value="attention">Attention</option>
+            <option value="duration">Duration</option>
+            <option value="name">Name</option>
+            <option value="status">Status</option>
+            <option value="start">Start</option>
+          </select>
+        </label>
+      </div>
+      <div className="runs-toolbar__row runs-toolbar__row--facets">
+        {FACETS.map((facet) => {
+          const counts = facetKeyMap(runsResults.summary);
+          const active =
+            (facet.kind != null && runsViewState.kind === facet.kind) ||
+            (facet.status != null && runsViewState.status === facet.status) ||
+            (facet.kind == null &&
+              facet.status == null &&
+              runsViewState.kind === "all" &&
+              runsViewState.status === "all");
+          return (
+            <button
+              key={facet.label}
+              type="button"
+              className={
+                active
+                  ? "workspace-pill workspace-pill--active"
+                  : "workspace-pill"
+              }
+              onClick={() =>
+                onRunsViewStateChange((current) => ({
+                  ...current,
+                  kind: facet.kind ?? "all",
+                  status: facet.status ?? "all",
+                }))
+              }
+            >
+              {facet.label} ({counts[facet.countKey]})
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function RunsInspector({
+function RunsSelectionSummary({
   selectedRow,
   relatedResource,
   onNavigateTo,
@@ -148,67 +139,76 @@ function RunsInspector({
   relatedResource: AnalysisState["resources"][number] | null;
   onNavigateTo: NavigateToHandler;
 }) {
+  if (!selectedRow) {
+    return null;
+  }
+
   return (
-    <EntityInspector
-      title={selectedRow?.name ?? null}
-      typeLabel={selectedRow?.resourceType ?? null}
-      status={
-        selectedRow ? (
+    <section className="workspace-card results-selection-summary">
+      <div className="results-selection-summary__header">
+        <div>
+          <p className="eyebrow">Selected run item</p>
+          <h3>{selectedRow.name}</h3>
+        </div>
+        <div className="results-selection-summary__badges">
+          <span className="entity-inspector__type-badge">
+            {selectedRow.resourceType}
+          </span>
           <span className={badgeClassName(selectedRow.statusTone)}>
             {selectedRow.status}
           </span>
-        ) : undefined
-      }
-      stats={[
-        {
-          label: "Duration",
-          value: selectedRow ? formatSeconds(selectedRow.executionTime) : "n/a",
-        },
-        { label: "Thread", value: selectedRow?.threadId ?? "n/a" },
-        { label: "Status", value: selectedRow?.status ?? "n/a" },
-      ]}
-      sections={[
-        { label: "Path", value: selectedRow?.path ?? "n/a" },
-        { label: "Unique ID", value: selectedRow?.uniqueId ?? "n/a" },
-      ]}
-      actions={
-        selectedRow
-          ? [
-              {
-                label: "Open in Inventory",
-                onClick: () =>
-                  onNavigateTo("inventory", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    assetTab: "summary",
-                  }),
-                disabled: !relatedResource,
-              },
-              {
-                label: "Open in Timeline",
-                onClick: () =>
-                  onNavigateTo("timeline", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    executionId: selectedRow.uniqueId,
-                  }),
-              },
-              {
-                label: "Open in Lineage",
-                onClick: () =>
-                  onNavigateTo("lineage", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    rootResourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                  }),
-                disabled: !relatedResource,
-              },
-            ]
-          : undefined
-      }
-      emptyMessage="Select a run item to inspect"
-    />
+        </div>
+      </div>
+      <dl className="results-selection-summary__stats">
+        <div>
+          <dt>Duration</dt>
+          <dd>{formatSeconds(selectedRow.executionTime)}</dd>
+        </div>
+        <div>
+          <dt>Thread</dt>
+          <dd>{selectedRow.threadId ?? "n/a"}</dd>
+        </div>
+        <div>
+          <dt>Path</dt>
+          <dd>{selectedRow.path ?? "n/a"}</dd>
+        </div>
+        <div>
+          <dt>Unique ID</dt>
+          <dd>{selectedRow.uniqueId}</dd>
+        </div>
+      </dl>
+      <QuickJumpActions
+        actions={[
+          {
+            label: "Open in Inventory",
+            onClick: () =>
+              onNavigateTo("inventory", {
+                resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                assetTab: "summary",
+              }),
+            disabled: !relatedResource,
+          },
+          {
+            label: "Open in Timeline",
+            onClick: () =>
+              onNavigateTo("timeline", {
+                resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                executionId: selectedRow.uniqueId,
+              }),
+          },
+          {
+            label: "Open in Lineage",
+            onClick: () =>
+              onNavigateTo("lineage", {
+                resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                rootResourceId:
+                  relatedResource?.uniqueId ?? selectedRow.uniqueId,
+              }),
+            disabled: !relatedResource,
+          },
+        ]}
+      />
+    </section>
   );
 }
 
@@ -379,25 +379,17 @@ export function RunsView({
       toolbar={
         <RunsToolbar
           runsViewState={runsViewState}
-          onRunsViewStateChange={onRunsViewStateChange}
-        />
-      }
-      leadingPane={
-        <RunsFacets
-          runsViewState={runsViewState}
           runsResults={runsResults}
           onRunsViewStateChange={onRunsViewStateChange}
         />
       }
-      inspector={
-        <RunsInspector
-          selectedRow={selectedRow}
-          relatedResource={relatedResource}
-          onNavigateTo={onNavigateTo}
-        />
-      }
       className="runs-view"
     >
+      <RunsSelectionSummary
+        selectedRow={selectedRow}
+        relatedResource={relatedResource}
+        onNavigateTo={onNavigateTo}
+      />
       <RunsResultsTable
         analysis={analysis}
         runsResults={runsResults}

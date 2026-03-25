@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
 import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import {
@@ -58,10 +58,26 @@ export function LineagePanel({
     setFullscreenOpen(openFullscreen);
   }, [openFullscreen]);
 
-  const setFullscreen = (open: boolean) => {
-    setFullscreenOpen(open);
-    onFullscreenChange?.(open);
-  };
+  const setFullscreen = useCallback(
+    (open: boolean) => {
+      setFullscreenOpen(open);
+      onFullscreenChange?.(open);
+    },
+    [onFullscreenChange],
+  );
+
+  useEffect(() => {
+    if (!isFullscreenOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFullscreen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreenOpen, setFullscreen]);
 
   const toggleLegendKey = (key: string) => {
     setActiveLegendKeys((current) => {
@@ -98,7 +114,7 @@ export function LineagePanel({
     ],
   );
 
-  const depthToolbar = (withClose = false) => (
+  const depthToolbar = () => (
     <div className="lineage-toolbar">
       <LensSelector lensMode={lensMode} setLensMode={setLensMode} />
       <SharedDepthSelector
@@ -130,25 +146,15 @@ export function LineagePanel({
           Clear filters
         </button>
       )}
-      {withClose ? (
+      {displayMode === "focused" && !isFullscreenOpen ? (
         <button
           type="button"
           className="workspace-pill"
-          onClick={() => setFullscreen(false)}
+          onClick={() => setFullscreen(true)}
         >
-          Close
+          Expand
         </button>
-      ) : (
-        displayMode === "focused" && (
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() => setFullscreen(true)}
-          >
-            Expand
-          </button>
-        )
-      )}
+      ) : null}
     </div>
   );
 
@@ -194,20 +200,30 @@ export function LineagePanel({
           <button
             type="button"
             className="lineage-dialog__backdrop"
-            aria-label="Close lineage graph"
+            aria-label="Dismiss lineage overlay"
             onClick={() => setFullscreen(false)}
           />
           <section className="lineage-dialog__panel">
             <div className="lineage-dialog__header">
-              <div>
-                <p className="eyebrow">Lineage</p>
-                <h3>{resource.name}</h3>
-                <p className="lineage-dialog__subtitle">
-                  Exact dependency graph with staged upstream and downstream
-                  columns.
-                </p>
+              <div className="lineage-dialog__header-main">
+                <div>
+                  <p className="eyebrow">Lineage</p>
+                  <h3>{resource.name}</h3>
+                  <p className="lineage-dialog__subtitle">
+                    Exact dependency graph with staged upstream and downstream
+                    columns.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="lineage-dialog__close"
+                  aria-label="Close lineage graph"
+                  onClick={() => setFullscreen(false)}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
               </div>
-              {depthToolbar(true)}
+              <div className="lineage-dialog__toolbar">{depthToolbar()}</div>
             </div>
             <LineageGraphSurface
               model={graphModel}

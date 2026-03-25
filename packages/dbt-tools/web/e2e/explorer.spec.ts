@@ -150,10 +150,20 @@ test.describe("inventory workspace", () => {
       .getByRole("button", { name: "Expand lineage", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toBeVisible();
+    const dialogPanel = page.locator(".lineage-dialog__panel");
+    await expect(dialogPanel).toBeVisible();
+    const panelBox = await dialogPanel.boundingBox();
+    const explorerPanel = page.getByRole("complementary").first();
+    const explorerBox = await explorerPanel.boundingBox();
+    expect(panelBox?.width ?? 0).toBeGreaterThan(
+      (explorerBox?.width ?? 0) * 1.75,
+    );
+    const closeButton = page.locator(".lineage-dialog__close");
+    await expect(closeButton).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Close", exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    ).toHaveCount(0);
+    await closeButton.click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 });

@@ -10,31 +10,14 @@ import type { AnalysisState, GanttItem } from "@web/types";
 import type {
   InvestigationSelectionState,
   TimelineFilterState,
-  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
-import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import {
   deriveProjectName,
-  formatSeconds,
-  isDefaultTimelineExecution,
   isDefaultTimelineResource,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { EntityInspector, SectionCard, WorkspaceScaffold } from "../shared";
-import { OverviewActionListCard } from "../views/OverviewView";
+import { SectionCard, WorkspaceScaffold } from "../shared";
 import { TimelineSearchControls } from "../views/ResultsView";
-
-type NavigateToHandler = (
-  view: WorkspaceView,
-  options?: {
-    resourceId?: string;
-    executionId?: string;
-    assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
-    rootResourceId?: string;
-  },
-) => void;
-
-type ExecutionRow = AnalysisState["executions"][number];
 
 function getDefaultTimelineActiveTypes(presentTypes: string[]): Set<string> {
   return new Set(
@@ -52,92 +35,12 @@ function setsEqual(left: Set<string>, right: Set<string>): boolean {
   return true;
 }
 
-function TimelineInspector({
-  selectedRow,
-  relatedResource,
-  onNavigateTo,
-}: {
-  selectedRow: ExecutionRow | null;
-  relatedResource: AnalysisState["resources"][number] | null;
-  onNavigateTo: NavigateToHandler;
-}) {
-  return (
-    <EntityInspector
-      title={selectedRow?.name ?? null}
-      typeLabel={selectedRow?.resourceType ?? null}
-      status={
-        selectedRow ? (
-          <span className={`badge badge--${selectedRow.statusTone}`}>
-            {selectedRow.status}
-          </span>
-        ) : undefined
-      }
-      stats={[
-        {
-          label: "Duration",
-          value: selectedRow ? formatSeconds(selectedRow.executionTime) : "n/a",
-        },
-        { label: "Thread", value: selectedRow?.threadId ?? "n/a" },
-        {
-          label: "Start",
-          value:
-            selectedRow?.start != null
-              ? `${selectedRow.start.toFixed(2)}s`
-              : "n/a",
-        },
-      ]}
-      sections={[
-        { label: "Path", value: selectedRow?.path ?? "n/a" },
-        { label: "Unique ID", value: selectedRow?.uniqueId ?? "n/a" },
-      ]}
-      actions={
-        selectedRow
-          ? [
-              {
-                label: "Open asset",
-                onClick: () =>
-                  onNavigateTo("inventory", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    assetTab: "summary",
-                  }),
-                disabled: !relatedResource,
-              },
-              {
-                label: "Open in Runs",
-                onClick: () =>
-                  onNavigateTo("runs", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    executionId: selectedRow.uniqueId,
-                  }),
-              },
-              {
-                label: "Open in Lineage",
-                onClick: () =>
-                  onNavigateTo("lineage", {
-                    resourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                    rootResourceId:
-                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                  }),
-                disabled: !relatedResource,
-              },
-            ]
-          : undefined
-      }
-      emptyMessage="Select a node to inspect runtime evidence"
-    />
-  );
-}
-
 function TimelineSurface({
   analysis,
   filters,
   defaultActiveTypes,
   effectiveActiveTypes,
   filteredData,
-  filteredExecutionRows,
   statusCounts,
   typeCounts,
   hasActiveFilters,
@@ -153,7 +56,6 @@ function TimelineSurface({
   defaultActiveTypes: Set<string>;
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
-  filteredExecutionRows: ExecutionRow[];
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   hasActiveFilters: boolean;
@@ -171,25 +73,6 @@ function TimelineSurface({
       title="Execution timeline"
       subtitle="Relative start and duration for each executed node."
     >
-      <OverviewActionListCard
-        derived={{
-          ...buildOverviewDerivedState(analysis, {
-            status: "all",
-            resourceTypes: new Set(),
-            query: "",
-          }),
-          filteredExecutions: filteredExecutionRows,
-          filteredExecutionTime: filteredExecutionRows.reduce(
-            (sum, row) => sum + row.executionTime,
-            0,
-          ),
-          topBottlenecks: [...filteredExecutionRows]
-            .sort((a, b) => b.executionTime - a.executionTime)
-            .slice(0, 5),
-        }}
-        title="Bottlenecks"
-        subtitle="Independent runtime hotspots in the current timeline slice."
-      />
       <GanttLegend
         statusCounts={statusCounts}
         typeCounts={typeCounts}
@@ -232,7 +115,6 @@ export function TimelineView({
   filters,
   setFilters,
   onInvestigationSelectionChange,
-  onNavigateTo,
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
@@ -240,7 +122,6 @@ export function TimelineView({
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
-  onNavigateTo: NavigateToHandler;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -328,64 +209,6 @@ export function TimelineView({
     ],
   );
 
-  const filteredExecutionRows = useMemo(
-    () =>
-      analysis.executions.filter((row) => {
-        if (
-          filters.activeTypes.size === 0 &&
-          !isDefaultTimelineExecution(row, projectName)
-        ) {
-          return false;
-        }
-        if (
-          filters.activeStatuses.size > 0 &&
-          !filters.activeStatuses.has(row.status.toLowerCase())
-        ) {
-          return false;
-        }
-        if (
-          effectiveActiveTypes.size > 0 &&
-          !effectiveActiveTypes.has(row.resourceType)
-        ) {
-          return false;
-        }
-        if (deferredQuery) {
-          const q = deferredQuery.trim().toLowerCase();
-          if (
-            q &&
-            !row.name.toLowerCase().includes(q) &&
-            !row.uniqueId.toLowerCase().includes(q)
-          ) {
-            return false;
-          }
-        }
-        return true;
-      }),
-    [
-      analysis.executions,
-      deferredQuery,
-      effectiveActiveTypes,
-      filters.activeStatuses,
-      filters.activeTypes.size,
-      projectName,
-    ],
-  );
-
-  const selectedRow =
-    filteredExecutionRows.find(
-      (row) => row.uniqueId === filters.selectedExecutionId,
-    ) ??
-    analysis.executions.find(
-      (row) => row.uniqueId === filters.selectedExecutionId,
-    ) ??
-    null;
-  const relatedResource =
-    selectedRow != null
-      ? (analysis.resources.find(
-          (resource) => resource.uniqueId === selectedRow.uniqueId,
-        ) ?? null)
-      : null;
-
   const dataIndexById = useMemo(
     () => new Map(filteredData.map((item, i) => [item.unique_id, i])),
     [filteredData],
@@ -423,13 +246,6 @@ export function TimelineView({
     <WorkspaceScaffold
       title="Timeline"
       description="Runtime timing, concurrency, bottlenecks, and execution order."
-      inspector={
-        <TimelineInspector
-          selectedRow={selectedRow}
-          relatedResource={relatedResource}
-          onNavigateTo={onNavigateTo}
-        />
-      }
       className="timeline-view"
     >
       <TimelineSurface
@@ -438,7 +254,6 @@ export function TimelineView({
         defaultActiveTypes={defaultActiveTypes}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
-        filteredExecutionRows={filteredExecutionRows}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
         hasActiveFilters={hasActiveFilters}

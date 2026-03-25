@@ -31,10 +31,10 @@ describe("createRunsResultsIndex", () => {
       makeExecution({ uniqueId: "not_null_orders", resourceType: "test" }),
     ]);
 
-    expect(index.models).toHaveLength(1);
-    expect(index.tests).toHaveLength(1);
-    expect(index.summary.models.all).toBe(1);
-    expect(index.summary.tests.all).toBe(1);
+    expect(index.entries).toHaveLength(2);
+    expect(index.summary.facets.models).toBe(1);
+    expect(index.summary.facets.tests).toBe(1);
+    expect(index.summary.status.all).toBe(2);
   });
 });
 
@@ -52,9 +52,12 @@ describe("filterRunsResultsIndex", () => {
     ]);
 
     const matches = filterRunsResultsIndex(index, {
-      tab: "models",
+      kind: "models",
       status: "danger",
       query: "cust",
+      resourceTypes: [],
+      threadIds: [],
+      durationBand: "all",
     });
 
     expect(matches).toHaveLength(1);
@@ -71,13 +74,17 @@ describe("queryRunsResultsIndex", () => {
     );
 
     const result = queryRunsResultsIndex(index, {
-      tab: "models",
+      kind: "models",
       status: "all",
       query: "",
+      resourceTypes: [],
+      threadIds: [],
+      durationBand: "all",
+      sortBy: "attention",
       limit: 100,
     });
 
-    expect(result.summary.all).toBe(140);
+    expect(result.summary.status.all).toBe(140);
     expect(result.totalMatches).toBe(140);
     expect(result.rows).toHaveLength(100);
     expect(result.rows[0]?.uniqueId).toBe("model_0");
