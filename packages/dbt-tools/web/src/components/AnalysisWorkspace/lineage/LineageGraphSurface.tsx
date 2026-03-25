@@ -17,6 +17,7 @@ import {
   filterLineageGraphModel,
   getLensLegendItems,
   getLensNodeFill,
+  supportsTests,
 } from "@web/lib/analysis-workspace/lineageModel";
 import type { LensMode } from "@web/lib/analysis-workspace/types";
 import { formatResourceTypeLabel } from "../shared";
@@ -487,42 +488,50 @@ export function LineageGraphSurface({
                         ? formatResourceTypeLabel(node.resource.resourceType)
                         : `${formatResourceTypeLabel(node.resource.resourceType)} · Depth ${node.depth}`}
                     </text>
-                    <rect
-                      x={x + 16}
-                      y={badgeY}
-                      width={passBadgeWidth}
-                      height={badgeHeight}
-                      rx={badgeRadius}
-                      className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--pass"
-                    />
-                    <text
-                      x={x + 16 + passBadgeWidth / 2}
-                      y={badgeY + badgeHeight / 2}
-                      className="dependency-graph__node-stat dependency-graph__node-stat--pass"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      {passLabel}
-                    </text>
-                    <rect
-                      x={x + 16 + passBadgeWidth + badgeGap}
-                      y={badgeY}
-                      width={failBadgeWidth}
-                      height={badgeHeight}
-                      rx={badgeRadius}
-                      className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
-                    />
-                    <text
-                      x={
-                        x + 16 + passBadgeWidth + badgeGap + failBadgeWidth / 2
-                      }
-                      y={badgeY + badgeHeight / 2}
-                      className="dependency-graph__node-stat dependency-graph__node-stat--fail"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      {failLabel}
-                    </text>
+                    {supportsTests(node.resource.resourceType) && (
+                      <>
+                        <rect
+                          x={x + 16}
+                          y={badgeY}
+                          width={passBadgeWidth}
+                          height={badgeHeight}
+                          rx={badgeRadius}
+                          className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--pass"
+                        />
+                        <text
+                          x={x + 16 + passBadgeWidth / 2}
+                          y={badgeY + badgeHeight / 2}
+                          className="dependency-graph__node-stat dependency-graph__node-stat--pass"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          {passLabel}
+                        </text>
+                        <rect
+                          x={x + 16 + passBadgeWidth + badgeGap}
+                          y={badgeY}
+                          width={failBadgeWidth}
+                          height={badgeHeight}
+                          rx={badgeRadius}
+                          className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
+                        />
+                        <text
+                          x={
+                            x +
+                            16 +
+                            passBadgeWidth +
+                            badgeGap +
+                            failBadgeWidth / 2
+                          }
+                          y={badgeY + badgeHeight / 2}
+                          className="dependency-graph__node-stat dependency-graph__node-stat--fail"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          {failLabel}
+                        </text>
+                      </>
+                    )}
                   </g>
                 );
               })}
