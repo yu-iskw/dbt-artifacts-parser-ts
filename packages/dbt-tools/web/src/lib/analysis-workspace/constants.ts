@@ -1,13 +1,22 @@
-import { THEME_HEX } from "@web/constants/themeColors";
+import { type ThemeMode, getThemeHex } from "@web/constants/themeColors";
 import type { StatusTone } from "@web/types";
 import type { WorkspaceView, AssetExplorerMode } from "./types";
 
-export const STATUS_COLORS: Record<StatusTone, string> = {
-  positive: THEME_HEX.mint,
-  warning: THEME_HEX.amber,
-  danger: THEME_HEX.rose,
-  neutral: THEME_HEX.slate,
-};
+export function getStatusTonePalette(
+  theme: ThemeMode,
+): Record<StatusTone, string> {
+  const t = getThemeHex(theme);
+  return {
+    positive: t.mint,
+    warning: t.amber,
+    danger: t.rose,
+    neutral: t.slate,
+  };
+}
+
+/** Light-theme defaults; use {@link getStatusTonePalette} with {@link useTheme} in themed charts. */
+export const STATUS_COLORS: Record<StatusTone, string> =
+  getStatusTonePalette("light");
 
 export const PILL_ACTIVE = "workspace-pill workspace-pill--active";
 export const PILL_BASE = "workspace-pill";

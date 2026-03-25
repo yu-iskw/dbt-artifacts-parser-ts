@@ -2,23 +2,15 @@ import type {
   ExecutionSummary,
   BottleneckResult,
 } from "@dbt-tools/core/browser";
-import { THEME_HEX } from "@web/constants/themeColors";
+import { getThemeHex } from "@web/constants/themeColors";
+import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 
 interface RunSummaryProps {
   summary: ExecutionSummary;
   bottlenecks: BottleneckResult | undefined;
 }
 
-const CARD_BG = THEME_HEX.bg;
-const CARD_BORDER = "1px solid rgba(15, 23, 42, 0.1)";
 const CELL_PADDING = "0.5rem 0.75rem";
-
-const CARD_STYLE = {
-  padding: "1rem",
-  background: CARD_BG,
-  borderRadius: 8,
-  border: CARD_BORDER,
-};
 
 const TH_STYLE = { padding: CELL_PADDING, fontWeight: 600 };
 
@@ -26,18 +18,43 @@ function formatSeconds(s: number): string {
   return `${s.toFixed(2)}s`;
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+type ThemeHex = ReturnType<typeof getThemeHex>;
+
+function StatCard({
+  label,
+  value,
+  t,
+}: {
+  label: string;
+  value: string | number;
+  t: ThemeHex;
+}) {
+  const cardStyle = {
+    padding: "1rem",
+    background: t.bg,
+    borderRadius: 8,
+    border: `1px solid ${t.borderDefault}`,
+  };
   return (
-    <div style={CARD_STYLE}>
-      <div style={{ fontSize: 12, color: THEME_HEX.textSoft, marginBottom: 4 }}>
+    <div style={cardStyle}>
+      <div style={{ fontSize: 12, color: t.textSoft, marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>{value}</div>
+      <div style={{ fontSize: "1.25rem", fontWeight: 600, color: t.text }}>
+        {value}
+      </div>
     </div>
   );
 }
 
-function BottleneckTable({ bottlenecks }: { bottlenecks: BottleneckResult }) {
+function BottleneckTable({
+  bottlenecks,
+  t,
+}: {
+  bottlenecks: BottleneckResult;
+  t: ThemeHex;
+}) {
+  const cardBorder = `1px solid ${t.borderDefault}`;
   const cellStyle = { padding: CELL_PADDING };
   return (
     <table
@@ -45,14 +62,15 @@ function BottleneckTable({ bottlenecks }: { bottlenecks: BottleneckResult }) {
         width: "100%",
         borderCollapse: "collapse",
         fontSize: 14,
-        background: THEME_HEX.bgSoft,
-        border: CARD_BORDER,
+        background: t.bgSoft,
+        border: cardBorder,
         borderRadius: 8,
         overflow: "hidden",
+        color: t.text,
       }}
     >
       <thead>
-        <tr style={{ background: CARD_BG }}>
+        <tr style={{ background: t.bg }}>
           <th style={{ ...TH_STYLE, textAlign: "left" }}>#</th>
           <th style={{ ...TH_STYLE, textAlign: "left" }}>Node</th>
           <th style={{ ...TH_STYLE, textAlign: "right" }}>Time</th>
@@ -61,7 +79,7 @@ function BottleneckTable({ bottlenecks }: { bottlenecks: BottleneckResult }) {
       </thead>
       <tbody>
         {bottlenecks.nodes.map((node) => (
-          <tr key={node.unique_id} style={{ borderTop: CARD_BORDER }}>
+          <tr key={node.unique_id} style={{ borderTop: cardBorder }}>
             <td style={cellStyle}>{node.rank}</td>
             <td style={cellStyle}>{node.name ?? node.unique_id}</td>
             <td style={{ ...cellStyle, textAlign: "right" }}>
@@ -78,10 +96,12 @@ function BottleneckTable({ bottlenecks }: { bottlenecks: BottleneckResult }) {
 }
 
 export function RunSummary({ summary, bottlenecks }: RunSummaryProps) {
+  const theme = useSyncedDocumentTheme();
+  const t = getThemeHex(theme);
   const statusEntries = Object.entries(summary.nodes_by_status);
 
   return (
-    <section style={{ marginBottom: "2rem" }}>
+    <section style={{ marginBottom: "2rem", color: t.text }}>
       <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem" }}>Run Summary</h2>
       <div
         style={{
@@ -93,10 +113,11 @@ export function RunSummary({ summary, bottlenecks }: RunSummaryProps) {
         <StatCard
           label="Total Time"
           value={formatSeconds(summary.total_execution_time)}
+          t={t}
         />
-        <StatCard label="Total Nodes" value={summary.total_nodes} />
+        <StatCard label="Total Nodes" value={summary.total_nodes} t={t} />
         {statusEntries.map(([status, count]) => (
-          <StatCard key={status} label={status} value={count} />
+          <StatCard key={status} label={status} value={count} t={t} />
         ))}
       </div>
 
@@ -105,7 +126,7 @@ export function RunSummary({ summary, bottlenecks }: RunSummaryProps) {
           <h3 style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>
             Top Bottlenecks
           </h3>
-          <BottleneckTable bottlenecks={bottlenecks} />
+          <BottleneckTable bottlenecks={bottlenecks} t={t} />
         </div>
       )}
     </section>

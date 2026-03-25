@@ -1,53 +1,126 @@
 /**
- * Hex / rgba mirrors of design tokens in `index.css` for canvas, SVG, and TS
+ * Hex mirrors of design tokens in `index.css` for canvas, SVG, and TS
  * consumers that cannot use CSS `var()`.
- * Keep in sync when rebranding `:root` in index.css.
+ * Keep in sync with `:root` and `[data-theme="dark"]` in index.css.
  */
-export const THEME_HEX = {
-  accent: "#4f46e5",
-  accentDark: "#6366f1",
-  text: "#1c1c2e",
-  textSoft: "#9090a8",
-  bg: "#f4f4f8",
-  bgSoft: "#ffffff",
-  slate: "#9090a8",
-  rose: "#b91c1c",
-  mint: "#15803d",
-  amber: "#c27803",
+
+export type ThemeMode = "light" | "dark";
+
+export const THEME_HEX_LIGHT = {
+  accent: "#635BFF",
+  text: "#171C28",
+  textSoft: "#6B7385",
+  bg: "#F6F7FB",
+  bgSoft: "#FFFFFF",
+  borderDefault: "#D7DCE7",
+  borderSubtle: "#E6E9F0",
+  slate: "#64748B",
+  rose: "#C0352B",
+  mint: "#0F8A4B",
+  amber: "#A56315",
 } as const;
 
-/** Execution status and resource types — match `--dbt-type-*` and status tokens in index.css */
-export const STATUS_HEX = {
-  success: THEME_HEX.mint,
-  error: THEME_HEX.rose,
-  skipped: THEME_HEX.slate,
-  "run error": THEME_HEX.rose,
-  pass: THEME_HEX.mint,
-  fail: THEME_HEX.rose,
-  warn: THEME_HEX.amber,
-  "no op": THEME_HEX.slate,
+export const THEME_HEX_DARK = {
+  accent: "#8A7CFF",
+  text: "#F3F6FC",
+  textSoft: "#98A3BC",
+  bg: "#0D1120",
+  bgSoft: "#151A2E",
+  borderDefault: "#313A58",
+  borderSubtle: "#262E47",
+  slate: "#8690AA",
+  rose: "#FF8D86",
+  mint: "#59D38C",
+  amber: "#F5B95C",
 } as const;
 
-export const RESOURCE_TYPE_HEX: Record<string, string> = {
-  model: "#2563eb",
-  test: "#475569",
-  seed: "#7c3aed",
-  snapshot: "#a16207",
-  source: "#0d9448",
-  exposure: "#b45309",
-  metric: "#a21caf",
-  semantic_model: "#0369a1",
-  analysis: "#6b7280",
-  unit_test: "#475569",
+/** @deprecated Prefer {@link getThemeHex} with {@link ThemeMode} for theme-aware UI. */
+export const THEME_HEX = THEME_HEX_LIGHT;
+
+export function getThemeHex(theme: ThemeMode) {
+  return theme === "dark" ? THEME_HEX_DARK : THEME_HEX_LIGHT;
+}
+
+/** Execution status keys — align with `STATUS_HEX` / status tokens in index.css */
+export const STATUS_HEX_LIGHT = {
+  success: THEME_HEX_LIGHT.mint,
+  error: THEME_HEX_LIGHT.rose,
+  skipped: THEME_HEX_LIGHT.slate,
+  "run error": THEME_HEX_LIGHT.rose,
+  pass: THEME_HEX_LIGHT.mint,
+  fail: THEME_HEX_LIGHT.rose,
+  warn: THEME_HEX_LIGHT.amber,
+  "no op": THEME_HEX_LIGHT.slate,
+} as const;
+
+export const STATUS_HEX_DARK = {
+  success: THEME_HEX_DARK.mint,
+  error: THEME_HEX_DARK.rose,
+  skipped: THEME_HEX_DARK.slate,
+  "run error": THEME_HEX_DARK.rose,
+  pass: THEME_HEX_DARK.mint,
+  fail: THEME_HEX_DARK.rose,
+  warn: THEME_HEX_DARK.amber,
+  "no op": THEME_HEX_DARK.slate,
+} as const;
+
+export const RESOURCE_TYPE_HEX_LIGHT: Record<string, string> = {
+  model: "#1D4ED8",
+  test: "#64748B",
+  seed: "#635BFF",
+  snapshot: "#D97706",
+  source: "#059669",
+  exposure: "#EA580C",
+  metric: "#DB2777",
+  semantic_model: "#0891B2",
+  analysis: "#64748B",
+  unit_test: "#64748B",
 };
 
-export const CANVAS = {
-  rowStripe: "rgba(244, 244, 248, 0.55)",
-  rowStripeHover: "rgba(79, 70, 229, 0.07)",
-  labelText: THEME_HEX.text,
-  metaText: THEME_HEX.textSoft,
-  axisTick: THEME_HEX.slate,
-  gridLine: "rgba(28, 28, 46, 0.07)",
-  barHoverStroke: "rgba(79, 70, 229, 0.65)",
-  testFailStripe: "rgba(185, 28, 28, 0.9)",
+export const RESOURCE_TYPE_HEX_DARK: Record<string, string> = {
+  model: "#5c8deb",
+  test: "#8690aa",
+  seed: "#9588e8",
+  snapshot: "#d4a24a",
+  source: "#45c49a",
+  exposure: "#d9845c",
+  metric: "#d172ae",
+  semantic_model: "#3eb0c8",
+  analysis: "#8690aa",
+  unit_test: "#8690aa",
+};
+
+export function getResourceTypeHexMap(
+  theme: ThemeMode,
+): Record<string, string> {
+  return theme === "dark" ? RESOURCE_TYPE_HEX_DARK : RESOURCE_TYPE_HEX_LIGHT;
+}
+
+export const CANVAS_LIGHT = {
+  rowStripe: "#F1F3F8",
+  rowStripeHover: "#EEF0FF",
+  labelText: THEME_HEX_LIGHT.text,
+  metaText: THEME_HEX_LIGHT.textSoft,
+  axisTick: THEME_HEX_LIGHT.slate,
+  gridLine: "#E6E9F0",
+  barHoverStroke: THEME_HEX_LIGHT.accent,
+  testFailStripe: "rgba(192, 53, 43, 0.9)",
 } as const;
+
+export const CANVAS_DARK = {
+  rowStripe: "#101527",
+  rowStripeHover: "#232845",
+  labelText: THEME_HEX_DARK.text,
+  metaText: THEME_HEX_DARK.textSoft,
+  axisTick: THEME_HEX_DARK.slate,
+  gridLine: "#262E47",
+  barHoverStroke: THEME_HEX_DARK.accent,
+  testFailStripe: "rgba(255, 141, 134, 0.88)",
+} as const;
+
+export function getCanvasColors(theme: ThemeMode) {
+  return theme === "dark" ? CANVAS_DARK : CANVAS_LIGHT;
+}
+
+/** @deprecated Use {@link getCanvasColors} with {@link ThemeMode}. */
+export const CANVAS = CANVAS_LIGHT;

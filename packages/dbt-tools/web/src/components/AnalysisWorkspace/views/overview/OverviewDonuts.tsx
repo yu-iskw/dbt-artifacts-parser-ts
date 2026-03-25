@@ -1,4 +1,6 @@
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
+import { getThemeHex } from "@web/constants/themeColors";
+import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 import {
   Cell,
   Pie,
@@ -7,7 +9,7 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import type { ExecutionRow, StatusBreakdownItem, StatusTone } from "@web/types";
-import { STATUS_COLORS } from "@web/lib/analysis-workspace/constants";
+import { getStatusTonePalette } from "@web/lib/analysis-workspace/constants";
 import {
   buildStatusBreakdownForRows,
   type TypeStatusBreakdown,
@@ -36,7 +38,15 @@ function buildTypeStatusBreakdowns(
     .sort((a, b) => b.count - a.count);
 }
 
-export function TypeStatusDonutCard({ group }: { group: TypeStatusBreakdown }) {
+export function TypeStatusDonutCard({
+  group,
+  statusColors,
+  tooltipContentStyle,
+}: {
+  group: TypeStatusBreakdown;
+  statusColors: Record<StatusTone, string>;
+  tooltipContentStyle: CSSProperties;
+}) {
   const statusData = group.statusBreakdown.map((entry) => ({
     name: entry.status,
     value: entry.count,
@@ -47,7 +57,7 @@ export function TypeStatusDonutCard({ group }: { group: TypeStatusBreakdown }) {
   return (
     <article
       className="type-donut-card"
-      style={{ "--type-accent": STATUS_COLORS[accentTone] } as CSSProperties}
+      style={{ "--type-accent": statusColors[accentTone] } as CSSProperties}
     >
       <div className="type-donut-card__title">
         <strong>{formatResourceTypeLabel(group.resourceType)}</strong>
@@ -71,17 +81,13 @@ export function TypeStatusDonutCard({ group }: { group: TypeStatusBreakdown }) {
               {statusData.map((entry) => (
                 <Cell
                   key={`${group.resourceType}-${entry.name}`}
-                  fill={STATUS_COLORS[entry.tone as StatusTone]}
+                  fill={statusColors[entry.tone as StatusTone]}
                 />
               ))}
             </Pie>
             <RechartsTooltip
               formatter={(value: number) => [`${value} runs`, "Count"]}
-              contentStyle={{
-                borderRadius: 12,
-                border: "1px solid rgba(35, 42, 52, 0.12)",
-                boxShadow: "0 20px 40px rgba(26, 34, 43, 0.14)",
-              }}
+              contentStyle={tooltipContentStyle}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -95,7 +101,7 @@ export function TypeStatusDonutCard({ group }: { group: TypeStatusBreakdown }) {
             <div className="type-donut-card__legend-label">
               <span
                 className="legend-row__swatch"
-                style={{ background: STATUS_COLORS[entry.tone] }}
+                style={{ background: statusColors[entry.tone] }}
               />
               <span>{entry.status}</span>
             </div>
@@ -115,6 +121,20 @@ export function TypeStatusDonutGrid({
 }: {
   executions: ExecutionRow[];
 }) {
+  const theme = useSyncedDocumentTheme();
+  const statusColors = useMemo(() => getStatusTonePalette(theme), [theme]);
+  const tooltipContentStyle = useMemo((): CSSProperties => {
+    const t = getThemeHex(theme);
+    return {
+      borderRadius: 12,
+      border: `1px solid ${t.borderDefault}`,
+      boxShadow:
+        theme === "dark"
+          ? "0 8px 24px rgba(0, 0, 0, 0.45)"
+          : "0 20px 40px rgba(26, 34, 43, 0.14)",
+    };
+  }, [theme]);
+
   const groups = buildTypeStatusBreakdowns(executions);
 
   if (groups.length === 0) {
@@ -124,7 +144,12 @@ export function TypeStatusDonutGrid({
   return (
     <div className="type-donut-grid">
       {groups.map((group) => (
-        <TypeStatusDonutCard key={group.resourceType} group={group} />
+        <TypeStatusDonutCard
+          key={group.resourceType}
+          group={group}
+          statusColors={statusColors}
+          tooltipContentStyle={tooltipContentStyle}
+        />
       ))}
     </div>
   );
@@ -137,6 +162,20 @@ export function StatusDonutChart({
   statusData: Array<{ name: string; value: number; tone: string }>;
   statusBreakdown: StatusBreakdownItem[];
 }) {
+  const theme = useSyncedDocumentTheme();
+  const statusColors = useMemo(() => getStatusTonePalette(theme), [theme]);
+  const tooltipContentStyle = useMemo((): CSSProperties => {
+    const t = getThemeHex(theme);
+    return {
+      borderRadius: 14,
+      border: `1px solid ${t.borderDefault}`,
+      boxShadow:
+        theme === "dark"
+          ? "0 8px 24px rgba(0, 0, 0, 0.45)"
+          : "0 20px 40px rgba(26, 34, 43, 0.14)",
+    };
+  }, [theme]);
+
   const renderStatusLabel = ({
     cx,
     cy,
@@ -207,17 +246,13 @@ export function StatusDonutChart({
               {statusData.map((entry) => (
                 <Cell
                   key={entry.name}
-                  fill={STATUS_COLORS[entry.tone as StatusTone]}
+                  fill={statusColors[entry.tone as StatusTone]}
                 />
               ))}
             </Pie>
             <RechartsTooltip
               formatter={(value: number) => [`${value} runs`, "Count"]}
-              contentStyle={{
-                borderRadius: 14,
-                border: "1px solid rgba(35, 42, 52, 0.12)",
-                boxShadow: "0 20px 40px rgba(26, 34, 43, 0.14)",
-              }}
+              contentStyle={tooltipContentStyle}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -228,7 +263,7 @@ export function StatusDonutChart({
             <div className="legend-row__label">
               <span
                 className="legend-row__swatch"
-                style={{ background: STATUS_COLORS[entry.tone] }}
+                style={{ background: statusColors[entry.tone] }}
               />
               {entry.status}
             </div>

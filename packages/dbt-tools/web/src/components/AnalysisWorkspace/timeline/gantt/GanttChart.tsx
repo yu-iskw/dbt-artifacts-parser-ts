@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 import type {
   GanttItem,
   ResourceConnectionSummary,
@@ -43,6 +44,7 @@ export function GanttChart({
   testStatsById,
   showEdges = true,
 }: GanttChartProps) {
+  const theme = useSyncedDocumentTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -136,6 +138,7 @@ export function GanttChart({
         labelW: effectiveLabelW,
         timeZone,
         testStatsById,
+        theme,
       });
     }
 
@@ -159,6 +162,7 @@ export function GanttChart({
     effectiveLabelW,
     timeZone,
     testStatsById,
+    theme,
   ]);
 
   if (data.length === 0) {
@@ -207,6 +211,7 @@ export function GanttChart({
           maxEnd={maxEnd}
           scrollTop={scrollTop}
           viewportH={viewportH}
+          theme={theme}
         />
 
         <div
