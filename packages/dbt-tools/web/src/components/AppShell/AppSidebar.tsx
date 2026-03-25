@@ -1,14 +1,9 @@
 import type { AnalysisState } from "@web/types";
-import type {
-  AssetViewState,
-  ExecutionViewState,
-  RunsViewState,
-  WorkspaceView,
-} from "../AnalysisWorkspace";
+import type { WorkspaceView } from "../AnalysisWorkspace";
 import {
   type NavigationSelectionTarget,
   isNavigationTargetActive,
-  navigationGroups,
+  navigationItems,
 } from "./appNavigation";
 import { NavIcon } from "./NavIcon";
 
@@ -20,9 +15,6 @@ export function AppSidebar({
   onNavigate,
   analysis,
   analysisSource,
-  assetViewState,
-  runsViewState,
-  executionViewState,
 }: {
   activeView: WorkspaceView;
   setNavigationTarget: (target: NavigationSelectionTarget) => void;
@@ -31,9 +23,6 @@ export function AppSidebar({
   onNavigate: () => void;
   analysis: AnalysisState | null;
   analysisSource: "preload" | "upload" | null;
-  assetViewState: AssetViewState;
-  runsViewState: RunsViewState;
-  executionViewState?: ExecutionViewState;
 }) {
   return (
     <aside
@@ -59,46 +48,35 @@ export function AppSidebar({
       </button>
 
       <nav className="app-sidebar__nav" aria-label="Workspace sections">
-        {navigationGroups.map((group) => (
-          <div key={group.label} className="nav-group">
-            {!sidebarCollapsed && (
-              <p className="nav-group__label">{group.label}</p>
-            )}
-            {group.items.map((item) => {
-              const disabled = !analysis;
-              const active = isNavigationTargetActive(
-                item,
-                activeView,
-                assetViewState,
-                runsViewState,
-                executionViewState,
-              );
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={
-                    active ? "sidebar-link sidebar-link--active" : "sidebar-link"
-                  }
-                  disabled={disabled}
-                  onClick={() => {
-                    setNavigationTarget(item);
-                    onNavigate();
-                  }}
-                  aria-label={item.label}
-                  title={item.label}
-                >
-                  <span className="sidebar-link__icon">
-                    <NavIcon id={item.id} />
-                  </span>
-                  <div className="sidebar-link__body">
-                    <strong>{item.label}</strong>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        <div className="nav-group">
+          {navigationItems.map((item) => {
+            const disabled = !analysis;
+            const active = isNavigationTargetActive(item, activeView);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={
+                  active ? "sidebar-link sidebar-link--active" : "sidebar-link"
+                }
+                disabled={disabled}
+                onClick={() => {
+                  setNavigationTarget(item);
+                  onNavigate();
+                }}
+                aria-label={item.label}
+                title={item.label}
+              >
+                <span className="sidebar-link__icon">
+                  <NavIcon id={item.id} />
+                </span>
+                <div className="sidebar-link__body">
+                  <strong>{item.label}</strong>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
       <button

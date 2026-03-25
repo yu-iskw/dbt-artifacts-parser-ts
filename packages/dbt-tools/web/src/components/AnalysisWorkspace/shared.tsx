@@ -130,3 +130,130 @@ export function ExplorerBranchIcon({
     </svg>
   );
 }
+
+export function WorkspaceScaffold({
+  title,
+  description,
+  toolbar,
+  leadingPane,
+  children,
+  inspector,
+  className = "",
+}: {
+  title: string;
+  description: string;
+  toolbar?: ReactNode;
+  leadingPane?: ReactNode;
+  children: ReactNode;
+  inspector?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`workspace-view workspace-scaffold ${className}`.trim()}>
+      <div className="lens-header">
+        <div className="lens-header__title">
+          <p className="eyebrow">Workspace lens</p>
+          <h2>{title}</h2>
+          <p className="lens-header__desc">{description}</p>
+        </div>
+      </div>
+      {toolbar ? (
+        <div className="workspace-scaffold__toolbar">{toolbar}</div>
+      ) : null}
+      <div
+        className={`workspace-scaffold__body${leadingPane ? " workspace-scaffold__body--with-leading" : ""}${inspector ? " workspace-scaffold__body--with-inspector" : ""}`}
+      >
+        {leadingPane ? (
+          <aside className="workspace-scaffold__leading">{leadingPane}</aside>
+        ) : null}
+        <div className="workspace-scaffold__main">{children}</div>
+        {inspector ? (
+          <aside className="workspace-scaffold__inspector">{inspector}</aside>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function QuickJumpActions({
+  actions,
+}: {
+  actions: { label: string; onClick: () => void; disabled?: boolean }[];
+}) {
+  return (
+    <div className="entity-inspector__actions">
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          className="workspace-pill"
+          onClick={action.onClick}
+          disabled={action.disabled}
+        >
+          {action.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function EntityInspector({
+  title,
+  typeLabel,
+  status,
+  stats,
+  sections,
+  actions,
+  emptyMessage,
+}: {
+  title: string | null;
+  typeLabel?: string | null;
+  status?: ReactNode;
+  stats?: { label: string; value: ReactNode }[];
+  sections?: { label: string; value: ReactNode }[];
+  actions?: { label: string; onClick: () => void; disabled?: boolean }[];
+  emptyMessage?: string;
+}) {
+  if (!title) {
+    return (
+      <aside className="entity-inspector entity-inspector--empty">
+        <p className="entity-inspector__placeholder">
+          {emptyMessage ?? "Select an item to inspect"}
+        </p>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="entity-inspector">
+      <div className="entity-inspector__header">
+        {typeLabel ? (
+          <span className="entity-inspector__type-badge">{typeLabel}</span>
+        ) : null}
+        {status}
+      </div>
+      <div className="entity-inspector__name">
+        <strong>{title}</strong>
+      </div>
+      {stats && stats.length > 0 ? (
+        <dl className="entity-inspector__stats">
+          {stats.map((stat) => (
+            <div key={stat.label} className="entity-inspector__stat">
+              <dt>{stat.label}</dt>
+              <dd>{stat.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {sections?.map((section) => (
+        <div key={section.label} className="entity-inspector__section">
+          <p className="entity-inspector__section-label">{section.label}</p>
+          <div className="entity-inspector__mono">{section.value}</div>
+        </div>
+      ))}
+      {actions && actions.length > 0 ? (
+        <QuickJumpActions actions={actions} />
+      ) : null}
+    </aside>
+  );
+}

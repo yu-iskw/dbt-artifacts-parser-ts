@@ -450,8 +450,8 @@ export function LineageGraphSurface({
                   node.x,
                   node.y,
                 );
-                const passLabel = `✓${node.passCount}`;
-                const failLabel = `✗${node.failCount}`;
+                const passLabel = String(node.passCount);
+                const failLabel = String(node.failCount);
                 const passBadgeWidth = estimateBadgeWidth(passLabel);
                 const failBadgeWidth = estimateBadgeWidth(failLabel);
                 const badgeGap = 6;

@@ -5,6 +5,7 @@ import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import type {
   OverviewFilterState,
   WorkspaceSignal,
+  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { hasOverviewFilters } from "@web/lib/analysis-workspace/utils";
@@ -38,6 +39,7 @@ export function HealthView({
   filters,
   setFilters,
   workspaceSignals,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   projectName: string | null;
@@ -45,6 +47,14 @@ export function HealthView({
   filters: OverviewFilterState;
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   workspaceSignals: WorkspaceSignal[];
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const derived = useMemo(
@@ -83,9 +93,7 @@ export function HealthView({
             Run posture, critical issues, and dependency pressure at a glance.
           </p>
         </div>
-        {filtered && (
-          <span className="lens-header__badge">Filtered view</span>
-        )}
+        {filtered && <span className="lens-header__badge">Filtered view</span>}
       </div>
 
       {/* ── Hero strip: workspace-level signals ── */}
@@ -132,6 +140,39 @@ export function HealthView({
         </div>
         <div className="health-grid__col health-grid__col--critical">
           <OverviewCriticalPathCard analysis={analysis} filtered={filtered} />
+        </div>
+      </section>
+
+      <section className="health-section health-section--actions">
+        <div className="workspace-pill-row">
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() => onNavigateTo("runs")}
+          >
+            Open Runs
+          </button>
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() => onNavigateTo("timeline")}
+          >
+            Open Timeline
+          </button>
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() => onNavigateTo("inventory")}
+          >
+            Browse Inventory
+          </button>
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() => onNavigateTo("lineage")}
+          >
+            Open Lineage
+          </button>
         </div>
       </section>
 

@@ -4,6 +4,7 @@ import {
   type SetStateAction,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import { EmptyState } from "../../EmptyState";
 import type {
@@ -14,10 +15,11 @@ import type {
 } from "@web/types";
 import type {
   AssetViewState,
-  LensMode,
+  LineageViewState,
+  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { SectionCard, ResourceTypeBadge } from "../shared";
-import { LineagePanel } from "../LineageGraphSurface";
+import { LineagePanel } from "../lineage/LineagePanel";
 import {
   formatSeconds,
   displayResourcePath,
@@ -25,6 +27,7 @@ import {
 
 /** Catalog copy when a field is missing from artifacts (sonarjs/no-duplicate-string). */
 const NOT_CAPTURED = "Not captured";
+const NOT_EXECUTED = "Not executed";
 
 // ---------------------------------------------------------------------------
 // SQL syntax highlighting — zero-dependency tokenizer
@@ -44,6 +47,8 @@ interface SqlToken {
   type: string;
   value: string;
 }
+
+type AssetSectionId = AssetViewState["activeTab"];
 
 // eslint-disable-next-line sonarjs/cognitive-complexity -- SQL lexer branches
 function tokenizeSQL(sql: string): SqlToken[] {
@@ -284,77 +289,196 @@ function AssetSqlOrDefinitionCard({
   );
 }
 
+function AssetSummarySection({
+  resource,
+  dependencySummary,
+}: {
+  resource: ResourceNode;
+  dependencySummary: AnalysisState["dependencyIndex"][string] | undefined;
+}) {
+  return (
+    <SectionCard
+      title="Asset summary"
+      subtitle="Core execution and discovery context for the selected asset."
+    >
+      <div className="detail-grid">
+        <div className="detail-stat">
+          <span>Status</span>
+          <strong>{resource.status ?? NOT_EXECUTED}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Execution time</span>
+          <strong>{formatSeconds(resource.executionTime)}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Thread</span>
+          <strong>{resource.threadId ?? "n/a"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Path</span>
+          <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Upstream</span>
+          <strong>{dependencySummary?.upstream.length ?? 0}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Downstream</span>
+          <strong>{dependencySummary?.downstream.length ?? 0}</strong>
+        </div>
+      </div>
+      {resource.description ? (
+        <p className="resource-spotlight__description">
+          {resource.description}
+        </p>
+      ) : (
+        <p className="resource-spotlight__description resource-spotlight__description--muted">
+          No description was captured for this asset. Catalog-oriented metadata
+          can surface here when present in the manifest.
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
+function AssetRuntimeSection({ resource }: { resource: ResourceNode }) {
+  return (
+    <SectionCard
+      title="Runtime"
+      subtitle="Execution evidence linked to the selected asset."
+    >
+      <div className="detail-grid">
+        <div className="detail-stat">
+          <span>Status</span>
+          <strong>{resource.status ?? NOT_EXECUTED}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Execution time</span>
+          <strong>{formatSeconds(resource.executionTime)}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Thread</span>
+          <strong>{resource.threadId ?? "n/a"}</strong>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function AssetTestsSection({
+  dependencySummary,
+}: {
+  dependencySummary: AnalysisState["dependencyIndex"][string] | undefined;
+}) {
+  return (
+    <SectionCard
+      title="Tests"
+      subtitle="Quality evidence and related dependency posture."
+    >
+      <div className="detail-grid">
+        <div className="detail-stat">
+          <span>Upstream dependencies</span>
+          <strong>{dependencySummary?.upstreamCount ?? 0}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Downstream dependencies</span>
+          <strong>{dependencySummary?.downstreamCount ?? 0}</strong>
+        </div>
+      </div>
+      <p className="resource-spotlight__description">
+        Use Runs to inspect detailed execution and quality evidence linked to
+        this asset.
+      </p>
+    </SectionCard>
+  );
+}
+
 export function AssetsView({
   resource,
   analysis,
   onSelectResource,
   assetViewState,
   onAssetViewStateChange,
+  lineageViewState,
+  onLineageViewStateChange,
+  onNavigateTo,
 }: {
   resource: ResourceNode | null;
   analysis: AnalysisState;
   onSelectResource: (id: string) => void;
   assetViewState: AssetViewState;
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>;
+  lineageViewState: LineageViewState;
+  onLineageViewStateChange: Dispatch<SetStateAction<LineageViewState>>;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const resourceById = useMemo(
     () => new Map(analysis.resources.map((entry) => [entry.uniqueId, entry])),
     [analysis.resources],
   );
 
-  const upstreamDepth = assetViewState.upstreamDepth;
-  const downstreamDepth = assetViewState.downstreamDepth;
-  const allDepsMode = assetViewState.allDepsMode;
-  const lensMode = assetViewState.lensMode;
-  const activeLegendKeys = assetViewState.activeLegendKeys;
+  const upstreamDepth = lineageViewState.upstreamDepth;
+  const downstreamDepth = lineageViewState.downstreamDepth;
+  const allDepsMode = lineageViewState.allDepsMode;
+  const lensMode = lineageViewState.lensMode;
+  const activeLegendKeys = lineageViewState.activeLegendKeys;
 
   const setUpstreamDepth: Dispatch<SetStateAction<number>> = (v) =>
-    onAssetViewStateChange((cur) => ({
+    onLineageViewStateChange((cur) => ({
       ...cur,
       upstreamDepth: typeof v === "function" ? v(cur.upstreamDepth) : v,
     }));
   const setDownstreamDepth: Dispatch<SetStateAction<number>> = (v) =>
-    onAssetViewStateChange((cur) => ({
+    onLineageViewStateChange((cur) => ({
       ...cur,
       downstreamDepth: typeof v === "function" ? v(cur.downstreamDepth) : v,
     }));
   const setAllDepsMode: Dispatch<SetStateAction<boolean>> = (v) =>
-    onAssetViewStateChange((cur) => ({
+    onLineageViewStateChange((cur) => ({
       ...cur,
       allDepsMode: typeof v === "function" ? v(cur.allDepsMode) : v,
     }));
-  const setLensMode = (mode: LensMode) =>
-    onAssetViewStateChange((cur) => ({
+  const setLensMode = (mode: LineageViewState["lensMode"]) =>
+    onLineageViewStateChange((cur) => ({
       ...cur,
       lensMode: mode,
       activeLegendKeys: new Set(),
     }));
   const setActiveLegendKeys: Dispatch<SetStateAction<Set<string>>> = (value) =>
-    onAssetViewStateChange((cur) => ({
+    onLineageViewStateChange((cur) => ({
       ...cur,
       activeLegendKeys:
         typeof value === "function" ? value(cur.activeLegendKeys) : value,
     }));
+  const activeTab = assetViewState.activeTab;
+  const sectionRefs = useRef<Record<AssetSectionId, HTMLElement | null>>({
+    summary: null,
+    lineage: null,
+    sql: null,
+    runtime: null,
+    tests: null,
+  });
 
-  // Reset lineage settings when a new resource is selected.
   useEffect(() => {
-    onAssetViewStateChange((cur) => {
-      if (
-        cur.upstreamDepth === 2 &&
-        cur.downstreamDepth === 2 &&
-        !cur.allDepsMode
-      ) {
-        return cur;
-      }
-      return {
-        ...cur,
-        upstreamDepth: 2,
-        downstreamDepth: 2,
-        allDepsMode: false,
-        activeLegendKeys: new Set(),
-      };
+    if (!resource) return;
+    const section = sectionRefs.current[activeTab];
+    if (!section) return;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    section.scrollIntoView({
+      block: "start",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
     });
-  }, [resource?.uniqueId, onAssetViewStateChange]);
+  }, [activeTab, resource]);
 
   if (!resource) {
     return (
@@ -396,77 +520,125 @@ export function AssetsView({
     setAllDepsMode,
     setLensMode,
     setActiveLegendKeys,
-    onSelectResource,
+    onSelectResource: (id: string) => {
+      onSelectResource(id);
+      onLineageViewStateChange((current) => ({
+        ...current,
+        selectedResourceId: id,
+      }));
+      onAssetViewStateChange((current) => ({
+        ...current,
+        selectedResourceId: id,
+        activeTab: "lineage",
+      }));
+    },
   } as const;
 
   return (
-    <div className="workspace-view">
+    <div className="workspace-view asset-workspace">
       <section className="catalog-detail-hero">
-        <div>
-          <p className="eyebrow">Catalog asset</p>
+        <div className="catalog-detail-hero__content">
+          <p className="eyebrow">Selected asset</p>
           <h3>{resource.name}</h3>
           {detailSubtitle}
         </div>
-      </section>
-
-      <SectionCard
-        title="Asset summary"
-        subtitle="Core execution and discovery context for the selected asset."
-      >
-        <div className="detail-grid">
-          <div className="detail-stat">
-            <span>Status</span>
-            <strong>{resource.status ?? "Not executed"}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Execution time</span>
-            <strong>{formatSeconds(resource.executionTime)}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Thread</span>
-            <strong>{resource.threadId ?? "n/a"}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Path</span>
-            <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Upstream</span>
-            <strong>{dependencySummary?.upstream.length ?? 0}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Downstream</span>
-            <strong>{dependencySummary?.downstream.length ?? 0}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Owner</span>
-            <strong>{NOT_CAPTURED}</strong>
-          </div>
-          <div className="detail-stat">
-            <span>Health</span>
-            <strong>{resource.status ?? "Unknown"}</strong>
-          </div>
+        <div className="asset-hero__actions" aria-label="Asset actions">
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() =>
+              onNavigateTo("runs", { resourceId: resource.uniqueId })
+            }
+          >
+            Open in Runs
+          </button>
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() =>
+              onNavigateTo("timeline", {
+                resourceId: resource.uniqueId,
+                executionId: resource.uniqueId,
+              })
+            }
+          >
+            Open in Timeline
+          </button>
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() =>
+              onNavigateTo("lineage", {
+                resourceId: resource.uniqueId,
+                rootResourceId: resource.uniqueId,
+              })
+            }
+          >
+            Open in Lineage
+          </button>
         </div>
-        {resource.description ? (
-          <p className="resource-spotlight__description">
-            {resource.description}
-          </p>
-        ) : (
-          <p className="resource-spotlight__description resource-spotlight__description--muted">
-            No description was captured for this asset. Catalog-oriented
-            metadata can surface here when present in the manifest.
-          </p>
-        )}
-      </SectionCard>
+      </section>
+      <div className="asset-workspace__body">
+        <div className="asset-workspace__sections">
+          <section
+            id="asset-section-summary"
+            ref={(node) => {
+              sectionRefs.current.summary = node;
+            }}
+            className="asset-workspace__section"
+          >
+            <AssetSummarySection
+              resource={resource}
+              dependencySummary={dependencySummary}
+            />
+          </section>
 
-      <LineagePanel {...lineagePanelProps} displayMode="summary" />
+          <section
+            id="asset-section-lineage"
+            ref={(node) => {
+              sectionRefs.current.lineage = node;
+            }}
+            className="asset-workspace__section"
+          >
+            <LineagePanel {...lineagePanelProps} displayMode="summary" />
+          </section>
 
-      <AssetSqlOrDefinitionCard
-        resource={resource}
-        showsDefinition={showsDefinition}
-        definition={definition}
-        sqlText={sqlText}
-      />
+          <section
+            id="asset-section-sql"
+            ref={(node) => {
+              sectionRefs.current.sql = node;
+            }}
+            className="asset-workspace__section"
+          >
+            <AssetSqlOrDefinitionCard
+              resource={resource}
+              showsDefinition={showsDefinition}
+              definition={definition}
+              sqlText={sqlText}
+            />
+          </section>
+
+          <section
+            id="asset-section-runtime"
+            ref={(node) => {
+              sectionRefs.current.runtime = node;
+            }}
+            className="asset-workspace__section"
+          >
+            <AssetRuntimeSection resource={resource} />
+          </section>
+
+          <section
+            id="asset-section-tests"
+            ref={(node) => {
+              sectionRefs.current.tests = node;
+            }}
+            className="asset-workspace__section"
+          >
+            <AssetTestsSection dependencySummary={dependencySummary} />
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

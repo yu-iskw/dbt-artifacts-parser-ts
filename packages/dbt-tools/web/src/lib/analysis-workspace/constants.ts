@@ -52,17 +52,19 @@ export const SUPPORT_TESTS_RESOURCE_TYPES = new Set([
 ]);
 
 export const VIEW_TITLES: Record<WorkspaceView, string> = {
-  // New views
+  // Canonical views
   health: "Health",
   inventory: "Inventory",
+  runs: "Runs",
+  timeline: "Timeline",
+  lineage: "Lineage",
+  // Legacy views (backward compat)
   execution: "Execution",
   quality: "Quality",
   dependencies: "Dependencies",
   search: "Search",
-  // Legacy views (backward compat)
   overview: "Run overview",
   catalog: "Catalog workspace",
-  runs: "Run analysis",
 };
 
 export const EXPLORER_MODE_LABELS: Record<AssetExplorerMode, string> = {

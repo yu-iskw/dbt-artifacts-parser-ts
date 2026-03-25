@@ -9,21 +9,27 @@ import type { AnalysisState, StatusTone } from "@web/types";
 export type WorkspaceView =
   | "health"
   | "inventory"
-  | "execution"
-  | "quality"
-  | "dependencies"
-  | "search"
+  | "runs"
+  | "timeline"
+  | "lineage"
   // legacy — redirect targets below
   | "overview"
   | "catalog"
-  | "runs";
+  | "execution"
+  | "quality"
+  | "dependencies"
+  | "search";
 
-/** Sub-tabs within the Execution lens. */
-export type ExecutionTab = "results" | "timeline";
-
-/** @deprecated Use ExecutionTab instead */
-export type RunsTab = "results" | "timeline";
-export type RunsKind = "models" | "tests";
+export type AssetTab = "summary" | "lineage" | "sql" | "runtime" | "tests";
+export type RunsKind =
+  | "all"
+  | "models"
+  | "tests"
+  | "seeds"
+  | "snapshots"
+  | "operations";
+export type RunsSortBy = "attention" | "duration" | "name" | "status" | "start";
+export type RunsGroupBy = "none" | "type" | "status" | "thread";
 
 export type DashboardStatusFilter = "all" | StatusTone;
 export type AssetExplorerMode = "project" | "database";
@@ -44,15 +50,16 @@ export interface TimelineFilterState {
   query: string;
   activeStatuses: Set<string>;
   activeTypes: Set<string>;
+  selectedExecutionId: string | null;
 }
 
 export interface AssetViewState {
+  activeTab: AssetTab;
+  selectedResourceId: string | null;
   explorerMode: AssetExplorerMode;
   status: DashboardStatusFilter;
   resourceTypes: Set<string>;
   resourceQuery: string;
-  selectedResourceId: string | null;
-  // Lineage depth settings — persisted in URL for link sharing.
   upstreamDepth: number;
   downstreamDepth: number;
   allDepsMode: boolean;
@@ -61,23 +68,19 @@ export interface AssetViewState {
 }
 
 export interface RunsViewState {
-  tab: RunsTab;
   kind: RunsKind;
-}
-
-/** State for the Execution lens (merges Models + Timeline). */
-export interface ExecutionViewState {
-  tab: ExecutionTab;
-}
-
-/** State for the Quality lens (test triage). */
-export interface QualityFilterState {
   status: DashboardStatusFilter;
   query: string;
+  resourceTypes: Set<string>;
+  threadIds: Set<string>;
+  durationBand: "all" | "fast" | "medium" | "slow";
+  sortBy: RunsSortBy;
+  groupBy: RunsGroupBy;
+  selectedExecutionId: string | null;
 }
 
-/** State for the Dependencies lens (first-class lineage). */
-export interface DependenciesViewState {
+export interface LineageViewState {
+  rootResourceId: string | null;
   selectedResourceId: string | null;
   upstreamDepth: number;
   downstreamDepth: number;
@@ -86,9 +89,16 @@ export interface DependenciesViewState {
   activeLegendKeys: Set<string>;
 }
 
-/** State for the Search lens. */
-export interface SearchViewState {
+export interface SearchState {
   query: string;
+  recentResourceIds: string[];
+  isOpen: boolean;
+}
+
+export interface InvestigationSelectionState {
+  selectedResourceId: string | null;
+  selectedExecutionId: string | null;
+  sourceLens: WorkspaceView | null;
 }
 
 export interface WorkspaceSignal {
@@ -101,26 +111,30 @@ export interface WorkspaceSignal {
 export interface AnalysisWorkspaceProps {
   analysis: AnalysisState;
   activeView: WorkspaceView;
-  activeViewTitle: string;
   analysisSource: "preload" | "upload" | null;
   /** Signals built from workspace data — passed down to HealthView hero strip. */
   workspaceSignals: WorkspaceSignal[];
   overviewFilters: OverviewFilterState;
   onOverviewFiltersChange: Dispatch<SetStateAction<OverviewFilterState>>;
-  resultsFilters: ResultsFilterState;
-  onResultsFiltersChange: Dispatch<SetStateAction<ResultsFilterState>>;
   timelineFilters: TimelineFilterState;
   onTimelineFiltersChange: Dispatch<SetStateAction<TimelineFilterState>>;
   assetViewState: AssetViewState;
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>;
   runsViewState: RunsViewState;
-  executionViewState: ExecutionViewState;
-  onExecutionViewStateChange: Dispatch<SetStateAction<ExecutionViewState>>;
-  qualityFilters: QualityFilterState;
-  onQualityFiltersChange: Dispatch<SetStateAction<QualityFilterState>>;
-  dependenciesViewState: DependenciesViewState;
-  onDependenciesViewStateChange: Dispatch<SetStateAction<DependenciesViewState>>;
-  searchViewState: SearchViewState;
-  onSearchViewStateChange: Dispatch<SetStateAction<SearchViewState>>;
-  onNavigateTo: (view: WorkspaceView, resourceId?: string) => void;
+  onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
+  lineageViewState: LineageViewState;
+  onLineageViewStateChange: Dispatch<SetStateAction<LineageViewState>>;
+  investigationSelection: InvestigationSelectionState;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetTab;
+      rootResourceId?: string;
+    },
+  ) => void;
 }

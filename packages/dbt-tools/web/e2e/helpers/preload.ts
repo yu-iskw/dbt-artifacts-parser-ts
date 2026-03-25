@@ -43,12 +43,12 @@ export async function loadWorkspace(page: Page) {
   await registerApiMocksOnPage(page);
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "Overview", exact: true }),
+    page.getByRole("button", { name: /^(Health|Overview)$/ }),
   ).toBeEnabled({
     timeout: 30_000,
   });
   await expect(
-    page.getByRole("heading", { name: "Overview" }).first(),
+    page.getByRole("heading", { name: /^(Health|Overview)$/ }).first(),
   ).toBeVisible({
     timeout: 10_000,
   });

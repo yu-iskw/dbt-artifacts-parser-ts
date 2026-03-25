@@ -1,55 +1,72 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
-import type { AssetViewState } from "@web/lib/analysis-workspace/types";
+import type {
+  AssetViewState,
+  LineageViewState,
+  WorkspaceView,
+} from "@web/lib/analysis-workspace/types";
 import { AssetsView } from "./AssetsView";
 import { EmptyState } from "../../EmptyState";
+import { WorkspaceScaffold } from "../shared";
 
-/**
- * Inventory — the "what exists, how is it organized, what should I inspect?" lens.
- *
- * Wraps the existing AssetsView in the new lens-aware layout with a proper
- * lens header. The 3-pane structure (ExplorerPane left | detail center | lineage)
- * is provided by AssetsView + the ExplorerPane rendered by AnalysisWorkspace.
- */
 export function InventoryView({
   analysis,
   resource,
   onSelectResource,
   assetViewState,
   onAssetViewStateChange,
+  lineageViewState,
+  onLineageViewStateChange,
+  onInvestigationSelectionChange,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   resource: ResourceNode | null;
   onSelectResource: (id: string) => void;
   assetViewState: AssetViewState;
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>;
+  lineageViewState: LineageViewState;
+  onLineageViewStateChange: Dispatch<SetStateAction<LineageViewState>>;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<{
+      selectedResourceId: string | null;
+      selectedExecutionId: string | null;
+      sourceLens: WorkspaceView | null;
+    }>
+  >;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   return (
-    <div className="workspace-view inventory-view">
-      {/* ── Lens header ── */}
-      <div className="lens-header">
-        <div className="lens-header__title">
-          <p className="eyebrow">Workspace lens</p>
-          <h2>Inventory</h2>
-          <p className="lens-header__desc">
-            Browse, filter, and inspect all workspace assets.
-          </p>
-        </div>
-        {analysis.resources.length > 0 && (
-          <span className="lens-header__badge">
-            {analysis.resources.length} assets
-          </span>
-        )}
-      </div>
-
-      {/* ── Asset detail ── */}
+    <WorkspaceScaffold
+      title="Inventory"
+      description="Browse, filter, and inspect all workspace assets."
+      className="inventory-view"
+    >
       {resource ? (
         <AssetsView
           analysis={analysis}
           resource={resource}
-          onSelectResource={onSelectResource}
+          onSelectResource={(id) => {
+            onSelectResource(id);
+            onInvestigationSelectionChange((current) => ({
+              ...current,
+              selectedResourceId: id,
+              sourceLens: "inventory",
+            }));
+          }}
           assetViewState={assetViewState}
           onAssetViewStateChange={onAssetViewStateChange}
+          lineageViewState={lineageViewState}
+          onLineageViewStateChange={onLineageViewStateChange}
+          onNavigateTo={onNavigateTo}
         />
       ) : (
         <div className="inventory-empty-state">
@@ -60,6 +77,6 @@ export function InventoryView({
           />
         </div>
       )}
-    </div>
+    </WorkspaceScaffold>
   );
 }

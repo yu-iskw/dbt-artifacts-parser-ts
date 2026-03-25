@@ -349,6 +349,7 @@ export function TimelineSearchControls({
                 query: "",
                 activeStatuses: new Set(),
                 activeTypes: new Set(defaultActiveTypes),
+                selectedExecutionId: null,
               });
             }}
           >

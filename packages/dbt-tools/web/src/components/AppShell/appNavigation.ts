@@ -1,6 +1,6 @@
 import type {
   AssetViewState,
-  ExecutionViewState,
+  LineageViewState,
   RunsViewState,
   WorkspaceView,
 } from "../AnalysisWorkspace";
@@ -8,83 +8,67 @@ import type {
 export interface SidebarNavigationTarget {
   id: string;
   label: string;
-  view: WorkspaceView;
-  /** @deprecated Only used for legacy `runs` view compat */
-  runsTab?: "results" | "timeline";
-  /** @deprecated Only used for legacy `runs` view compat */
-  runsKind?: "models" | "tests";
-}
-
-export interface SidebarNavGroup {
-  label: string;
-  items: SidebarNavigationTarget[];
+  view: Exclude<
+    WorkspaceView,
+    "overview" | "catalog" | "execution" | "quality" | "dependencies" | "search"
+  >;
 }
 
 export interface NavigationSelectionTarget {
   view: WorkspaceView;
-  /** @deprecated */
-  runsTab?: "results" | "timeline";
-  /** @deprecated */
-  runsKind?: "models" | "tests";
 }
 
-/**
- * Grouped navigation structure — Observe + Explore sections.
- */
-export const navigationGroups: SidebarNavGroup[] = [
-  {
-    label: "Observe",
-    items: [
-      { id: "health", view: "health", label: "Health" },
-      { id: "execution", view: "execution", label: "Execution" },
-      { id: "quality", view: "quality", label: "Quality" },
-    ],
-  },
-  {
-    label: "Explore",
-    items: [
-      { id: "inventory", view: "inventory", label: "Inventory" },
-      { id: "dependencies", view: "dependencies", label: "Dependencies" },
-      { id: "search", view: "search", label: "Search" },
-    ],
-  },
+export const navigationItems: SidebarNavigationTarget[] = [
+  { id: "health", view: "health", label: "Health" },
+  { id: "inventory", view: "inventory", label: "Inventory" },
+  { id: "runs", view: "runs", label: "Runs" },
+  { id: "timeline", view: "timeline", label: "Timeline" },
+  { id: "lineage", view: "lineage", label: "Lineage" },
 ];
-
-/** Flat list of all navigation items (for backward compat helpers). */
-export const navigationItems: SidebarNavigationTarget[] = navigationGroups.flatMap(
-  (g) => g.items,
-);
 
 const VALID_VIEWS = new Set<WorkspaceView>([
   "health",
   "inventory",
+  "runs",
+  "timeline",
+  "lineage",
+  "overview",
+  "catalog",
   "execution",
   "quality",
   "dependencies",
   "search",
-  // legacy redirect sources
-  "overview",
-  "catalog",
-  "runs",
 ]);
 
-const VALID_EXECUTION_TABS = new Set(["results", "timeline"]);
-
-/**
- * Map legacy view param values to new canonical view names.
- */
 export function resolveView(raw: string): WorkspaceView {
-  if (raw === "overview") return "health";
-  if (raw === "catalog") return "inventory";
-  if (raw === "runs") return "execution";
-  if (VALID_VIEWS.has(raw as WorkspaceView)) return raw as WorkspaceView;
-  return "health";
+  switch (raw) {
+    case "overview":
+      return "health";
+    case "catalog":
+      return "inventory";
+    case "execution":
+    case "quality":
+      return "runs";
+    case "dependencies":
+      return "lineage";
+    case "search":
+      return "inventory";
+    case "runs":
+    case "timeline":
+    case "lineage":
+    case "inventory":
+    case "health":
+      return raw;
+    default:
+      return "health";
+  }
 }
 
 export function parseViewFromSearch(search: string): WorkspaceView | null {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
   if (raw && VALID_VIEWS.has(raw as WorkspaceView)) {
+    if (raw === "runs" && params.get("tab") === "timeline") return "timeline";
     return resolveView(raw);
   }
   return null;
@@ -94,25 +78,51 @@ export function getInitialView(): WorkspaceView {
   return parseViewFromSearch(window.location.search) ?? "health";
 }
 
-export function parseExecutionTab(search: string): "results" | "timeline" | null {
-  const raw = new URLSearchParams(search).get("tab");
-  if (raw && VALID_EXECUTION_TABS.has(raw)) return raw as "results" | "timeline";
-  return null;
-}
-
-/** @deprecated Use parseExecutionTab */
-export function parseRunsTab(search: string): "results" | "timeline" | null {
-  return parseExecutionTab(search);
-}
-
-export function parseRunsKind(search: string): "models" | "tests" | null {
-  const raw = new URLSearchParams(search).get("kind");
-  if (raw === "models" || raw === "tests") return raw;
-  return null;
-}
-
 export function parseSelectedResourceId(search: string): string | null {
   return new URLSearchParams(search).get("resource");
+}
+
+export function parseSelectedExecutionId(search: string): string | null {
+  return new URLSearchParams(search).get("selected");
+}
+
+export function parseAssetTab(
+  search: string,
+): AssetViewState["activeTab"] | null {
+  const raw = new URLSearchParams(search).get("assetTab");
+  if (
+    raw === "summary" ||
+    raw === "lineage" ||
+    raw === "sql" ||
+    raw === "runtime" ||
+    raw === "tests"
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+export function parseRunsKind(search: string): RunsViewState["kind"] | null {
+  const raw = new URLSearchParams(search).get("kind");
+  if (
+    raw === "all" ||
+    raw === "models" ||
+    raw === "tests" ||
+    raw === "seeds" ||
+    raw === "snapshots" ||
+    raw === "operations"
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+export function parseLineageLensMode(
+  search: string,
+): LineageViewState["lensMode"] | null {
+  const raw = new URLSearchParams(search).get("lens");
+  if (raw === "status" || raw === "type" || raw === "coverage") return raw;
+  return null;
 }
 
 export const SIDEBAR_STORAGE_KEY = "dbt-tools.sidebarCollapsed";
@@ -130,37 +140,16 @@ export function getInitialSidebarCollapsed(): boolean {
 export function isNavigationTargetActive(
   target: SidebarNavigationTarget,
   activeView: WorkspaceView,
-  _assetViewState: AssetViewState,
-  _runsViewState: RunsViewState,
-  _executionViewState?: ExecutionViewState,
 ): boolean {
-  // Resolve legacy view names before comparing
-  const resolvedActive =
-    activeView === "overview"
-      ? "health"
-      : activeView === "catalog"
-        ? "inventory"
-        : activeView === "runs"
-          ? "execution"
-          : activeView;
-  return resolvedActive === target.view;
+  return resolveView(activeView) === target.view;
 }
 
 export function getActiveNavigationItem(
   activeView: WorkspaceView,
-  assetViewState: AssetViewState,
-  runsViewState: RunsViewState,
-  executionViewState?: ExecutionViewState,
 ): SidebarNavigationTarget {
   return (
     navigationItems.find((item) =>
-      isNavigationTargetActive(
-        item,
-        activeView,
-        assetViewState,
-        runsViewState,
-        executionViewState,
-      ),
+      isNavigationTargetActive(item, activeView),
     ) ?? navigationItems[0]
   );
 }

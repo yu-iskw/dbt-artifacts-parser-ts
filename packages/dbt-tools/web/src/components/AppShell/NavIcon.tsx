@@ -22,8 +22,8 @@ export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
     );
   }
 
-  // Execution — play / timeline bars
-  if (id === "execution") {
+  // Runs — evidence rows
+  if (id === "runs") {
     return (
       <svg {...svgProps}>
         <rect x="3" y="4" width="3" height="16" rx="1" />
@@ -35,12 +35,15 @@ export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
     );
   }
 
-  // Quality — shield with checkmark
-  if (id === "quality") {
+  // Timeline
+  if (id === "timeline") {
     return (
       <svg {...svgProps}>
-        <path d="M12 3l7 3v5c0 4.6-2.7 8.8-7 10-4.3-1.2-7-5.4-7-10V6l7-3z" />
-        <path d="m9.2 12 2 2 3.8-4.2" />
+        <path d="M4 18V7" />
+        <path d="M10 18V11" />
+        <path d="M16 18V5" />
+        <path d="M2 18h20" />
+        <path d="M4 9h3M10 13h3M16 7h3" />
       </svg>
     );
   }
@@ -56,8 +59,8 @@ export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
     );
   }
 
-  // Dependencies — graph nodes
-  if (id === "dependencies") {
+  // Lineage — graph nodes
+  if (id === "lineage") {
     return (
       <svg {...svgProps}>
         <circle cx="5.5" cy="6.5" r="2" />
@@ -65,16 +68,6 @@ export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
         <circle cx="18.5" cy="12" r="2" />
         <path d="M7.5 6.5 Q13 6.5 16.5 12" />
         <path d="M7.5 17.5 Q13 17.5 16.5 12" />
-      </svg>
-    );
-  }
-
-  // Search — magnifying glass
-  if (id === "search") {
-    return (
-      <svg {...svgProps}>
-        <circle cx="11" cy="11" r="7" />
-        <line x1="16.5" y1="16.5" x2="22" y2="22" />
       </svg>
     );
   }

@@ -7,24 +7,29 @@ import {
 import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
 import type { AnalysisState, GanttItem } from "@web/types";
-import type { TimelineFilterState } from "@web/lib/analysis-workspace/types";
+import type {
+  InvestigationSelectionState,
+  TimelineFilterState,
+  WorkspaceView,
+} from "@web/lib/analysis-workspace/types";
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import {
   deriveProjectName,
-  isDefaultTimelineResource,
+  formatSeconds,
   isDefaultTimelineExecution,
+  isDefaultTimelineResource,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { SectionCard } from "../shared";
+import { EntityInspector, SectionCard, WorkspaceScaffold } from "../shared";
 import { OverviewActionListCard } from "../views/OverviewView";
 import { TimelineSearchControls } from "../views/ResultsView";
 
 function getDefaultTimelineActiveTypes(presentTypes: string[]): Set<string> {
-  // Exclude macros and test types from the default view
-  const preferredTypes = presentTypes.filter(
-    (type) => type !== "macro" && type !== "test" && type !== "unit_test",
+  return new Set(
+    presentTypes.filter(
+      (type) => type !== "macro" && type !== "test" && type !== "unit_test",
+    ),
   );
-  return new Set(preferredTypes);
 }
 
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
@@ -35,15 +40,28 @@ function setsEqual(left: Set<string>, right: Set<string>): boolean {
   return true;
 }
 
-/** Self-contained timeline view with status + resource-type + name filters. */
 export function TimelineView({
   analysis,
   filters,
   setFilters,
+  onInvestigationSelectionChange,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -61,23 +79,18 @@ export function TimelineView({
       ).sort(),
     [analysis.ganttData, projectName],
   );
-
   const defaultActiveTypes = useMemo(
     () => getDefaultTimelineActiveTypes(presentTypes),
     [presentTypes],
   );
-
   const effectiveActiveTypes =
     filters.activeTypes.size > 0 ? filters.activeTypes : defaultActiveTypes;
 
   function toggleStatus(status: string) {
     setFilters((current) => {
       const next = new Set(current.activeStatuses);
-      if (next.has(status)) {
-        next.delete(status);
-      } else {
-        next.add(status);
-      }
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
       return { ...current, activeStatuses: next };
     });
   }
@@ -87,11 +100,8 @@ export function TimelineView({
       const next = new Set(
         current.activeTypes.size > 0 ? current.activeTypes : defaultActiveTypes,
       );
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
       return { ...current, activeTypes: next };
     });
   }
@@ -131,10 +141,10 @@ export function TimelineView({
       }),
     [
       analysis.ganttData,
-      filters.activeStatuses,
-      filters.activeTypes,
       deferredQuery,
       effectiveActiveTypes,
+      filters.activeStatuses,
+      filters.activeTypes.size,
       projectName,
     ],
   );
@@ -182,6 +192,21 @@ export function TimelineView({
     ],
   );
 
+  const selectedRow =
+    filteredExecutionRows.find(
+      (row) => row.uniqueId === filters.selectedExecutionId,
+    ) ??
+    analysis.executions.find(
+      (row) => row.uniqueId === filters.selectedExecutionId,
+    ) ??
+    null;
+  const relatedResource =
+    selectedRow != null
+      ? (analysis.resources.find(
+          (resource) => resource.uniqueId === selectedRow.uniqueId,
+        ) ?? null)
+      : null;
+
   const dataIndexById = useMemo(
     () => new Map(filteredData.map((item, i) => [item.unique_id, i])),
     [filteredData],
@@ -190,38 +215,107 @@ export function TimelineView({
     () => buildResourceTestStats(analysis.resources, analysis.dependencyIndex),
     [analysis.dependencyIndex, analysis.resources],
   );
-
-  // Counts per status/type (unfiltered) — shared by legend and filter pills.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const item of analysis.ganttData.filter((entry) =>
       isDefaultTimelineResource(entry, projectName),
     )) {
-      const s = item.status.toLowerCase();
-      counts[s] = (counts[s] ?? 0) + 1;
+      const status = item.status.toLowerCase();
+      counts[status] = (counts[status] ?? 0) + 1;
     }
     return counts;
   }, [analysis.ganttData, projectName]);
-
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const item of analysis.ganttData.filter((entry) =>
       isDefaultTimelineResource(entry, projectName),
     )) {
-      if (item.resourceType) {
-        counts[item.resourceType] = (counts[item.resourceType] ?? 0) + 1;
-      }
+      counts[item.resourceType] = (counts[item.resourceType] ?? 0) + 1;
     }
     return counts;
   }, [analysis.ganttData, projectName]);
-
   const hasTypeOverride = !setsEqual(effectiveActiveTypes, defaultActiveTypes);
   const hasActiveFilters =
     filters.activeStatuses.size > 0 ||
     hasTypeOverride ||
     filters.query.length > 0;
+
+  const inspector = (
+    <EntityInspector
+      title={selectedRow?.name ?? null}
+      typeLabel={selectedRow?.resourceType ?? null}
+      status={
+        selectedRow ? (
+          <span className={`badge badge--${selectedRow.statusTone}`}>
+            {selectedRow.status}
+          </span>
+        ) : undefined
+      }
+      stats={[
+        {
+          label: "Duration",
+          value: selectedRow ? formatSeconds(selectedRow.executionTime) : "n/a",
+        },
+        { label: "Thread", value: selectedRow?.threadId ?? "n/a" },
+        {
+          label: "Start",
+          value:
+            selectedRow?.start != null
+              ? `${selectedRow.start.toFixed(2)}s`
+              : "n/a",
+        },
+      ]}
+      sections={[
+        { label: "Path", value: selectedRow?.path ?? "n/a" },
+        { label: "Unique ID", value: selectedRow?.uniqueId ?? "n/a" },
+      ]}
+      actions={
+        selectedRow
+          ? [
+              {
+                label: "Open asset",
+                onClick: () =>
+                  onNavigateTo("inventory", {
+                    resourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                    assetTab: "summary",
+                  }),
+                disabled: !relatedResource,
+              },
+              {
+                label: "Open in Runs",
+                onClick: () =>
+                  onNavigateTo("runs", {
+                    resourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                    executionId: selectedRow.uniqueId,
+                  }),
+              },
+              {
+                label: "Open in Lineage",
+                onClick: () =>
+                  onNavigateTo("lineage", {
+                    resourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                    rootResourceId:
+                      relatedResource?.uniqueId ?? selectedRow.uniqueId,
+                  }),
+                disabled: !relatedResource,
+              },
+            ]
+          : undefined
+      }
+      emptyMessage="Select a node to inspect runtime evidence"
+    />
+  );
+
   return (
-    <div className="workspace-view">
+    <WorkspaceScaffold
+      title="Timeline"
+      description="Runtime timing, concurrency, bottlenecks, and execution order."
+      inspector={inspector}
+      className="timeline-view"
+    >
       <SectionCard
         title="Execution timeline"
         subtitle="Relative start and duration for each executed node."
@@ -245,7 +339,6 @@ export function TimelineView({
           title="Bottlenecks"
           subtitle="Independent runtime hotspots in the current timeline slice."
         />
-
         <GanttLegend
           statusCounts={statusCounts}
           typeCounts={typeCounts}
@@ -254,22 +347,32 @@ export function TimelineView({
           onToggleStatus={toggleStatus}
           onToggleType={toggleType}
         />
-
         <TimelineSearchControls
           filters={filters}
           defaultActiveTypes={defaultActiveTypes}
           hasActiveFilters={hasActiveFilters}
           setFilters={setFilters}
         />
-
         <GanttChart
           data={filteredData}
           runStartedAt={analysis.runStartedAt}
           dataIndexById={dataIndexById}
           dependencyIndex={analysis.dependencyIndex}
           testStatsById={testStatsById}
+          selectedId={filters.selectedExecutionId}
+          onSelect={(id) => {
+            setFilters((current) => ({ ...current, selectedExecutionId: id }));
+            onInvestigationSelectionChange((current) => ({
+              ...current,
+              selectedExecutionId: id,
+              selectedResourceId:
+                analysis.resources.find((resource) => resource.uniqueId === id)
+                  ?.uniqueId ?? current.selectedResourceId,
+              sourceLens: "timeline",
+            }));
+          }}
         />
       </SectionCard>
-    </div>
+    </WorkspaceScaffold>
   );
 }
