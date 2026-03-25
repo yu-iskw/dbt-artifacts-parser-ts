@@ -4,16 +4,16 @@
  * Keep in sync when rebranding `:root` in index.css.
  */
 export const THEME_HEX = {
-  accent: "#0891b2",
-  accentDark: "#0e7490",
-  text: "#0f172a",
-  textSoft: "#64748b",
-  bg: "#f1f5f9",
+  accent: "#4f46e5",
+  accentDark: "#6366f1",
+  text: "#1c1c2e",
+  textSoft: "#9090a8",
+  bg: "#f4f4f8",
   bgSoft: "#ffffff",
-  slate: "#8e97a6",
-  rose: "#d86066",
-  mint: "#2bb673",
-  amber: "#f2a44b",
+  slate: "#9090a8",
+  rose: "#b91c1c",
+  mint: "#15803d",
+  amber: "#c27803",
 } as const;
 
 /** Execution status and resource types — match `--dbt-type-*` and status tokens in index.css */
@@ -29,25 +29,25 @@ export const STATUS_HEX = {
 } as const;
 
 export const RESOURCE_TYPE_HEX: Record<string, string> = {
-  model: "#2ac7e6",
-  test: "#d0d9e4",
-  seed: "#b18dff",
-  snapshot: "#ffaf61",
-  source: "#9adf53",
-  exposure: "#ff8d69",
-  metric: "#ff5f9c",
-  semantic_model: "#76a3ff",
-  analysis: "#a6b4c6",
-  unit_test: "#d0d9e4",
+  model: "#2563eb",
+  test: "#475569",
+  seed: "#7c3aed",
+  snapshot: "#a16207",
+  source: "#0d9448",
+  exposure: "#b45309",
+  metric: "#a21caf",
+  semantic_model: "#0369a1",
+  analysis: "#6b7280",
+  unit_test: "#475569",
 };
 
 export const CANVAS = {
-  rowStripe: "rgba(241, 245, 249, 0.55)",
-  rowStripeHover: "rgba(8, 145, 178, 0.07)",
+  rowStripe: "rgba(244, 244, 248, 0.55)",
+  rowStripeHover: "rgba(79, 70, 229, 0.07)",
   labelText: THEME_HEX.text,
   metaText: THEME_HEX.textSoft,
   axisTick: THEME_HEX.slate,
-  gridLine: "rgba(15, 23, 42, 0.07)",
-  barHoverStroke: "rgba(8, 145, 178, 0.65)",
-  testFailStripe: "rgba(216, 96, 102, 0.9)",
+  gridLine: "rgba(28, 28, 46, 0.07)",
+  barHoverStroke: "rgba(79, 70, 229, 0.65)",
+  testFailStripe: "rgba(185, 28, 28, 0.9)",
 } as const;
