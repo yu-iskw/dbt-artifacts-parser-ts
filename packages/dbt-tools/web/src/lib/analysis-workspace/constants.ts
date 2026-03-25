@@ -52,6 +52,14 @@ export const SUPPORT_TESTS_RESOURCE_TYPES = new Set([
 ]);
 
 export const VIEW_TITLES: Record<WorkspaceView, string> = {
+  // New views
+  health: "Health",
+  inventory: "Inventory",
+  execution: "Execution",
+  quality: "Quality",
+  dependencies: "Dependencies",
+  search: "Search",
+  // Legacy views (backward compat)
   overview: "Run overview",
   catalog: "Catalog workspace",
   runs: "Run analysis",

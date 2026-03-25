@@ -2,11 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import {
   AnalysisWorkspace,
   type WorkspaceView,
+  type WorkspaceSignal,
   type OverviewFilterState,
   type ResultsFilterState,
   type TimelineFilterState,
   type AssetViewState,
   type RunsViewState,
+  type ExecutionViewState,
+  type QualityFilterState,
+  type DependenciesViewState,
+  type SearchViewState,
 } from "./components/AnalysisWorkspace";
 import { AppSidebar } from "./components/AppShell/AppSidebar";
 import {
@@ -14,7 +19,7 @@ import {
   getInitialView,
   getInitialSidebarCollapsed,
   parseRunsKind,
-  parseRunsTab,
+  parseExecutionTab,
   parseSelectedResourceId,
   parseViewFromSearch,
   SIDEBAR_STORAGE_KEY,
@@ -48,6 +53,7 @@ function AppContent() {
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // ── Legacy filter states (used by HealthView / backward compat) ──
   const [overviewFilters, setOverviewFilters] = useState<OverviewFilterState>({
     status: "all",
     resourceTypes: new Set(),
@@ -57,15 +63,43 @@ function AppContent() {
     status: "all",
     query: "",
   });
-  const [runsViewState, setRunsViewState] = useState<RunsViewState>({
-    tab: parseRunsTab(window.location.search) ?? "results",
-    kind: parseRunsKind(window.location.search) ?? "models",
-  });
   const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>({
     query: "",
     activeStatuses: new Set(),
     activeTypes: new Set(),
   });
+
+  // ── Legacy runs view state (kept for AnalysisWorkspace backward compat) ──
+  const [runsViewState, setRunsViewState] = useState<RunsViewState>({
+    tab: parseExecutionTab(window.location.search) ?? "results",
+    kind: parseRunsKind(window.location.search) ?? "models",
+  });
+
+  // ── New view states ──
+  const [executionViewState, setExecutionViewState] =
+    useState<ExecutionViewState>({
+      tab: parseExecutionTab(window.location.search) ?? "results",
+    });
+
+  const [qualityFilters, setQualityFilters] = useState<QualityFilterState>({
+    status: "all",
+    query: "",
+  });
+
+  const [dependenciesViewState, setDependenciesViewState] =
+    useState<DependenciesViewState>({
+      selectedResourceId: null,
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      allDepsMode: false,
+      lensMode: "type",
+      activeLegendKeys: new Set(),
+    });
+
+  const [searchViewState, setSearchViewState] = useState<SearchViewState>({
+    query: "",
+  });
+
   const [assetViewState, setAssetViewState] = useState<AssetViewState>({
     explorerMode: "project",
     status: "all",
@@ -93,22 +127,35 @@ function AppContent() {
 
   const setNavigationTarget = (target: NavigationSelectionTarget) => {
     setActiveViewRaw(target.view);
-    if (target.view === "runs") {
-      setRunsViewState((current) => ({
+  };
+
+  /**
+   * Programmatic navigation from inspector quick-actions.
+   * Allows any lens to send the user to another lens with an optional
+   * resource pre-selected.
+   */
+  const handleNavigateTo = (view: WorkspaceView, resourceId?: string) => {
+    setActiveViewRaw(view);
+    if (view === "inventory" && resourceId) {
+      setAssetViewState((current) => ({
         ...current,
-        tab: target.runsTab ?? "results",
-        kind:
-          (target.runsTab ?? "results") === "results"
-            ? (target.runsKind ?? "models")
-            : current.kind,
+        selectedResourceId: resourceId,
+      }));
+    }
+    if (view === "dependencies" && resourceId) {
+      setDependenciesViewState((current) => ({
+        ...current,
+        selectedResourceId: resourceId,
       }));
     }
   };
 
+  // ── URL sync effect ──
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set("view", activeView);
-    if (activeView === "catalog") {
+
+    if (activeView === "inventory") {
       if (assetViewState.selectedResourceId) {
         url.searchParams.set("resource", assetViewState.selectedResourceId);
       } else {
@@ -116,15 +163,20 @@ function AppContent() {
       }
       url.searchParams.delete("tab");
       url.searchParams.delete("kind");
-    } else if (activeView === "runs") {
-      url.searchParams.set("tab", runsViewState.tab);
-      url.searchParams.set("kind", runsViewState.kind);
+    } else if (activeView === "execution") {
+      url.searchParams.set("tab", executionViewState.tab);
+      url.searchParams.delete("kind");
       url.searchParams.delete("resource");
+    } else if (activeView === "dependencies" && dependenciesViewState.selectedResourceId) {
+      url.searchParams.set("resource", dependenciesViewState.selectedResourceId);
+      url.searchParams.delete("tab");
+      url.searchParams.delete("kind");
     } else {
       url.searchParams.delete("tab");
       url.searchParams.delete("kind");
       url.searchParams.delete("resource");
     }
+
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (nextUrl !== currentUrl) {
@@ -133,8 +185,8 @@ function AppContent() {
   }, [
     activeView,
     assetViewState.selectedResourceId,
-    runsViewState.kind,
-    runsViewState.tab,
+    executionViewState.tab,
+    dependenciesViewState.selectedResourceId,
   ]);
 
   useEffect(() => {
@@ -142,9 +194,13 @@ function AppContent() {
       const search = window.location.search;
       const v = parseViewFromSearch(search);
       if (v) setActiveViewRaw(v);
+      setExecutionViewState((current) => ({
+        ...current,
+        tab: parseExecutionTab(search) ?? current.tab,
+      }));
       setRunsViewState((current) => ({
         ...current,
-        tab: parseRunsTab(search) ?? current.tab,
+        tab: parseExecutionTab(search) ?? current.tab,
         kind: parseRunsKind(search) ?? current.kind,
       }));
       setAssetViewState((current) => ({
@@ -180,14 +236,14 @@ function AppContent() {
     activeView,
     assetViewState,
     runsViewState,
+    executionViewState,
   );
   const workspaceTitle = activeNavigationItem.label;
-  const workspaceSignals = analysis
-    ? buildWorkspaceSignals(analysis, analysisSource)
+
+  // Workspace signals are passed to HealthView for its hero strip.
+  const workspaceSignals: WorkspaceSignal[] = analysis
+    ? (buildWorkspaceSignals(analysis, analysisSource) as unknown as WorkspaceSignal[])
     : [];
-  const workspaceSummary = analysis
-    ? `${analysis.resources.length} assets · ${analysis.summary.total_nodes} executions · ${analysisSource === "preload" ? "Auto-loaded from DBT_TARGET" : "Loaded from uploaded artifacts"}`
-    : "Upload a manifest and run results to open the analysis workspace.";
 
   const frameClass = [
     "app-frame",
@@ -217,6 +273,7 @@ function AppContent() {
         analysisSource={analysisSource}
         assetViewState={assetViewState}
         runsViewState={runsViewState}
+        executionViewState={executionViewState}
       />
 
       <main className="app-main">
@@ -232,14 +289,30 @@ function AppContent() {
             <span aria-hidden="true">☰</span>
           </button>
 
-          <div>
-            <p className="eyebrow">dbt artifacts workspace</p>
-            <h1>{workspaceTitle}</h1>
-            <p className="app-header__summary">{workspaceSummary}</p>
+          <div className="app-header__brand">
+            <button
+              type="button"
+              className="app-header__brand-btn"
+              onClick={() => handleNavigateTo("health")}
+              title="Go to Health"
+            >
+              <span className="brand-mark">db</span>
+              <span className="app-header__brand-name">dbt-tools</span>
+            </button>
+          </div>
+
+          <div className="app-header__context">
+            {analysis && (
+              <span className="app-header__run-context" title="Run context">
+                {analysis.resources.length} assets
+                <span className="app-header__context-sep">·</span>
+                {analysis.summary.total_nodes} executions
+              </span>
+            )}
           </div>
 
           <div className="app-header__actions">
-            {analysis && (
+            {analysis ? (
               <>
                 <span className="app-badge">
                   {analysisSource === "preload"
@@ -259,27 +332,21 @@ function AppContent() {
                   className="secondary-action"
                   onClick={onLoadDifferent}
                 >
-                  Load different artifacts
+                  Load different
                 </button>
               </>
+            ) : (
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              >
+                {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+              </button>
             )}
           </div>
         </header>
-
-        {analysis && (
-          <section className="workspace-signals" aria-label="Workspace signals">
-            {workspaceSignals.map((signal) => (
-              <article
-                key={signal.label}
-                className={`signal-card signal-card--${signal.tone}`}
-              >
-                <p className="signal-card__label">{signal.label}</p>
-                <strong>{signal.value}</strong>
-                <span>{signal.detail}</span>
-              </article>
-            ))}
-          </section>
-        )}
 
         {error && <ErrorBanner message={error} />}
 
@@ -298,6 +365,16 @@ function AppContent() {
             assetViewState={assetViewState}
             onAssetViewStateChange={setAssetViewState}
             runsViewState={runsViewState}
+            executionViewState={executionViewState}
+            onExecutionViewStateChange={setExecutionViewState}
+            qualityFilters={qualityFilters}
+            onQualityFiltersChange={setQualityFilters}
+            dependenciesViewState={dependenciesViewState}
+            onDependenciesViewStateChange={setDependenciesViewState}
+            searchViewState={searchViewState}
+            onSearchViewStateChange={setSearchViewState}
+            onNavigateTo={handleNavigateTo}
+            workspaceSignals={workspaceSignals}
           />
         ) : preloadLoading ? (
           <LoadingCard />

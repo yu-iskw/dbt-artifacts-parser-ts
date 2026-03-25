@@ -1595,3 +1595,78 @@ details.timeline-filter-accordion .timeline-controls {
     flex-wrap: wrap;
   }
 }
+
+/* ─── Navigation groups (Observe / Explore) ─────────────────────────────────── */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.nav-group + .nav-group {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.nav-group__label {
+  padding: 0.25rem 0.9rem 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.app-sidebar--collapsed .nav-group__label {
+  display: none;
+}
+
+.app-sidebar--collapsed .nav-group + .nav-group {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+/* ─── App header brand / context chips (new simplified header) ──────────────── */
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-header__brand-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  transition: background 140ms ease;
+  color: inherit;
+}
+
+.app-header__brand-btn:hover {
+  background: var(--bg-surface-muted);
+}
+
+.app-header__brand-name {
+  font-family: "Space Grotesk", "Avenir Next", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.app-header__run-context {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-header__context {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

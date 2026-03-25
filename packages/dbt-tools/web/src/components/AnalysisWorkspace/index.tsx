@@ -9,6 +9,12 @@ export type {
   RunsTab,
   RunsKind,
   RunsViewState,
+  ExecutionTab,
+  ExecutionViewState,
+  QualityFilterState,
+  DependenciesViewState,
+  SearchViewState,
+  WorkspaceSignal,
   AnalysisWorkspaceProps,
 } from "@web/lib/analysis-workspace/types";
 export { AnalysisWorkspace } from "./AnalysisWorkspace";

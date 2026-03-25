@@ -16,6 +16,10 @@ import {
   type ResultsFilterState,
   type TimelineFilterState,
   type WorkspaceView,
+  type ExecutionViewState,
+  type QualityFilterState,
+  type DependenciesViewState,
+  type SearchViewState,
 } from "@web/lib/analysis-workspace/types";
 import {
   deriveProjectName,
@@ -36,6 +40,12 @@ import {
 } from "@web/lib/analysis-workspace/explorerTree";
 import { ExplorerPane } from "./ExplorerPane";
 import { OverviewView } from "./views/OverviewView";
+import { HealthView } from "./views/HealthView";
+import { InventoryView } from "./views/InventoryView";
+import { ExecutionView } from "./views/ExecutionView";
+import { QualityView } from "./views/QualityView";
+import { DependenciesView } from "./views/DependenciesView";
+import { SearchView } from "./views/SearchView";
 import { AssetsView } from "./views/AssetsView";
 import { ResultsView } from "./views/ResultsView";
 import { TimelineView } from "./timeline/TimelineView";
@@ -56,6 +66,17 @@ interface WorkspaceContentProps {
   assetViewState: AssetViewState;
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>;
   runsViewState: RunsViewState;
+  executionViewState: ExecutionViewState;
+  onExecutionViewStateChange: Dispatch<SetStateAction<ExecutionViewState>>;
+  qualityFilters: QualityFilterState;
+  onQualityFiltersChange: Dispatch<SetStateAction<QualityFilterState>>;
+  dependenciesViewState: DependenciesViewState;
+  onDependenciesViewStateChange: Dispatch<SetStateAction<DependenciesViewState>>;
+  searchViewState: SearchViewState;
+  onSearchViewStateChange: Dispatch<SetStateAction<SearchViewState>>;
+  onNavigateTo: (view: WorkspaceView, resourceId?: string) => void;
+  workspaceSignals: AnalysisWorkspaceProps["workspaceSignals"];
+  projectName: string | null;
 }
 
 function WorkspaceContent({
@@ -73,7 +94,19 @@ function WorkspaceContent({
   assetViewState,
   onAssetViewStateChange,
   runsViewState,
+  executionViewState,
+  onExecutionViewStateChange,
+  qualityFilters,
+  onQualityFiltersChange,
+  dependenciesViewState,
+  onDependenciesViewStateChange,
+  searchViewState,
+  onSearchViewStateChange,
+  onNavigateTo,
+  workspaceSignals,
+  projectName,
 }: WorkspaceContentProps) {
+  // Hook must be called unconditionally; only used for legacy "runs" view.
   const runsResults = useRunsResultsSource(
     analysis.executions,
     runsViewState.kind,
@@ -81,19 +114,94 @@ function WorkspaceContent({
     activeView === "runs" && runsViewState.tab === "results",
   );
 
-  if (activeView === "overview")
+  // ── New views ──
+
+  if (activeView === "health") {
+    return (
+      <HealthView
+        analysis={analysis}
+        projectName={projectName}
+        analysisSource={analysisSource}
+        filters={overviewFilters}
+        setFilters={onOverviewFiltersChange}
+        workspaceSignals={workspaceSignals}
+      />
+    );
+  }
+
+  if (activeView === "inventory") {
+    return (
+      <InventoryView
+        analysis={analysis}
+        resource={selectedResource}
+        onSelectResource={onSelectResource}
+        assetViewState={assetViewState}
+        onAssetViewStateChange={onAssetViewStateChange}
+      />
+    );
+  }
+
+  if (activeView === "execution") {
+    return (
+      <ExecutionView
+        analysis={analysis}
+        executionViewState={executionViewState}
+        onExecutionViewStateChange={onExecutionViewStateChange}
+        resultsFilters={resultsFilters}
+        onResultsFiltersChange={onResultsFiltersChange}
+        timelineFilters={timelineFilters}
+        onTimelineFiltersChange={onTimelineFiltersChange}
+      />
+    );
+  }
+
+  if (activeView === "quality") {
+    return (
+      <QualityView
+        analysis={analysis}
+        filters={qualityFilters}
+        setFilters={onQualityFiltersChange}
+      />
+    );
+  }
+
+  if (activeView === "dependencies") {
+    return (
+      <DependenciesView
+        analysis={analysis}
+        dependenciesViewState={dependenciesViewState}
+        onDependenciesViewStateChange={onDependenciesViewStateChange}
+        onNavigateTo={onNavigateTo}
+      />
+    );
+  }
+
+  if (activeView === "search") {
+    return (
+      <SearchView
+        analysis={analysis}
+        searchViewState={searchViewState}
+        onSearchViewStateChange={onSearchViewStateChange}
+        onNavigateTo={onNavigateTo}
+      />
+    );
+  }
+
+  // ── Legacy views (kept for backward compat / URL redirects) ──
+
+  if (activeView === "overview") {
     return (
       <OverviewView
         analysis={analysis}
-        projectName={
-          analysis.projectName ?? deriveProjectName(analysis.executions)
-        }
+        projectName={projectName}
         analysisSource={analysisSource}
         filters={overviewFilters}
         setFilters={onOverviewFiltersChange}
       />
     );
-  if (activeView === "catalog")
+  }
+
+  if (activeView === "catalog") {
     return (
       <AssetsView
         analysis={analysis}
@@ -103,7 +211,10 @@ function WorkspaceContent({
         onAssetViewStateChange={onAssetViewStateChange}
       />
     );
-  if (runsViewState.tab === "timeline")
+  }
+
+  // Legacy runs view
+  if (runsViewState.tab === "timeline") {
     return (
       <TimelineView
         analysis={analysis}
@@ -111,6 +222,7 @@ function WorkspaceContent({
         setFilters={onTimelineFiltersChange}
       />
     );
+  }
   return (
     <ResultsView
       tab={runsViewState.kind}
@@ -187,6 +299,11 @@ function WorkspaceHeaderMeta({
   );
 }
 
+/** Whether the current view uses the catalog/inventory explorer pane. */
+function usesExplorerPane(view: WorkspaceView): boolean {
+  return view === "catalog" || view === "inventory";
+}
+
 export function AnalysisWorkspace({
   analysis,
   activeView,
@@ -201,6 +318,16 @@ export function AnalysisWorkspace({
   assetViewState,
   onAssetViewStateChange,
   runsViewState,
+  executionViewState,
+  onExecutionViewStateChange,
+  qualityFilters,
+  onQualityFiltersChange,
+  dependenciesViewState,
+  onDependenciesViewStateChange,
+  searchViewState,
+  onSearchViewStateChange,
+  onNavigateTo,
+  workspaceSignals,
 }: AnalysisWorkspaceProps) {
   const deferredResourceQuery = useDeferredValue(assetViewState.resourceQuery);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
@@ -208,8 +335,6 @@ export function AnalysisWorkspace({
   );
   const autoExpansionKeyRef = useRef<string | null>(null);
 
-  // Prefer the authoritative name from manifest metadata; fall back to the
-  // heuristic (most-common packageName among executed nodes).
   const projectName =
     analysis.projectName ?? deriveProjectName(analysis.executions);
 
@@ -323,9 +448,6 @@ export function AnalysisWorkspace({
       }));
       return;
     }
-    // Only redirect when a previously selected resource is filtered out of
-    // view. Don't auto-select on fresh load (selectedResourceId === null) —
-    // the tree should start collapsed and the user picks a resource manually.
     if (assetViewState.selectedResourceId === null) return;
     const exists = visibleLeafIds.includes(assetViewState.selectedResourceId);
     if (!exists) {
@@ -345,12 +467,14 @@ export function AnalysisWorkspace({
       (resource) => resource.uniqueId === assetViewState.selectedResourceId,
     ) ?? null;
 
+  const showExplorer = usesExplorerPane(activeView);
+
   return (
     <div
-      className={`workspace-layout${activeView === "catalog" ? "" : " workspace-layout--full"}`}
+      className={`workspace-layout${showExplorer ? "" : " workspace-layout--full"}`}
     >
-      {/* Explorer pane — only visible in Catalog */}
-      {activeView === "catalog" && (
+      {/* Explorer pane — visible in Catalog and Inventory */}
+      {showExplorer && (
         <ExplorerPane
           treeRows={treeRows}
           filteredResources={explorerResources}
@@ -444,6 +568,17 @@ export function AnalysisWorkspace({
           assetViewState={assetViewState}
           onAssetViewStateChange={onAssetViewStateChange}
           runsViewState={runsViewState}
+          executionViewState={executionViewState}
+          onExecutionViewStateChange={onExecutionViewStateChange}
+          qualityFilters={qualityFilters}
+          onQualityFiltersChange={onQualityFiltersChange}
+          dependenciesViewState={dependenciesViewState}
+          onDependenciesViewStateChange={onDependenciesViewStateChange}
+          searchViewState={searchViewState}
+          onSearchViewStateChange={onSearchViewStateChange}
+          onNavigateTo={onNavigateTo}
+          workspaceSignals={workspaceSignals}
+          projectName={projectName}
         />
       </div>
     </div>

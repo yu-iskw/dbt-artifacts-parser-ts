@@ -1,7 +1,6 @@
 import type {
   AssetViewState,
-  RunsKind,
-  RunsTab,
+  ExecutionViewState,
   RunsViewState,
   WorkspaceView,
 } from "../AnalysisWorkspace";
@@ -10,80 +9,105 @@ export interface SidebarNavigationTarget {
   id: string;
   label: string;
   view: WorkspaceView;
-  runsTab?: RunsTab;
-  runsKind?: RunsKind;
+  /** @deprecated Only used for legacy `runs` view compat */
+  runsTab?: "results" | "timeline";
+  /** @deprecated Only used for legacy `runs` view compat */
+  runsKind?: "models" | "tests";
+}
+
+export interface SidebarNavGroup {
+  label: string;
+  items: SidebarNavigationTarget[];
 }
 
 export interface NavigationSelectionTarget {
   view: WorkspaceView;
-  runsTab?: RunsTab;
-  runsKind?: RunsKind;
+  /** @deprecated */
+  runsTab?: "results" | "timeline";
+  /** @deprecated */
+  runsKind?: "models" | "tests";
 }
 
-export const navigationItems: SidebarNavigationTarget[] = [
+/**
+ * Grouped navigation structure — Observe + Explore sections.
+ */
+export const navigationGroups: SidebarNavGroup[] = [
   {
-    id: "overview",
-    view: "overview",
-    label: "Overview",
+    label: "Observe",
+    items: [
+      { id: "health", view: "health", label: "Health" },
+      { id: "execution", view: "execution", label: "Execution" },
+      { id: "quality", view: "quality", label: "Quality" },
+    ],
   },
   {
-    id: "assets",
-    view: "catalog",
-    label: "Assets",
-  },
-  {
-    id: "models",
-    view: "runs",
-    label: "Models",
-    runsTab: "results",
-    runsKind: "models",
-  },
-  {
-    id: "tests",
-    view: "runs",
-    label: "Tests",
-    runsTab: "results",
-    runsKind: "tests",
-  },
-  {
-    id: "timeline",
-    view: "runs",
-    label: "Timeline",
-    runsTab: "timeline",
-    runsKind: "models",
+    label: "Explore",
+    items: [
+      { id: "inventory", view: "inventory", label: "Inventory" },
+      { id: "dependencies", view: "dependencies", label: "Dependencies" },
+      { id: "search", view: "search", label: "Search" },
+    ],
   },
 ];
 
-const VALID_VIEWS = new Set<WorkspaceView>(["overview", "catalog", "runs"]);
-const VALID_RUNS_TABS = new Set<RunsTab>(["results", "timeline"]);
-const VALID_RUNS_KINDS = new Set<RunsKind>(["models", "tests"]);
+/** Flat list of all navigation items (for backward compat helpers). */
+export const navigationItems: SidebarNavigationTarget[] = navigationGroups.flatMap(
+  (g) => g.items,
+);
+
+const VALID_VIEWS = new Set<WorkspaceView>([
+  "health",
+  "inventory",
+  "execution",
+  "quality",
+  "dependencies",
+  "search",
+  // legacy redirect sources
+  "overview",
+  "catalog",
+  "runs",
+]);
+
+const VALID_EXECUTION_TABS = new Set(["results", "timeline"]);
+
+/**
+ * Map legacy view param values to new canonical view names.
+ */
+export function resolveView(raw: string): WorkspaceView {
+  if (raw === "overview") return "health";
+  if (raw === "catalog") return "inventory";
+  if (raw === "runs") return "execution";
+  if (VALID_VIEWS.has(raw as WorkspaceView)) return raw as WorkspaceView;
+  return "health";
+}
 
 export function parseViewFromSearch(search: string): WorkspaceView | null {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
   if (raw && VALID_VIEWS.has(raw as WorkspaceView)) {
-    return raw as WorkspaceView;
+    return resolveView(raw);
   }
   return null;
 }
 
 export function getInitialView(): WorkspaceView {
-  return parseViewFromSearch(window.location.search) ?? "overview";
+  return parseViewFromSearch(window.location.search) ?? "health";
 }
 
-export function parseRunsTab(search: string): RunsTab | null {
+export function parseExecutionTab(search: string): "results" | "timeline" | null {
   const raw = new URLSearchParams(search).get("tab");
-  if (raw && VALID_RUNS_TABS.has(raw as RunsTab)) {
-    return raw as RunsTab;
-  }
+  if (raw && VALID_EXECUTION_TABS.has(raw)) return raw as "results" | "timeline";
   return null;
 }
 
-export function parseRunsKind(search: string): RunsKind | null {
+/** @deprecated Use parseExecutionTab */
+export function parseRunsTab(search: string): "results" | "timeline" | null {
+  return parseExecutionTab(search);
+}
+
+export function parseRunsKind(search: string): "models" | "tests" | null {
   const raw = new URLSearchParams(search).get("kind");
-  if (raw && VALID_RUNS_KINDS.has(raw as RunsKind)) {
-    return raw as RunsKind;
-  }
+  if (raw === "models" || raw === "tests") return raw;
   return null;
 }
 
@@ -107,30 +131,36 @@ export function isNavigationTargetActive(
   target: SidebarNavigationTarget,
   activeView: WorkspaceView,
   _assetViewState: AssetViewState,
-  runsViewState: RunsViewState,
+  _runsViewState: RunsViewState,
+  _executionViewState?: ExecutionViewState,
 ): boolean {
-  if (activeView !== target.view) return false;
-  if (target.view === "catalog") {
-    return true;
-  }
-  if (target.view === "runs") {
-    if ((target.runsTab ?? "results") !== runsViewState.tab) return false;
-    if ((target.runsTab ?? "results") === "results") {
-      return (target.runsKind ?? "models") === runsViewState.kind;
-    }
-    return true;
-  }
-  return true;
+  // Resolve legacy view names before comparing
+  const resolvedActive =
+    activeView === "overview"
+      ? "health"
+      : activeView === "catalog"
+        ? "inventory"
+        : activeView === "runs"
+          ? "execution"
+          : activeView;
+  return resolvedActive === target.view;
 }
 
 export function getActiveNavigationItem(
   activeView: WorkspaceView,
   assetViewState: AssetViewState,
   runsViewState: RunsViewState,
+  executionViewState?: ExecutionViewState,
 ): SidebarNavigationTarget {
   return (
     navigationItems.find((item) =>
-      isNavigationTargetActive(item, activeView, assetViewState, runsViewState),
+      isNavigationTargetActive(
+        item,
+        activeView,
+        assetViewState,
+        runsViewState,
+        executionViewState,
+      ),
     ) ?? navigationItems[0]
   );
 }
