@@ -26,6 +26,7 @@ import { ErrorBanner } from "./components/ErrorBanner";
 import { FileUpload } from "./components/FileUpload";
 import { ToastProvider, useToast } from "./components/ui/Toast";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
+import { useTheme } from "./hooks/useTheme";
 import type { AnalysisState } from "@web/types";
 
 function AppContent() {
@@ -39,6 +40,7 @@ function AppContent() {
     onAnalysis,
     onError,
   } = useAnalysisPage();
+  const { theme, toggleTheme } = useTheme();
   const [activeView, setActiveViewRaw] =
     useState<WorkspaceView>(getInitialView);
   const [sidebarCollapsed, setSidebarCollapsedRaw] = useState(
@@ -244,6 +246,14 @@ function AppContent() {
                     ? "DBT_TARGET"
                     : "Uploaded files"}
                 </span>
+                <button
+                  type="button"
+                  className="secondary-action"
+                  onClick={toggleTheme}
+                  aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+                >
+                  {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+                </button>
                 <button
                   type="button"
                   className="secondary-action"

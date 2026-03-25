@@ -489,13 +489,7 @@ export const STATUS_LENS_FILLS: Record<string, string> = {
   neutral: "var(--status-neutral-soft)",
 };
 
-/** Solid colors for status lens legend swatches. */
-export const STATUS_LENS_SOLID: Record<string, string> = {
-  positive: "var(--status-positive)",
-  warning: "var(--status-warning)",
-  danger: "var(--status-danger)",
-  neutral: "var(--status-neutral)",
-};
+// status lens used to be here
 
 const TYPE_LENS_NEUTRAL = "var(--dbt-type-generic-soft)";
 const TYPE_LENS_MUTED = "var(--dbt-type-macro-soft)";
@@ -532,23 +526,21 @@ export const TYPE_LENS_SOLID: Record<string, string> = {
   sql_operation: "var(--dbt-type-operation)",
 };
 
-/** Returns the SVG fill color for a node given the active lens mode. */
 export function getLensNodeFill(
   resource: ResourceNode,
   lensMode: LensMode,
 ): string {
   switch (lensMode) {
     case "status":
-      return (
-        STATUS_LENS_FILLS[resource.statusTone ?? "neutral"] ??
-        STATUS_LENS_FILLS.neutral
-      );
+      return `var(--status-${resource.statusTone ?? "neutral"})`;
     case "type":
-      return TYPE_LENS_FILLS[resource.resourceType] ?? TYPE_LENS_NEUTRAL;
+      return (
+        TYPE_LENS_SOLID[resource.resourceType] ?? "var(--dbt-type-generic)"
+      );
     case "coverage":
       return resource.description
-        ? "var(--status-positive-soft)"
-        : "var(--status-danger-soft)";
+        ? "var(--status-positive)"
+        : "var(--status-danger)";
   }
 }
 
@@ -596,13 +588,11 @@ export function getLensLegendItems(
         tones.add(layout.resource.statusTone ?? "neutral");
       }
       const order = ["positive", "warning", "danger", "neutral"];
-      return order
-        .filter((t) => tones.has(t))
-        .map((t) => ({
-          key: t,
-          label: capitalizeFirst(t),
-          color: STATUS_LENS_SOLID[t] ?? "var(--status-neutral)",
-        }));
+      return order.map((t) => ({
+        key: t,
+        label: capitalizeFirst(t),
+        color: `var(--status-${t})`,
+      }));
     }
     case "type": {
       const types = getLineageGraphTypes(nodeLayouts);

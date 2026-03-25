@@ -469,8 +469,20 @@ export function LineageGraphSurface({
                       width={nodeWidth}
                       height={nodeHeight}
                       rx={nodeRadius}
-                      style={{ fill: getLensNodeFill(node.resource, lensMode) }}
                       className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}`}
+                      stroke={
+                        node.side === "selected"
+                          ? "var(--graph-node-selected-stroke)"
+                          : undefined
+                      }
+                      strokeWidth={node.side === "selected" ? 3 : 0}
+                      fill={
+                        lensMode === "type"
+                          ? `var(--dbt-type-${node.resource.resourceType.replace(/_/g, "-")})`
+                          : lensMode === "status"
+                            ? getLensNodeFill(node.resource, lensMode)
+                            : `var(--dbt-type-${node.resource.resourceType.replace(/_/g, "-")})`
+                      }
                     />
                     <text
                       x={x + 16}
@@ -513,7 +525,11 @@ export function LineageGraphSurface({
                           width={failBadgeWidth}
                           height={badgeHeight}
                           rx={badgeRadius}
-                          className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
+                          className={`dependency-graph__node-stat-pill ${
+                            node.failCount === 0
+                              ? "dependency-graph__node-stat-pill--neutral"
+                              : "dependency-graph__node-stat-pill--fail"
+                          }`}
                         />
                         <text
                           x={
@@ -524,7 +540,11 @@ export function LineageGraphSurface({
                             failBadgeWidth / 2
                           }
                           y={badgeY + badgeHeight / 2}
-                          className="dependency-graph__node-stat dependency-graph__node-stat--fail"
+                          className={`dependency-graph__node-stat ${
+                            node.failCount === 0
+                              ? "dependency-graph__node-stat--neutral"
+                              : "dependency-graph__node-stat--fail"
+                          }`}
                           textAnchor="middle"
                           dominantBaseline="middle"
                         >
