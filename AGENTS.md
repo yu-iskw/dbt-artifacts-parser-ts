@@ -54,6 +54,7 @@ If the org uses Cursor business features, use the **admin dashboard** for org-wi
 - **Local overrides:** `.claude/settings.local.json` — machine-only preferences (gitignored). Precedence: local overrides project; see [configuration scopes](https://docs.anthropic.com/en/docs/claude-code/settings#configuration-scopes).
 - **Verify what is active:** Run `/status` in Claude Code to see managed / user / project / local sources and catch JSON errors ([verify active settings](https://docs.anthropic.com/en/docs/claude-code/settings#verify-active-settings)).
 - **Cursor vs Claude Code:** [`.cursor/sandbox.json`](.cursor/sandbox.json) applies to Cursor’s agent sandbox only; it does not change Claude Code. Keep egress allowlists aligned when you change registry or GitHub access in either file (see [Cursor (IDE)](#cursor-ide) for the allowlist table).
+- **Diagrams (draw.io):** Native `.drawio` (mxGraphModel) and optional draw.io Desktop CLI export — [`.claude/skills/drawio-cli/SKILL.md`](.claude/skills/drawio-cli/SKILL.md).
 
 ### Plugins (this repo)
 
