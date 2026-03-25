@@ -19,6 +19,10 @@ However, the palette values introduced by ADR 0019 produce failing contrast rati
 
 The overall visual impression is one of low contrast, which is compounded by the blue-gray background creating insufficient separation between the app surface and white panels.
 
+At the time this ADR was first written, the lineage graph was also expected to remain on a darker graph canvas inside the broader light-theme product language. Subsequent graph work changed that direction. In the current product, the broader dark theme remains dark, but the lineage graph in dark mode is intentionally treated as a lighter analytical workspace to reduce visual fatigue, improve scanability, and make dense graph relationships easier to follow.
+
+That change also proved that graph-local UI could not simply inherit generic dark-surface assumptions. Once the dark-mode graph canvas became light gray, graph panels, borders, text roles, edges, test badges, and compact node metadata all needed graph-specific rebalancing.
+
 A scored analysis across five candidate schemas was conducted, evaluating WCAG contrast compliance, dbt ecosystem fit, lineage graph legibility, developer tool aesthetic, implementation complexity, and status signal clarity. The Neutral Slate schema scored highest (83/100 average) and was selected.
 
 ## Decision
@@ -49,12 +53,18 @@ Replace the foundation surface tokens and graph canvas tokens with a neutral coo
 | `--accent`      | `#1747b3`              | `#0969da`              |
 | `--accent-soft` | `rgba(37,88,217,0.12)` | `rgba(9,105,218,0.12)` |
 
-### Graph canvas tokens
+### Graph canvas and graph-local tokens
 
-| Token               | Old value | New value | Notes                         |
-| ------------------- | --------- | --------- | ----------------------------- |
-| `--graph-bg-top`    | `#16384b` | `#13181f` | Neutral dark canvas           |
-| `--graph-bg-bottom` | `#0f2838` | `#0d1117` | Matches `--text` for cohesion |
+The dark-mode lineage graph is a deliberate exception to the surrounding dark app shell. Instead of a dark graph canvas, it uses a light-gray analytical surface inside dark mode.
+
+| Token / role                       | Direction                | Notes                                                                                   |
+| ---------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| `--graph-bg-top`                   | light gray               | Graph-local top canvas tone                                                             |
+| `--graph-bg-bottom`                | light gray               | Slightly darker than top for depth without restoring a dark canvas                      |
+| `--graph-bg-accent`                | light neutral accent     | Keeps subtle spotlighting without re-darkening the canvas                               |
+| `--graph-panel*`                   | light neutral surfaces   | Legend, controls, menus, and overlays are visually matched to the lighter graph surface |
+| `--graph-text*`                    | dark-on-light text roles | Graph-local text hierarchy is tuned for readability on the lighter canvas and panels    |
+| `--graph-edge` / `--graph-border*` | medium neutral contrast  | Edges and borders remain visible without dominating node fills                          |
 
 ### Unchanged layers
 
@@ -63,10 +73,17 @@ The following token layers are unchanged:
 - Semantic status tokens: `--mint`, `--amber`, `--rose`, `--slate` and their soft variants
 - All `--status-*` alias tokens
 - All `--dbt-type-*` resource-type tokens
-- All remaining graph tokens (panel, text, edge, stroke, hotspot)
+- Graph-local hotspot and selected-node accent behavior
 - Border radius tokens
 
-The neutral background makes the vibrant resource-type fills pop harder on the graph canvas without requiring any adjustments to those tokens.
+The neutral foundation still improves app-wide contrast, but the lineage graph now uses its own lighter graph-local layer inside dark mode. That graph-local layer is implemented through `tokens.css` graph aliases and `lineage-graph.css` behavior-level rules rather than through shared dark foundation tokens alone.
+
+### Lineage graph behavior on the lighter canvas
+
+- Resource-type node fills remain the primary semantic signal.
+- Graph-local test stat badges use stronger contrast so pass/fail counts stay readable on the lighter surface.
+- Node metadata is simplified for scanability: depth is removed from node bodies, and resource-type icons appear inline with node titles instead of relying on extra text rows.
+- Graph chrome such as legends, zoom controls, edges, and panels is tuned to support the lighter graph canvas without overpowering node differentiation.
 
 ## Alternatives considered
 
@@ -84,20 +101,24 @@ The neutral background makes the vibrant resource-type fills pop harder on the g
 
 - `--text-muted` and `--text-soft` now pass WCAG AA on all panel surfaces.
 - The neutral cool-gray background creates stronger panel separation without requiring border changes.
-- Resource-type fills gain perceptual contrast on the darker neutral graph canvas without any token value changes.
-- The palette is familiar and legible to developers accustomed to GitHub, Linear, and similar tools.
+- The lineage graph is easier to scan in dark mode because it uses a lighter analytical canvas with graph-local contrast tuning.
+- Resource-type fills, compact test badges, and simplified node headers are easier to differentiate on the lighter graph surface.
+- The palette remains familiar and legible to developers accustomed to GitHub, Linear, and similar tools.
 
 ### Negative
 
 - The warm blue-gray character of the previous palette is lost in favor of a cooler, more neutral tone.
 - The accent blue shifts from a deeper navy (`#1747b3`) to a lighter GitHub-style blue (`#0969da`), which may feel less bold on some surfaces.
+- Dark mode now contains a light graph-specific analytical island, so graph panels, text, edges, and badges must be tuned deliberately instead of inheriting generic dark-surface defaults.
 
 ### Mitigations
 
-- All semantic and resource-type token values are preserved, so no component logic changes are required.
-- The graph canvas darkening is minimal and does not affect node fills or edge readability.
+- All semantic and resource-type token values are preserved, so node meaning remains consistent even as graph-local surfaces change.
+- The graph-specific exception is isolated to graph-local aliases in `tokens.css` and graph UI rules in `lineage-graph.css`, limiting the impact on the rest of dark mode.
+- The lighter canvas is paired with graph-local rebalancing of text, panels, edges, test badges, and node metadata so readability does not regress.
 
 ## References
 
-- `packages/dbt-tools/web/src/index.css`
+- `packages/dbt-tools/web/src/styles/tokens.css`
+- `packages/dbt-tools/web/src/styles/lineage-graph.css`
 - [ADR 0019](0019-standardize-color-schema-for-dbt-tools-web-and-adopt-dbt-resource-type-tokens.md)

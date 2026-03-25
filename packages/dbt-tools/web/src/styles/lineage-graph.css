@@ -207,29 +207,64 @@
   opacity: 0.18;
 }
 
-/* Node text */
-.dependency-graph__node-label {
+/* Node title row */
+.dependency-graph__node-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 24px;
+  min-width: 0;
   font-family: "IBM Plex Sans", sans-serif;
+  color: var(--graph-text);
+  pointer-events: none;
+}
+
+.dependency-graph__node-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--graph-text-soft);
+  opacity: 0.92;
+}
+
+.dependency-graph__node-title-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.7;
+}
+
+.dependency-graph__node-title-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 14px;
   font-weight: 700;
-  fill: var(--graph-text);
-  pointer-events: none;
+  line-height: 1;
+  color: var(--graph-text);
 }
 
-.dependency-graph--summary .dependency-graph__node-label {
+.dependency-graph--summary .dependency-graph__node-title-row {
+  gap: 7px;
+}
+
+.dependency-graph--summary .dependency-graph__node-title-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.dependency-graph--summary .dependency-graph__node-title-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.dependency-graph--summary .dependency-graph__node-title-text {
   font-size: 13px;
-}
-
-.dependency-graph__node-meta {
-  font-family: "IBM Plex Sans", sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  fill: var(--graph-text-soft);
-  pointer-events: none;
-}
-
-.dependency-graph--summary .dependency-graph__node-meta {
-  font-size: 11px;
 }
 
 .dependency-graph__node-stat-pill {

@@ -20,7 +20,7 @@ import {
   supportsTests,
 } from "@web/lib/analysis-workspace/lineageModel";
 import type { LensMode } from "@web/lib/analysis-workspace/types";
-import { formatResourceTypeLabel } from "../shared";
+import { ResourceTypeIcon, formatResourceTypeLabel } from "../shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import {
   CONTEXT_MENU_OVERLAY_SIZE,
@@ -480,22 +480,31 @@ export function LineageGraphSurface({
                         fill: getLensNodeFill(node.resource, lensMode),
                       }}
                     />
-                    <text
+                    <foreignObject
                       x={x + 16}
-                      y={displayMode === "summary" ? y + 22 : y + 28}
-                      className="dependency-graph__node-label"
+                      y={displayMode === "summary" ? y + 10 : y + 14}
+                      width={nodeWidth - 32}
+                      height={24}
                     >
-                      {node.resource.name}
-                    </text>
-                    <text
-                      x={x + 16}
-                      y={displayMode === "summary" ? y + 39 : y + 50}
-                      className="dependency-graph__node-meta"
-                    >
-                      {node.side === "selected"
-                        ? formatResourceTypeLabel(node.resource.resourceType)
-                        : `${formatResourceTypeLabel(node.resource.resourceType)} · Depth ${node.depth}`}
-                    </text>
+                      <div
+                        className="dependency-graph__node-title-row"
+                        title={`${node.resource.name} (${formatResourceTypeLabel(node.resource.resourceType)})`}
+                      >
+                        <span
+                          className="dependency-graph__node-title-icon"
+                          title={formatResourceTypeLabel(
+                            node.resource.resourceType,
+                          )}
+                        >
+                          <ResourceTypeIcon
+                            resourceType={node.resource.resourceType}
+                          />
+                        </span>
+                        <span className="dependency-graph__node-title-text">
+                          {node.resource.name}
+                        </span>
+                      </div>
+                    </foreignObject>
                     {supportsTests(node.resource.resourceType) && (
                       <>
                         <rect
