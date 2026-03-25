@@ -17,7 +17,5 @@ export const RESOURCE_TYPE_COLORS: Record<string, string> = {
 };
 
 export function getResourceTypeColor(resourceType: string | undefined): string {
-  return (
-    (resourceType && RESOURCE_TYPE_COLORS[resourceType]) ?? "#cbd5e1"
-  );
+  return (resourceType && RESOURCE_TYPE_COLORS[resourceType]) ?? "#cbd5e1";
 }
