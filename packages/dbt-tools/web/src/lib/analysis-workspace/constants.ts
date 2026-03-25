@@ -34,6 +34,14 @@ export const PRIMARY_TIMELINE_TYPES = new Set([
 // Resource types classified as "test" in the Results split
 export const TEST_RESOURCE_TYPES = new Set(["test", "unit_test"]);
 
+// Resource types that can have tests associated with them (for lineage/explorer stats)
+export const SUPPORT_TESTS_RESOURCE_TYPES = new Set([
+  "model",
+  "seed",
+  "snapshot",
+  "source",
+]);
+
 export const VIEW_TITLES: Record<WorkspaceView, string> = {
   overview: "Run overview",
   catalog: "Catalog workspace",

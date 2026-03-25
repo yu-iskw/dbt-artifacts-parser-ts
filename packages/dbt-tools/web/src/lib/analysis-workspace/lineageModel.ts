@@ -1,5 +1,5 @@
 import type { AnalysisState, ResourceNode } from "@web/types";
-import { TEST_RESOURCE_TYPES } from "./constants";
+import { TEST_RESOURCE_TYPES, SUPPORT_TESTS_RESOURCE_TYPES } from "./constants";
 import { buildResourceTestStats } from "./explorerTree";
 import type { LensMode } from "./types";
 
@@ -35,6 +35,10 @@ export type DependencyIndex = AnalysisState["dependencyIndex"];
 
 export function clampDepth(value: number): number {
   return Math.max(0, Math.min(10, value));
+}
+
+export function supportsTests(resourceType: string): boolean {
+  return SUPPORT_TESTS_RESOURCE_TYPES.has(resourceType);
 }
 
 export function collectDependencyIdsByDepth(
