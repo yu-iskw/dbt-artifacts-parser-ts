@@ -1,4 +1,5 @@
-import { THEME_HEX } from "@web/constants/themeColors";
+import { getThemeHex } from "@web/constants/themeColors";
+import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 
 interface SubtitleWithActionProps {
   hasAnalysis: boolean;
@@ -9,8 +10,11 @@ export function SubtitleWithAction({
   hasAnalysis,
   onLoadDifferent,
 }: SubtitleWithActionProps) {
+  const theme = useSyncedDocumentTheme();
+  const t = getThemeHex(theme);
+
   return (
-    <p style={{ color: THEME_HEX.textSoft, marginBottom: "1.5rem" }}>
+    <p style={{ color: t.textSoft, marginBottom: "1.5rem" }}>
       {hasAnalysis
         ? "Analysis ready. "
         : "Upload manifest.json and run_results.json to analyze your dbt run"}
@@ -21,7 +25,7 @@ export function SubtitleWithAction({
           style={{
             background: "none",
             border: "none",
-            color: THEME_HEX.accent,
+            color: t.accent,
             cursor: "pointer",
             textDecoration: "underline",
             padding: 0,

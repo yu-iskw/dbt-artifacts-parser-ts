@@ -1,4 +1,4 @@
-import { THEME_HEX } from "@web/constants/themeColors";
+import { type ThemeMode, getThemeHex } from "@web/constants/themeColors";
 import type { GanttItem } from "@web/types";
 import { X_PAD } from "./constants";
 import { type Edge, edgePath } from "./edgeGeometry";
@@ -12,6 +12,7 @@ export function GanttEdgeLayer({
   maxEnd,
   scrollTop,
   viewportH,
+  theme = "light",
 }: {
   edges: Edge[];
   data: GanttItem[];
@@ -21,7 +22,9 @@ export function GanttEdgeLayer({
   maxEnd: number;
   scrollTop: number;
   viewportH: number;
+  theme?: ThemeMode;
 }) {
+  const accent = getThemeHex(theme).accent;
   if (edges.length === 0) return null;
   const approxChartW = canvasWidth - effectiveLabelW - X_PAD;
 
@@ -55,7 +58,7 @@ export function GanttEdgeLayer({
               approxChartW,
               scrollTop,
             )}
-            stroke={THEME_HEX.accent}
+            stroke={accent}
             strokeWidth={edgeFocused ? 1.6 : 1.1}
             fill="none"
             opacity={edgeFocused ? 0.55 : 0.1}

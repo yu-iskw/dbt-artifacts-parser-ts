@@ -1,5 +1,5 @@
 import { getResourceTypeColor, getStatusColor } from "@web/constants/colors";
-import { CANVAS } from "@web/constants/themeColors";
+import { type ThemeMode, getCanvasColors } from "@web/constants/themeColors";
 import type { GanttItem, ResourceTestStats } from "@web/types";
 import {
   AXIS_TOP,
@@ -39,6 +39,8 @@ export function fillRoundRect(
   ctx.fill();
 }
 
+type CanvasPalette = ReturnType<typeof getCanvasColors>;
+
 function drawRowBackground(
   ctx: CanvasRenderingContext2D,
   rowIndex: number,
@@ -46,24 +48,38 @@ function drawRowBackground(
   width: number,
   isFocused: boolean,
   isHovered: boolean,
+  palette: CanvasPalette,
 ) {
   if (rowIndex % 2 !== 0) return;
-  ctx.fillStyle = isHovered ? CANVAS.rowStripeHover : CANVAS.rowStripe;
+  ctx.fillStyle = isHovered ? palette.rowStripeHover : palette.rowStripe;
   ctx.globalAlpha = isFocused ? 1 : 0.35;
   ctx.fillRect(0, rowY, width, ROW_H);
   ctx.globalAlpha = 1;
 }
 
-function drawRowLabels(
-  ctx: CanvasRenderingContext2D,
-  item: GanttItem,
-  rowY: number,
-  labelW: number,
-  displayMode: DisplayMode,
-  runStartedAt: number | null | undefined,
-  timeZone: string,
-  emphasis: number,
-) {
+interface DrawRowLabelsParams {
+  ctx: CanvasRenderingContext2D;
+  item: GanttItem;
+  rowY: number;
+  labelW: number;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  timeZone: string;
+  emphasis: number;
+  palette: CanvasPalette;
+}
+
+function drawRowLabels({
+  ctx,
+  item,
+  rowY,
+  labelW,
+  displayMode,
+  runStartedAt,
+  timeZone,
+  emphasis,
+  palette,
+}: DrawRowLabelsParams) {
   ctx.save();
   ctx.globalAlpha = emphasis;
   ctx.beginPath();
@@ -72,7 +88,7 @@ function drawRowLabels(
   ctx.textAlign = "left";
 
   ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
-  ctx.fillStyle = CANVAS.labelText;
+  ctx.fillStyle = palette.labelText;
   ctx.fillText(item.name || item.unique_id, 2, rowY + NAME_Y);
 
   const startLabel =
@@ -84,7 +100,7 @@ function drawRowLabels(
       ? formatTimestamp(runStartedAt + item.end, timeZone)
       : `+${formatMs(item.end)}`;
   ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
-  ctx.fillStyle = CANVAS.metaText;
+  ctx.fillStyle = palette.metaText;
   ctx.fillText(`${startLabel} → ${endLabel}`, 2, rowY + TIME_Y);
   ctx.restore();
 }
@@ -99,6 +115,8 @@ interface DrawRowBarParams {
   emphasis: number;
   isHovered: boolean;
   attachedTestStats: ResourceTestStats | undefined;
+  palette: CanvasPalette;
+  theme: ThemeMode;
 }
 
 function drawRowBar({
@@ -111,16 +129,18 @@ function drawRowBar({
   emphasis,
   isHovered,
   attachedTestStats,
+  palette,
+  theme,
 }: DrawRowBarParams) {
   const barY = rowY + BAR_PAD;
   const barX = labelW + (item.start / maxEnd) * chartW;
   const barW = Math.max(2, (item.duration / maxEnd) * chartW);
 
   ctx.globalAlpha = emphasis;
-  ctx.fillStyle = getStatusColor(item.status);
+  ctx.fillStyle = getStatusColor(item.status, theme);
   fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
 
-  ctx.fillStyle = getResourceTypeColor(item.resourceType);
+  ctx.fillStyle = getResourceTypeColor(item.resourceType, theme);
   ctx.fillRect(barX, barY, 3, BAR_H);
 
   if (
@@ -128,13 +148,13 @@ function drawRowBar({
     attachedTestStats.fail + attachedTestStats.error > 0 &&
     isPositiveStatus(item.status)
   ) {
-    ctx.fillStyle = CANVAS.testFailStripe;
+    ctx.fillStyle = palette.testFailStripe;
     fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
   }
 
   if (isHovered) {
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = CANVAS.barHoverStroke;
+    ctx.strokeStyle = palette.barHoverStroke;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(barX - 0.5, barY - 0.5, barW + 1, BAR_H + 1);
   }
@@ -151,6 +171,8 @@ export interface DrawGanttParams {
   labelW?: number;
   timeZone: string;
   testStatsById?: Map<string, ResourceTestStats>;
+  /** Default `light` — pass from {@link useTheme} for canvas parity with CSS. */
+  theme?: ThemeMode;
 }
 
 export function drawGantt(
@@ -166,10 +188,13 @@ export function drawGantt(
     labelW = LABEL_W,
     timeZone,
     testStatsById,
+    theme = "light",
   }: DrawGanttParams,
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+
+  const palette = getCanvasColors(theme);
 
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -188,11 +213,11 @@ export function drawGantt(
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = CANVAS.axisTick;
+  ctx.fillStyle = palette.axisTick;
 
   for (const tick of ticks) {
     const x = labelW + (tick.ms / maxEnd) * chartW;
-    ctx.strokeStyle = CANVAS.gridLine;
+    ctx.strokeStyle = palette.gridLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, AXIS_TOP);
@@ -220,8 +245,8 @@ export function drawGantt(
     const isHovered = hoveredId === item.unique_id;
     const emphasis = isFocused ? 1 : 0.18;
 
-    drawRowBackground(ctx, i, rowY, w, isFocused, isHovered);
-    drawRowLabels(
+    drawRowBackground(ctx, i, rowY, w, isFocused, isHovered, palette);
+    drawRowLabels({
       ctx,
       item,
       rowY,
@@ -230,7 +255,8 @@ export function drawGantt(
       runStartedAt,
       timeZone,
       emphasis,
-    );
+      palette,
+    });
     drawRowBar({
       ctx,
       item,
@@ -241,6 +267,8 @@ export function drawGantt(
       emphasis,
       isHovered,
       attachedTestStats: testStatsById?.get(item.unique_id),
+      palette,
+      theme,
     });
   }
 }

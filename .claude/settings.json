@@ -10,7 +10,15 @@
       "Bash(wget *)",
       "Bash(gh pr create *)"
     ],
-    "allow": ["Bash(pnpm *)", "Bash(npm *)", "Bash(npx *)", "Bash(node *)"]
+    "allow": [
+      "Bash(pnpm *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(drawio *)",
+      "Bash(open *)",
+      "Bash(/Applications/draw.io.app/Contents/MacOS/draw.io *)"
+    ]
   },
   "respectGitignore": true,
   "sandbox": {

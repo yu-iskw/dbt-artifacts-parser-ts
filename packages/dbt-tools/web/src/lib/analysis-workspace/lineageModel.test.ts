@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import type { ResourceNode } from "@web/types";
 import {
+  STATUS_LENS_FILLS,
+  TYPE_LENS_SOLID,
   TYPE_LENS_FILLS,
   buildLineageGraphModel,
   clampDepth,
   collectDependencyIdsByDepth,
+  getLensNodeFill,
   getLensLegendItems,
 } from "./lineageModel";
 import type { DependencyIndex } from "./lineageModel";
@@ -162,8 +165,90 @@ describe("getLensLegendItems", () => {
         expect.objectContaining({
           key: "model",
           color: TYPE_LENS_FILLS.model,
+          borderColor: TYPE_LENS_SOLID.model,
         }),
       ]),
+    );
+  });
+
+  it("uses defined status fill tokens for status legend swatches", () => {
+    const resource = makeResource({ statusTone: "warning", status: "warn" });
+    const model = buildLineageGraphModel({
+      resource,
+      dependencySummary: {
+        upstreamCount: 0,
+        downstreamCount: 0,
+        upstream: [],
+        downstream: [],
+      },
+      dependencyIndex: {},
+      resourceById: new Map([[resource.uniqueId, resource]]),
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      displayMode: "summary",
+    });
+
+    expect(getLensLegendItems("status", model.nodeLayouts)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "warning",
+          color: STATUS_LENS_FILLS.warning,
+        }),
+      ]),
+    );
+  });
+
+  it("uses defined token strings for coverage legend swatches", () => {
+    const resource = makeResource({ description: "Has docs" });
+    const model = buildLineageGraphModel({
+      resource,
+      dependencySummary: {
+        upstreamCount: 0,
+        downstreamCount: 0,
+        upstream: [],
+        downstream: [],
+      },
+      dependencyIndex: {},
+      resourceById: new Map([[resource.uniqueId, resource]]),
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      displayMode: "summary",
+    });
+
+    expect(getLensLegendItems("coverage", model.nodeLayouts)).toEqual([
+      {
+        key: "documented",
+        label: "Documented",
+        color: "var(--bg-success-soft)",
+      },
+      {
+        key: "undocumented",
+        label: "No description",
+        color: "var(--bg-danger-soft)",
+      },
+    ]);
+  });
+});
+
+describe("getLensNodeFill", () => {
+  it("uses resource-type tokens for type lens", () => {
+    const resource = makeResource({ resourceType: "semantic_model" });
+    expect(getLensNodeFill(resource, "type")).toBe(
+      TYPE_LENS_FILLS.semantic_model,
+    );
+  });
+
+  it("uses semantic status tokens for status and coverage lenses", () => {
+    const warning = makeResource({ statusTone: "warning", status: "warn" });
+    const documented = makeResource({ description: "Has docs" });
+    const undocumented = makeResource({ description: null });
+
+    expect(getLensNodeFill(warning, "status")).toBe(STATUS_LENS_FILLS.warning);
+    expect(getLensNodeFill(documented, "coverage")).toBe(
+      "var(--bg-success-soft)",
+    );
+    expect(getLensNodeFill(undocumented, "coverage")).toBe(
+      "var(--bg-danger-soft)",
     );
   });
 });

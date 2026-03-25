@@ -20,7 +20,7 @@ import {
   supportsTests,
 } from "@web/lib/analysis-workspace/lineageModel";
 import type { LensMode } from "@web/lib/analysis-workspace/types";
-import { formatResourceTypeLabel } from "../shared";
+import { ResourceTypeIcon, formatResourceTypeLabel } from "../shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import {
   CONTEXT_MENU_OVERLAY_SIZE,
@@ -469,25 +469,42 @@ export function LineageGraphSurface({
                       width={nodeWidth}
                       height={nodeHeight}
                       rx={nodeRadius}
-                      style={{ fill: getLensNodeFill(node.resource, lensMode) }}
                       className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}`}
+                      stroke={
+                        node.side === "selected"
+                          ? "var(--graph-node-selected-stroke)"
+                          : undefined
+                      }
+                      strokeWidth={node.side === "selected" ? 3 : 0}
+                      style={{
+                        fill: getLensNodeFill(node.resource, lensMode),
+                      }}
                     />
-                    <text
+                    <foreignObject
                       x={x + 16}
-                      y={displayMode === "summary" ? y + 22 : y + 28}
-                      className="dependency-graph__node-label"
+                      y={displayMode === "summary" ? y + 10 : y + 14}
+                      width={nodeWidth - 32}
+                      height={24}
                     >
-                      {node.resource.name}
-                    </text>
-                    <text
-                      x={x + 16}
-                      y={displayMode === "summary" ? y + 39 : y + 50}
-                      className="dependency-graph__node-meta"
-                    >
-                      {node.side === "selected"
-                        ? formatResourceTypeLabel(node.resource.resourceType)
-                        : `${formatResourceTypeLabel(node.resource.resourceType)} · Depth ${node.depth}`}
-                    </text>
+                      <div
+                        className="dependency-graph__node-title-row"
+                        title={`${node.resource.name} (${formatResourceTypeLabel(node.resource.resourceType)})`}
+                      >
+                        <span
+                          className="dependency-graph__node-title-icon"
+                          title={formatResourceTypeLabel(
+                            node.resource.resourceType,
+                          )}
+                        >
+                          <ResourceTypeIcon
+                            resourceType={node.resource.resourceType}
+                          />
+                        </span>
+                        <span className="dependency-graph__node-title-text">
+                          {node.resource.name}
+                        </span>
+                      </div>
+                    </foreignObject>
                     {supportsTests(node.resource.resourceType) && (
                       <>
                         <rect
@@ -513,7 +530,11 @@ export function LineageGraphSurface({
                           width={failBadgeWidth}
                           height={badgeHeight}
                           rx={badgeRadius}
-                          className="dependency-graph__node-stat-pill dependency-graph__node-stat-pill--fail"
+                          className={`dependency-graph__node-stat-pill ${
+                            node.failCount === 0
+                              ? "dependency-graph__node-stat-pill--neutral"
+                              : "dependency-graph__node-stat-pill--fail"
+                          }`}
                         />
                         <text
                           x={
@@ -524,7 +545,11 @@ export function LineageGraphSurface({
                             failBadgeWidth / 2
                           }
                           y={badgeY + badgeHeight / 2}
-                          className="dependency-graph__node-stat dependency-graph__node-stat--fail"
+                          className={`dependency-graph__node-stat ${
+                            node.failCount === 0
+                              ? "dependency-graph__node-stat--neutral"
+                              : "dependency-graph__node-stat--fail"
+                          }`}
                           textAnchor="middle"
                           dominantBaseline="middle"
                         >

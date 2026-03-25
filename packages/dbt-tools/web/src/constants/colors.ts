@@ -1,21 +1,33 @@
 import {
-  RESOURCE_TYPE_HEX,
-  STATUS_HEX,
-  THEME_HEX,
+  type ThemeMode,
+  STATUS_HEX_DARK,
+  STATUS_HEX_LIGHT,
+  getResourceTypeHexMap,
+  getThemeHex,
 } from "@web/constants/themeColors";
 
-/** Execution status → bar fill color. */
-export const STATUS_COLORS: Record<string, string> = { ...STATUS_HEX };
+/** Execution status → bar fill color (light theme; use {@link getStatusColor} with theme in canvas). */
+export const STATUS_COLORS: Record<string, string> = { ...STATUS_HEX_LIGHT };
 
-export function getStatusColor(status: string): string {
-  return STATUS_COLORS[status.toLowerCase()] ?? THEME_HEX.textSoft;
+export function getStatusColor(
+  status: string,
+  theme: ThemeMode = "light",
+): string {
+  const map = theme === "dark" ? STATUS_HEX_DARK : STATUS_HEX_LIGHT;
+  const key = status.toLowerCase();
+  const fromMap = (map as Record<string, string | undefined>)[key];
+  return fromMap ?? getThemeHex(theme).textSoft;
 }
 
-/** dbt resource type → left-border accent color. */
+/** dbt resource type → left-border accent color (light). */
 export const RESOURCE_TYPE_COLORS: Record<string, string> = {
-  ...RESOURCE_TYPE_HEX,
+  ...getResourceTypeHexMap("light"),
 };
 
-export function getResourceTypeColor(resourceType: string | undefined): string {
-  return (resourceType && RESOURCE_TYPE_COLORS[resourceType]) ?? "#cbd5e1";
+export function getResourceTypeColor(
+  resourceType: string | undefined,
+  theme: ThemeMode = "light",
+): string {
+  const map = getResourceTypeHexMap(theme);
+  return (resourceType && map[resourceType]) ?? getThemeHex(theme).borderSubtle;
 }

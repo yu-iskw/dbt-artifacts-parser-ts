@@ -1,10 +1,12 @@
+import type { CSSProperties } from "react";
 import {
   RESOURCE_TYPE_COLORS,
   STATUS_COLORS,
   getResourceTypeColor,
   getStatusColor,
 } from "@web/constants/colors";
-import { THEME_HEX } from "@web/constants/themeColors";
+import { getThemeHex } from "@web/constants/themeColors";
+import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 
 interface GanttLegendProps {
   /** Count per status key (lowercase). Only entries with count > 0 are shown. */
@@ -18,7 +20,7 @@ interface GanttLegendProps {
   onToggleType?: (type: string) => void;
 }
 
-const SWATCH_STYLE: React.CSSProperties = {
+const SWATCH_STYLE: CSSProperties = {
   display: "inline-block",
   width: 10,
   height: 10,
@@ -34,6 +36,8 @@ export function GanttLegend({
   onToggleStatus,
   onToggleType,
 }: GanttLegendProps) {
+  const theme = useSyncedDocumentTheme();
+  const themeHex = getThemeHex(theme);
   const visibleStatuses = Object.keys(STATUS_COLORS).filter(
     (s) => (statusCounts[s] ?? 0) > 0,
   );
@@ -50,7 +54,7 @@ export function GanttLegend({
           <span className="gantt-legend__label">Status</span>
           {visibleStatuses.map((status) => {
             const isActive = activeStatuses?.has(status) ?? false;
-            const color = getStatusColor(status);
+            const color = getStatusColor(status, theme);
             const count = statusCounts[status] ?? 0;
             return (
               <button
@@ -74,7 +78,7 @@ export function GanttLegend({
           <span className="gantt-legend__label">Type</span>
           {visibleTypes.map((type) => {
             const isActive = activeTypes?.has(type) ?? false;
-            const color = getResourceTypeColor(type);
+            const color = getResourceTypeColor(type, theme);
             const count = typeCounts[type] ?? 0;
             return (
               <button
@@ -87,7 +91,7 @@ export function GanttLegend({
                 <span
                   style={{
                     ...SWATCH_STYLE,
-                    background: THEME_HEX.bg,
+                    background: themeHex.bgSoft,
                     borderLeft: `3px solid ${color}`,
                     borderRadius: 0,
                   }}
