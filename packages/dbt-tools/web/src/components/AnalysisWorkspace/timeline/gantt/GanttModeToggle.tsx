@@ -15,37 +15,39 @@ export function GanttModeToggle({
 }) {
   return (
     <div className="gantt-controls">
-      <div className="gantt-mode-toggle">
-        <button
-          type="button"
-          className={activeMode === "duration" ? "active" : ""}
-          onClick={() => onChange("duration")}
-        >
-          Duration
-        </button>
-        <button
-          type="button"
-          className={activeMode === "timestamps" ? "active" : ""}
-          onClick={() => onChange("timestamps")}
-        >
-          Timestamps
-        </button>
-      </div>
-      {activeMode === "timestamps" && (
-        <label className="gantt-timezone-select">
-          <span>Timezone</span>
-          <select
-            value={activeTimeZone}
-            onChange={(event) => onTimeZoneChange(event.target.value)}
+      <div className="gantt-controls__cluster">
+        <div className="gantt-mode-toggle">
+          <button
+            type="button"
+            className={activeMode === "duration" ? "active" : ""}
+            onClick={() => onChange("duration")}
           >
-            {timeZones.map((timeZone) => (
-              <option key={timeZone} value={timeZone}>
-                {timeZone}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+            Duration
+          </button>
+          <button
+            type="button"
+            className={activeMode === "timestamps" ? "active" : ""}
+            onClick={() => onChange("timestamps")}
+          >
+            Timestamps
+          </button>
+        </div>
+        {activeMode === "timestamps" && (
+          <label className="gantt-timezone-select">
+            <span>Timezone</span>
+            <select
+              value={activeTimeZone}
+              onChange={(event) => onTimeZoneChange(event.target.value)}
+            >
+              {timeZones.map((timeZone) => (
+                <option key={timeZone} value={timeZone}>
+                  {timeZone}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
     </div>
   );
 }

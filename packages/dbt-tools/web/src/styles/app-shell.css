@@ -90,6 +90,20 @@
   flex-wrap: wrap;
 }
 
+.gantt-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.gantt-controls__cluster {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .gantt-mode-toggle {
   display: inline-flex;
   border-radius: 999px;
@@ -145,6 +159,22 @@
 
 .gantt-timezone-select select:focus {
   outline: none;
+}
+
+@media (max-width: 780px) {
+  .gantt-controls__cluster {
+    width: 100%;
+  }
+
+  .gantt-timezone-select {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .gantt-timezone-select select {
+    min-width: 0;
+    flex: 1;
+  }
 }
 
 /* Health chart view toggle */
@@ -917,9 +947,21 @@
 .catalog-detail-hero {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 1rem;
   padding: 1.1rem 1.2rem 0.1rem;
+}
+
+.catalog-detail-hero__content {
+  min-width: 0;
+}
+
+.asset-hero__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  flex-shrink: 0;
 }
 
 .catalog-detail-hero h3 {
@@ -1444,6 +1486,11 @@ details.timeline-filter-accordion .timeline-controls {
     flex-direction: column;
   }
 
+  .catalog-detail-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .app-header__actions {
     justify-content: flex-start;
   }
@@ -1594,4 +1641,138 @@ details.timeline-filter-accordion .timeline-controls {
   .app-header__actions {
     flex-wrap: wrap;
   }
+}
+
+/* ─── Navigation groups (Observe / Explore) ─────────────────────────────────── */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.nav-group + .nav-group {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.nav-group__label {
+  padding: 0.25rem 0.9rem 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.app-sidebar--collapsed .nav-group__label {
+  display: none;
+}
+
+.app-sidebar--collapsed .nav-group + .nav-group {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+/* ─── App header brand / context chips (new simplified header) ──────────────── */
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-header__brand-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  transition: background 140ms ease;
+  color: inherit;
+}
+
+.app-header__brand-btn:hover {
+  background: var(--bg-surface-muted);
+}
+
+.app-header__brand-name {
+  font-family: "Space Grotesk", "Avenir Next", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.app-header__run-context {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-header__context {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-header--workspace {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto auto 1fr minmax(320px, 1.3fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--bg-surface);
+}
+
+.app-header__omnibox {
+  position: relative;
+  min-width: 0;
+}
+
+.workspace-search--global {
+  width: 100%;
+}
+
+.workspace-search--global input {
+  width: 100%;
+}
+
+.omnibox-results {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.omnibox-results__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.omnibox-results__item:hover {
+  background: var(--bg-surface-muted);
+}
+
+.omnibox-results__item span,
+.omnibox-results__empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }

@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AnalysisWorkspace,
-  type WorkspaceView,
-  type OverviewFilterState,
-  type ResultsFilterState,
-  type TimelineFilterState,
   type AssetViewState,
+  type InvestigationSelectionState,
+  type LineageViewState,
+  type OverviewFilterState,
   type RunsViewState,
+  type SearchState,
+  type TimelineFilterState,
+  type WorkspaceSignal,
+  type WorkspaceView,
 } from "./components/AnalysisWorkspace";
 import { AppSidebar } from "./components/AppShell/AppSidebar";
 import {
-  getActiveNavigationItem,
-  getInitialView,
   getInitialSidebarCollapsed,
+  getInitialView,
+  parseAssetTab,
   parseRunsKind,
-  parseRunsTab,
+  parseSelectedExecutionId,
   parseSelectedResourceId,
   parseViewFromSearch,
   SIDEBAR_STORAGE_KEY,
@@ -27,8 +30,10 @@ import { FileUpload } from "./components/FileUpload";
 import { ToastProvider, useToast } from "./components/ui/Toast";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
 import { useTheme } from "./hooks/useTheme";
+import { matchesResource } from "./lib/analysis-workspace/utils";
 import type { AnalysisState } from "@web/types";
 
+/* eslint-disable max-lines-per-function, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity */
 function AppContent() {
   const { toast } = useToast();
   const {
@@ -41,32 +46,27 @@ function AppContent() {
     onError,
   } = useAnalysisPage();
   const { theme, toggleTheme } = useTheme();
+
   const [activeView, setActiveViewRaw] =
     useState<WorkspaceView>(getInitialView);
   const [sidebarCollapsed, setSidebarCollapsedRaw] = useState(
     getInitialSidebarCollapsed,
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [overviewFilters, setOverviewFilters] = useState<OverviewFilterState>({
     status: "all",
     resourceTypes: new Set(),
     query: "",
   });
-  const [resultsFilters, setResultsFilters] = useState<ResultsFilterState>({
-    status: "all",
-    query: "",
-  });
-  const [runsViewState, setRunsViewState] = useState<RunsViewState>({
-    tab: parseRunsTab(window.location.search) ?? "results",
-    kind: parseRunsKind(window.location.search) ?? "models",
-  });
   const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>({
     query: "",
     activeStatuses: new Set(),
     activeTypes: new Set(),
+    selectedExecutionId: parseSelectedExecutionId(window.location.search),
   });
   const [assetViewState, setAssetViewState] = useState<AssetViewState>({
+    activeTab: parseAssetTab(window.location.search) ?? "summary",
+    expandedNodeIds: new Set(),
     explorerMode: "project",
     status: "all",
     resourceTypes: new Set(),
@@ -78,6 +78,37 @@ function AppContent() {
     lensMode: "type",
     activeLegendKeys: new Set(),
   });
+  const [runsViewState, setRunsViewState] = useState<RunsViewState>({
+    kind: parseRunsKind(window.location.search) ?? "all",
+    status: "all",
+    query: "",
+    resourceTypes: new Set(),
+    threadIds: new Set(),
+    durationBand: "all",
+    sortBy: "attention",
+    groupBy: "none",
+    selectedExecutionId: parseSelectedExecutionId(window.location.search),
+  });
+  const [lineageViewState, setLineageViewState] = useState<LineageViewState>({
+    rootResourceId: parseSelectedResourceId(window.location.search),
+    selectedResourceId: parseSelectedResourceId(window.location.search),
+    upstreamDepth: 2,
+    downstreamDepth: 2,
+    allDepsMode: false,
+    lensMode: "type",
+    activeLegendKeys: new Set(),
+  });
+  const [searchState, setSearchState] = useState<SearchState>({
+    query: "",
+    recentResourceIds: [],
+    isOpen: false,
+  });
+  const [investigationSelection, setInvestigationSelection] =
+    useState<InvestigationSelectionState>({
+      selectedResourceId: parseSelectedResourceId(window.location.search),
+      selectedExecutionId: parseSelectedExecutionId(window.location.search),
+      sourceLens: null,
+    });
 
   const setSidebarCollapsed: (fn: (c: boolean) => boolean) => void = (fn) => {
     setSidebarCollapsedRaw((current) => {
@@ -92,39 +123,112 @@ function AppContent() {
   };
 
   const setNavigationTarget = (target: NavigationSelectionTarget) => {
-    setActiveViewRaw(target.view);
-    if (target.view === "runs") {
-      setRunsViewState((current) => ({
+    setActiveViewRaw(target.view === "search" ? "inventory" : target.view);
+  };
+
+  const handleNavigateTo = (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => {
+    setActiveViewRaw(view);
+    if (options?.resourceId) {
+      setAssetViewState((current) => ({
         ...current,
-        tab: target.runsTab ?? "results",
-        kind:
-          (target.runsTab ?? "results") === "results"
-            ? (target.runsKind ?? "models")
-            : current.kind,
+        selectedResourceId: options.resourceId ?? current.selectedResourceId,
+        activeTab: options.assetTab ?? current.activeTab,
+      }));
+      setLineageViewState((current) => ({
+        ...current,
+        rootResourceId:
+          options.rootResourceId ??
+          options.resourceId ??
+          current.rootResourceId,
+        selectedResourceId: options.resourceId ?? current.selectedResourceId,
       }));
     }
+    if (options?.executionId) {
+      setRunsViewState((current) => ({
+        ...current,
+        selectedExecutionId: options.executionId ?? current.selectedExecutionId,
+      }));
+      setTimelineFilters((current) => ({
+        ...current,
+        selectedExecutionId: options.executionId ?? current.selectedExecutionId,
+      }));
+    }
+    if (view === "runs" && options?.resourceId) {
+      setRunsViewState((current) => ({
+        ...current,
+        query: options.resourceId ?? current.query,
+      }));
+    }
+    setInvestigationSelection((current) => ({
+      selectedResourceId: options?.resourceId ?? current.selectedResourceId,
+      selectedExecutionId: options?.executionId ?? current.selectedExecutionId,
+      sourceLens: view,
+    }));
   };
 
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set("view", activeView);
-    if (activeView === "catalog") {
+
+    if (activeView === "inventory") {
       if (assetViewState.selectedResourceId) {
         url.searchParams.set("resource", assetViewState.selectedResourceId);
       } else {
         url.searchParams.delete("resource");
       }
-      url.searchParams.delete("tab");
+      url.searchParams.set("assetTab", assetViewState.activeTab);
       url.searchParams.delete("kind");
+      url.searchParams.delete("selected");
     } else if (activeView === "runs") {
-      url.searchParams.set("tab", runsViewState.tab);
       url.searchParams.set("kind", runsViewState.kind);
+      if (runsViewState.selectedExecutionId) {
+        url.searchParams.set("selected", runsViewState.selectedExecutionId);
+      } else {
+        url.searchParams.delete("selected");
+      }
       url.searchParams.delete("resource");
-    } else {
-      url.searchParams.delete("tab");
+      url.searchParams.delete("assetTab");
+    } else if (activeView === "timeline") {
+      if (timelineFilters.selectedExecutionId) {
+        url.searchParams.set("selected", timelineFilters.selectedExecutionId);
+      } else {
+        url.searchParams.delete("selected");
+      }
+      url.searchParams.delete("resource");
+      url.searchParams.delete("assetTab");
       url.searchParams.delete("kind");
+    } else if (activeView === "lineage") {
+      if (lineageViewState.rootResourceId) {
+        url.searchParams.set("resource", lineageViewState.rootResourceId);
+      } else {
+        url.searchParams.delete("resource");
+      }
+      if (lineageViewState.selectedResourceId) {
+        url.searchParams.set("selected", lineageViewState.selectedResourceId);
+      } else {
+        url.searchParams.delete("selected");
+      }
+      url.searchParams.set("up", String(lineageViewState.upstreamDepth));
+      url.searchParams.set("down", String(lineageViewState.downstreamDepth));
+      url.searchParams.set("allDeps", lineageViewState.allDepsMode ? "1" : "0");
+      url.searchParams.set("lens", lineageViewState.lensMode);
+      url.searchParams.delete("assetTab");
+      url.searchParams.delete("kind");
+    } else {
       url.searchParams.delete("resource");
+      url.searchParams.delete("assetTab");
+      url.searchParams.delete("selected");
+      url.searchParams.delete("kind");
     }
+
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
     const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (nextUrl !== currentUrl) {
@@ -132,24 +236,42 @@ function AppContent() {
     }
   }, [
     activeView,
-    assetViewState.selectedResourceId,
-    runsViewState.kind,
-    runsViewState.tab,
+    assetViewState,
+    runsViewState,
+    timelineFilters.selectedExecutionId,
+    lineageViewState,
   ]);
 
   useEffect(() => {
     const onPopState = () => {
       const search = window.location.search;
-      const v = parseViewFromSearch(search);
-      if (v) setActiveViewRaw(v);
-      setRunsViewState((current) => ({
-        ...current,
-        tab: parseRunsTab(search) ?? current.tab,
-        kind: parseRunsKind(search) ?? current.kind,
-      }));
+      const view = parseViewFromSearch(search);
+      if (view) setActiveViewRaw(view);
+      const resourceId = parseSelectedResourceId(search);
+      const selectedId = parseSelectedExecutionId(search);
       setAssetViewState((current) => ({
         ...current,
-        selectedResourceId: parseSelectedResourceId(search),
+        selectedResourceId: resourceId,
+        activeTab: parseAssetTab(search) ?? current.activeTab,
+      }));
+      setRunsViewState((current) => ({
+        ...current,
+        kind: parseRunsKind(search) ?? current.kind,
+        selectedExecutionId: selectedId,
+      }));
+      setTimelineFilters((current) => ({
+        ...current,
+        selectedExecutionId: selectedId,
+      }));
+      setLineageViewState((current) => ({
+        ...current,
+        rootResourceId: resourceId,
+        selectedResourceId: selectedId ?? resourceId,
+      }));
+      setInvestigationSelection((current) => ({
+        ...current,
+        selectedResourceId: resourceId,
+        selectedExecutionId: selectedId,
       }));
     };
     window.addEventListener("popstate", onPopState);
@@ -157,7 +279,6 @@ function AppContent() {
   }, []);
 
   const prevAnalysisRef = useRef<AnalysisState | null>(null);
-
   useEffect(() => {
     if (analysis && !prevAnalysisRef.current && analysisSource === "preload") {
       toast(
@@ -170,24 +291,45 @@ function AppContent() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSidebarOpen(false);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchState((current) => ({ ...current, isOpen: true }));
+      }
+      if (e.key === "Escape") {
+        setSidebarOpen(false);
+        setSearchState((current) => ({ ...current, isOpen: false }));
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const activeNavigationItem = getActiveNavigationItem(
-    activeView,
-    assetViewState,
-    runsViewState,
-  );
-  const workspaceTitle = activeNavigationItem.label;
-  const workspaceSignals = analysis
-    ? buildWorkspaceSignals(analysis, analysisSource)
+  const workspaceSignals: WorkspaceSignal[] = analysis
+    ? (buildWorkspaceSignals(
+        analysis,
+        analysisSource,
+      ) as unknown as WorkspaceSignal[])
     : [];
-  const workspaceSummary = analysis
-    ? `${analysis.resources.length} assets · ${analysis.summary.total_nodes} executions · ${analysisSource === "preload" ? "Auto-loaded from DBT_TARGET" : "Loaded from uploaded artifacts"}`
-    : "Upload a manifest and run results to open the analysis workspace.";
+
+  const omniboxResults = useMemo(() => {
+    if (!analysis) return [];
+    if (!searchState.query.trim()) {
+      return searchState.recentResourceIds
+        .map(
+          (id) =>
+            analysis.resources.find((resource) => resource.uniqueId === id) ??
+            null,
+        )
+        .filter(
+          (resource): resource is NonNullable<typeof resource> =>
+            resource != null,
+        )
+        .slice(0, 8);
+    }
+    return analysis.resources
+      .filter((resource) => matchesResource(resource, searchState.query))
+      .slice(0, 8);
+  }, [analysis, searchState.query, searchState.recentResourceIds]);
 
   const frameClass = [
     "app-frame",
@@ -215,12 +357,10 @@ function AppContent() {
         onNavigate={() => setSidebarOpen(false)}
         analysis={analysis}
         analysisSource={analysisSource}
-        assetViewState={assetViewState}
-        runsViewState={runsViewState}
       />
 
       <main className="app-main">
-        <header className="app-header">
+        <header className="app-header app-header--workspace">
           <button
             type="button"
             className="hamburger-btn"
@@ -232,14 +372,89 @@ function AppContent() {
             <span aria-hidden="true">☰</span>
           </button>
 
-          <div>
-            <p className="eyebrow">dbt artifacts workspace</p>
-            <h1>{workspaceTitle}</h1>
-            <p className="app-header__summary">{workspaceSummary}</p>
+          <div className="app-header__brand">
+            <button
+              type="button"
+              className="app-header__brand-btn"
+              onClick={() => handleNavigateTo("health")}
+              title="Go to Health"
+            >
+              <span className="brand-mark">db</span>
+              <span className="app-header__brand-name">dbt-tools</span>
+            </button>
+          </div>
+
+          <div className="app-header__context">
+            {analysis ? (
+              <span className="app-header__run-context" title="Run context">
+                {analysis.resources.length} assets
+                <span className="app-header__context-sep">·</span>
+                {analysis.summary.total_nodes} executions
+              </span>
+            ) : null}
+          </div>
+
+          <div className="app-header__omnibox">
+            <label className="workspace-search workspace-search--global">
+              <span>Search workspace</span>
+              <input
+                value={searchState.query}
+                onFocus={() =>
+                  setSearchState((current) => ({ ...current, isOpen: true }))
+                }
+                onChange={(e) =>
+                  setSearchState((current) => ({
+                    ...current,
+                    query: e.target.value,
+                    isOpen: true,
+                  }))
+                }
+                placeholder="Search by name, path, type, or ID…"
+                aria-label="Global search"
+              />
+            </label>
+            {searchState.isOpen && analysis && (
+              <div className="omnibox-results">
+                {omniboxResults.length > 0 ? (
+                  omniboxResults.map((resource) => (
+                    <button
+                      key={resource.uniqueId}
+                      type="button"
+                      className="omnibox-results__item"
+                      onClick={() => {
+                        setSearchState((current) => ({
+                          ...current,
+                          isOpen: false,
+                          recentResourceIds: [
+                            resource.uniqueId,
+                            ...current.recentResourceIds.filter(
+                              (id) => id !== resource.uniqueId,
+                            ),
+                          ].slice(0, 8),
+                        }));
+                        handleNavigateTo("inventory", {
+                          resourceId: resource.uniqueId,
+                          assetTab: "summary",
+                        });
+                      }}
+                    >
+                      <strong>{resource.name}</strong>
+                      <span>{resource.resourceType}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="omnibox-results__empty">
+                    {searchState.query.trim()
+                      ? "No matching resources"
+                      : "Recent items will appear here"}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="app-header__actions">
-            {analysis && (
+            {analysis ? (
               <>
                 <span className="app-badge">
                   {analysisSource === "preload"
@@ -252,34 +467,33 @@ function AppContent() {
                   onClick={toggleTheme}
                   aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
                 >
-                  {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+                  {theme === "light" ? "Dark" : "Light"}
+                </button>
+                <button type="button" className="secondary-action">
+                  {analysisSource === "preload"
+                    ? "Live target"
+                    : "Local upload"}
                 </button>
                 <button
                   type="button"
                   className="secondary-action"
                   onClick={onLoadDifferent}
                 >
-                  Load different artifacts
+                  Load different
                 </button>
               </>
+            ) : (
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              >
+                {theme === "light" ? "Dark" : "Light"}
+              </button>
             )}
           </div>
         </header>
-
-        {analysis && (
-          <section className="workspace-signals" aria-label="Workspace signals">
-            {workspaceSignals.map((signal) => (
-              <article
-                key={signal.label}
-                className={`signal-card signal-card--${signal.tone}`}
-              >
-                <p className="signal-card__label">{signal.label}</p>
-                <strong>{signal.value}</strong>
-                <span>{signal.detail}</span>
-              </article>
-            ))}
-          </section>
-        )}
 
         {error && <ErrorBanner message={error} />}
 
@@ -287,17 +501,21 @@ function AppContent() {
           <AnalysisWorkspace
             analysis={analysis}
             activeView={activeView}
-            activeViewTitle={workspaceTitle}
             analysisSource={analysisSource}
             overviewFilters={overviewFilters}
             onOverviewFiltersChange={setOverviewFilters}
-            resultsFilters={resultsFilters}
-            onResultsFiltersChange={setResultsFilters}
             timelineFilters={timelineFilters}
             onTimelineFiltersChange={setTimelineFilters}
             assetViewState={assetViewState}
             onAssetViewStateChange={setAssetViewState}
             runsViewState={runsViewState}
+            onRunsViewStateChange={setRunsViewState}
+            lineageViewState={lineageViewState}
+            onLineageViewStateChange={setLineageViewState}
+            investigationSelection={investigationSelection}
+            onInvestigationSelectionChange={setInvestigationSelection}
+            onNavigateTo={handleNavigateTo}
+            workspaceSignals={workspaceSignals}
           />
         ) : preloadLoading ? (
           <LoadingCard />
@@ -308,6 +526,7 @@ function AppContent() {
     </div>
   );
 }
+/* eslint-enable max-lines-per-function, sonarjs/cognitive-complexity, sonarjs/cyclomatic-complexity */
 
 export default function App() {
   return (

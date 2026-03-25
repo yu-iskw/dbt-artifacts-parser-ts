@@ -1,6 +1,6 @@
 import type { ExecutionRow } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "./constants";
-import type { DashboardStatusFilter, RunsKind } from "./types";
+import type { DashboardStatusFilter, RunsKind, RunsViewState } from "./types";
 
 export interface ResultsStatusCounts {
   all: number;
@@ -9,22 +9,40 @@ export interface ResultsStatusCounts {
   danger: number;
 }
 
+export interface RunsFacetCounts {
+  all: number;
+  models: number;
+  tests: number;
+  seeds: number;
+  snapshots: number;
+  operations: number;
+  healthy: number;
+  warnings: number;
+  errors: number;
+}
+
 export interface RunsResultsSummary {
-  models: ResultsStatusCounts;
-  tests: ResultsStatusCounts;
+  status: ResultsStatusCounts;
+  facets: RunsFacetCounts;
+  resourceTypes: Record<string, number>;
+  threadIds: Record<string, number>;
 }
 
 export interface RunsResultsQuery {
-  tab: RunsKind;
+  kind: RunsKind;
   status: DashboardStatusFilter;
   query: string;
+  resourceTypes: string[];
+  threadIds: string[];
+  durationBand: RunsViewState["durationBand"];
+  sortBy: RunsViewState["sortBy"];
   limit: number;
 }
 
 export interface RunsResultsQueryResult {
   rows: ExecutionRow[];
   totalMatches: number;
-  summary: ResultsStatusCounts;
+  summary: RunsResultsSummary;
 }
 
 export interface RunsResultsIndexEntry {
@@ -33,17 +51,25 @@ export interface RunsResultsIndexEntry {
 }
 
 export interface RunsResultsIndex {
-  models: RunsResultsIndexEntry[];
-  tests: RunsResultsIndexEntry[];
+  entries: RunsResultsIndexEntry[];
   summary: RunsResultsSummary;
 }
 
 function createEmptyCounts(): ResultsStatusCounts {
+  return { all: 0, positive: 0, warning: 0, danger: 0 };
+}
+
+function createEmptyFacetCounts(): RunsFacetCounts {
   return {
     all: 0,
-    positive: 0,
-    warning: 0,
-    danger: 0,
+    models: 0,
+    tests: 0,
+    seeds: 0,
+    snapshots: 0,
+    operations: 0,
+    healthy: 0,
+    warnings: 0,
+    errors: 0,
   };
 }
 
@@ -72,57 +98,133 @@ function isStatusMatch(
   return status === "all" || row.statusTone === status;
 }
 
-function isQueryMatch(entry: RunsResultsIndexEntry, query: string): boolean {
-  return query === "" || entry.searchText.includes(query);
-}
-
-function summarize(entries: RunsResultsIndexEntry[]): ResultsStatusCounts {
-  const counts = createEmptyCounts();
-  counts.all = entries.length;
-  for (const entry of entries) {
-    if (entry.row.statusTone === "positive") counts.positive += 1;
-    else if (entry.row.statusTone === "warning") counts.warning += 1;
-    else if (entry.row.statusTone === "danger") counts.danger += 1;
+function getKindForRow(row: ExecutionRow): Exclude<RunsKind, "all"> {
+  if (TEST_RESOURCE_TYPES.has(row.resourceType)) return "tests";
+  if (row.resourceType === "seed") return "seeds";
+  if (row.resourceType === "snapshot") return "snapshots";
+  if (
+    row.resourceType === "operation" ||
+    row.resourceType === "sql_operation" ||
+    row.resourceType === "macro"
+  ) {
+    return "operations";
   }
-  return counts;
+  return "models";
 }
 
-export function createRunsResultsIndex(rows: ExecutionRow[]): RunsResultsIndex {
-  const models: RunsResultsIndexEntry[] = [];
-  const tests: RunsResultsIndexEntry[] = [];
+function isKindMatch(row: ExecutionRow, kind: RunsKind): boolean {
+  return kind === "all" || getKindForRow(row) === kind;
+}
 
-  for (const row of rows) {
-    const entry = {
-      row,
-      searchText: buildSearchText(row),
-    };
-    if (TEST_RESOURCE_TYPES.has(row.resourceType)) {
-      tests.push(entry);
-    } else {
-      models.push(entry);
+function isDurationBandMatch(
+  row: ExecutionRow,
+  durationBand: RunsViewState["durationBand"],
+): boolean {
+  if (durationBand === "all") return true;
+  if (durationBand === "fast") return row.executionTime < 1;
+  if (durationBand === "medium")
+    return row.executionTime >= 1 && row.executionTime < 5;
+  return row.executionTime >= 5;
+}
+
+function compareRows(
+  left: ExecutionRow,
+  right: ExecutionRow,
+  sortBy: RunsViewState["sortBy"],
+): number {
+  switch (sortBy) {
+    case "duration":
+      return right.executionTime - left.executionTime;
+    case "name":
+      return left.name.localeCompare(right.name);
+    case "status":
+      return left.status.localeCompare(right.status);
+    case "start":
+      return (right.start ?? 0) - (left.start ?? 0);
+    case "attention":
+    default: {
+      const rank = { danger: 0, warning: 1, positive: 2, neutral: 3 } as const;
+      const toneCompare = rank[left.statusTone] - rank[right.statusTone];
+      if (toneCompare !== 0) return toneCompare;
+      return right.executionTime - left.executionTime;
+    }
+  }
+}
+
+function summarize(entries: RunsResultsIndexEntry[]): RunsResultsSummary {
+  const status = createEmptyCounts();
+  const facets = createEmptyFacetCounts();
+  const resourceTypes: Record<string, number> = {};
+  const threadIds: Record<string, number> = {};
+
+  status.all = entries.length;
+  facets.all = entries.length;
+
+  for (const entry of entries) {
+    const { row } = entry;
+    if (row.statusTone === "positive") {
+      status.positive += 1;
+      facets.healthy += 1;
+    } else if (row.statusTone === "warning") {
+      status.warning += 1;
+      facets.warnings += 1;
+    } else if (row.statusTone === "danger") {
+      status.danger += 1;
+      facets.errors += 1;
+    }
+
+    facets[getKindForRow(row)] += 1;
+    resourceTypes[row.resourceType] =
+      (resourceTypes[row.resourceType] ?? 0) + 1;
+    if (row.threadId) {
+      threadIds[row.threadId] = (threadIds[row.threadId] ?? 0) + 1;
     }
   }
 
+  return { status, facets, resourceTypes, threadIds };
+}
+
+export function createRunsResultsIndex(rows: ExecutionRow[]): RunsResultsIndex {
+  const entries = rows.map((row) => ({
+    row,
+    searchText: buildSearchText(row),
+  }));
   return {
-    models,
-    tests,
-    summary: {
-      models: summarize(models),
-      tests: summarize(tests),
-    },
+    entries,
+    summary: summarize(entries),
   };
 }
 
 export function filterRunsResultsIndex(
   index: RunsResultsIndex,
-  query: Omit<RunsResultsQuery, "limit">,
+  query: Omit<RunsResultsQuery, "limit" | "sortBy"> & {
+    sortBy?: RunsViewState["sortBy"];
+  },
 ): RunsResultsIndexEntry[] {
-  const source = query.tab === "tests" ? index.tests : index.models;
   const normalizedQuery = normalizeQuery(query.query);
-  return source.filter(
-    (entry) =>
-      isStatusMatch(entry.row, query.status) &&
-      isQueryMatch(entry, normalizedQuery),
+  const activeResourceTypes = new Set(query.resourceTypes);
+  const activeThreadIds = new Set(query.threadIds);
+
+  const matches = index.entries.filter((entry) => {
+    const { row } = entry;
+    if (!isKindMatch(row, query.kind)) return false;
+    if (!isStatusMatch(row, query.status)) return false;
+    if (normalizedQuery !== "" && !entry.searchText.includes(normalizedQuery))
+      return false;
+    if (
+      activeResourceTypes.size > 0 &&
+      !activeResourceTypes.has(row.resourceType)
+    )
+      return false;
+    if (activeThreadIds.size > 0 && !activeThreadIds.has(row.threadId ?? ""))
+      return false;
+    if (!isDurationBandMatch(row, query.durationBand)) return false;
+    return true;
+  });
+
+  const sortBy = query.sortBy ?? "attention";
+  return [...matches].sort((left, right) =>
+    compareRows(left.row, right.row, sortBy),
   );
 }
 
@@ -134,6 +236,6 @@ export function queryRunsResultsIndex(
   return {
     rows: matches.slice(0, query.limit).map((entry) => entry.row),
     totalMatches: matches.length,
-    summary: query.tab === "tests" ? index.summary.tests : index.summary.models,
+    summary: summarize(matches),
   };
 }

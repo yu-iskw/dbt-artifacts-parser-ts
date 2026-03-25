@@ -34,6 +34,8 @@ export interface GanttChartProps {
   testStatsById?: Map<string, ResourceTestStats>;
   /** Whether to render dependency edges. Default: true. */
   showEdges?: boolean;
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }
 
 export function GanttChart({
@@ -43,6 +45,8 @@ export function GanttChart({
   dependencyIndex,
   testStatsById,
   showEdges = true,
+  selectedId = null,
+  onSelect,
 }: GanttChartProps) {
   const theme = useSyncedDocumentTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -113,6 +117,14 @@ export function GanttChart({
   }, [showEdges, dependencyIndex, dataIndexById, data, visStart, visEnd]);
 
   const focusedIds = useMemo(() => {
+    if (selectedId && dependencyIndex?.[selectedId]) {
+      const relation = dependencyIndex[selectedId];
+      return new Set([
+        selectedId,
+        ...relation.upstream.map((d) => d.uniqueId),
+        ...relation.downstream.map((d) => d.uniqueId),
+      ]);
+    }
     if (!hover?.item || !dependencyIndex) return null;
     const relation = dependencyIndex[hover.item.unique_id];
     if (!relation) return new Set([hover.item.unique_id]);
@@ -121,7 +133,7 @@ export function GanttChart({
       ...relation.upstream.map((d) => d.uniqueId),
       ...relation.downstream.map((d) => d.uniqueId),
     ]);
-  }, [dependencyIndex, hover]);
+  }, [dependencyIndex, hover, selectedId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -216,6 +228,9 @@ export function GanttChart({
 
         <div
           className="chart-frame__viewport"
+          role="button"
+          tabIndex={0}
+          aria-label="Timeline chart viewport"
           style={{
             position: "relative",
             height: viewportH,
@@ -234,6 +249,27 @@ export function GanttChart({
               ),
             )
           }
+          onClick={(e) => {
+            const hit = hitTestBar(
+              e,
+              data,
+              scrollTop,
+              maxEnd,
+              effectiveLabelW,
+              canvasRef.current,
+            );
+            if (hit?.item && onSelect) {
+              onSelect(hit.item.unique_id);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (!onSelect) return;
+            if (e.key !== "Enter" && e.key !== " ") return;
+            const targetId = hover?.item.unique_id ?? selectedId;
+            if (!targetId) return;
+            e.preventDefault();
+            onSelect(targetId);
+          }}
           onMouseLeave={() => setHover(null)}
         >
           <div style={{ height: totalScrollH }} />

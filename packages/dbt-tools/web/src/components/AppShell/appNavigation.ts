@@ -1,7 +1,6 @@
 import type {
   AssetViewState,
-  RunsKind,
-  RunsTab,
+  LineageViewState,
   RunsViewState,
   WorkspaceView,
 } from "../AnalysisWorkspace";
@@ -9,86 +8,121 @@ import type {
 export interface SidebarNavigationTarget {
   id: string;
   label: string;
-  view: WorkspaceView;
-  runsTab?: RunsTab;
-  runsKind?: RunsKind;
+  view: Exclude<
+    WorkspaceView,
+    "overview" | "catalog" | "execution" | "quality" | "dependencies" | "search"
+  >;
 }
 
 export interface NavigationSelectionTarget {
   view: WorkspaceView;
-  runsTab?: RunsTab;
-  runsKind?: RunsKind;
 }
 
 export const navigationItems: SidebarNavigationTarget[] = [
-  {
-    id: "overview",
-    view: "overview",
-    label: "Overview",
-  },
-  {
-    id: "assets",
-    view: "catalog",
-    label: "Assets",
-  },
-  {
-    id: "models",
-    view: "runs",
-    label: "Models",
-    runsTab: "results",
-    runsKind: "models",
-  },
-  {
-    id: "tests",
-    view: "runs",
-    label: "Tests",
-    runsTab: "results",
-    runsKind: "tests",
-  },
-  {
-    id: "timeline",
-    view: "runs",
-    label: "Timeline",
-    runsTab: "timeline",
-    runsKind: "models",
-  },
+  { id: "health", view: "health", label: "Health" },
+  { id: "inventory", view: "inventory", label: "Inventory" },
+  { id: "runs", view: "runs", label: "Runs" },
+  { id: "timeline", view: "timeline", label: "Timeline" },
+  { id: "lineage", view: "lineage", label: "Lineage" },
 ];
 
-const VALID_VIEWS = new Set<WorkspaceView>(["overview", "catalog", "runs"]);
-const VALID_RUNS_TABS = new Set<RunsTab>(["results", "timeline"]);
-const VALID_RUNS_KINDS = new Set<RunsKind>(["models", "tests"]);
+const VALID_VIEWS = new Set<WorkspaceView>([
+  "health",
+  "inventory",
+  "runs",
+  "timeline",
+  "lineage",
+  "overview",
+  "catalog",
+  "execution",
+  "quality",
+  "dependencies",
+  "search",
+]);
+
+export function resolveView(raw: string): WorkspaceView {
+  switch (raw) {
+    case "overview":
+      return "health";
+    case "catalog":
+      return "inventory";
+    case "execution":
+    case "quality":
+      return "runs";
+    case "dependencies":
+      return "lineage";
+    case "search":
+      return "inventory";
+    case "runs":
+    case "timeline":
+    case "lineage":
+    case "inventory":
+    case "health":
+      return raw;
+    default:
+      return "health";
+  }
+}
 
 export function parseViewFromSearch(search: string): WorkspaceView | null {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
   if (raw && VALID_VIEWS.has(raw as WorkspaceView)) {
-    return raw as WorkspaceView;
+    if (raw === "runs" && params.get("tab") === "timeline") return "timeline";
+    return resolveView(raw);
   }
   return null;
 }
 
 export function getInitialView(): WorkspaceView {
-  return parseViewFromSearch(window.location.search) ?? "overview";
-}
-
-export function parseRunsTab(search: string): RunsTab | null {
-  const raw = new URLSearchParams(search).get("tab");
-  if (raw && VALID_RUNS_TABS.has(raw as RunsTab)) {
-    return raw as RunsTab;
-  }
-  return null;
-}
-
-export function parseRunsKind(search: string): RunsKind | null {
-  const raw = new URLSearchParams(search).get("kind");
-  if (raw && VALID_RUNS_KINDS.has(raw as RunsKind)) {
-    return raw as RunsKind;
-  }
-  return null;
+  return parseViewFromSearch(window.location.search) ?? "health";
 }
 
 export function parseSelectedResourceId(search: string): string | null {
   return new URLSearchParams(search).get("resource");
+}
+
+export function parseSelectedExecutionId(search: string): string | null {
+  return new URLSearchParams(search).get("selected");
+}
+
+export function parseAssetTab(
+  search: string,
+): AssetViewState["activeTab"] | null {
+  const raw = new URLSearchParams(search).get("assetTab");
+  if (
+    raw === "summary" ||
+    raw === "lineage" ||
+    raw === "sql" ||
+    raw === "runtime" ||
+    raw === "tests"
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+export function parseRunsKind(search: string): RunsViewState["kind"] | null {
+  const raw = new URLSearchParams(search).get("kind");
+  if (
+    raw === "all" ||
+    raw === "models" ||
+    raw === "tests" ||
+    raw === "seeds" ||
+    raw === "snapshots" ||
+    raw === "operations"
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+export function parseLineageLensMode(
+  search: string,
+): LineageViewState["lensMode"] | null {
+  const raw = new URLSearchParams(search).get("lens");
+  if (raw === "status" || raw === "type" || raw === "coverage") return raw;
+  return null;
 }
 
 export const SIDEBAR_STORAGE_KEY = "dbt-tools.sidebarCollapsed";
@@ -106,31 +140,16 @@ export function getInitialSidebarCollapsed(): boolean {
 export function isNavigationTargetActive(
   target: SidebarNavigationTarget,
   activeView: WorkspaceView,
-  _assetViewState: AssetViewState,
-  runsViewState: RunsViewState,
 ): boolean {
-  if (activeView !== target.view) return false;
-  if (target.view === "catalog") {
-    return true;
-  }
-  if (target.view === "runs") {
-    if ((target.runsTab ?? "results") !== runsViewState.tab) return false;
-    if ((target.runsTab ?? "results") === "results") {
-      return (target.runsKind ?? "models") === runsViewState.kind;
-    }
-    return true;
-  }
-  return true;
+  return resolveView(activeView) === target.view;
 }
 
 export function getActiveNavigationItem(
   activeView: WorkspaceView,
-  assetViewState: AssetViewState,
-  runsViewState: RunsViewState,
 ): SidebarNavigationTarget {
   return (
     navigationItems.find((item) =>
-      isNavigationTargetActive(item, activeView, assetViewState, runsViewState),
+      isNavigationTargetActive(item, activeView),
     ) ?? navigationItems[0]
   );
 }

@@ -4,6 +4,7 @@ import type { ExecutionRow } from "@web/types";
 import type {
   DashboardStatusFilter,
   RunsKind,
+  RunsViewState,
 } from "@web/lib/analysis-workspace/types";
 import {
   createRunsResultsIndex,
@@ -20,9 +21,13 @@ interface InitMessage {
 interface QueryMessage {
   type: "query";
   requestId: number;
-  tab: RunsKind;
+  kind: RunsKind;
   status: DashboardStatusFilter;
   query: string;
+  resourceTypes: string[];
+  threadIds: string[];
+  durationBand: RunsViewState["durationBand"];
+  sortBy: RunsViewState["sortBy"];
   limit: number;
 }
 
@@ -38,7 +43,7 @@ interface QueryResultMessage {
   requestId: number;
   rows: ExecutionRow[];
   totalMatches: number;
-  summary: RunsResultsSummary[RunsKind];
+  summary: RunsResultsSummary;
 }
 
 interface ErrorMessage {
@@ -51,10 +56,7 @@ let lastQueryKey: string | null = null;
 let lastMatches: ReturnType<typeof filterRunsResultsIndex> = [];
 
 function postError(message: string) {
-  self.postMessage({
-    type: "error",
-    message,
-  } satisfies ErrorMessage);
+  self.postMessage({ type: "error", message } satisfies ErrorMessage);
 }
 
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
@@ -77,26 +79,103 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   }
 
   const queryKey = [
-    payload.tab,
+    payload.kind,
     payload.status,
     payload.query.trim().toLowerCase(),
+    payload.resourceTypes.sort().join(","),
+    payload.threadIds.sort().join(","),
+    payload.durationBand,
+    payload.sortBy,
   ].join("::");
 
   if (queryKey !== lastQueryKey) {
     lastMatches = filterRunsResultsIndex(index, {
-      tab: payload.tab,
+      kind: payload.kind,
       status: payload.status,
       query: payload.query,
+      resourceTypes: payload.resourceTypes,
+      threadIds: payload.threadIds,
+      durationBand: payload.durationBand,
+      sortBy: payload.sortBy,
     });
     lastQueryKey = queryKey;
   }
 
+  const visibleMatches = lastMatches.slice(0, payload.limit);
   self.postMessage({
     type: "query-result",
     requestId: payload.requestId,
-    rows: lastMatches.slice(0, payload.limit).map((entry) => entry.row),
+    rows: visibleMatches.map((entry) => entry.row),
     totalMatches: lastMatches.length,
-    summary:
-      payload.tab === "tests" ? index.summary.tests : index.summary.models,
+    summary: {
+      status: {
+        all: lastMatches.length,
+        positive: lastMatches.filter(
+          (entry) => entry.row.statusTone === "positive",
+        ).length,
+        warning: lastMatches.filter(
+          (entry) => entry.row.statusTone === "warning",
+        ).length,
+        danger: lastMatches.filter((entry) => entry.row.statusTone === "danger")
+          .length,
+      },
+      facets: {
+        all: lastMatches.length,
+        models: lastMatches.filter((entry) => {
+          const type = entry.row.resourceType;
+          return (
+            type !== "test" &&
+            type !== "unit_test" &&
+            type !== "seed" &&
+            type !== "snapshot" &&
+            type !== "operation" &&
+            type !== "sql_operation" &&
+            type !== "macro"
+          );
+        }).length,
+        tests: lastMatches.filter(
+          (entry) =>
+            entry.row.resourceType === "test" ||
+            entry.row.resourceType === "unit_test",
+        ).length,
+        seeds: lastMatches.filter((entry) => entry.row.resourceType === "seed")
+          .length,
+        snapshots: lastMatches.filter(
+          (entry) => entry.row.resourceType === "snapshot",
+        ).length,
+        operations: lastMatches.filter((entry) =>
+          ["operation", "sql_operation", "macro"].includes(
+            entry.row.resourceType,
+          ),
+        ).length,
+        healthy: lastMatches.filter(
+          (entry) => entry.row.statusTone === "positive",
+        ).length,
+        warnings: lastMatches.filter(
+          (entry) => entry.row.statusTone === "warning",
+        ).length,
+        errors: lastMatches.filter((entry) => entry.row.statusTone === "danger")
+          .length,
+      },
+      resourceTypes: Object.fromEntries(
+        Object.entries(
+          visibleMatches.reduce<Record<string, number>>((acc, entry) => {
+            acc[entry.row.resourceType] =
+              (acc[entry.row.resourceType] ?? 0) + 1;
+            return acc;
+          }, {}),
+        ),
+      ),
+      threadIds: Object.fromEntries(
+        Object.entries(
+          visibleMatches.reduce<Record<string, number>>((acc, entry) => {
+            if (entry.row.threadId) {
+              acc[entry.row.threadId] = (acc[entry.row.threadId] ?? 0) + 1;
+            }
+            return acc;
+          }, {}),
+        ),
+      ),
+    },
   } satisfies QueryResultMessage);
 };

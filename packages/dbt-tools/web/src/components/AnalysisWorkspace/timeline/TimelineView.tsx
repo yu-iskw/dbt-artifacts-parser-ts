@@ -7,24 +7,24 @@ import {
 import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
 import type { AnalysisState, GanttItem } from "@web/types";
-import type { TimelineFilterState } from "@web/lib/analysis-workspace/types";
-import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
+import type {
+  InvestigationSelectionState,
+  TimelineFilterState,
+} from "@web/lib/analysis-workspace/types";
 import {
   deriveProjectName,
   isDefaultTimelineResource,
-  isDefaultTimelineExecution,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { SectionCard } from "../shared";
-import { OverviewActionListCard } from "../views/OverviewView";
+import { SectionCard, WorkspaceScaffold } from "../shared";
 import { TimelineSearchControls } from "../views/ResultsView";
 
 function getDefaultTimelineActiveTypes(presentTypes: string[]): Set<string> {
-  // Exclude macros and test types from the default view
-  const preferredTypes = presentTypes.filter(
-    (type) => type !== "macro" && type !== "test" && type !== "unit_test",
+  return new Set(
+    presentTypes.filter(
+      (type) => type !== "macro" && type !== "test" && type !== "unit_test",
+    ),
   );
-  return new Set(preferredTypes);
 }
 
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
@@ -35,15 +35,93 @@ function setsEqual(left: Set<string>, right: Set<string>): boolean {
   return true;
 }
 
-/** Self-contained timeline view with status + resource-type + name filters. */
+function TimelineSurface({
+  analysis,
+  filters,
+  defaultActiveTypes,
+  effectiveActiveTypes,
+  filteredData,
+  statusCounts,
+  typeCounts,
+  hasActiveFilters,
+  dataIndexById,
+  testStatsById,
+  setFilters,
+  toggleStatus,
+  toggleType,
+  onInvestigationSelectionChange,
+}: {
+  analysis: AnalysisState;
+  filters: TimelineFilterState;
+  defaultActiveTypes: Set<string>;
+  effectiveActiveTypes: Set<string>;
+  filteredData: GanttItem[];
+  statusCounts: Record<string, number>;
+  typeCounts: Record<string, number>;
+  hasActiveFilters: boolean;
+  dataIndexById: Map<string, number>;
+  testStatsById: ReturnType<typeof buildResourceTestStats>;
+  setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+  toggleStatus: (status: string) => void;
+  toggleType: (type: string) => void;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
+}) {
+  return (
+    <SectionCard
+      title="Execution timeline"
+      subtitle="Relative start and duration for each executed node."
+    >
+      <GanttLegend
+        statusCounts={statusCounts}
+        typeCounts={typeCounts}
+        activeStatuses={filters.activeStatuses}
+        activeTypes={effectiveActiveTypes}
+        onToggleStatus={toggleStatus}
+        onToggleType={toggleType}
+      />
+      <TimelineSearchControls
+        filters={filters}
+        defaultActiveTypes={defaultActiveTypes}
+        hasActiveFilters={hasActiveFilters}
+        setFilters={setFilters}
+      />
+      <GanttChart
+        data={filteredData}
+        runStartedAt={analysis.runStartedAt}
+        dataIndexById={dataIndexById}
+        dependencyIndex={analysis.dependencyIndex}
+        testStatsById={testStatsById}
+        selectedId={filters.selectedExecutionId}
+        onSelect={(id) => {
+          setFilters((current) => ({ ...current, selectedExecutionId: id }));
+          onInvestigationSelectionChange((current) => ({
+            ...current,
+            selectedExecutionId: id,
+            selectedResourceId:
+              analysis.resources.find((resource) => resource.uniqueId === id)
+                ?.uniqueId ?? current.selectedResourceId,
+            sourceLens: "timeline",
+          }));
+        }}
+      />
+    </SectionCard>
+  );
+}
+
 export function TimelineView({
   analysis,
   filters,
   setFilters,
+  onInvestigationSelectionChange,
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+  onInvestigationSelectionChange: Dispatch<
+    SetStateAction<InvestigationSelectionState>
+  >;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -61,23 +139,18 @@ export function TimelineView({
       ).sort(),
     [analysis.ganttData, projectName],
   );
-
   const defaultActiveTypes = useMemo(
     () => getDefaultTimelineActiveTypes(presentTypes),
     [presentTypes],
   );
-
   const effectiveActiveTypes =
     filters.activeTypes.size > 0 ? filters.activeTypes : defaultActiveTypes;
 
   function toggleStatus(status: string) {
     setFilters((current) => {
       const next = new Set(current.activeStatuses);
-      if (next.has(status)) {
-        next.delete(status);
-      } else {
-        next.add(status);
-      }
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
       return { ...current, activeStatuses: next };
     });
   }
@@ -87,11 +160,8 @@ export function TimelineView({
       const next = new Set(
         current.activeTypes.size > 0 ? current.activeTypes : defaultActiveTypes,
       );
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
       return { ...current, activeTypes: next };
     });
   }
@@ -131,49 +201,6 @@ export function TimelineView({
       }),
     [
       analysis.ganttData,
-      filters.activeStatuses,
-      filters.activeTypes,
-      deferredQuery,
-      effectiveActiveTypes,
-      projectName,
-    ],
-  );
-
-  const filteredExecutionRows = useMemo(
-    () =>
-      analysis.executions.filter((row) => {
-        if (
-          filters.activeTypes.size === 0 &&
-          !isDefaultTimelineExecution(row, projectName)
-        ) {
-          return false;
-        }
-        if (
-          filters.activeStatuses.size > 0 &&
-          !filters.activeStatuses.has(row.status.toLowerCase())
-        ) {
-          return false;
-        }
-        if (
-          effectiveActiveTypes.size > 0 &&
-          !effectiveActiveTypes.has(row.resourceType)
-        ) {
-          return false;
-        }
-        if (deferredQuery) {
-          const q = deferredQuery.trim().toLowerCase();
-          if (
-            q &&
-            !row.name.toLowerCase().includes(q) &&
-            !row.uniqueId.toLowerCase().includes(q)
-          ) {
-            return false;
-          }
-        }
-        return true;
-      }),
-    [
-      analysis.executions,
       deferredQuery,
       effectiveActiveTypes,
       filters.activeStatuses,
@@ -190,86 +217,53 @@ export function TimelineView({
     () => buildResourceTestStats(analysis.resources, analysis.dependencyIndex),
     [analysis.dependencyIndex, analysis.resources],
   );
-
-  // Counts per status/type (unfiltered) — shared by legend and filter pills.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const item of analysis.ganttData.filter((entry) =>
       isDefaultTimelineResource(entry, projectName),
     )) {
-      const s = item.status.toLowerCase();
-      counts[s] = (counts[s] ?? 0) + 1;
+      const status = item.status.toLowerCase();
+      counts[status] = (counts[status] ?? 0) + 1;
     }
     return counts;
   }, [analysis.ganttData, projectName]);
-
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const item of analysis.ganttData.filter((entry) =>
       isDefaultTimelineResource(entry, projectName),
     )) {
-      if (item.resourceType) {
-        counts[item.resourceType] = (counts[item.resourceType] ?? 0) + 1;
-      }
+      counts[item.resourceType] = (counts[item.resourceType] ?? 0) + 1;
     }
     return counts;
   }, [analysis.ganttData, projectName]);
-
   const hasTypeOverride = !setsEqual(effectiveActiveTypes, defaultActiveTypes);
   const hasActiveFilters =
     filters.activeStatuses.size > 0 ||
     hasTypeOverride ||
     filters.query.length > 0;
+
   return (
-    <div className="workspace-view">
-      <SectionCard
-        title="Execution timeline"
-        subtitle="Relative start and duration for each executed node."
-      >
-        <OverviewActionListCard
-          derived={{
-            ...buildOverviewDerivedState(analysis, {
-              status: "all",
-              resourceTypes: new Set(),
-              query: "",
-            }),
-            filteredExecutions: filteredExecutionRows,
-            filteredExecutionTime: filteredExecutionRows.reduce(
-              (sum, row) => sum + row.executionTime,
-              0,
-            ),
-            topBottlenecks: [...filteredExecutionRows]
-              .sort((a, b) => b.executionTime - a.executionTime)
-              .slice(0, 5),
-          }}
-          title="Bottlenecks"
-          subtitle="Independent runtime hotspots in the current timeline slice."
-        />
-
-        <GanttLegend
-          statusCounts={statusCounts}
-          typeCounts={typeCounts}
-          activeStatuses={filters.activeStatuses}
-          activeTypes={effectiveActiveTypes}
-          onToggleStatus={toggleStatus}
-          onToggleType={toggleType}
-        />
-
-        <TimelineSearchControls
-          filters={filters}
-          defaultActiveTypes={defaultActiveTypes}
-          hasActiveFilters={hasActiveFilters}
-          setFilters={setFilters}
-        />
-
-        <GanttChart
-          data={filteredData}
-          runStartedAt={analysis.runStartedAt}
-          dataIndexById={dataIndexById}
-          dependencyIndex={analysis.dependencyIndex}
-          testStatsById={testStatsById}
-        />
-      </SectionCard>
-    </div>
+    <WorkspaceScaffold
+      title="Timeline"
+      description="Runtime timing, concurrency, bottlenecks, and execution order."
+      className="timeline-view"
+    >
+      <TimelineSurface
+        analysis={analysis}
+        filters={filters}
+        defaultActiveTypes={defaultActiveTypes}
+        effectiveActiveTypes={effectiveActiveTypes}
+        filteredData={filteredData}
+        statusCounts={statusCounts}
+        typeCounts={typeCounts}
+        hasActiveFilters={hasActiveFilters}
+        dataIndexById={dataIndexById}
+        testStatsById={testStatsById}
+        setFilters={setFilters}
+        toggleStatus={toggleStatus}
+        toggleType={toggleType}
+        onInvestigationSelectionChange={onInvestigationSelectionChange}
+      />
+    </WorkspaceScaffold>
   );
 }

@@ -1,20 +1,13 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ExecutionRow } from "@web/types";
-import type {
-  DashboardStatusFilter,
-  ResultsFilterState,
-  RunsKind,
-} from "@web/lib/analysis-workspace/types";
-import type { ResultsStatusCounts } from "@web/lib/analysis-workspace/resultsDataSource";
+import type { RunsViewState } from "@web/lib/analysis-workspace/types";
+import type { RunsResultsSummary } from "@web/lib/analysis-workspace/resultsDataSource";
 
 const RESULTS_BATCH_SIZE = 100;
 
 type WorkerReadyMessage = {
   type: "ready";
-  summary: {
-    models: ResultsStatusCounts;
-    tests: ResultsStatusCounts;
-  };
+  summary: RunsResultsSummary;
 };
 
 type WorkerQueryResultMessage = {
@@ -22,7 +15,7 @@ type WorkerQueryResultMessage = {
   requestId: number;
   rows: ExecutionRow[];
   totalMatches: number;
-  summary: ResultsStatusCounts;
+  summary: RunsResultsSummary;
 };
 
 type WorkerErrorMessage = {
@@ -35,12 +28,22 @@ type WorkerResponse =
   | WorkerQueryResultMessage
   | WorkerErrorMessage;
 
-function emptyCounts(): ResultsStatusCounts {
+function emptySummary(): RunsResultsSummary {
   return {
-    all: 0,
-    positive: 0,
-    warning: 0,
-    danger: 0,
+    status: { all: 0, positive: 0, warning: 0, danger: 0 },
+    facets: {
+      all: 0,
+      models: 0,
+      tests: 0,
+      seeds: 0,
+      snapshots: 0,
+      operations: 0,
+      healthy: 0,
+      warnings: 0,
+      errors: 0,
+    },
+    resourceTypes: {},
+    threadIds: {},
   };
 }
 
@@ -48,7 +51,7 @@ export interface RunsResultsSourceState {
   rows: ExecutionRow[];
   totalMatches: number;
   totalVisible: number;
-  counts: ResultsStatusCounts;
+  summary: RunsResultsSummary;
   hasMore: boolean;
   isIndexing: boolean;
   isLoading: boolean;
@@ -58,8 +61,7 @@ export interface RunsResultsSourceState {
 
 export function useRunsResultsSource(
   allRows: ExecutionRow[],
-  tab: RunsKind,
-  filters: ResultsFilterState,
+  viewState: RunsViewState,
   enabled = true,
 ): RunsResultsSourceState {
   const workerRef = useRef<Worker | null>(null);
@@ -68,17 +70,23 @@ export function useRunsResultsSource(
   const [revealedCount, setRevealedCount] = useState(RESULTS_BATCH_SIZE);
   const [rows, setRows] = useState<ExecutionRow[]>([]);
   const [totalMatches, setTotalMatches] = useState(0);
-  const [counts, setCounts] = useState<ResultsStatusCounts>(emptyCounts);
+  const [summary, setSummary] = useState<RunsResultsSummary>(emptySummary);
   const [isIndexing, setIsIndexing] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const deferredQuery = useDeferredValue(filters.query);
 
   useEffect(() => {
     setRevealedCount(RESULTS_BATCH_SIZE);
-    setRows([]);
-    setTotalMatches(0);
-  }, [tab, filters.status, deferredQuery, allRows]);
+  }, [
+    viewState.kind,
+    viewState.status,
+    viewState.query,
+    viewState.durationBand,
+    viewState.sortBy,
+    viewState.resourceTypes,
+    viewState.threadIds,
+    allRows,
+  ]);
 
   useEffect(() => {
     if (!enabled) {
@@ -87,10 +95,11 @@ export function useRunsResultsSource(
       setIsLoading(false);
       setRows([]);
       setTotalMatches(0);
-      setCounts(emptyCounts());
+      setSummary(emptySummary());
       setError(null);
       return;
     }
+
     const worker = new Worker(
       new URL("../workers/resultsQuery.worker.ts", import.meta.url),
       { type: "module" },
@@ -98,9 +107,9 @@ export function useRunsResultsSource(
     workerRef.current = worker;
     setReady(false);
     setIsIndexing(true);
-    setIsLoading(false);
     setRows([]);
     setTotalMatches(0);
+    setSummary(emptySummary());
     setError(null);
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -108,14 +117,14 @@ export function useRunsResultsSource(
       if (payload.type === "ready") {
         setReady(true);
         setIsIndexing(false);
-        setCounts(payload.summary[tab]);
+        setSummary(payload.summary);
         return;
       }
       if (payload.type === "query-result") {
         if (payload.requestId !== requestIdRef.current) return;
         setRows(payload.rows);
         setTotalMatches(payload.totalMatches);
-        setCounts(payload.summary);
+        setSummary(payload.summary);
         setIsLoading(false);
         return;
       }
@@ -124,16 +133,13 @@ export function useRunsResultsSource(
       setIsLoading(false);
     };
 
-    worker.postMessage({
-      type: "init",
-      rows: allRows,
-    });
+    worker.postMessage({ type: "init", rows: allRows });
 
     return () => {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [allRows, enabled, tab]);
+  }, [allRows, enabled]);
 
   useEffect(() => {
     if (!enabled || !ready || workerRef.current == null) return;
@@ -144,27 +150,30 @@ export function useRunsResultsSource(
     workerRef.current.postMessage({
       type: "query",
       requestId,
-      tab,
-      status: filters.status as DashboardStatusFilter,
-      query: deferredQuery,
+      kind: viewState.kind,
+      status: viewState.status,
+      query: viewState.query,
+      resourceTypes: Array.from(viewState.resourceTypes),
+      threadIds: Array.from(viewState.threadIds),
+      durationBand: viewState.durationBand,
+      sortBy: viewState.sortBy,
       limit: revealedCount,
     });
-  }, [deferredQuery, enabled, filters.status, ready, revealedCount, tab]);
+  }, [enabled, ready, revealedCount, viewState]);
 
   return useMemo(
     () => ({
       rows,
       totalMatches,
       totalVisible: rows.length,
-      counts,
+      summary,
       hasMore: rows.length < totalMatches,
       isIndexing,
       isLoading,
       error,
-      loadMore: () => {
-        setRevealedCount((current) => current + RESULTS_BATCH_SIZE);
-      },
+      loadMore: () =>
+        setRevealedCount((current) => current + RESULTS_BATCH_SIZE),
     }),
-    [rows, totalMatches, counts, isIndexing, isLoading, error],
+    [rows, totalMatches, summary, isIndexing, isLoading, error],
   );
 }

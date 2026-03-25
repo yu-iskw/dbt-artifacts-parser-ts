@@ -42,14 +42,17 @@ export async function mockPreload(page: Page) {
 export async function loadWorkspace(page: Page) {
   await registerApiMocksOnPage(page);
   await page.goto("/");
+  const workspaceNav = page.getByRole("navigation", {
+    name: "Workspace sections",
+  });
   await expect(
-    page.getByRole("button", { name: "Overview", exact: true }),
+    workspaceNav.getByRole("button", { name: "Health" }),
   ).toBeEnabled({
     timeout: 30_000,
   });
-  await expect(
-    page.getByRole("heading", { name: "Overview" }).first(),
-  ).toBeVisible({
-    timeout: 10_000,
-  });
+  await expect(page.getByRole("main").getByRole("heading").first()).toBeVisible(
+    {
+      timeout: 10_000,
+    },
+  );
 }

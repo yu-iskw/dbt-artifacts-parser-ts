@@ -378,3 +378,11 @@ export function findNodeByLeafResourceId(
   }
   return null;
 }
+
+export function collectAncestorBranchIdsForResource(
+  nodes: ExplorerTreeNode[],
+  resourceId: string | null,
+): Set<string> {
+  const node = findNodeByLeafResourceId(nodes, resourceId);
+  return new Set(node?.parentIds ?? []);
+}
