@@ -1,11 +1,13 @@
 import type { CSSProperties } from "react";
 import {
-  RESOURCE_TYPE_COLORS,
   STATUS_COLORS,
   getResourceTypeColor,
   getStatusColor,
 } from "@web/constants/colors";
-import { getThemeHex } from "@web/constants/themeColors";
+import {
+  getResourceTypeSoftFill,
+  getThemeHex,
+} from "@web/constants/themeColors";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 
 interface GanttLegendProps {
@@ -33,6 +35,10 @@ interface GanttLegendProps {
   /** Draw all direct downstream edges when focused (vs ranked cap). Requires Dependents. */
   showAllTimelineDownstreamEdges?: boolean;
   onToggleShowAllTimelineDownstreamEdges?: () => void;
+  /** Explain bar fill (resource type) vs border (status). */
+  showBarEncodingKey?: boolean;
+  /** Show compile vs execute phase swatches when run_results include both phases. */
+  showCompileExecuteLegend?: boolean;
 }
 
 const SWATCH_STYLE: CSSProperties = {
@@ -46,6 +52,77 @@ const SWATCH_STYLE: CSSProperties = {
 const LEGEND_ITEM_ACTIVE_CLASS = " gantt-legend__item--active";
 
 type ThemeHex = ReturnType<typeof getThemeHex>;
+
+function GanttBarEncodingKey({
+  theme,
+  themeHex,
+  showCompileExecuteLegend,
+}: {
+  theme: "light" | "dark";
+  themeHex: ThemeHex;
+  showCompileExecuteLegend?: boolean;
+}) {
+  const typeFill = getResourceTypeSoftFill("model", theme);
+  const statusStroke = getStatusColor("success", theme);
+  return (
+    <div className="gantt-legend__group gantt-legend__group--bar-key">
+      <span className="gantt-legend__label">Bars</span>
+      <div className="gantt-legend__bar-key-row">
+        <span
+          className="gantt-legend__bar-key-swatch"
+          style={{
+            background: typeFill,
+            border: `2px solid ${themeHex.borderDefault}`,
+            borderRadius: 3,
+          }}
+          title="Bar fill follows resource type"
+          aria-hidden
+        />
+        <span className="gantt-legend__bar-key-caption">Fill = type</span>
+        <span
+          className="gantt-legend__bar-key-swatch"
+          style={{
+            background: themeHex.bgSoft,
+            border: `2px solid ${statusStroke}`,
+            borderRadius: 3,
+          }}
+          title="Bar outline follows run status"
+          aria-hidden
+        />
+        <span className="gantt-legend__bar-key-caption">Border = status</span>
+      </div>
+      {showCompileExecuteLegend ? (
+        <div className="gantt-legend__bar-key-row gantt-legend__bar-key-row--phases">
+          <span
+            className="gantt-legend__bar-key-swatch"
+            style={{
+              background:
+                theme === "dark"
+                  ? "rgba(0, 0, 0, 0.24)"
+                  : "rgba(0, 0, 0, 0.12)",
+              border: `1px solid ${themeHex.borderDefault}`,
+              borderRadius: 2,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__bar-key-caption">
+            Compile (darker)
+          </span>
+          <span
+            className="gantt-legend__bar-key-swatch"
+            style={{
+              background: typeFill,
+              border: `1px solid ${themeHex.borderDefault}`,
+              borderRadius: 2,
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__bar-key-caption">Execute</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function TimelineGraphLegendToggles({
   themeHex,
@@ -261,15 +338,17 @@ export function GanttLegend({
   onToggleShowAllTimelineUpstreamEdges,
   showAllTimelineDownstreamEdges,
   onToggleShowAllTimelineDownstreamEdges,
+  showBarEncodingKey = true,
+  showCompileExecuteLegend = false,
 }: GanttLegendProps) {
   const theme = useSyncedDocumentTheme();
   const themeHex = getThemeHex(theme);
   const visibleStatuses = Object.keys(STATUS_COLORS).filter(
     (s) => (statusCounts[s] ?? 0) > 0,
   );
-  const visibleTypes = Object.keys(RESOURCE_TYPE_COLORS).filter(
-    (t) => (typeCounts[t] ?? 0) > 0,
-  );
+  const visibleTypes = Object.keys(typeCounts)
+    .filter((t) => (typeCounts[t] ?? 0) > 0)
+    .sort((a, b) => a.localeCompare(b));
 
   const hasAnything =
     visibleStatuses.length > 0 ||
@@ -284,6 +363,13 @@ export function GanttLegend({
 
   return (
     <div className="gantt-legend">
+      {showBarEncodingKey ? (
+        <GanttBarEncodingKey
+          theme={theme}
+          themeHex={themeHex}
+          showCompileExecuteLegend={showCompileExecuteLegend}
+        />
+      ) : null}
       {visibleStatuses.length > 0 && (
         <div className="gantt-legend__group">
           <span className="gantt-legend__label">Status</span>

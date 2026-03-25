@@ -36,8 +36,8 @@ export function GanttChartFrame({
   onHoverClear,
   dependencyEdgeHint,
 }: {
-  canvasRef: RefObject<HTMLCanvasElement | null>;
-  scrollRef: RefObject<HTMLDivElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement>;
+  scrollRef: RefObject<HTMLDivElement>;
   edges: FocusTimelineEdge[];
   edgeFocusId: string | null;
   itemById: Map<string, GanttItem>;

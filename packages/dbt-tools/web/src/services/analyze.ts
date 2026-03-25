@@ -1,5 +1,6 @@
 import type {
   AnalysisState,
+  GanttItem,
   MetricDefinition,
   ResourceDefinition,
   SemanticModelDefinition,
@@ -49,6 +50,12 @@ function statusLabel(status: string | null | undefined): string {
  * Used as a fallback when the node is absent from the manifest graph (e.g.
  * slight manifest/run_results version mismatch).
  */
+function inferPackageNameFromUniqueId(uniqueId: string): string {
+  const parts = uniqueId.split(".");
+  if (parts.length < 2) return "";
+  return parts[1] ?? "";
+}
+
 function inferResourceTypeFromId(uniqueId: string): string {
   const prefix = uniqueId.split(".")[0] ?? "";
   const KNOWN = new Set([
@@ -58,6 +65,7 @@ function inferResourceTypeFromId(uniqueId: string): string {
     "seed",
     "snapshot",
     "source",
+    "source_freshness",
     "exposure",
     "metric",
     "semantic_model",
@@ -302,6 +310,92 @@ function buildResourceGroups(resources: AnalysisState["resources"]) {
     }));
 }
 
+type GraphologyAttrsGraph = {
+  hasNode(nodeId: string): boolean;
+  getNodeAttributes(nodeId: string): Record<string, unknown> | undefined;
+};
+
+function resolveTestParentFromManifest(
+  graph: GraphLike,
+  graphologyGraph: GraphologyAttrsGraph,
+  testUniqueId: string,
+): string | null {
+  const upstream = graph.getUpstream(testUniqueId);
+  const direct = upstream.filter((u) => u.depth === 1);
+  const candidates = direct.length > 0 ? direct : upstream;
+  for (const u of candidates) {
+    const uAttrs = graphologyGraph.hasNode(u.nodeId)
+      ? graphologyGraph.getNodeAttributes(u.nodeId)
+      : undefined;
+    const uType = String(uAttrs?.resource_type ?? "");
+    if (uType !== "test" && uType !== "unit_test" && uType !== "") {
+      return u.nodeId;
+    }
+  }
+  return null;
+}
+
+function manifestDisplayPath(
+  attrs: Record<string, unknown> | undefined,
+): string | null {
+  if (typeof attrs?.original_file_path === "string") {
+    return attrs.original_file_path;
+  }
+  if (typeof attrs?.path === "string") {
+    return attrs.path;
+  }
+  return null;
+}
+
+function enrichGanttItemRow(
+  item: {
+    unique_id: string;
+    name: string;
+    start: number;
+    end: number;
+    duration: number;
+    status: string;
+    compileStart?: number | null;
+    compileEnd?: number | null;
+    executeStart?: number | null;
+    executeEnd?: number | null;
+  },
+  graph: GraphLike,
+  graphologyGraph: GraphologyAttrsGraph,
+): GanttItem {
+  const attrs = graphologyGraph.hasNode(item.unique_id)
+    ? graphologyGraph.getNodeAttributes(item.unique_id)
+    : undefined;
+  const rtRaw = attrs?.resource_type;
+  const resourceType =
+    typeof rtRaw === "string" && rtRaw
+      ? rtRaw
+      : inferResourceTypeFromId(item.unique_id);
+
+  const parentId =
+    resourceType === "test" || resourceType === "unit_test"
+      ? resolveTestParentFromManifest(graph, graphologyGraph, item.unique_id)
+      : null;
+
+  const pkg =
+    typeof attrs?.package_name === "string" && attrs.package_name.length > 0
+      ? attrs.package_name
+      : inferPackageNameFromUniqueId(item.unique_id);
+
+  const mat = attrs?.materialized;
+  const materialized =
+    typeof mat === "string" && mat.trim() !== "" ? mat : null;
+
+  return {
+    ...item,
+    resourceType,
+    packageName: pkg,
+    path: manifestDisplayPath(attrs),
+    parentId,
+    materialized,
+  };
+}
+
 function buildStatusBreakdown(
   summary: { nodes_by_status: Record<string, number>; total_nodes: number },
   nodeExecutions: Array<{ status?: string; execution_time?: number }>,
@@ -440,55 +534,16 @@ export async function analyzeArtifacts(
 
   // Enrich each GanttItem with its resource_type, packageName, path, and
   // parentId (for test nodes) from the manifest graph.
-  const enrichedGanttData = ganttData.map((item) => {
-    const attrs = graphologyGraph.hasNode(item.unique_id)
-      ? graphologyGraph.getNodeAttributes(item.unique_id)
-      : undefined;
-    const rtRaw = attrs?.resource_type;
-    const resourceType =
-      typeof rtRaw === "string" && rtRaw
-        ? rtRaw
-        : inferResourceTypeFromId(item.unique_id);
-
-    // Resolve parent for test nodes via the manifest graph upstream edges.
-    // Tests reference their tested node via depends_on.nodes (depth=1 upstream).
-    let parentId: string | null = null;
-    if (resourceType === "test" || resourceType === "unit_test") {
-      const upstream = (graph as unknown as GraphLike).getUpstream(
-        item.unique_id,
-      );
-      // Prefer depth-1 (direct) upstream; fall back to any depth.
-      const direct = upstream.filter((u) => u.depth === 1);
-      const candidates = direct.length > 0 ? direct : upstream;
-      for (const u of candidates) {
-        const uAttrs = graphologyGraph.hasNode(u.nodeId)
-          ? graphologyGraph.getNodeAttributes(u.nodeId)
-          : undefined;
-        const uType = String(uAttrs?.resource_type ?? "");
-        if (uType !== "test" && uType !== "unit_test" && uType !== "") {
-          parentId = u.nodeId;
-          break;
-        }
-      }
-    }
-
-    return {
-      ...item,
-      resourceType,
-      packageName:
-        typeof attrs?.package_name === "string" ? attrs.package_name : "",
-      path:
-        typeof attrs?.original_file_path === "string"
-          ? attrs.original_file_path
-          : typeof attrs?.path === "string"
-            ? attrs.path
-            : null,
-      parentId,
-    };
-  });
+  const enrichedGanttData = ganttData.map((item) =>
+    enrichGanttItemRow(
+      item,
+      graph as unknown as GraphLike,
+      graphologyGraph as GraphologyAttrsGraph,
+    ),
+  );
 
   const timelineAdjacency = buildTimelineAdjacency(
-    graphologyGraph as NeighborGraph,
+    graphologyGraph as unknown as NeighborGraph,
     enrichedGanttData.map((g) => g.unique_id),
   );
 
@@ -504,7 +559,11 @@ export async function analyzeArtifacts(
         resourceType: String(
           attrs?.resource_type || inferResourceTypeFromId(execution.unique_id),
         ),
-        packageName: String(attrs?.package_name || ""),
+        packageName: (() => {
+          const p = attrs?.package_name;
+          if (typeof p === "string" && p.length > 0) return p;
+          return inferPackageNameFromUniqueId(execution.unique_id);
+        })(),
         path:
           typeof attrs?.original_file_path === "string"
             ? attrs.original_file_path

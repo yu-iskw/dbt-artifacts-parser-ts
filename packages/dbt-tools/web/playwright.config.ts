@@ -20,7 +20,9 @@ export default defineConfig({
   webServer: {
     command: `./node_modules/.bin/vite preview --host 127.0.0.1 --port ${e2ePort}`,
     url: e2eOrigin,
-    reuseExistingServer: !process.env.CI,
+    // Prefer GITHUB_ACTIONS over CI: some environments set CI=1 for other tooling,
+    // which would forbid reuse and collide with an already-running `vite preview`.
+    reuseExistingServer: process.env.GITHUB_ACTIONS !== "true",
     timeout: 120_000,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

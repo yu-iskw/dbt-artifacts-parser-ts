@@ -83,6 +83,20 @@ function TimelineSurface({
     SetStateAction<InvestigationSelectionState>
   >;
 }) {
+  const showCompileExecuteLegend = useMemo(
+    () =>
+      analysis.ganttData.some(
+        (g) =>
+          g.compileStart != null &&
+          g.compileEnd != null &&
+          g.compileEnd > g.compileStart &&
+          g.executeStart != null &&
+          g.executeEnd != null &&
+          g.executeEnd > g.executeStart,
+      ),
+    [analysis.ganttData],
+  );
+
   return (
     <SectionCard
       title="Execution timeline"
@@ -124,6 +138,7 @@ function TimelineSurface({
             showAllTimelineDownstreamEdges: !c.showAllTimelineDownstreamEdges,
           }))
         }
+        showCompileExecuteLegend={showCompileExecuteLegend}
       />
       <TimelineSearchControls
         filters={filters}

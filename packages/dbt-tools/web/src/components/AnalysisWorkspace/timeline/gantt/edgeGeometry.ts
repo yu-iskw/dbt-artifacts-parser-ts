@@ -46,6 +46,7 @@ function isSiblingTestDownstream(
 const UPSTREAM_RESOURCE_RANK: Record<string, number> = {
   model: 0,
   source: 1,
+  source_freshness: 1,
   snapshot: 2,
   seed: 3,
   exposure: 4,

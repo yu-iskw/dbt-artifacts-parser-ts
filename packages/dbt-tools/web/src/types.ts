@@ -22,6 +22,14 @@ export interface GanttItem {
    * manifest graph. null for non-test resources or when parentage is ambiguous.
    */
   parentId: string | null;
+  /** Relative ms from run start; absent or null when compile timing is missing in run_results. */
+  compileStart?: number | null;
+  compileEnd?: number | null;
+  /** Relative ms from run start; absent or null when execute timing is missing in run_results. */
+  executeStart?: number | null;
+  executeEnd?: number | null;
+  /** Model `config.materialized` from manifest when present. */
+  materialized?: string | null;
 }
 
 export type StatusTone = "positive" | "warning" | "danger" | "neutral";

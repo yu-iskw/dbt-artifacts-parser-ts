@@ -43,6 +43,11 @@ describe("analyzeArtifacts", () => {
       expect(
         Array.isArray(result.timelineAdjacency[row.unique_id]!.outbound),
       ).toBe(true);
+      expect(row).toHaveProperty("compileStart");
+      expect(row).toHaveProperty("compileEnd");
+      expect(row).toHaveProperty("executeStart");
+      expect(row).toHaveProperty("executeEnd");
+      expect(row).toHaveProperty("materialized");
     }
     const anyInbound = result.ganttData.some(
       (g) => (result.timelineAdjacency[g.unique_id]?.inbound.length ?? 0) > 0,

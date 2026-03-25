@@ -71,6 +71,12 @@ export class ManifestGraph {
       const resourceType = this.extractResourceType(
         (nodeAny.resource_type as string) || "model",
       );
+      const config = nodeAny.config as Record<string, unknown> | undefined;
+      const materializedRaw = config?.materialized;
+      const materialized =
+        typeof materializedRaw === "string" && materializedRaw.trim() !== ""
+          ? materializedRaw
+          : undefined;
       this.graph.addNode(uniqueId, {
         unique_id: uniqueId,
         resource_type: resourceType,
@@ -88,6 +94,7 @@ export class ManifestGraph {
           (nodeAny.raw_code as string) ||
           (nodeAny.raw_sql as string) ||
           undefined,
+        ...(materialized != null ? { materialized } : {}),
       });
       if (nodeAny.relation_name) {
         this.relationMap.set(

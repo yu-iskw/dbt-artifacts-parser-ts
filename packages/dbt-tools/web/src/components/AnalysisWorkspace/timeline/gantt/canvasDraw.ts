@@ -1,5 +1,9 @@
-import { getResourceTypeColor, getStatusColor } from "@web/constants/colors";
-import { type ThemeMode, getCanvasColors } from "@web/constants/themeColors";
+import { getStatusColor } from "@web/constants/colors";
+import {
+  type ThemeMode,
+  getCanvasColors,
+  getResourceTypeSoftFill,
+} from "@web/constants/themeColors";
 import type { GanttItem, ResourceTestStats } from "@web/types";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import {
@@ -59,6 +63,18 @@ export function fillRoundRect(
 ) {
   roundRectPath(ctx, x, y, w, h, r);
   ctx.fill();
+}
+
+function strokeRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.stroke();
 }
 
 type CanvasPalette = ReturnType<typeof getCanvasColors>;
@@ -171,13 +187,32 @@ function drawRowBar({
   const barY = rowY + BAR_PAD;
   const barX = labelW + (item.start / maxEnd) * chartW;
   const barW = Math.max(2, (item.duration / maxEnd) * chartW);
+  const radius = 3;
 
+  ctx.save();
   ctx.globalAlpha = emphasis;
-  ctx.fillStyle = getStatusColor(item.status, theme);
-  fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
+  ctx.fillStyle = getResourceTypeSoftFill(item.resourceType, theme);
+  fillRoundRect(ctx, barX, barY, barW, BAR_H, radius);
 
-  ctx.fillStyle = getResourceTypeColor(item.resourceType, theme);
-  ctx.fillRect(barX, barY, 3, BAR_H);
+  const cs = item.compileStart;
+  const ce = item.compileEnd;
+  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  if (hasCompile) {
+    const compileX = labelW + (cs / maxEnd) * chartW;
+    const compileEndX = labelW + (ce / maxEnd) * chartW;
+    const segLeft = Math.max(barX, compileX);
+    const segRight = Math.min(barX + barW, compileEndX);
+    const segW = segRight - segLeft;
+    if (segW > 0.5) {
+      ctx.save();
+      roundRectPath(ctx, barX, barY, barW, BAR_H, radius);
+      ctx.clip();
+      ctx.fillStyle =
+        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(segLeft, barY, segW, BAR_H);
+      ctx.restore();
+    }
+  }
 
   if (
     attachedTestStats &&
@@ -188,13 +223,19 @@ function drawRowBar({
     fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
   }
 
+  ctx.strokeStyle = getStatusColor(item.status, theme);
+  ctx.lineWidth = 2;
+  strokeRoundRect(ctx, barX, barY, barW, BAR_H, radius);
+  ctx.restore();
+
   if (isHovered) {
+    ctx.save();
     ctx.globalAlpha = 1;
     ctx.strokeStyle = palette.barHoverStroke;
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(barX - 0.5, barY - 0.5, barW + 1, BAR_H + 1);
+    strokeRoundRect(ctx, barX, barY, barW, BAR_H, radius);
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,31 +270,61 @@ function drawTestChip({
   const chipX = labelW + (test.start / maxEnd) * chartW;
   const chipW = Math.max(MIN_CHIP_W, (test.duration / maxEnd) * chartW);
   const chipH = TEST_BAR_H;
+  const radius = 2;
 
+  ctx.save();
   ctx.globalAlpha = emphasis;
-  ctx.fillStyle = getStatusColor(test.status, theme);
-  fillRoundRect(ctx, chipX, chipY, chipW, chipH, 2);
+  ctx.fillStyle = getResourceTypeSoftFill(test.resourceType, theme);
+  fillRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
+
+  const cs = test.compileStart;
+  const ce = test.compileEnd;
+  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  if (hasCompile) {
+    const compileX = labelW + (cs / maxEnd) * chartW;
+    const compileEndX = labelW + (ce / maxEnd) * chartW;
+    const segLeft = Math.max(chipX, compileX);
+    const segRight = Math.min(chipX + chipW, compileEndX);
+    const segW = segRight - segLeft;
+    if (segW > 0.5) {
+      ctx.save();
+      roundRectPath(ctx, chipX, chipY, chipW, chipH, radius);
+      ctx.clip();
+      ctx.fillStyle =
+        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(segLeft, chipY, segW, chipH);
+      ctx.restore();
+    }
+  }
+
+  ctx.strokeStyle = getStatusColor(test.status, theme);
+  ctx.lineWidth = 1.5;
+  strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
+  ctx.restore();
 
   // Label inside chip when wide enough
   if (chipW >= 40) {
     ctx.save();
+    ctx.globalAlpha = emphasis;
     ctx.beginPath();
     ctx.rect(chipX + 2, chipY, chipW - 4, chipH);
     ctx.clip();
     ctx.font = '9px "IBM Plex Sans", "Avenir Next", sans-serif';
     ctx.fillStyle = palette.labelText;
     ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
     ctx.fillText(test.name, chipX + 2, chipY + chipH / 2);
     ctx.restore();
   }
 
   if (isHovered) {
+    ctx.save();
     ctx.globalAlpha = 1;
     ctx.strokeStyle = palette.barHoverStroke;
     ctx.lineWidth = 1;
-    ctx.strokeRect(chipX - 0.5, chipY - 0.5, chipW + 1, chipH + 1);
+    strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
 }
 
 // ---------------------------------------------------------------------------

@@ -86,4 +86,40 @@ describe("isDefaultTimelineResource", () => {
     expect(
       isDefaultTimelineResource(makeResource({ resourceType: "model" })),
     ).toBe(true));
+  it("true for seed in project package", () =>
+    expect(
+      isDefaultTimelineResource(
+        {
+          resourceType: "seed",
+          packageName: "jaffle_shop",
+          name: "raw_customers",
+          path: null,
+        },
+        "jaffle_shop",
+      ),
+    ).toBe(true));
+  it("true for source in project package", () =>
+    expect(
+      isDefaultTimelineResource(
+        {
+          resourceType: "source",
+          packageName: "jaffle_shop",
+          name: "orders",
+          path: null,
+        },
+        "jaffle_shop",
+      ),
+    ).toBe(true));
+  it("true for source_freshness in project package", () =>
+    expect(
+      isDefaultTimelineResource(
+        {
+          resourceType: "source_freshness",
+          packageName: "jaffle_shop",
+          name: "freshness",
+          path: null,
+        },
+        "jaffle_shop",
+      ),
+    ).toBe(true));
 });

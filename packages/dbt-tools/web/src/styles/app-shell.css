@@ -1289,6 +1289,37 @@
   color: var(--text-soft);
 }
 
+.gantt-legend__group--bar-key {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  flex-basis: 100%;
+}
+
+.gantt-legend__bar-key-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.gantt-legend__bar-key-row--phases {
+  margin-top: 0.1rem;
+}
+
+.gantt-legend__bar-key-swatch {
+  width: 14px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.gantt-legend__bar-key-caption {
+  margin-right: 0.35rem;
+}
+
 .timeline-large-dataset-hint {
   font-size: 0.85rem;
   color: var(--text-soft);
