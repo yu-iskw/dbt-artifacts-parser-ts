@@ -132,6 +132,25 @@ describe("ManifestGraph", () => {
         expect(hasEdges).toBe(true);
       }
     });
+
+    it("merges parent_map with node depends_on so incomplete parent_map does not drop refs", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const raw = structuredClone(manifestJson) as Record<string, unknown>;
+      const testId =
+        "test.jaffle_shop.relationships_stg_order_items_order_id__order_id__ref_stg_orders_.dbe9930c54";
+      const parentMap = raw.parent_map as Record<string, string[]>;
+      expect(parentMap[testId]?.length).toBeGreaterThanOrEqual(1);
+      // Simulate manifests where parent_map lists fewer parents than depends_on.nodes
+      parentMap[testId] = ["model.jaffle_shop.stg_order_items"];
+
+      const manifest = parseManifest(raw);
+      const graph = new ManifestGraph(manifest);
+      const g = graph.getGraph();
+      const inbound = [...g.inboundNeighbors(testId)];
+
+      expect(inbound).toContain("model.jaffle_shop.stg_order_items");
+      expect(inbound).toContain("model.jaffle_shop.stg_orders");
+    });
   });
 
   describe("getSummary", () => {

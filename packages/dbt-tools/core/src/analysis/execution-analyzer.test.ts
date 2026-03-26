@@ -262,5 +262,71 @@ describe("ExecutionAnalyzer", () => {
 
       expect(ganttData).toEqual([]);
     });
+
+    it("should emit compile and execute phase bounds relative to run start", () => {
+      const runResultsJson = {
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "model.pkg.a",
+            status: "success",
+            execution_time: 2.5,
+            timing: [
+              {
+                name: "compile",
+                started_at: "2024-01-01T00:00:00.000Z",
+                completed_at: "2024-01-01T00:00:01.000Z",
+              },
+              {
+                name: "execute",
+                started_at: "2024-01-01T00:00:01.000Z",
+                completed_at: "2024-01-01T00:00:03.000Z",
+              },
+            ],
+          },
+          {
+            unique_id: "model.pkg.b",
+            status: "success",
+            execution_time: 1,
+            timing: [
+              {
+                name: "execute",
+                started_at: "2024-01-01T00:00:04.000Z",
+                completed_at: "2024-01-01T00:00:05.000Z",
+              },
+            ],
+          },
+        ],
+      };
+      const runResults = parseRunResults(
+        runResultsJson as Record<string, unknown>,
+      );
+
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const analyzer = new ExecutionAnalyzer(runResults, graph);
+      const ganttData = analyzer.getGanttData();
+
+      const a = ganttData.find((g) => g.unique_id === "model.pkg.a");
+      expect(a).toBeDefined();
+      expect(a!.start).toBe(0);
+      expect(a!.duration).toBe(3000);
+      expect(a!.compileStart).toBe(0);
+      expect(a!.compileEnd).toBe(1000);
+      expect(a!.executeStart).toBe(1000);
+      expect(a!.executeEnd).toBe(3000);
+
+      const b = ganttData.find((g) => g.unique_id === "model.pkg.b");
+      expect(b).toBeDefined();
+      expect(b!.compileStart).toBeNull();
+      expect(b!.compileEnd).toBeNull();
+      expect(b!.executeStart).toBe(4000);
+      expect(b!.executeEnd).toBe(5000);
+    });
   });
 });

@@ -90,17 +90,11 @@
   flex-wrap: wrap;
 }
 
-.gantt-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 .gantt-controls__cluster {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.6rem;
 }
 
@@ -1287,6 +1281,142 @@
 .gantt-legend__count {
   font-size: 0.72rem;
   color: var(--text-soft);
+}
+
+.gantt-legend__group--bar-key {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  flex-basis: 100%;
+}
+
+.gantt-legend__bar-key-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.gantt-legend__bar-key-row--phases {
+  margin-top: 0.1rem;
+}
+
+.gantt-legend__bar-key-swatch {
+  width: 14px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.gantt-legend__bar-key-caption {
+  margin-right: 0.35rem;
+}
+
+.timeline-large-dataset-hint {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin: 0 0 0.75rem;
+  line-height: 1.35;
+}
+
+.timeline-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.timeline-toolbar__search {
+  flex: 1 1 18rem;
+}
+
+.timeline-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.timeline-toolbar__hint {
+  margin: 0;
+  max-width: 40rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-soft);
+  text-align: right;
+}
+
+.timeline-dependency-controls {
+  margin-bottom: 0.75rem;
+  padding-block: 0.65rem;
+}
+
+.timeline-dependency-controls.gantt-legend {
+  gap: 0;
+  align-items: center;
+}
+
+.timeline-dependency-controls__top-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+}
+
+.timeline-dependency-controls__zone {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.timeline-dependency-controls__zone--direction {
+  flex: 1 1 24rem;
+}
+
+.timeline-dependency-controls__divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-default);
+}
+
+.timeline-dependency-controls__stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timeline-dependency-controls__stepper .workspace-pill,
+.timeline-dependency-controls__max-button {
+  min-width: 2.3rem;
+  min-height: 2.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.8rem;
+}
+
+.timeline-dependency-controls__depth-value {
+  min-width: 2ch;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+@media (max-width: 860px) {
+  .timeline-dependency-controls__divider {
+    display: none;
+  }
+
+  .timeline-dependency-controls__zone--direction {
+    flex-basis: 100%;
+  }
 }
 
 /* Timeline filter accordion */

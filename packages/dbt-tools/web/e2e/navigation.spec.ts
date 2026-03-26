@@ -4,21 +4,20 @@ import { loadWorkspace } from "./helpers/preload";
 const APP_SIDEBAR = "#app-sidebar";
 const NAV_VIEWS = [
   { label: "Health", heading: "Health", view: "health" },
+  { label: "Timeline", heading: "Timeline", view: "timeline" },
   { label: "Inventory", heading: "Inventory", view: "inventory" },
   { label: "Runs", heading: "Runs", view: "runs" },
-  { label: "Timeline", heading: "Timeline", view: "timeline" },
 ] as const;
 
 test.describe("sidebar navigation", () => {
-  test("all primary nav buttons are visible", async ({ page }) => {
+  test("all primary nav buttons are visible in the expected order", async ({
+    page,
+  }) => {
     await page.goto("/");
-    for (const { label } of NAV_VIEWS) {
-      await expect(
-        page
-          .locator(APP_SIDEBAR)
-          .getByRole("button", { name: label, exact: true }),
-      ).toBeVisible();
-    }
+    const labels = await page
+      .locator(`${APP_SIDEBAR} .nav-group .sidebar-link strong`)
+      .allTextContents();
+    expect(labels).toEqual(NAV_VIEWS.map(({ label }) => label));
     await expect(
       page
         .locator(APP_SIDEBAR)

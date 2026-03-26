@@ -54,6 +54,12 @@ export class ManifestGraph {
   /**
    * Add nodes from manifest to the graph
    */
+  /** Map relation_name (lowercase) to unique_id when present on manifest entries. */
+  private registerRelationName(uniqueId: string, relationName: unknown): void {
+    if (!relationName) return;
+    this.relationMap.set((relationName as string).toLowerCase(), uniqueId);
+  }
+
   private addNodes(manifest: ParsedManifest): void {
     this.addNodeEntries(manifest.nodes);
     this.addSourceEntries(manifest.sources);
@@ -71,6 +77,12 @@ export class ManifestGraph {
       const resourceType = this.extractResourceType(
         (nodeAny.resource_type as string) || "model",
       );
+      const config = nodeAny.config as Record<string, unknown> | undefined;
+      const materializedRaw = config?.materialized;
+      const materialized =
+        typeof materializedRaw === "string" && materializedRaw.trim() !== ""
+          ? materializedRaw
+          : undefined;
       this.graph.addNode(uniqueId, {
         unique_id: uniqueId,
         resource_type: resourceType,
@@ -88,13 +100,9 @@ export class ManifestGraph {
           (nodeAny.raw_code as string) ||
           (nodeAny.raw_sql as string) ||
           undefined,
+        ...(materialized != null ? { materialized } : {}),
       });
-      if (nodeAny.relation_name) {
-        this.relationMap.set(
-          (nodeAny.relation_name as string).toLowerCase(),
-          uniqueId,
-        );
-      }
+      this.registerRelationName(uniqueId, nodeAny.relation_name);
     }
   }
 
@@ -115,12 +123,7 @@ export class ManifestGraph {
         tags: (sourceAny.tags as string[]) || undefined,
         description: (sourceAny.description as string) || undefined,
       });
-      if (sourceAny.relation_name) {
-        this.relationMap.set(
-          (sourceAny.relation_name as string).toLowerCase(),
-          uniqueId,
-        );
-      }
+      this.registerRelationName(uniqueId, sourceAny.relation_name);
     }
   }
 
@@ -294,7 +297,6 @@ export class ManifestGraph {
   private addEdges(manifest: ParsedManifest): void {
     if (manifest.parent_map) {
       this.addEdgesFromParentMap(manifest.parent_map);
-      return;
     }
     this.addEdgesFromNodeDependsOn(manifest.nodes);
     this.addEdgesFromExposureDependsOn(manifest.exposures);

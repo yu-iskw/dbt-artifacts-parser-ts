@@ -33,6 +33,7 @@ export type RunsGroupBy = "none" | "type" | "status" | "thread";
 export type DashboardStatusFilter = "all" | StatusTone;
 export type AssetExplorerMode = "project" | "database";
 export type LensMode = "status" | "type" | "coverage";
+export type TimelineDependencyDirection = "upstream" | "both" | "downstream";
 
 export interface OverviewFilterState {
   status: DashboardStatusFilter;
@@ -50,6 +51,20 @@ export interface TimelineFilterState {
   activeStatuses: Set<string>;
   activeTypes: Set<string>;
   selectedExecutionId: string | null;
+  /** Show test chips inside bundle rows. Default true. */
+  showTests: boolean;
+  /**
+   * When true: auto-expand all bundles with failures and visually collapse
+   * passing ones. Does not remove passing bundles from the view.
+   */
+  failuresOnly: boolean;
+  /** Which dependency direction to visualize for the focused timeline node. */
+  dependencyDirection: TimelineDependencyDirection;
+  /**
+   * Maximum dependency hop index to show. `1` means direct neighbors only;
+   * values > 1 enable capped extended BFS up to the given hop.
+   */
+  dependencyDepthHops: number;
 }
 
 export interface AssetViewState {

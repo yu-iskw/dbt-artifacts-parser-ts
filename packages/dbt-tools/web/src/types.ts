@@ -16,6 +16,20 @@ export interface GanttItem {
   packageName: string;
   /** Source file path for this node (populated from the manifest graph). */
   path: string | null;
+  /**
+   * unique_id of the parent resource for test/unit_test nodes (the model, seed,
+   * source, or snapshot being tested). Resolved from depends_on.nodes in the
+   * manifest graph. null for non-test resources or when parentage is ambiguous.
+   */
+  parentId: string | null;
+  /** Relative ms from run start; absent or null when compile timing is missing in run_results. */
+  compileStart?: number | null;
+  compileEnd?: number | null;
+  /** Relative ms from run start; absent or null when execute timing is missing in run_results. */
+  executeStart?: number | null;
+  executeEnd?: number | null;
+  /** Model `config.materialized` from manifest when present. */
+  materialized?: string | null;
 }
 
 export type StatusTone = "positive" | "warning" | "danger" | "neutral";
@@ -134,6 +148,15 @@ export interface ResourceConnectionSummary {
   downstream: DependencyPreview[];
 }
 
+/**
+ * Immediate manifest graph neighbors for executed timeline nodes only.
+ * Edges follow ManifestGraph: inbound = depends_on (upstream of this node).
+ */
+export interface TimelineAdjacencyEntry {
+  inbound: string[];
+  outbound: string[];
+}
+
 export interface AnalysisState {
   summary: ExecutionSummary;
   /** Project name from manifest metadata, or null for older manifests. */
@@ -149,6 +172,8 @@ export interface AnalysisState {
   statusBreakdown: StatusBreakdownItem[];
   threadStats: ThreadStat[];
   dependencyIndex: Record<string, ResourceConnectionSummary>;
+  /** Per-executed-node inbound/outbound unique_ids from the manifest graph. */
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>;
   selectedResourceId: string | null;
   /** dbt invocation ID from the run_results metadata (if available). */
   invocationId?: string | null;

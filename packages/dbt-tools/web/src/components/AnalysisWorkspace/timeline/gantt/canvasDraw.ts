@@ -1,13 +1,22 @@
-import { getResourceTypeColor, getStatusColor } from "@web/constants/colors";
-import { type ThemeMode, getCanvasColors } from "@web/constants/themeColors";
+import { getStatusColor } from "@web/constants/colors";
+import {
+  type ThemeMode,
+  getCanvasColors,
+  getResourceTypeSoftFill,
+} from "@web/constants/themeColors";
 import type { GanttItem, ResourceTestStats } from "@web/types";
+import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import {
   AXIS_TOP,
   BAR_H,
   BAR_PAD,
+  BUNDLE_HULL_PAD,
   LABEL_W,
+  MIN_CHIP_W,
   NAME_Y,
   ROW_H,
+  TEST_BAR_H,
+  TEST_LANE_H,
   TIME_Y,
   X_PAD,
   type DisplayMode,
@@ -19,7 +28,12 @@ import {
   isPositiveStatus,
 } from "./formatting";
 
-export function fillRoundRect(
+// ---------------------------------------------------------------------------
+// Path helpers
+// ---------------------------------------------------------------------------
+
+/** Trace a rounded-rectangle path (no fill/stroke — caller decides). */
+function roundRectPath(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -36,10 +50,38 @@ export function fillRoundRect(
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+/** Trace + fill a rounded rectangle. */
+export function fillRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  roundRectPath(ctx, x, y, w, h, r);
   ctx.fill();
 }
 
+function strokeRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.stroke();
+}
+
 type CanvasPalette = ReturnType<typeof getCanvasColors>;
+
+// ---------------------------------------------------------------------------
+// Row background
+// ---------------------------------------------------------------------------
 
 function drawRowBackground(
   ctx: CanvasRenderingContext2D,
@@ -57,11 +99,16 @@ function drawRowBackground(
   ctx.globalAlpha = 1;
 }
 
+// ---------------------------------------------------------------------------
+// Row labels
+// ---------------------------------------------------------------------------
+
 interface DrawRowLabelsParams {
   ctx: CanvasRenderingContext2D;
   item: GanttItem;
   rowY: number;
   labelW: number;
+  xOffset: number;
   displayMode: DisplayMode;
   runStartedAt: number | null | undefined;
   timeZone: string;
@@ -74,6 +121,7 @@ function drawRowLabels({
   item,
   rowY,
   labelW,
+  xOffset,
   displayMode,
   runStartedAt,
   timeZone,
@@ -83,13 +131,13 @@ function drawRowLabels({
   ctx.save();
   ctx.globalAlpha = emphasis;
   ctx.beginPath();
-  ctx.rect(0, rowY, labelW - 10, ROW_H);
+  ctx.rect(xOffset, rowY, labelW - 10 - xOffset, ROW_H);
   ctx.clip();
   ctx.textAlign = "left";
 
   ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
   ctx.fillStyle = palette.labelText;
-  ctx.fillText(item.name || item.unique_id, 2, rowY + NAME_Y);
+  ctx.fillText(item.name || item.unique_id, xOffset + 2, rowY + NAME_Y);
 
   const startLabel =
     displayMode === "timestamps" && runStartedAt != null
@@ -101,9 +149,13 @@ function drawRowLabels({
       : `+${formatMs(item.end)}`;
   ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
   ctx.fillStyle = palette.metaText;
-  ctx.fillText(`${startLabel} → ${endLabel}`, 2, rowY + TIME_Y);
+  ctx.fillText(`${startLabel} → ${endLabel}`, xOffset + 2, rowY + TIME_Y);
   ctx.restore();
 }
+
+// ---------------------------------------------------------------------------
+// Parent bar
+// ---------------------------------------------------------------------------
 
 interface DrawRowBarParams {
   ctx: CanvasRenderingContext2D;
@@ -135,13 +187,32 @@ function drawRowBar({
   const barY = rowY + BAR_PAD;
   const barX = labelW + (item.start / maxEnd) * chartW;
   const barW = Math.max(2, (item.duration / maxEnd) * chartW);
+  const radius = 3;
 
+  ctx.save();
   ctx.globalAlpha = emphasis;
-  ctx.fillStyle = getStatusColor(item.status, theme);
-  fillRoundRect(ctx, barX, barY, barW, BAR_H, 3);
+  ctx.fillStyle = getResourceTypeSoftFill(item.resourceType, theme);
+  fillRoundRect(ctx, barX, barY, barW, BAR_H, radius);
 
-  ctx.fillStyle = getResourceTypeColor(item.resourceType, theme);
-  ctx.fillRect(barX, barY, 3, BAR_H);
+  const cs = item.compileStart;
+  const ce = item.compileEnd;
+  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  if (hasCompile) {
+    const compileX = labelW + (cs / maxEnd) * chartW;
+    const compileEndX = labelW + (ce / maxEnd) * chartW;
+    const segLeft = Math.max(barX, compileX);
+    const segRight = Math.min(barX + barW, compileEndX);
+    const segW = segRight - segLeft;
+    if (segW > 0.5) {
+      ctx.save();
+      roundRectPath(ctx, barX, barY, barW, BAR_H, radius);
+      ctx.clip();
+      ctx.fillStyle =
+        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(segLeft, barY, segW, BAR_H);
+      ctx.restore();
+    }
+  }
 
   if (
     attachedTestStats &&
@@ -152,55 +223,130 @@ function drawRowBar({
     fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
   }
 
+  ctx.strokeStyle = getStatusColor(item.status, theme);
+  ctx.lineWidth = 2;
+  strokeRoundRect(ctx, barX, barY, barW, BAR_H, radius);
+  ctx.restore();
+
   if (isHovered) {
+    ctx.save();
     ctx.globalAlpha = 1;
     ctx.strokeStyle = palette.barHoverStroke;
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(barX - 0.5, barY - 0.5, barW + 1, BAR_H + 1);
+    strokeRoundRect(ctx, barX, barY, barW, BAR_H, radius);
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
 }
 
-export interface DrawGanttParams {
-  scrollTop: number;
+// ---------------------------------------------------------------------------
+// Test chip
+// ---------------------------------------------------------------------------
+
+interface DrawTestChipParams {
+  ctx: CanvasRenderingContext2D;
+  test: GanttItem;
+  chipY: number;
   maxEnd: number;
-  displayMode: DisplayMode;
-  runStartedAt: number | null | undefined;
-  focusIds: Set<string> | null;
-  hoveredId: string | null;
-  labelW?: number;
-  timeZone: string;
-  testStatsById?: Map<string, ResourceTestStats>;
-  /** Default `light` — pass from {@link useTheme} for canvas parity with CSS. */
-  theme?: ThemeMode;
+  chartW: number;
+  labelW: number;
+  palette: CanvasPalette;
+  theme: ThemeMode;
+  emphasis: number;
+  isHovered: boolean;
 }
 
-export function drawGantt(
+function drawTestChip({
+  ctx,
+  test,
+  chipY,
+  maxEnd,
+  chartW,
+  labelW,
+  palette,
+  theme,
+  emphasis,
+  isHovered,
+}: DrawTestChipParams) {
+  const chipX = labelW + (test.start / maxEnd) * chartW;
+  const chipW = Math.max(MIN_CHIP_W, (test.duration / maxEnd) * chartW);
+  const chipH = TEST_BAR_H;
+  const radius = 2;
+
+  ctx.save();
+  ctx.globalAlpha = emphasis;
+  ctx.fillStyle = getResourceTypeSoftFill(test.resourceType, theme);
+  fillRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
+
+  const cs = test.compileStart;
+  const ce = test.compileEnd;
+  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  if (hasCompile) {
+    const compileX = labelW + (cs / maxEnd) * chartW;
+    const compileEndX = labelW + (ce / maxEnd) * chartW;
+    const segLeft = Math.max(chipX, compileX);
+    const segRight = Math.min(chipX + chipW, compileEndX);
+    const segW = segRight - segLeft;
+    if (segW > 0.5) {
+      ctx.save();
+      roundRectPath(ctx, chipX, chipY, chipW, chipH, radius);
+      ctx.clip();
+      ctx.fillStyle =
+        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(segLeft, chipY, segW, chipH);
+      ctx.restore();
+    }
+  }
+
+  ctx.strokeStyle = getStatusColor(test.status, theme);
+  ctx.lineWidth = 1.5;
+  strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
+  ctx.restore();
+
+  // Label inside chip when wide enough
+  if (chipW >= 40) {
+    ctx.save();
+    ctx.globalAlpha = emphasis;
+    ctx.beginPath();
+    ctx.rect(chipX + 2, chipY, chipW - 4, chipH);
+    ctx.clip();
+    ctx.font = '9px "IBM Plex Sans", "Avenir Next", sans-serif';
+    ctx.fillStyle = palette.labelText;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(test.name, chipX + 2, chipY + chipH / 2);
+    ctx.restore();
+  }
+
+  if (isHovered) {
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = palette.barHoverStroke;
+    ctx.lineWidth = 1;
+    strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
+    ctx.restore();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// drawGantt helpers (keeps main entry shallow for complexity limits)
+// ---------------------------------------------------------------------------
+
+function initGanttCanvas(
   canvas: HTMLCanvasElement,
-  data: GanttItem[],
-  {
-    scrollTop,
-    maxEnd,
-    displayMode,
-    runStartedAt,
-    focusIds,
-    hoveredId,
-    labelW = LABEL_W,
-    timeZone,
-    testStatsById,
-    theme = "light",
-  }: DrawGanttParams,
-) {
+  labelW: number,
+): {
+  ctx: CanvasRenderingContext2D;
+  w: number;
+  h: number;
+  chartW: number;
+} | null {
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const palette = getCanvasColors(theme);
-
+  if (!ctx) return null;
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const w = rect.width;
   const h = rect.height;
-  if (w === 0 || h === 0) return;
+  if (w === 0 || h === 0) return null;
 
   canvas.width = w * dpr;
   canvas.height = h * dpr;
@@ -208,7 +354,32 @@ export function drawGantt(
   ctx.clearRect(0, 0, w, h);
 
   const chartW = w - labelW - X_PAD;
+  return { ctx, w, h, chartW };
+}
 
+interface DrawGanttAxisTicksParams {
+  ctx: CanvasRenderingContext2D;
+  labelW: number;
+  chartW: number;
+  h: number;
+  maxEnd: number;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  timeZone: string;
+  palette: CanvasPalette;
+}
+
+function drawGanttAxisTicks({
+  ctx,
+  labelW,
+  chartW,
+  h,
+  maxEnd,
+  displayMode,
+  runStartedAt,
+  timeZone,
+  palette,
+}: DrawGanttAxisTicksParams): void {
   const ticks = computeTicks(maxEnd);
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
@@ -229,46 +400,237 @@ export function drawGantt(
         : tick.label;
     ctx.fillText(label, x, AXIS_TOP / 2);
   }
+}
 
-  const visStart = Math.max(0, Math.floor(scrollTop / ROW_H));
-  const visEnd = Math.min(
-    data.length - 1,
-    Math.ceil((scrollTop + h - AXIS_TOP) / ROW_H),
-  );
+interface DrawGanttVisibleRowParams {
+  ctx: CanvasRenderingContext2D;
+  bundle: BundleRow;
+  rowIndex: number;
+  rowY: number;
+  w: number;
+  labelW: number;
+  chartW: number;
+  maxEnd: number;
+  focusIds: Set<string> | null;
+  hoveredId: string | null;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  timeZone: string;
+  theme: ThemeMode;
+  palette: CanvasPalette;
+  testStatsById?: Map<string, ResourceTestStats>;
+  showTests: boolean;
+}
+
+function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
+  const {
+    ctx,
+    bundle,
+    rowIndex,
+    rowY,
+    w,
+    labelW,
+    chartW,
+    maxEnd,
+    focusIds,
+    hoveredId,
+    displayMode,
+    runStartedAt,
+    timeZone,
+    theme,
+    palette,
+    testStatsById,
+    showTests,
+  } = p;
+
+  const rowHasFocus =
+    focusIds == null ||
+    focusIds.has(bundle.item.unique_id) ||
+    bundle.lanes.some((l) => focusIds.has(l.item.unique_id));
+  const isFocused = focusIds == null || focusIds.has(bundle.item.unique_id);
+  const isHovered = hoveredId === bundle.item.unique_id;
+  const emphasis = isFocused ? 1 : 0.18;
+
+  drawRowBackground(ctx, rowIndex, rowY, w, rowHasFocus, isHovered, palette);
+
+  drawRowLabels({
+    ctx,
+    item: bundle.item,
+    rowY,
+    labelW,
+    xOffset: 0,
+    displayMode,
+    runStartedAt,
+    timeZone,
+    emphasis,
+    palette,
+  });
+
+  drawRowBar({
+    ctx,
+    item: bundle.item,
+    rowY,
+    maxEnd,
+    chartW,
+    labelW,
+    emphasis,
+    isHovered,
+    attachedTestStats: testStatsById?.get(bundle.item.unique_id),
+    palette,
+    theme,
+  });
+
+  if (!showTests || bundle.lanes.length === 0) return;
+
+  for (const { item: test, lane } of bundle.lanes) {
+    const chipY = rowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
+    const testHovered = hoveredId === test.unique_id;
+    const testFocused = focusIds == null || focusIds.has(test.unique_id);
+    drawTestChip({
+      ctx,
+      test,
+      chipY,
+      maxEnd,
+      chartW,
+      labelW,
+      palette,
+      theme,
+      emphasis: testFocused ? 1 : 0.18,
+      isHovered: testHovered,
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main drawGantt entry point
+// ---------------------------------------------------------------------------
+
+export interface DrawGanttParams {
+  scrollTop: number;
+  maxEnd: number;
+  displayMode: DisplayMode;
+  runStartedAt: number | null | undefined;
+  focusIds: Set<string> | null;
+  hoveredId: string | null;
+  labelW?: number;
+  timeZone: string;
+  testStatsById?: Map<string, ResourceTestStats>;
+  /** Default `light` — pass from {@link useTheme} for canvas parity with CSS. */
+  theme?: ThemeMode;
+  /** Whether to render test chips inside bundles. */
+  showTests?: boolean;
+}
+
+export function drawGantt(
+  canvas: HTMLCanvasElement,
+  bundles: BundleRow[],
+  rowOffsets: number[],
+  rowHeights: number[],
+  {
+    scrollTop,
+    maxEnd,
+    displayMode,
+    runStartedAt,
+    focusIds,
+    hoveredId,
+    labelW = LABEL_W,
+    timeZone,
+    testStatsById,
+    theme = "light",
+    showTests = true,
+  }: DrawGanttParams,
+) {
+  const prepared = initGanttCanvas(canvas, labelW);
+  if (!prepared) return;
+
+  const { ctx, w, h, chartW } = prepared;
+  const palette = getCanvasColors(theme);
+
+  drawGanttAxisTicks({
+    ctx,
+    labelW,
+    chartW,
+    h,
+    maxEnd,
+    displayMode,
+    runStartedAt,
+    timeZone,
+    palette,
+  });
+
+  if (bundles.length === 0) return;
+
+  const contentH = h - AXIS_TOP;
+  const visStart = findFirstVisible(rowOffsets, scrollTop);
+  const visEnd = findLastVisible(rowOffsets, rowHeights, scrollTop, contentH);
 
   ctx.textBaseline = "middle";
 
   for (let i = visStart; i <= visEnd; i++) {
-    const item = data[i];
-    const rowY = AXIS_TOP + i * ROW_H - scrollTop;
-    const isFocused = focusIds == null || focusIds.has(item.unique_id);
-    const isHovered = hoveredId === item.unique_id;
-    const emphasis = isFocused ? 1 : 0.18;
-
-    drawRowBackground(ctx, i, rowY, w, isFocused, isHovered, palette);
-    drawRowLabels({
+    const bundle = bundles[i];
+    if (!bundle) continue;
+    const rowY = AXIS_TOP + (rowOffsets[i] ?? 0) - scrollTop;
+    drawGanttVisibleRow({
       ctx,
-      item,
+      bundle,
+      rowIndex: i,
       rowY,
+      w,
       labelW,
+      chartW,
+      maxEnd,
+      focusIds,
+      hoveredId,
       displayMode,
       runStartedAt,
       timeZone,
-      emphasis,
-      palette,
-    });
-    drawRowBar({
-      ctx,
-      item,
-      rowY,
-      maxEnd,
-      chartW,
-      labelW,
-      emphasis,
-      isHovered,
-      attachedTestStats: testStatsById?.get(item.unique_id),
-      palette,
       theme,
+      palette,
+      testStatsById,
+      showTests,
     });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Visibility helpers
+// ---------------------------------------------------------------------------
+
+/** Find the index of the first bundle whose row is within the viewport. */
+export function findFirstVisible(
+  rowOffsets: number[],
+  scrollTop: number,
+): number {
+  if (rowOffsets.length === 0) return 0;
+  let lo = 0,
+    hi = rowOffsets.length - 1;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if ((rowOffsets[mid] ?? 0) < scrollTop) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  // Back up one step — the bundle just above the viewport may still be visible
+  return Math.max(0, lo - 1);
+}
+
+/** Find the index of the last bundle whose row is at least partially visible. */
+export function findLastVisible(
+  rowOffsets: number[],
+  rowHeights: number[],
+  scrollTop: number,
+  contentH: number,
+): number {
+  const bottom = scrollTop + contentH;
+  let result = 0;
+  for (let i = 0; i < rowOffsets.length; i++) {
+    const offset = rowOffsets[i] ?? 0;
+    const rowEnd = offset + (rowHeights[i] ?? ROW_H);
+    if (rowEnd <= scrollTop) continue; // entirely above viewport
+    if (offset >= bottom) break; // entirely below viewport
+    result = i;
+  }
+  return result;
 }

@@ -64,12 +64,20 @@ export const STATUS_HEX_DARK = {
   "no op": THEME_HEX_DARK.slate,
 } as const;
 
+const HEX_SOURCE_LIGHT = "#059669";
+const HEX_SOURCE_DARK = "#45c49a";
+const SOFT_TEST_LIGHT = "rgba(100, 116, 139, 0.2)";
+const SOFT_TEST_DARK = "rgba(134, 144, 170, 0.28)";
+const SOFT_SOURCE_LIGHT = "rgba(5, 150, 105, 0.2)";
+const SOFT_SOURCE_DARK = "rgba(69, 196, 154, 0.26)";
+
 export const RESOURCE_TYPE_HEX_LIGHT: Record<string, string> = {
   model: "#1D4ED8",
   test: "#64748B",
   seed: "#635BFF",
   snapshot: "#D97706",
-  source: "#059669",
+  source: HEX_SOURCE_LIGHT,
+  source_freshness: HEX_SOURCE_LIGHT,
   exposure: "#EA580C",
   metric: "#DB2777",
   semantic_model: "#0891B2",
@@ -82,7 +90,8 @@ export const RESOURCE_TYPE_HEX_DARK: Record<string, string> = {
   test: "#8690aa",
   seed: "#9588e8",
   snapshot: "#d4a24a",
-  source: "#45c49a",
+  source: HEX_SOURCE_DARK,
+  source_freshness: HEX_SOURCE_DARK,
   exposure: "#d9845c",
   metric: "#d172ae",
   semantic_model: "#3eb0c8",
@@ -90,10 +99,59 @@ export const RESOURCE_TYPE_HEX_DARK: Record<string, string> = {
   unit_test: "#8690aa",
 };
 
+/**
+ * Soft fills for canvas — mirror `tokens.css` `--dbt-type-*-soft` (light / dark).
+ * Keep rgba values in sync when graph tokens change.
+ */
+export const RESOURCE_TYPE_SOFT_FILL_LIGHT: Record<string, string> = {
+  model: "rgba(29, 78, 216, 0.2)",
+  test: SOFT_TEST_LIGHT,
+  seed: "rgba(99, 91, 255, 0.2)",
+  snapshot: "rgba(217, 119, 6, 0.2)",
+  source: SOFT_SOURCE_LIGHT,
+  source_freshness: SOFT_SOURCE_LIGHT,
+  semantic_model: "rgba(8, 145, 178, 0.2)",
+  metric: "rgba(219, 39, 119, 0.2)",
+  exposure: "rgba(234, 88, 12, 0.2)",
+  analysis: SOFT_TEST_LIGHT,
+  unit_test: SOFT_TEST_LIGHT,
+};
+
+export const RESOURCE_TYPE_SOFT_FILL_DARK: Record<string, string> = {
+  model: "rgba(92, 141, 235, 0.28)",
+  test: SOFT_TEST_DARK,
+  seed: "rgba(149, 136, 232, 0.28)",
+  snapshot: "rgba(212, 162, 74, 0.28)",
+  source: SOFT_SOURCE_DARK,
+  source_freshness: SOFT_SOURCE_DARK,
+  semantic_model: "rgba(62, 176, 200, 0.28)",
+  metric: "rgba(209, 114, 174, 0.28)",
+  exposure: "rgba(217, 132, 92, 0.28)",
+  analysis: SOFT_TEST_DARK,
+  unit_test: SOFT_TEST_DARK,
+};
+
 export function getResourceTypeHexMap(
   theme: ThemeMode,
 ): Record<string, string> {
   return theme === "dark" ? RESOURCE_TYPE_HEX_DARK : RESOURCE_TYPE_HEX_LIGHT;
+}
+
+export function getResourceTypeSoftFillMap(
+  theme: ThemeMode,
+): Record<string, string> {
+  return theme === "dark"
+    ? RESOURCE_TYPE_SOFT_FILL_DARK
+    : RESOURCE_TYPE_SOFT_FILL_LIGHT;
+}
+
+export function getResourceTypeSoftFill(
+  resourceType: string | undefined,
+  theme: ThemeMode,
+): string {
+  const map = getResourceTypeSoftFillMap(theme);
+  if (resourceType && map[resourceType]) return map[resourceType]!;
+  return theme === "dark" ? SOFT_TEST_DARK : SOFT_TEST_LIGHT;
 }
 
 export const CANVAS_LIGHT = {
@@ -105,6 +163,10 @@ export const CANVAS_LIGHT = {
   gridLine: "#E6E9F0",
   barHoverStroke: THEME_HEX_LIGHT.accent,
   testFailStripe: "rgba(192, 53, 43, 0.9)",
+  /** Bundle hull stroke — light neutral border. */
+  hullStroke: "#C8CEDB",
+  /** Bundle hull fill — near-transparent background. */
+  hullFill: "rgba(230, 233, 240, 0.35)",
 } as const;
 
 export const CANVAS_DARK = {
@@ -116,6 +178,10 @@ export const CANVAS_DARK = {
   gridLine: "#262E47",
   barHoverStroke: THEME_HEX_DARK.accent,
   testFailStripe: "rgba(255, 141, 134, 0.88)",
+  /** Bundle hull stroke — dark neutral border. */
+  hullStroke: "#2E3759",
+  /** Bundle hull fill — near-transparent background. */
+  hullFill: "rgba(38, 46, 71, 0.4)",
 } as const;
 
 export function getCanvasColors(theme: ThemeMode) {

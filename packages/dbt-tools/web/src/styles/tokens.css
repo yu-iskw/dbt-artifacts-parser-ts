@@ -103,21 +103,21 @@
 
   /* dbt resource types (mapped to semantic status/accent where possible, or kept for uniqueness) */
   --dbt-type-source: var(--chart-4);
-  --dbt-type-source-soft: rgba(5, 150, 105, 0.12);
+  --dbt-type-source-soft: rgba(5, 150, 105, 0.2);
   --dbt-type-seed: var(--chart-1);
-  --dbt-type-seed-soft: rgba(99, 91, 255, 0.12);
+  --dbt-type-seed-soft: rgba(99, 91, 255, 0.2);
   --dbt-type-snapshot: var(--chart-5);
-  --dbt-type-snapshot-soft: rgba(217, 119, 6, 0.12);
+  --dbt-type-snapshot-soft: rgba(217, 119, 6, 0.2);
   --dbt-type-model: var(--chart-2);
-  --dbt-type-model-soft: rgba(29, 78, 216, 0.12);
+  --dbt-type-model-soft: rgba(29, 78, 216, 0.2);
   --dbt-type-semantic-model: var(--chart-3);
-  --dbt-type-semantic-model-soft: rgba(8, 145, 178, 0.12);
+  --dbt-type-semantic-model-soft: rgba(8, 145, 178, 0.2);
   --dbt-type-metric: var(--chart-7);
-  --dbt-type-metric-soft: rgba(219, 39, 119, 0.12);
+  --dbt-type-metric-soft: rgba(219, 39, 119, 0.2);
   --dbt-type-exposure: var(--chart-6);
-  --dbt-type-exposure-soft: rgba(234, 88, 12, 0.12);
+  --dbt-type-exposure-soft: rgba(234, 88, 12, 0.2);
   --dbt-type-test: var(--chart-8);
-  --dbt-type-test-soft: rgba(100, 116, 139, 0.12);
+  --dbt-type-test-soft: rgba(100, 116, 139, 0.2);
 
   /* Graph surface aliases */
   --graph-bg-top: var(--bg-canvas);
@@ -218,14 +218,14 @@
   --panel-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 
   /* dbt resource type soft fills — rgba matches dark chart hues */
-  --dbt-type-source-soft: rgba(69, 196, 154, 0.18);
-  --dbt-type-seed-soft: rgba(149, 136, 232, 0.2);
-  --dbt-type-snapshot-soft: rgba(212, 162, 74, 0.2);
-  --dbt-type-model-soft: rgba(92, 141, 235, 0.2);
-  --dbt-type-semantic-model-soft: rgba(62, 176, 200, 0.2);
-  --dbt-type-metric-soft: rgba(209, 114, 174, 0.2);
-  --dbt-type-exposure-soft: rgba(217, 132, 92, 0.2);
-  --dbt-type-test-soft: rgba(134, 144, 170, 0.22);
+  --dbt-type-source-soft: rgba(69, 196, 154, 0.26);
+  --dbt-type-seed-soft: rgba(149, 136, 232, 0.28);
+  --dbt-type-snapshot-soft: rgba(212, 162, 74, 0.28);
+  --dbt-type-model-soft: rgba(92, 141, 235, 0.28);
+  --dbt-type-semantic-model-soft: rgba(62, 176, 200, 0.28);
+  --dbt-type-metric-soft: rgba(209, 114, 174, 0.28);
+  --dbt-type-exposure-soft: rgba(217, 132, 92, 0.28);
+  --dbt-type-test-soft: rgba(134, 144, 170, 0.28);
 
   /* Graph surface aliases (Dark) */
   --graph-bg-top: #dde2ea;

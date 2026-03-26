@@ -230,6 +230,58 @@ export class ExecutionAnalyzer {
     return Math.min(...timestamps);
   }
 
+  private parseTimingInterval(
+    timing: Record<string, unknown> | undefined,
+  ): { start: number; end: number } | null {
+    if (!timing) return null;
+    const started = timing.started_at as string | undefined;
+    const completed = timing.completed_at as string | undefined;
+    if (!started || !completed) return null;
+    const startMs = new Date(started).getTime();
+    const endMs = new Date(completed).getTime();
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
+    return { start: startMs, end: endMs };
+  }
+
+  /**
+   * Wall-clock span and optional compile/execute intervals (epoch ms).
+   */
+  private wallClockFromResult(result: Record<string, unknown>): {
+    wallStart: number;
+    wallEnd: number;
+    compile: { start: number; end: number } | null;
+    execute: { start: number; end: number } | null;
+  } | null {
+    const timingArray = (result.timing as Array<Record<string, unknown>>) || [];
+    const executeTiming = timingArray.find(
+      (t: Record<string, unknown>) => t.name === "execute",
+    );
+    const compileTiming = timingArray.find(
+      (t: Record<string, unknown>) => t.name === "compile",
+    );
+    const compile = this.parseTimingInterval(compileTiming);
+    const execute = this.parseTimingInterval(executeTiming);
+
+    const starts: number[] = [];
+    const ends: number[] = [];
+    if (compile) {
+      starts.push(compile.start);
+      ends.push(compile.end);
+    }
+    if (execute) {
+      starts.push(execute.start);
+      ends.push(execute.end);
+    }
+    if (starts.length === 0) return null;
+
+    return {
+      wallStart: Math.min(...starts),
+      wallEnd: Math.max(...ends),
+      compile,
+      execute,
+    };
+  }
+
   /**
    * Get Gantt chart data for visualization
    */
@@ -240,49 +292,62 @@ export class ExecutionAnalyzer {
     end: number;
     duration: number;
     status: string;
+    compileStart: number | null;
+    compileEnd: number | null;
+    executeStart: number | null;
+    executeEnd: number | null;
   }> {
-    const executions = this.getNodeExecutions();
-
-    // Parse timestamps and convert to milliseconds since start
-    const executionsWithTimestamps = executions
-      .map((exec) => {
-        const start = exec.started_at
-          ? new Date(exec.started_at).getTime()
-          : null;
-        const end = exec.completed_at
-          ? new Date(exec.completed_at).getTime()
-          : null;
-
-        return {
-          ...exec,
-          start,
-          end,
-        };
-      })
-      .filter((exec) => exec.start !== null && exec.end !== null);
-
-    if (executionsWithTimestamps.length === 0) {
+    if (!this.runResults.results || !Array.isArray(this.runResults.results)) {
       return [];
     }
 
-    // Find the earliest start time
-    const minStart = Math.min(...executionsWithTimestamps.map((e) => e.start!));
+    const graphologyGraph = this.graph.getGraph();
 
-    // Convert to relative times (milliseconds from start)
-    return executionsWithTimestamps.map((exec) => {
-      const graphologyGraph = this.graph.getGraph();
-      const nodeAttributes = graphologyGraph.hasNode(exec.unique_id)
-        ? graphologyGraph.getNodeAttributes(exec.unique_id)
+    const rows: Array<{
+      unique_id: string;
+      name: string;
+      status: string;
+      wall: {
+        wallStart: number;
+        wallEnd: number;
+        compile: { start: number; end: number } | null;
+        execute: { start: number; end: number } | null;
+      };
+    }> = [];
+
+    for (const result of this.runResults.results as Record<string, unknown>[]) {
+      const uniqueId = (result.unique_id as string) || "";
+      if (!uniqueId) continue;
+      const wall = this.wallClockFromResult(result);
+      if (!wall) continue;
+
+      const nodeAttributes = graphologyGraph.hasNode(uniqueId)
+        ? graphologyGraph.getNodeAttributes(uniqueId)
         : undefined;
-      const name = nodeAttributes?.name || exec.unique_id;
+      const name = nodeAttributes?.name || uniqueId;
+      const status = (result.status as string) || "unknown";
 
+      rows.push({ unique_id: uniqueId, name, status, wall });
+    }
+
+    if (rows.length === 0) return [];
+
+    const minStart = Math.min(...rows.map((r) => r.wall.wallStart));
+
+    return rows.map((row) => {
+      const { wall } = row;
+      const rel = (t: number) => t - minStart;
       return {
-        unique_id: exec.unique_id,
-        name,
-        start: exec.start! - minStart,
-        end: exec.end! - minStart,
-        duration: exec.end! - exec.start!,
-        status: exec.status,
+        unique_id: row.unique_id,
+        name: row.name,
+        start: rel(wall.wallStart),
+        end: rel(wall.wallEnd),
+        duration: wall.wallEnd - wall.wallStart,
+        status: row.status,
+        compileStart: wall.compile ? rel(wall.compile.start) : null,
+        compileEnd: wall.compile ? rel(wall.compile.end) : null,
+        executeStart: wall.execute ? rel(wall.execute.start) : null,
+        executeEnd: wall.execute ? rel(wall.execute.end) : null,
       };
     });
   }

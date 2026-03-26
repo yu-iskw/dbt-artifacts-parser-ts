@@ -20,9 +20,9 @@ export interface NavigationSelectionTarget {
 
 export const navigationItems: SidebarNavigationTarget[] = [
   { id: "health", view: "health", label: "Health" },
+  { id: "timeline", view: "timeline", label: "Timeline" },
   { id: "inventory", view: "inventory", label: "Inventory" },
   { id: "runs", view: "runs", label: "Runs" },
-  { id: "timeline", view: "timeline", label: "Timeline" },
 ];
 
 const VALID_VIEWS = new Set<WorkspaceView>([
