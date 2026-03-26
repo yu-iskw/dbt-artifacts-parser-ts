@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import {
   applyNeighborCap,
   applyUpstreamCap,
+  buildDependencyContextHint,
+  countInboundInAdjacency,
   countInboundOnTimeline,
+  countOutboundInAdjacency,
   countOutboundOnTimeline,
   focusEdgePath,
   getFocusTimelineEdges,
@@ -144,6 +147,135 @@ describe("countOutboundOnTimeline", () => {
       ["b", 1],
     ]);
     expect(countOutboundOnTimeline("x", adj, idx)).toBe(2);
+  });
+});
+
+describe("countInboundInAdjacency", () => {
+  it("returns inbound list length", () => {
+    const adj: Record<string, TimelineAdjacencyEntry> = {
+      x: { inbound: ["a", "b", "missing"], outbound: [] },
+    };
+    expect(countInboundInAdjacency("x", adj)).toBe(3);
+    expect(countInboundInAdjacency(null, adj)).toBe(0);
+  });
+});
+
+describe("countOutboundInAdjacency", () => {
+  it("returns outbound list length", () => {
+    const adj: Record<string, TimelineAdjacencyEntry> = {
+      x: { inbound: [], outbound: ["a", "b"] },
+    };
+    expect(countOutboundInAdjacency("x", adj)).toBe(2);
+  });
+});
+
+describe("buildDependencyContextHint", () => {
+  const emptyIdx = new Map<string, number>();
+
+  it("mentions neighbors not on timeline", () => {
+    const adj: Record<string, TimelineAdjacencyEntry> = {
+      focus: { inbound: ["a", "b"], outbound: [] },
+    };
+    const idx = new Map([["focus", 0]]);
+    const hint = buildDependencyContextHint({
+      focusId: "focus",
+      timelineAdjacency: adj,
+      bundleIndexById: idx,
+      edges: [],
+      showDependents: false,
+      showAllUpstream: true,
+      showAllDownstream: true,
+      showExtendedDeps: false,
+      extendedTruncated: false,
+    });
+    expect(hint).toContain("2 direct dependencies not on this timeline");
+  });
+
+  it("suggests Extended deps when on-timeline neighbors exist and extended is off", () => {
+    const adj: Record<string, TimelineAdjacencyEntry> = {
+      focus: { inbound: ["a"], outbound: [] },
+    };
+    const idx = new Map([
+      ["focus", 0],
+      ["a", 1],
+    ]);
+    const hint = buildDependencyContextHint({
+      focusId: "focus",
+      timelineAdjacency: adj,
+      bundleIndexById: idx,
+      edges: [
+        {
+          fromId: "a",
+          toId: "focus",
+          tier: "primary",
+          hop: 1,
+          leg: "upstream",
+        },
+      ],
+      showDependents: false,
+      showAllUpstream: true,
+      showAllDownstream: true,
+      showExtendedDeps: false,
+      extendedTruncated: false,
+    });
+    expect(hint).toContain("Transitive lines on the timeline are off");
+  });
+
+  it("does not suggest Extended deps when some neighbors are off-timeline", () => {
+    const adj: Record<string, TimelineAdjacencyEntry> = {
+      focus: { inbound: ["a", "hidden"], outbound: [] },
+    };
+    const idx = new Map([
+      ["focus", 0],
+      ["a", 1],
+    ]);
+    const hint = buildDependencyContextHint({
+      focusId: "focus",
+      timelineAdjacency: adj,
+      bundleIndexById: idx,
+      edges: [],
+      showDependents: false,
+      showAllUpstream: true,
+      showAllDownstream: true,
+      showExtendedDeps: false,
+      extendedTruncated: false,
+    });
+    expect(hint).toContain("not on this timeline");
+    expect(hint).not.toContain("Transitive lines on the timeline are off");
+  });
+
+  it("includes extended truncation with line count", () => {
+    const adj: Record<string, TimelineAdjacencyEntry> = {
+      focus: { inbound: [], outbound: [] },
+    };
+    const hint = buildDependencyContextHint({
+      focusId: "focus",
+      timelineAdjacency: adj,
+      bundleIndexById: emptyIdx,
+      edges: [
+        {
+          fromId: "u",
+          toId: "focus",
+          tier: "primary",
+          hop: 2,
+          leg: "upstream",
+        },
+        {
+          fromId: "u2",
+          toId: "focus",
+          tier: "primary",
+          hop: 2,
+          leg: "upstream",
+        },
+      ],
+      showDependents: false,
+      showAllUpstream: true,
+      showAllDownstream: true,
+      showExtendedDeps: true,
+      extendedTruncated: true,
+    });
+    expect(hint).toContain("2 transitive-on-timeline lines");
+    expect(hint).toContain("truncated by caps");
   });
 });
 

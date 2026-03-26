@@ -11,6 +11,8 @@ import {
   TEST_LANE_H,
   TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION,
   TIMELINE_EXTENDED_MAX_HOPS,
+  TIMELINE_MAX_DOWNSTREAM_EDGES,
+  TIMELINE_MAX_UPSTREAM_EDGES,
 } from "./constants";
 
 export type FocusEdgeTier = "primary" | "secondary" | "downstream";
@@ -323,6 +325,189 @@ export function countOutboundOnTimeline(
     if (bundleIndexById.has(v)) n += 1;
   }
   return n;
+}
+
+/** Total inbound ids in adjacency for the node (ignores timeline visibility). */
+export function countInboundInAdjacency(
+  focusId: string | null,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry> | undefined,
+): number {
+  if (!focusId || !timelineAdjacency) return 0;
+  const entry = timelineAdjacency[focusId];
+  return entry?.inbound.length ?? 0;
+}
+
+/** Total outbound ids in adjacency for the node (ignores timeline visibility). */
+export function countOutboundInAdjacency(
+  focusId: string | null,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry> | undefined,
+): number {
+  if (!focusId || !timelineAdjacency) return 0;
+  const entry = timelineAdjacency[focusId];
+  return entry?.outbound.length ?? 0;
+}
+
+export interface DependencyContextHintParams {
+  focusId: string;
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry> | undefined;
+  bundleIndexById: Map<string, number>;
+  edges: FocusTimelineEdge[];
+  showDependents: boolean;
+  showAllUpstream: boolean;
+  showAllDownstream: boolean;
+  showExtendedDeps: boolean;
+  extendedTruncated: boolean;
+}
+
+function pushCompactDirectCapHintParts(
+  parts: string[],
+  args: {
+    showAllUpstream: boolean;
+    upstreamOnTimelineCount: number;
+    upstreamShownCount: number;
+    showDependents: boolean;
+    showAllDownstream: boolean;
+    outboundOnTimelineCount: number;
+    downstreamShownCount: number;
+  },
+): void {
+  if (
+    !args.showAllUpstream &&
+    args.upstreamOnTimelineCount > TIMELINE_MAX_UPSTREAM_EDGES
+  ) {
+    parts.push(
+      `Showing ${args.upstreamShownCount} of ${args.upstreamOnTimelineCount} direct dependencies.`,
+    );
+  }
+  if (
+    args.showDependents &&
+    !args.showAllDownstream &&
+    args.outboundOnTimelineCount > TIMELINE_MAX_DOWNSTREAM_EDGES
+  ) {
+    parts.push(
+      `Showing ${args.downstreamShownCount} of ${args.outboundOnTimelineCount} direct dependents.`,
+    );
+  }
+}
+
+function pushOffTimelineNeighborHintParts(
+  parts: string[],
+  hiddenUp: number,
+  hiddenDown: number,
+): void {
+  if (hiddenUp > 0) {
+    parts.push(
+      `${hiddenUp} direct dependenc${hiddenUp === 1 ? "y" : "ies"} not on this timeline (filters or scope).`,
+    );
+  }
+  if (hiddenDown > 0) {
+    parts.push(
+      `${hiddenDown} direct dependent${hiddenDown === 1 ? "" : "s"} not on this timeline (filters or scope).`,
+    );
+  }
+}
+
+function pushExtendedDepHintParts(
+  parts: string[],
+  args: {
+    showExtendedDeps: boolean;
+    hiddenUp: number;
+    hiddenDown: number;
+    onTimelineNeighborSum: number;
+    extendedTruncated: boolean;
+    edges: FocusTimelineEdge[];
+  },
+): void {
+  if (
+    !args.showExtendedDeps &&
+    args.hiddenUp === 0 &&
+    args.hiddenDown === 0 &&
+    args.onTimelineNeighborSum > 0
+  ) {
+    parts.push(
+      "Transitive lines on the timeline are off — enable Extended deps in the legend.",
+    );
+  }
+
+  if (args.showExtendedDeps && args.extendedTruncated) {
+    const extCount = args.edges.filter((e) => e.hop >= 2).length;
+    if (extCount > 0) {
+      parts.push(
+        `Showing ${extCount} transitive-on-timeline line${extCount === 1 ? "" : "s"}. Extended paths may be truncated by caps.`,
+      );
+    } else {
+      parts.push("Extended dependency lines may be truncated by caps.");
+    }
+  }
+}
+
+/**
+ * Tooltip copy when hovering the focused row: caps, off-timeline neighbors,
+ * extended-mode state, and truncation. Returns undefined if nothing to say.
+ */
+export function buildDependencyContextHint(
+  params: DependencyContextHintParams,
+): string | undefined {
+  const {
+    focusId,
+    timelineAdjacency,
+    bundleIndexById,
+    edges,
+    showDependents,
+    showAllUpstream,
+    showAllDownstream,
+    showExtendedDeps,
+    extendedTruncated,
+  } = params;
+
+  const parts: string[] = [];
+
+  const upstreamOnTimelineCount = countInboundOnTimeline(
+    focusId,
+    timelineAdjacency,
+    bundleIndexById,
+  );
+  const upstreamShownCount = edges.filter(
+    (e) => e.toId === focusId && e.hop === 1 && e.leg === "upstream",
+  ).length;
+  const outboundOnTimelineCount = countOutboundOnTimeline(
+    focusId,
+    timelineAdjacency,
+    bundleIndexById,
+  );
+  const downstreamShownCount = edges.filter(
+    (e) => e.hop === 1 && e.leg === "downstream",
+  ).length;
+
+  pushCompactDirectCapHintParts(parts, {
+    showAllUpstream,
+    upstreamOnTimelineCount,
+    upstreamShownCount,
+    showDependents,
+    showAllDownstream,
+    outboundOnTimelineCount,
+    downstreamShownCount,
+  });
+
+  const inboundAdj = countInboundInAdjacency(focusId, timelineAdjacency);
+  const outboundAdj = countOutboundInAdjacency(focusId, timelineAdjacency);
+  const hiddenUp = Math.max(0, inboundAdj - upstreamOnTimelineCount);
+  const hiddenDown = showDependents
+    ? Math.max(0, outboundAdj - outboundOnTimelineCount)
+    : 0;
+
+  pushOffTimelineNeighborHintParts(parts, hiddenUp, hiddenDown);
+
+  pushExtendedDepHintParts(parts, {
+    showExtendedDeps,
+    hiddenUp,
+    hiddenDown,
+    onTimelineNeighborSum: upstreamOnTimelineCount + outboundOnTimelineCount,
+    extendedTruncated,
+    edges,
+  });
+
+  return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
 /**

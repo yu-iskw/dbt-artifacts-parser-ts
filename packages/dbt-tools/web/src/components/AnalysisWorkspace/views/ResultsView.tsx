@@ -354,7 +354,7 @@ export function TimelineSearchControls({
                 showTimelineDependents: true,
                 showAllTimelineUpstreamEdges: false,
                 showAllTimelineDownstreamEdges: false,
-                showTimelineExtendedDeps: false,
+                showTimelineExtendedDeps: true,
               }));
             }}
           >

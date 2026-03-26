@@ -7,8 +7,7 @@ import {
   TIMELINE_MAX_UPSTREAM_EDGES,
 } from "./constants";
 import {
-  countInboundOnTimeline,
-  countOutboundOnTimeline,
+  buildDependencyContextHint,
   getFocusTimelineEdges,
   type FocusTimelineEdge,
 } from "./edgeGeometry";
@@ -78,44 +77,17 @@ export function useGanttFocusEdges({
     if (!edgeFocusId || hoverUniqueId !== edgeFocusId) {
       return undefined;
     }
-    const upstreamOnTimelineCount = countInboundOnTimeline(
-      edgeFocusId,
+    return buildDependencyContextHint({
+      focusId: edgeFocusId,
       timelineAdjacency,
       bundleIndexById,
-    );
-    const upstreamShownCount = edges.filter(
-      (e) => e.toId === edgeFocusId && e.hop === 1 && e.leg === "upstream",
-    ).length;
-    const outboundOnTimelineCount = countOutboundOnTimeline(
-      edgeFocusId,
-      timelineAdjacency,
-      bundleIndexById,
-    );
-    const downstreamShownCount = edges.filter(
-      (e) => e.hop === 1 && e.leg === "downstream",
-    ).length;
-    const parts: string[] = [];
-    if (
-      !showAllUpstream &&
-      upstreamOnTimelineCount > TIMELINE_MAX_UPSTREAM_EDGES
-    ) {
-      parts.push(
-        `Showing ${upstreamShownCount} of ${upstreamOnTimelineCount} direct dependencies.`,
-      );
-    }
-    if (
-      showDependents &&
-      !showAllDownstream &&
-      outboundOnTimelineCount > TIMELINE_MAX_DOWNSTREAM_EDGES
-    ) {
-      parts.push(
-        `Showing ${downstreamShownCount} of ${outboundOnTimelineCount} direct dependents.`,
-      );
-    }
-    if (showExtendedDeps && extendedTruncated) {
-      parts.push("Extended dependency lines may be truncated by caps.");
-    }
-    return parts.length > 0 ? parts.join(" ") : undefined;
+      edges,
+      showDependents,
+      showAllUpstream,
+      showAllDownstream,
+      showExtendedDeps,
+      extendedTruncated,
+    });
   }, [
     edgeFocusId,
     hoverUniqueId,

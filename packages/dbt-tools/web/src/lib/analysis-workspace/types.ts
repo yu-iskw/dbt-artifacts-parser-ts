@@ -75,7 +75,7 @@ export interface TimelineFilterState {
   showAllTimelineDownstreamEdges: boolean;
   /**
    * When true: add capped multi-hop dependency edges (hop ≥ 2) for the focused
-   * node via BFS over timelineAdjacency. Default false.
+   * node via BFS over timelineAdjacency. Default true (session / clear filters).
    */
   showTimelineExtendedDeps: boolean;
 }

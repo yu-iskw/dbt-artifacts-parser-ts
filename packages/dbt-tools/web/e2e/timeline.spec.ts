@@ -43,4 +43,10 @@ test.describe("timeline workspace", () => {
     await expect(page.locator(".gantt-mode-toggle")).toBeVisible();
     await expect(page.locator(".gantt-timezone-select")).toBeVisible();
   });
+
+  test("Extended deps legend defaults on", async ({ page }) => {
+    const btn = page.getByRole("button", { name: "Extended deps" });
+    await expect(btn).toBeVisible();
+    await expect(btn).toHaveAttribute("aria-pressed", "true");
+  });
 });

@@ -14,8 +14,6 @@ Related to [15. MVC-style layering for web app](0015-mvc-style-layering-for-web-
 
 Extended by [25. Optional multi-hop capped focus edges on the execution timeline](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)
 
-Amended by [25. Optional multi-hop capped focus edges on the execution timeline](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)
-
 ## Context
 
 ADR-0017 positions the timeline as part of an investigation workflow: focused nodes should help users understand **why** a resource matters in the run, not only when it executed. ADR-0018 keeps Runs (including the timeline) as an execution-analysis surface.
@@ -39,7 +37,7 @@ That asymmetry was easy to read as broken graph data: focusing a **producer** hi
    `getFocusTimelineEdges` in `edgeGeometry.ts` returns `{ edges, extendedTruncated }` and takes options including `showAllDownstream`, `maxDownstreamEdges`, and `extendedDeps` (see [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)). Each `FocusTimelineEdge` carries `hop` (1 for direct neighbors) and `leg` (`upstream` | `downstream`). Shared capping uses `applyNeighborCap`. Outbound order uses `rankOutboundNeighborIds` (sibling-test grouping where applicable, resource-type rank, temporal proximity to the focus end, then id). `countOutboundOnTimeline` supports hints and tests.
 
 4. **Tooltip hints**  
-   When the user hovers the focused row and a cap hides **direct** neighbors, the tooltip may show sentences like **“Showing K of N direct dependencies.”** and/or **“Showing K of N direct dependents.”** (`useGanttFocusEdges.ts`). Extended-mode truncation copy is covered in ADR 0025.
+   When the user hovers the focused row, **Dependency context** in the tooltip is built by [`buildDependencyContextHint`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/edgeGeometry.ts) (wired through [`useGanttFocusEdges.ts`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/useGanttFocusEdges.ts)): direct-neighbor caps, neighbors not on the timeline, extended-mode reminders, and extended truncation (see ADR 0025).
 
 5. **Data contract unchanged**  
    Edges are only drawn between ids present in the **current filtered** timeline bundle index. Adjacency remains `timelineAdjacency` from `services/analyze.ts`.
@@ -47,7 +45,7 @@ That asymmetry was easy to read as broken graph data: focusing a **producer** hi
 ### Non-decisions
 
 - Ranking and caps are **display-only**; they do not change dbt build order or manifest semantics.
-- This ADR is the contract for **one-hop** focus edges (defaults, ranking, caps). **Optional** capped multi-hop segments (`hop ≥ 2`) are a separate, opt-in mode documented in [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md).
+- This ADR is the contract for **one-hop** focus edges (defaults, ranking, caps). **Capped** multi-hop segments (`hop ≥ 2`) are documented in [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md) (default **on**; users may turn **Extended deps** off in the legend).
 
 ### Architecture
 
@@ -57,7 +55,7 @@ flowchart TB
     dep[showTimelineDependents]
     allUp[showAllTimelineUpstreamEdges]
     allDown[showAllTimelineDownstreamEdges]
-    ext[showTimelineExtendedDeps]
+    ext[showTimelineExtendedDeps default on]
   end
   subgraph chart [GanttChart]
     gc[Chart and bundle index]

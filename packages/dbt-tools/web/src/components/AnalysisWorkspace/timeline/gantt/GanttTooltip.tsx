@@ -24,7 +24,7 @@ export function GanttTooltip({
   canShowTimestamps: boolean;
   timeZone: string;
   testStats?: ResourceTestStats;
-  /** Shown when compact upstream capping hides some direct dependencies. */
+  /** Caps, off-timeline neighbors, extended mode — see buildDependencyContextHint. */
   dependencyEdgeHint?: string;
 }) {
   return (
@@ -107,11 +107,12 @@ export function GanttTooltip({
           {testStats.fail + testStats.error}
         </div>
       )}
-      {dependencyEdgeHint && (
+      {dependencyEdgeHint ? (
         <div style={{ marginTop: "0.35rem" }}>
-          <span style={TOOLTIP_LABEL_STYLE}>{dependencyEdgeHint}</span>
+          <div style={TOOLTIP_LABEL_STYLE}>Dependency context</div>
+          <div>{dependencyEdgeHint}</div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
