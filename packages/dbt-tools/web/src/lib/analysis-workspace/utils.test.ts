@@ -5,6 +5,7 @@ import {
   matchesResource,
   isMainProjectResource,
   isDefaultTimelineResource,
+  getDefaultTimelineActiveTypes,
 } from "./utils";
 import type { ResourceNode } from "@web/types";
 import type { ExecutionRow } from "@web/types";
@@ -122,4 +123,18 @@ describe("isDefaultTimelineResource", () => {
         "jaffle_shop",
       ),
     ).toBe(true));
+});
+
+describe("getDefaultTimelineActiveTypes", () => {
+  it("includes seed snapshot and source when present", () => {
+    expect([
+      ...getDefaultTimelineActiveTypes(["model", "seed", "snapshot", "source"]),
+    ]).toEqual(["model", "seed", "snapshot", "source"]);
+  });
+
+  it("excludes test-like types from the default active set", () => {
+    expect([
+      ...getDefaultTimelineActiveTypes(["model", "test", "unit_test", "seed"]),
+    ]).toEqual(["model", "seed"]);
+  });
 });

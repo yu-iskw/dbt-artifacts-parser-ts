@@ -181,6 +181,16 @@ export function isInternalArtifactResource({
   );
 }
 
+export function getDefaultTimelineActiveTypes(
+  presentTypes: string[],
+): Set<string> {
+  return new Set(
+    presentTypes.filter(
+      (type) => type !== "macro" && type !== "test" && type !== "unit_test",
+    ),
+  );
+}
+
 export function isDefaultTimelineResource(
   item: Pick<GanttItem, "resourceType" | "packageName" | "name" | "path">,
   projectName?: string | null,

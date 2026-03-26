@@ -17,19 +17,12 @@ import type {
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
   deriveProjectName,
+  getDefaultTimelineActiveTypes,
   isDefaultTimelineResource,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
 import { SectionCard, WorkspaceScaffold } from "../shared";
 import { TimelineSearchControls } from "../views/ResultsView";
-
-function getDefaultTimelineActiveTypes(presentTypes: string[]): Set<string> {
-  return new Set(
-    presentTypes.filter(
-      (type) => type !== "macro" && type !== "test" && type !== "unit_test",
-    ),
-  );
-}
 
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
   if (left.size !== right.size) return false;
@@ -54,13 +47,13 @@ function parentHasFailureSignal(
 function TimelineSurface({
   analysis,
   filters,
-  defaultActiveTypes,
   effectiveActiveTypes,
   filteredData,
   bundleRowCount,
   statusCounts,
   typeCounts,
   hasActiveFilters,
+  typeFilterHint,
   testStatsById,
   setFilters,
   toggleStatus,
@@ -69,13 +62,16 @@ function TimelineSurface({
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
-  defaultActiveTypes: Set<string>;
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
   bundleRowCount: number;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   hasActiveFilters: boolean;
+  typeFilterHint: {
+    shown: string[];
+    hidden: Array<{ type: string; count: number }>;
+  } | null;
   testStatsById: ReturnType<typeof buildResourceTestStats>;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
   toggleStatus: (status: string) => void;
@@ -123,8 +119,8 @@ function TimelineSurface({
       <TimelineDependencyControls filters={filters} setFilters={setFilters} />
       <TimelineSearchControls
         filters={filters}
-        defaultActiveTypes={defaultActiveTypes}
         hasActiveFilters={hasActiveFilters}
+        typeFilterHint={typeFilterHint}
         setFilters={setFilters}
       />
       {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
@@ -340,6 +336,24 @@ export function TimelineView({
   }, [analysis.ganttData, projectName]);
 
   const hasTypeOverride = !setsEqual(effectiveActiveTypes, defaultActiveTypes);
+  const typeFilterHint = useMemo(() => {
+    if (!hasTypeOverride) return null;
+
+    const shown = [...effectiveActiveTypes]
+      .filter((type) => defaultActiveTypes.has(type))
+      .sort();
+    const hidden = [...defaultActiveTypes]
+      .filter((type) => !effectiveActiveTypes.has(type))
+      .sort()
+      .map((type) => ({
+        type,
+        count: typeCounts[type] ?? 0,
+      }));
+
+    if (hidden.length === 0) return null;
+
+    return { shown, hidden };
+  }, [defaultActiveTypes, effectiveActiveTypes, hasTypeOverride, typeCounts]);
   const hasActiveFilters =
     filters.activeStatuses.size > 0 ||
     hasTypeOverride ||
@@ -354,13 +368,13 @@ export function TimelineView({
       <TimelineSurface
         analysis={analysis}
         filters={filters}
-        defaultActiveTypes={defaultActiveTypes}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
         bundleRowCount={filteredParents.length}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
         hasActiveFilters={hasActiveFilters}
+        typeFilterHint={typeFilterHint}
         testStatsById={testStatsById}
         setFilters={setFilters}
         toggleStatus={toggleStatus}

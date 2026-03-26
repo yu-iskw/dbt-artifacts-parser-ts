@@ -1321,6 +1321,36 @@
   line-height: 1.35;
 }
 
+.timeline-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.timeline-toolbar__search {
+  flex: 1 1 18rem;
+}
+
+.timeline-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.timeline-toolbar__hint {
+  margin: 0;
+  max-width: 40rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-soft);
+  text-align: right;
+}
+
 .timeline-dependency-controls {
   margin-bottom: 0.75rem;
   padding-block: 0.65rem;

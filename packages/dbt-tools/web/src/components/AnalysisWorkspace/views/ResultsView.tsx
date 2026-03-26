@@ -299,13 +299,16 @@ export function ResultsView({
 
 export function TimelineSearchControls({
   filters,
-  defaultActiveTypes,
   hasActiveFilters,
+  typeFilterHint,
   setFilters,
 }: {
   filters: TimelineFilterState;
-  defaultActiveTypes: Set<string>;
   hasActiveFilters: boolean;
+  typeFilterHint: {
+    shown: string[];
+    hidden: Array<{ type: string; count: number }>;
+  } | null;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
 }) {
   return (
@@ -339,8 +342,20 @@ export function TimelineSearchControls({
         </div>
       </label>
 
-      {hasActiveFilters && (
+      {(typeFilterHint != null || hasActiveFilters) && (
         <div className="timeline-toolbar__actions">
+          {typeFilterHint != null && (
+            <p className="timeline-toolbar__hint" role="status">
+              {typeFilterHint.shown.length > 0
+                ? `Showing types: ${typeFilterHint.shown.join(", ")}. `
+                : ""}
+              Hidden by type filter:{" "}
+              {typeFilterHint.hidden
+                .map(({ type, count }) => `${type} (${count})`)
+                .join(", ")}
+              .
+            </p>
+          )}
           <button
             type="button"
             className={PILL_BASE}
@@ -349,7 +364,7 @@ export function TimelineSearchControls({
                 ...current,
                 query: "",
                 activeStatuses: new Set(),
-                activeTypes: new Set(defaultActiveTypes),
+                activeTypes: new Set(),
                 selectedExecutionId: null,
                 dependencyDirection: "both",
                 dependencyDepthHops: 2,
