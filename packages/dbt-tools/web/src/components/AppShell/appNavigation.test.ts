@@ -171,6 +171,15 @@ describe("sidebar navigation helpers", () => {
     expect(navigationItems.map((i) => i.id)).not.toContain("lineage");
   });
 
+  it("orders timeline directly after health", () => {
+    expect(navigationItems.map((i) => i.id)).toEqual([
+      "health",
+      "timeline",
+      "inventory",
+      "runs",
+    ]);
+  });
+
   it("resolves active item for inventory", () => {
     const inv = navigationItems.find((i) => i.id === "inventory")!;
     expect(isNavigationTargetActive(inv, "inventory")).toBe(true);

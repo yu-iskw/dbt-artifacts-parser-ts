@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
+import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
 import type {
   GanttItem,
   ResourceTestStats,
@@ -37,14 +38,8 @@ export interface GanttChartProps {
   testStatsById?: Map<string, ResourceTestStats>;
   /** Whether to show test chips inside bundle rows. Default: true. */
   showTests?: boolean;
-  /** When true, one-hop outbound edges from the focused node are drawn. */
-  showDependents?: boolean;
-  /** When true, draw every direct upstream edge; otherwise cap at TIMELINE_MAX_UPSTREAM_EDGES. */
-  showAllUpstream?: boolean;
-  /** When true, draw every direct downstream edge; otherwise cap at TIMELINE_MAX_DOWNSTREAM_EDGES. */
-  showAllDownstream?: boolean;
-  /** When true, add capped multi-hop edges (hop ≥ 2) for the focused node. */
-  showExtendedDeps?: boolean;
+  dependencyDirection?: TimelineDependencyDirection;
+  dependencyDepthHops?: number;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
 }
@@ -55,10 +50,8 @@ export function GanttChart({
   timelineAdjacency,
   testStatsById,
   showTests = true,
-  showDependents = false,
-  showAllUpstream = false,
-  showAllDownstream = false,
-  showExtendedDeps = false,
+  dependencyDirection = "both",
+  dependencyDepthHops = 2,
   selectedId = null,
   onSelect,
 }: GanttChartProps) {
@@ -152,10 +145,8 @@ export function GanttChart({
     timelineAdjacency,
     itemById,
     bundleIndexById,
-    showDependents,
-    showAllUpstream,
-    showAllDownstream,
-    showExtendedDeps,
+    dependencyDirection,
+    dependencyDepthHops,
     hoverUniqueId: hover?.item.unique_id,
   });
 

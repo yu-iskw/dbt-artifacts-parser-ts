@@ -140,6 +140,7 @@ export function rankOutboundNeighborIds(
 }
 
 export interface FocusTimelineEdgesOptions {
+  includeUpstream?: boolean;
   includeDownstream: boolean;
   /** When true, draw every direct upstream edge on the timeline. */
   showAllUpstream: boolean;
@@ -177,6 +178,118 @@ function compareFocusEdges(a: FocusTimelineEdge, b: FocusTimelineEdge): number {
   const cf = a.fromId.localeCompare(b.fromId);
   if (cf !== 0) return cf;
   return a.toId.localeCompare(b.toId);
+}
+
+function collectOneHopUpstreamEdges(
+  focusId: string,
+  entry: TimelineAdjacencyEntry,
+  focusItem: GanttItem,
+  itemById: Map<string, GanttItem>,
+  inTimeline: (id: string) => boolean,
+  options: FocusTimelineEdgesOptions,
+): FocusTimelineEdge[] {
+  const candidates = entry.inbound.filter((u) => inTimeline(u));
+  const ranked = rankInboundNeighborIds(candidates, focusItem, itemById);
+  const capped = applyNeighborCap(
+    ranked,
+    options.showAllUpstream,
+    options.maxUpstreamEdges,
+  );
+
+  return capped.map((u) => {
+    const upstreamItem = itemById.get(u);
+    const tier: FocusEdgeTier = isSiblingTestNeighbor(upstreamItem, focusItem)
+      ? "secondary"
+      : "primary";
+    return {
+      fromId: u,
+      toId: focusId,
+      tier,
+      hop: 1,
+      leg: "upstream",
+    };
+  });
+}
+
+function collectOneHopDownstreamEdges(
+  focusId: string,
+  entry: TimelineAdjacencyEntry,
+  focusItem: GanttItem,
+  itemById: Map<string, GanttItem>,
+  inTimeline: (id: string) => boolean,
+  options: FocusTimelineEdgesOptions,
+): FocusTimelineEdge[] {
+  const downCandidates = entry.outbound.filter((v) => inTimeline(v));
+  const rankedDown = rankOutboundNeighborIds(
+    downCandidates,
+    focusItem,
+    itemById,
+  );
+  const cappedDown = applyNeighborCap(
+    rankedDown,
+    options.showAllDownstream,
+    options.maxDownstreamEdges,
+  );
+
+  return cappedDown.map((v) => ({
+    fromId: focusId,
+    toId: v,
+    tier: "downstream",
+    hop: 1,
+    leg: "downstream",
+  }));
+}
+
+function collectExtendedEdges(
+  focusId: string,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>,
+  bundleIndexById: Map<string, number>,
+  maxHops: number,
+  perDir: number,
+  includeUpstream: boolean,
+  includeDownstream: boolean,
+): {
+  upExt: { edges: FocusTimelineEdge[]; truncated: boolean };
+  downExt: { edges: FocusTimelineEdge[]; truncated: boolean };
+} {
+  return {
+    upExt: includeUpstream
+      ? collectExtendedUpstreamEdges(
+          focusId,
+          timelineAdjacency,
+          bundleIndexById,
+          maxHops,
+          perDir,
+        )
+      : { edges: [] as FocusTimelineEdge[], truncated: false },
+    downExt: includeDownstream
+      ? collectExtendedDownstreamEdges(
+          focusId,
+          timelineAdjacency,
+          bundleIndexById,
+          maxHops,
+          perDir,
+        )
+      : { edges: [] as FocusTimelineEdge[], truncated: false },
+  };
+}
+
+function mergeFocusEdges(
+  oneHop: FocusTimelineEdge[],
+  upExt: FocusTimelineEdge[],
+  downExt: FocusTimelineEdge[],
+): FocusTimelineEdge[] {
+  const merged = new Map<string, FocusTimelineEdge>();
+  for (const e of oneHop) merged.set(focusEdgeDedupeKey(e), e);
+  for (const e of upExt) {
+    const k = focusEdgeDedupeKey(e);
+    if (!merged.has(k)) merged.set(k, e);
+  }
+  for (const e of downExt) {
+    const k = focusEdgeDedupeKey(e);
+    if (!merged.has(k)) merged.set(k, e);
+  }
+  return [...merged.values()].sort(compareFocusEdges);
 }
 
 type ExtendedBfsDirection = "upstream" | "downstream";
@@ -352,26 +465,25 @@ export interface DependencyContextHintParams {
   timelineAdjacency: Record<string, TimelineAdjacencyEntry> | undefined;
   bundleIndexById: Map<string, number>;
   edges: FocusTimelineEdge[];
-  showDependents: boolean;
-  showAllUpstream: boolean;
-  showAllDownstream: boolean;
-  showExtendedDeps: boolean;
+  focusOptions: FocusTimelineEdgesOptions;
   extendedTruncated: boolean;
 }
 
 function pushCompactDirectCapHintParts(
   parts: string[],
   args: {
+    includeUpstream: boolean;
     showAllUpstream: boolean;
     upstreamOnTimelineCount: number;
     upstreamShownCount: number;
-    showDependents: boolean;
+    includeDownstream: boolean;
     showAllDownstream: boolean;
     outboundOnTimelineCount: number;
     downstreamShownCount: number;
   },
 ): void {
   if (
+    args.includeUpstream &&
     !args.showAllUpstream &&
     args.upstreamOnTimelineCount > TIMELINE_MAX_UPSTREAM_EDGES
   ) {
@@ -380,7 +492,7 @@ function pushCompactDirectCapHintParts(
     );
   }
   if (
-    args.showDependents &&
+    args.includeDownstream &&
     !args.showAllDownstream &&
     args.outboundOnTimelineCount > TIMELINE_MAX_DOWNSTREAM_EDGES
   ) {
@@ -424,9 +536,7 @@ function pushExtendedDepHintParts(
     args.hiddenDown === 0 &&
     args.onTimelineNeighborSum > 0
   ) {
-    parts.push(
-      "Transitive lines on the timeline are off — enable Extended deps in the legend.",
-    );
+    parts.push("Transitive dependency lines are off for this timeline focus.");
   }
 
   if (args.showExtendedDeps && args.extendedTruncated) {
@@ -453,12 +563,12 @@ export function buildDependencyContextHint(
     timelineAdjacency,
     bundleIndexById,
     edges,
-    showDependents,
-    showAllUpstream,
-    showAllDownstream,
-    showExtendedDeps,
+    focusOptions,
     extendedTruncated,
   } = params;
+  const includeUpstream = focusOptions.includeUpstream ?? true;
+  const includeDownstream = focusOptions.includeDownstream;
+  const showExtendedDeps = focusOptions.extendedDeps?.enabled === true;
 
   const parts: string[] = [];
 
@@ -480,19 +590,22 @@ export function buildDependencyContextHint(
   ).length;
 
   pushCompactDirectCapHintParts(parts, {
-    showAllUpstream,
+    includeUpstream,
+    showAllUpstream: focusOptions.showAllUpstream,
     upstreamOnTimelineCount,
     upstreamShownCount,
-    showDependents,
-    showAllDownstream,
+    includeDownstream,
+    showAllDownstream: focusOptions.showAllDownstream,
     outboundOnTimelineCount,
     downstreamShownCount,
   });
 
   const inboundAdj = countInboundInAdjacency(focusId, timelineAdjacency);
   const outboundAdj = countOutboundInAdjacency(focusId, timelineAdjacency);
-  const hiddenUp = Math.max(0, inboundAdj - upstreamOnTimelineCount);
-  const hiddenDown = showDependents
+  const hiddenUp = includeUpstream
+    ? Math.max(0, inboundAdj - upstreamOnTimelineCount)
+    : 0;
+  const hiddenDown = includeDownstream
     ? Math.max(0, outboundAdj - outboundOnTimelineCount)
     : 0;
 
@@ -532,52 +645,30 @@ export function getFocusTimelineEdges(
   }
 
   const inTimeline = (id: string) => bundleIndexById.has(id);
-  const oneHop: FocusTimelineEdge[] = [];
-
-  const candidates = entry.inbound.filter((u) => inTimeline(u));
-  const ranked = rankInboundNeighborIds(candidates, focusItem, itemById);
-  const capped = applyNeighborCap(
-    ranked,
-    options.showAllUpstream,
-    options.maxUpstreamEdges,
-  );
-
-  for (const u of capped) {
-    const upstreamItem = itemById.get(u);
-    const tier: FocusEdgeTier = isSiblingTestNeighbor(upstreamItem, focusItem)
-      ? "secondary"
-      : "primary";
-    oneHop.push({
-      fromId: u,
-      toId: focusId,
-      tier,
-      hop: 1,
-      leg: "upstream",
-    });
-  }
-
-  if (options.includeDownstream) {
-    const downCandidates = entry.outbound.filter((v) => inTimeline(v));
-    const rankedDown = rankOutboundNeighborIds(
-      downCandidates,
-      focusItem,
-      itemById,
-    );
-    const cappedDown = applyNeighborCap(
-      rankedDown,
-      options.showAllDownstream,
-      options.maxDownstreamEdges,
-    );
-    for (const v of cappedDown) {
-      oneHop.push({
-        fromId: focusId,
-        toId: v,
-        tier: "downstream",
-        hop: 1,
-        leg: "downstream",
-      });
-    }
-  }
+  const includeUpstream = options.includeUpstream ?? true;
+  const includeDownstream = options.includeDownstream;
+  const oneHop = [
+    ...(includeUpstream
+      ? collectOneHopUpstreamEdges(
+          focusId,
+          entry,
+          focusItem,
+          itemById,
+          inTimeline,
+          options,
+        )
+      : []),
+    ...(includeDownstream
+      ? collectOneHopDownstreamEdges(
+          focusId,
+          entry,
+          focusItem,
+          itemById,
+          inTimeline,
+          options,
+        )
+      : []),
+  ];
 
   const ext = options.extendedDeps;
   if (!ext?.enabled) {
@@ -590,36 +681,16 @@ export function getFocusTimelineEdges(
   const maxHops = ext.maxHops ?? TIMELINE_EXTENDED_MAX_HOPS;
   const perDir =
     ext.maxEdgesPerDirection ?? TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION;
-
-  const upExt = collectExtendedUpstreamEdges(
+  const { upExt, downExt } = collectExtendedEdges(
     focusId,
     timelineAdjacency,
     bundleIndexById,
     maxHops,
     perDir,
+    includeUpstream,
+    includeDownstream,
   );
-  const downExt = options.includeDownstream
-    ? collectExtendedDownstreamEdges(
-        focusId,
-        timelineAdjacency,
-        bundleIndexById,
-        maxHops,
-        perDir,
-      )
-    : { edges: [] as FocusTimelineEdge[], truncated: false };
-
-  const merged = new Map<string, FocusTimelineEdge>();
-  for (const e of oneHop) merged.set(focusEdgeDedupeKey(e), e);
-  for (const e of upExt.edges) {
-    const k = focusEdgeDedupeKey(e);
-    if (!merged.has(k)) merged.set(k, e);
-  }
-  for (const e of downExt.edges) {
-    const k = focusEdgeDedupeKey(e);
-    if (!merged.has(k)) merged.set(k, e);
-  }
-
-  const edges = [...merged.values()].sort(compareFocusEdges);
+  const edges = mergeFocusEdges(oneHop, upExt.edges, downExt.edges);
   return {
     edges,
     extendedTruncated: upExt.truncated || downExt.truncated,

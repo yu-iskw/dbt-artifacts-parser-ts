@@ -74,10 +74,8 @@ function AppContent() {
         selectedExecutionId: selected,
         showTests: true,
         failuresOnly: false,
-        showTimelineDependents: true,
-        showAllTimelineUpstreamEdges: false,
-        showAllTimelineDownstreamEdges: false,
-        showTimelineExtendedDeps: true,
+        dependencyDirection: "both",
+        dependencyDepthHops: 2,
       };
     },
   );

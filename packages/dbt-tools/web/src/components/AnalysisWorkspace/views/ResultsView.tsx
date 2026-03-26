@@ -351,10 +351,8 @@ export function TimelineSearchControls({
                 activeStatuses: new Set(),
                 activeTypes: new Set(defaultActiveTypes),
                 selectedExecutionId: null,
-                showTimelineDependents: true,
-                showAllTimelineUpstreamEdges: false,
-                showAllTimelineDownstreamEdges: false,
-                showTimelineExtendedDeps: true,
+                dependencyDirection: "both",
+                dependencyDepthHops: 2,
               }));
             }}
           >

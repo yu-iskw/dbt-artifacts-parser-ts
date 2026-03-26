@@ -44,9 +44,14 @@ test.describe("timeline workspace", () => {
     await expect(page.locator(".gantt-timezone-select")).toBeVisible();
   });
 
-  test("Extended deps legend defaults on", async ({ page }) => {
-    const btn = page.getByRole("button", { name: "Extended deps" });
-    await expect(btn).toBeVisible();
-    await expect(btn).toHaveAttribute("aria-pressed", "true");
+  test("dependency controls default to both at depth 2", async ({ page }) => {
+    await expect(page.locator(".timeline-dependency-controls")).toBeVisible();
+    await expect(page.getByText("Depth", { exact: true })).toBeVisible();
+    await expect(page.getByText("2", { exact: true })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Both" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.getByRole("button", { name: "Max" })).toBeVisible();
   });
 });

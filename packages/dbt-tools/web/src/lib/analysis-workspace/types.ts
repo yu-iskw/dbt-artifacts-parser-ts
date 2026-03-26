@@ -33,6 +33,7 @@ export type RunsGroupBy = "none" | "type" | "status" | "thread";
 export type DashboardStatusFilter = "all" | StatusTone;
 export type AssetExplorerMode = "project" | "database";
 export type LensMode = "status" | "type" | "coverage";
+export type TimelineDependencyDirection = "upstream" | "both" | "downstream";
 
 export interface OverviewFilterState {
   status: DashboardStatusFilter;
@@ -57,27 +58,13 @@ export interface TimelineFilterState {
    * passing ones. Does not remove passing bundles from the view.
    */
   failuresOnly: boolean;
+  /** Which dependency direction to visualize for the focused timeline node. */
+  dependencyDirection: TimelineDependencyDirection;
   /**
-   * When true: while a timeline parcel is focused, also draw one-hop outbound
-   * (dependent) edges from the manifest graph.
+   * Maximum dependency hop index to show. `1` means direct neighbors only;
+   * values > 1 enable capped extended BFS up to the given hop.
    */
-  showTimelineDependents: boolean;
-  /**
-   * When true: draw every direct upstream edge for the focused node. When false
-   * (default), show a ranked subset up to TIMELINE_MAX_UPSTREAM_EDGES.
-   */
-  showAllTimelineUpstreamEdges: boolean;
-  /**
-   * When true: draw every direct downstream edge for the focused node. When false
-   * (default), show a ranked subset up to TIMELINE_MAX_DOWNSTREAM_EDGES.
-   * Only applies while `showTimelineDependents` is true.
-   */
-  showAllTimelineDownstreamEdges: boolean;
-  /**
-   * When true: add capped multi-hop dependency edges (hop ≥ 2) for the focused
-   * node via BFS over timelineAdjacency. Default true (session / clear filters).
-   */
-  showTimelineExtendedDeps: boolean;
+  dependencyDepthHops: number;
 }
 
 export interface AssetViewState {

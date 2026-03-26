@@ -6,6 +6,7 @@ import {
 } from "react";
 import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
+import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
 import { isPositiveStatus } from "./gantt/formatting";
 import type { AnalysisState, GanttItem } from "@web/types";
@@ -117,36 +118,9 @@ function TimelineSurface({
         onToggleFailuresOnly={() =>
           setFilters((c) => ({ ...c, failuresOnly: !c.failuresOnly }))
         }
-        showTimelineDependents={filters.showTimelineDependents}
-        onToggleShowTimelineDependents={() =>
-          setFilters((c) => ({
-            ...c,
-            showTimelineDependents: !c.showTimelineDependents,
-          }))
-        }
-        showAllTimelineUpstreamEdges={filters.showAllTimelineUpstreamEdges}
-        onToggleShowAllTimelineUpstreamEdges={() =>
-          setFilters((c) => ({
-            ...c,
-            showAllTimelineUpstreamEdges: !c.showAllTimelineUpstreamEdges,
-          }))
-        }
-        showAllTimelineDownstreamEdges={filters.showAllTimelineDownstreamEdges}
-        onToggleShowAllTimelineDownstreamEdges={() =>
-          setFilters((c) => ({
-            ...c,
-            showAllTimelineDownstreamEdges: !c.showAllTimelineDownstreamEdges,
-          }))
-        }
-        showTimelineExtendedDeps={filters.showTimelineExtendedDeps}
-        onToggleShowTimelineExtendedDeps={() =>
-          setFilters((c) => ({
-            ...c,
-            showTimelineExtendedDeps: !c.showTimelineExtendedDeps,
-          }))
-        }
         showCompileExecuteLegend={showCompileExecuteLegend}
       />
+      <TimelineDependencyControls filters={filters} setFilters={setFilters} />
       <TimelineSearchControls
         filters={filters}
         defaultActiveTypes={defaultActiveTypes}
@@ -165,10 +139,8 @@ function TimelineSurface({
         timelineAdjacency={analysis.timelineAdjacency}
         testStatsById={testStatsById}
         showTests={filters.showTests}
-        showDependents={filters.showTimelineDependents}
-        showAllUpstream={filters.showAllTimelineUpstreamEdges}
-        showAllDownstream={filters.showAllTimelineDownstreamEdges}
-        showExtendedDeps={filters.showTimelineExtendedDeps}
+        dependencyDirection={filters.dependencyDirection}
+        dependencyDepthHops={filters.dependencyDepthHops}
         selectedId={filters.selectedExecutionId}
         onSelect={(id) => {
           setFilters((current) => ({ ...current, selectedExecutionId: id }));

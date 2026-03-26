@@ -25,6 +25,7 @@ import {
 } from "./constants";
 
 const fullUpstreamOpts = {
+  includeUpstream: true,
   includeDownstream: false,
   showAllUpstream: true,
   maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
@@ -182,10 +183,7 @@ describe("buildDependencyContextHint", () => {
       timelineAdjacency: adj,
       bundleIndexById: idx,
       edges: [],
-      showDependents: false,
-      showAllUpstream: true,
-      showAllDownstream: true,
-      showExtendedDeps: false,
+      focusOptions: fullUpstreamOpts,
       extendedTruncated: false,
     });
     expect(hint).toContain("2 direct dependencies not on this timeline");
@@ -212,13 +210,10 @@ describe("buildDependencyContextHint", () => {
           leg: "upstream",
         },
       ],
-      showDependents: false,
-      showAllUpstream: true,
-      showAllDownstream: true,
-      showExtendedDeps: false,
+      focusOptions: fullUpstreamOpts,
       extendedTruncated: false,
     });
-    expect(hint).toContain("Transitive lines on the timeline are off");
+    expect(hint).toContain("Transitive dependency lines are off");
   });
 
   it("does not suggest Extended deps when some neighbors are off-timeline", () => {
@@ -234,14 +229,11 @@ describe("buildDependencyContextHint", () => {
       timelineAdjacency: adj,
       bundleIndexById: idx,
       edges: [],
-      showDependents: false,
-      showAllUpstream: true,
-      showAllDownstream: true,
-      showExtendedDeps: false,
+      focusOptions: fullUpstreamOpts,
       extendedTruncated: false,
     });
     expect(hint).toContain("not on this timeline");
-    expect(hint).not.toContain("Transitive lines on the timeline are off");
+    expect(hint).not.toContain("Transitive dependency lines are off");
   });
 
   it("includes extended truncation with line count", () => {
@@ -268,10 +260,10 @@ describe("buildDependencyContextHint", () => {
           leg: "upstream",
         },
       ],
-      showDependents: false,
-      showAllUpstream: true,
-      showAllDownstream: true,
-      showExtendedDeps: true,
+      focusOptions: {
+        ...fullUpstreamOpts,
+        extendedDeps: { enabled: true },
+      },
       extendedTruncated: true,
     });
     expect(hint).toContain("2 transitive-on-timeline lines");
@@ -301,6 +293,7 @@ describe("getFocusTimelineEdges", () => {
     const bundleIndexById = new Map<string, number>();
     expect(
       getFocusTimelineEdges(null, {}, itemById, bundleIndexById, {
+        includeUpstream: true,
         includeDownstream: false,
         showAllUpstream: true,
         maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
@@ -444,6 +437,7 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       {
+        includeUpstream: true,
         includeDownstream: false,
         showAllUpstream: false,
         maxUpstreamEdges: 8,
@@ -461,6 +455,7 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       {
+        includeUpstream: true,
         includeDownstream: false,
         showAllUpstream: true,
         maxUpstreamEdges: 8,
@@ -495,6 +490,7 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       {
+        includeUpstream: true,
         includeDownstream: true,
         showAllUpstream: true,
         maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
@@ -512,6 +508,7 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       {
+        includeUpstream: true,
         includeDownstream: true,
         showAllUpstream: true,
         maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
@@ -548,6 +545,7 @@ describe("getFocusTimelineEdges", () => {
       itemById,
       bundleIndexById,
       {
+        includeUpstream: true,
         includeDownstream: true,
         showAllUpstream: true,
         maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
@@ -590,6 +588,81 @@ describe("getFocusTimelineEdges", () => {
       hop: 2,
       leg: "downstream",
     });
+  });
+
+  it("suppresses upstream edges when includeUpstream is false", () => {
+    const up = model("model.up");
+    const focus = model("model.focus", 200, 300);
+    const down = model("model.down", 400, 450);
+    const items = [up, focus, down];
+    const itemById = new Map(items.map((i) => [i.unique_id, i]));
+    const bundleIndexById = new Map(items.map((x, i) => [x.unique_id, i]));
+    const timelineAdjacency: Record<string, TimelineAdjacencyEntry> = {
+      "model.focus": { inbound: ["model.up"], outbound: ["model.down"] },
+      "model.up": { inbound: [], outbound: ["model.focus"] },
+      "model.down": { inbound: ["model.focus"], outbound: [] },
+    };
+
+    const { edges } = getFocusTimelineEdges(
+      "model.focus",
+      timelineAdjacency,
+      itemById,
+      bundleIndexById,
+      {
+        includeUpstream: false,
+        includeDownstream: true,
+        showAllUpstream: true,
+        maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
+        showAllDownstream: true,
+        maxDownstreamEdges: TIMELINE_MAX_DOWNSTREAM_EDGES,
+        extendedDeps: {
+          enabled: true,
+          maxHops: TIMELINE_EXTENDED_MAX_HOPS,
+          maxEdgesPerDirection: TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION,
+        },
+      },
+    );
+
+    expect(edges.some((edge) => edge.leg === "upstream")).toBe(false);
+    expect(edges).toContainEqual({
+      fromId: "model.focus",
+      toId: "model.down",
+      tier: "downstream",
+      hop: 1,
+      leg: "downstream",
+    });
+  });
+
+  it("disables extended edges when extendedDeps.enabled is false", () => {
+    const a = model("model.a", 0, 50);
+    const b = model("model.b", 60, 120);
+    const focus = model("model.focus", 200, 300);
+    const items = [a, b, focus];
+    const itemById = new Map(items.map((i) => [i.unique_id, i]));
+    const bundleIndexById = new Map(items.map((x, i) => [x.unique_id, i]));
+    const timelineAdjacency: Record<string, TimelineAdjacencyEntry> = {
+      "model.focus": { inbound: ["model.b"], outbound: [] },
+      "model.b": { inbound: ["model.a"], outbound: ["model.focus"] },
+      "model.a": { inbound: [], outbound: ["model.b"] },
+    };
+
+    const { edges } = getFocusTimelineEdges(
+      "model.focus",
+      timelineAdjacency,
+      itemById,
+      bundleIndexById,
+      {
+        includeUpstream: true,
+        includeDownstream: false,
+        showAllUpstream: true,
+        maxUpstreamEdges: TIMELINE_MAX_UPSTREAM_EDGES,
+        showAllDownstream: true,
+        maxDownstreamEdges: TIMELINE_MAX_DOWNSTREAM_EDGES,
+        extendedDeps: { enabled: false },
+      },
+    );
+
+    expect(edges.every((edge) => edge.hop === 1)).toBe(true);
   });
 });
 
