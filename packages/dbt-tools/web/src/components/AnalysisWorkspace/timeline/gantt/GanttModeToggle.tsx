@@ -16,6 +16,21 @@ export function GanttModeToggle({
   return (
     <div className="gantt-controls">
       <div className="gantt-controls__cluster">
+        {activeMode === "timestamps" && (
+          <label className="gantt-timezone-select">
+            <span>Timezone</span>
+            <select
+              value={activeTimeZone}
+              onChange={(event) => onTimeZoneChange(event.target.value)}
+            >
+              {timeZones.map((timeZone) => (
+                <option key={timeZone} value={timeZone}>
+                  {timeZone}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="gantt-mode-toggle">
           <button
             type="button"
@@ -32,21 +47,6 @@ export function GanttModeToggle({
             Timestamps
           </button>
         </div>
-        {activeMode === "timestamps" && (
-          <label className="gantt-timezone-select">
-            <span>Timezone</span>
-            <select
-              value={activeTimeZone}
-              onChange={(event) => onTimeZoneChange(event.target.value)}
-            >
-              {timeZones.map((timeZone) => (
-                <option key={timeZone} value={timeZone}>
-                  {timeZone}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
       </div>
     </div>
   );

@@ -36,12 +36,22 @@ test.describe("timeline workspace", () => {
     ).toHaveCount(0);
   });
 
-  test("shows timezone next to the mode toggle in timestamps mode", async ({
+  test("shows timezone to the left of the mode toggle in timestamps mode", async ({
     page,
   }) => {
     await page.getByRole("button", { name: "Timestamps", exact: true }).click();
-    await expect(page.locator(".gantt-mode-toggle")).toBeVisible();
-    await expect(page.locator(".gantt-timezone-select")).toBeVisible();
+    const modeToggle = page.locator(".gantt-mode-toggle");
+    const timezoneSelect = page.locator(".gantt-timezone-select");
+
+    await expect(modeToggle).toBeVisible();
+    await expect(timezoneSelect).toBeVisible();
+
+    const toggleBox = await modeToggle.boundingBox();
+    const timezoneBox = await timezoneSelect.boundingBox();
+
+    expect(toggleBox).not.toBeNull();
+    expect(timezoneBox).not.toBeNull();
+    expect(timezoneBox!.x).toBeLessThan(toggleBox!.x);
   });
 
   test("dependency controls default to both at depth 2", async ({ page }) => {
