@@ -135,8 +135,8 @@ function drawBrush(
   if (dragState && dragState.kind !== "idle") {
     if (
       dragState.kind === "new" ||
-      dragState.kind === "resize-left" ||
-      dragState.kind === "resize-right"
+      dragState.kind === DRAG_KIND_RESIZE_LEFT ||
+      dragState.kind === DRAG_KIND_RESIZE_RIGHT
     ) {
       selStart = dragState.selStart;
       selEnd = dragState.selEnd;
@@ -184,12 +184,12 @@ type DragState =
       selEnd: number; // ms
     }
   | {
-      kind: "resize-left";
+      kind: typeof DRAG_KIND_RESIZE_LEFT;
       selStart: number;
       selEnd: number;
     }
   | {
-      kind: "resize-right";
+      kind: typeof DRAG_KIND_RESIZE_RIGHT;
       selStart: number;
       selEnd: number;
     };
@@ -294,13 +294,13 @@ export function TimeRangeBrush({
       };
     } else if (zone === "left") {
       dragRef.current = {
-        kind: "resize-left",
+        kind: DRAG_KIND_RESIZE_LEFT,
         selStart: timeWindow!.start,
         selEnd: timeWindow!.end,
       };
     } else if (zone === "right") {
       dragRef.current = {
-        kind: "resize-right",
+        kind: DRAG_KIND_RESIZE_RIGHT,
         selStart: timeWindow!.start,
         selEnd: timeWindow!.end,
       };
@@ -336,13 +336,13 @@ export function TimeRangeBrush({
           selStart: Math.min(t, originT),
           selEnd: Math.max(t, originT),
         };
-      } else if (drag.kind === "resize-left") {
+      } else if (drag.kind === DRAG_KIND_RESIZE_LEFT) {
         const t = xToTime(x, labelW, chartW, maxEnd);
         dragRef.current = {
           ...drag,
           selStart: clamp(t, 0, drag.selEnd - minSpan),
         };
-      } else if (drag.kind === "resize-right") {
+      } else if (drag.kind === DRAG_KIND_RESIZE_RIGHT) {
         const t = xToTime(x, labelW, chartW, maxEnd);
         dragRef.current = {
           ...drag,
@@ -372,7 +372,7 @@ export function TimeRangeBrush({
         } else if (moved && span >= minSpan) {
           onChange({ start: drag.selStart, end: drag.selEnd });
         }
-      } else if (drag.kind === "resize-left" || drag.kind === "resize-right") {
+      } else if (drag.kind === DRAG_KIND_RESIZE_LEFT || drag.kind === DRAG_KIND_RESIZE_RIGHT) {
         const span = drag.selEnd - drag.selStart;
         if (span >= minSpan) {
           onChange({ start: drag.selStart, end: drag.selEnd });
@@ -435,7 +435,6 @@ export function TimeRangeBrush({
           height: BRUSH_H,
           cursor,
         }}
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- brush is keyboard-accessible for Escape to clear
         tabIndex={0}
         aria-label="Drag to select a time range to zoom into"
         onMouseDown={handleMouseDown}
