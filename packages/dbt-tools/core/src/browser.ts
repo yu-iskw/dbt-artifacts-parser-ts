@@ -8,6 +8,10 @@ export {
   searchRunResults,
   detectBottlenecks,
 } from "./analysis/run-results-search";
+export {
+  buildAnalysisSnapshotFromArtifacts,
+  buildAnalysisSnapshotFromParsedArtifacts,
+} from "./analysis/analysis-snapshot";
 export type {
   NodeExecution,
   ExecutionSummary,
@@ -18,3 +22,21 @@ export type {
   BottleneckResult,
   RunResultsSearchCriteria,
 } from "./analysis/run-results-search";
+export type {
+  AnalysisSnapshot,
+  AnalysisSnapshotBuildTimings,
+  DependencyPreview,
+  ExecutionRow,
+  GanttItem,
+  GraphSnapshot,
+  MetricDefinition,
+  ResourceConnectionSummary,
+  ResourceDefinition,
+  ResourceGroup,
+  ResourceNode,
+  SemanticModelDefinition,
+  StatusBreakdownItem,
+  StatusTone,
+  ThreadStat,
+  TimelineAdjacencyEntry,
+} from "./analysis/analysis-snapshot";
