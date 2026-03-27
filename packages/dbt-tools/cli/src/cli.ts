@@ -20,6 +20,7 @@ import {
   writeGraphOutput,
 } from "@dbt-tools/core";
 import { runReportAction, depsAction } from "./cli-actions";
+import { serveAction } from "./serve-action";
 
 const program = new Command();
 
@@ -343,6 +344,29 @@ program
       handleError(error, isTTY());
     }
   });
+
+/**
+ * Serve command: Start a local web server that watches target/ and auto-reloads
+ */
+program
+  .command("serve")
+  .description(
+    "Serve the dbt-tools UI and auto-reload when artifacts change after dbt run",
+  )
+  .option("--target <path>", "Path to dbt target directory", "./target")
+  .option("--port <n>", "HTTP port", "3000")
+  .option("--host <host>", "Bind address", "127.0.0.1")
+  .option("--open", "Open browser on start", false)
+  .action(
+    (options: {
+      target: string;
+      port: string;
+      host: string;
+      open: boolean;
+    }) => {
+      serveAction(options).catch((error) => handleError(error, isTTY()));
+    },
+  );
 
 // Parse command line arguments
 program.parse();

@@ -73,6 +73,13 @@ export interface GraphSnapshot {
   nodesByType: Record<string, number>;
 }
 
+export interface CatalogColumn {
+  name: string;
+  type: string;
+  index: number;
+  comment: string | null;
+}
+
 export interface ResourceNode {
   uniqueId: string;
   name: string;
@@ -96,6 +103,8 @@ export interface ResourceNode {
   statusTone: StatusTone;
   executionTime: number | null;
   threadId: string | null;
+  /** Column metadata from catalog.json. Present only when catalog was provided at analysis time. */
+  columns?: CatalogColumn[];
 }
 
 export interface ResourceGroup {

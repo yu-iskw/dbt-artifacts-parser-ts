@@ -55,6 +55,7 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   const { toast } = useToast();
   const [manifestFile, setManifestFile] = useState<File | null>(null);
   const [runResultsFile, setRunResultsFile] = useState<File | null>(null);
+  const [catalogFile, setCatalogFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleAnalyze() {
@@ -67,11 +68,12 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
     onError(null);
 
     try {
-      const [manifestJson, runResultsJson] = await Promise.all([
+      const [manifestJson, runResultsJson, catalogJson] = await Promise.all([
         readFileAsJson(manifestFile),
         readFileAsJson(runResultsFile),
+        catalogFile ? readFileAsJson(catalogFile) : Promise.resolve(undefined),
       ]);
-      const analysis = await analyzeArtifacts(manifestJson, runResultsJson);
+      const analysis = await analyzeArtifacts(manifestJson, runResultsJson, catalogJson);
       onAnalysis(analysis);
       toast(
         `Analyzed ${analysis.summary.total_nodes} executions successfully`,
@@ -150,6 +152,12 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
             label="run_results.json"
             file={runResultsFile}
             onFileChange={setRunResultsFile}
+          />
+          <FileInputRow
+            id="catalog-input"
+            label="catalog.json (optional)"
+            file={catalogFile}
+            onFileChange={setCatalogFile}
           />
         </div>
 

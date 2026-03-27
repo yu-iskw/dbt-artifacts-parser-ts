@@ -1,5 +1,6 @@
 import type {
   AnalysisState,
+  CatalogColumn,
   GanttItem,
   MetricDefinition,
   ResourceDefinition,
@@ -206,6 +207,7 @@ function buildResourcesAndDependencyIndex(
     string,
     { status?: string; execution_time?: number; thread_id?: string }
   >,
+  catalogColumnsByUniqueId: Map<string, CatalogColumn[]>,
 ): {
   resources: AnalysisState["resources"];
   dependencyIndex: AnalysisState["dependencyIndex"];
@@ -217,6 +219,7 @@ function buildResourcesAndDependencyIndex(
   graphologyGraph.forEachNode(
     (uniqueId: string, attributes: Record<string, unknown>) => {
       const execution = executionById.get(uniqueId);
+      const columns = catalogColumnsByUniqueId.get(uniqueId);
       resources.push({
         uniqueId,
         name: String(attributes.name || uniqueId),
@@ -257,6 +260,7 @@ function buildResourcesAndDependencyIndex(
             : null,
         threadId:
           typeof execution?.thread_id === "string" ? execution.thread_id : null,
+        ...(columns !== undefined && { columns }),
       });
 
       const upstream = graph.getUpstream(uniqueId);
@@ -667,13 +671,60 @@ function buildThreadStats(
     .sort((a, b) => b.totalExecutionTime - a.totalExecutionTime);
 }
 
+type CatalogTableLike = {
+  columns: Record<string, { name: string; type: string; index: number; comment?: string | null }>;
+  unique_id?: string | null;
+};
+
+function buildCatalogColumnIndex(
+  catalogJson: Record<string, unknown>,
+): Map<string, CatalogColumn[]> {
+  const index = new Map<string, CatalogColumn[]>();
+
+  const addTable = (uniqueId: string, table: CatalogTableLike) => {
+    const cols = Object.values(table.columns)
+      .map((c) => ({
+        name: c.name,
+        type: c.type,
+        index: c.index,
+        comment: c.comment ?? null,
+      }))
+      .sort((a, b) => a.index - b.index);
+    if (cols.length > 0) index.set(uniqueId, cols);
+  };
+
+  const nodesRaw = catalogJson.nodes;
+  if (nodesRaw != null && typeof nodesRaw === "object") {
+    for (const [key, table] of Object.entries(nodesRaw as Record<string, unknown>)) {
+      if (table == null || typeof table !== "object") continue;
+      const t = table as CatalogTableLike;
+      const id = typeof t.unique_id === "string" ? t.unique_id : key;
+      addTable(id, t);
+    }
+  }
+
+  const sourcesRaw = catalogJson.sources;
+  if (sourcesRaw != null && typeof sourcesRaw === "object") {
+    for (const [key, table] of Object.entries(sourcesRaw as Record<string, unknown>)) {
+      if (table == null || typeof table !== "object") continue;
+      const t = table as CatalogTableLike;
+      const id = typeof t.unique_id === "string" ? t.unique_id : key;
+      addTable(id, t);
+    }
+  }
+
+  return index;
+}
+
 /**
  * Parses manifest and run_results JSON, runs analysis, and returns AnalysisState.
  * Shared by both file upload and API preload paths.
+ * catalogJson is optional — when absent, all views work identically without column metadata.
  */
 export async function analyzeArtifacts(
   manifestJson: Record<string, unknown>,
   runResultsJson: Record<string, unknown>,
+  catalogJson?: Record<string, unknown>,
 ): Promise<AnalysisState> {
   const [manifestParser, runResultsParser, coreMod] = await Promise.all([
     import("dbt-artifacts-parser/manifest"),
@@ -725,9 +776,14 @@ export async function analyzeArtifacts(
   const ganttById = new Map(ganttData.map((item) => [item.unique_id, item]));
   const executionById = new Map(nodeExecutions.map((e) => [e.unique_id, e]));
 
+  const catalogColumnsByUniqueId = catalogJson != null
+    ? buildCatalogColumnIndex(catalogJson)
+    : new Map<string, CatalogColumn[]>();
+
   const { resources, dependencyIndex } = buildResourcesAndDependencyIndex(
     graph as unknown as GraphLike,
     executionById,
+    catalogColumnsByUniqueId,
   );
 
   const graphologyGraph = graph.getGraph();
