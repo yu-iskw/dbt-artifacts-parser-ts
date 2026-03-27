@@ -2,12 +2,14 @@ import { useEffect, useRef } from "react";
 import { refetchFromApi } from "../services/artifactApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
+import type { AnalysisLoadResult } from "../services/analysisLoader";
 
 interface UseAnalysisPreloadParams {
   setPreloadLoading: (loading: boolean) => void;
   setAnalysis: (a: AnalysisState | null) => void;
   setAnalysisSource: (s: "preload" | "upload" | null) => void;
   setError: (e: string | null) => void;
+  pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null };
 }
 
 /**
@@ -18,6 +20,7 @@ export function useAnalysisPreload({
   setAnalysis,
   setAnalysisSource,
   setError,
+  pendingMetricsRef,
 }: UseAnalysisPreloadParams) {
   const attempted = useRef(false);
 
@@ -32,7 +35,8 @@ export function useAnalysisPreload({
         setPreloadLoading(false);
         if (result) {
           debug("Preload: success, analysis loaded");
-          setAnalysis(result);
+          pendingMetricsRef.current = result.metrics;
+          setAnalysis(result.analysis);
           setAnalysisSource("preload");
           setError(null);
         }
@@ -46,5 +50,11 @@ export function useAnalysisPreload({
             : "Failed to load artifacts from server",
         );
       });
-  }, [setPreloadLoading, setAnalysis, setAnalysisSource, setError]);
+  }, [
+    pendingMetricsRef,
+    setPreloadLoading,
+    setAnalysis,
+    setAnalysisSource,
+    setError,
+  ]);
 }

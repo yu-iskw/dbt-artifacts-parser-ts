@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { refetchFromApi } from "../services/artifactApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
+import type { AnalysisLoadResult } from "../services/analysisLoader";
 
 /**
  * Subscribes to dbt-artifacts-changed (Vite HMR) when analysis came from preload.
@@ -11,6 +12,7 @@ export function useDbtArtifactsReload(
   analysisSource: "preload" | "upload" | null,
   setAnalysis: (a: AnalysisState | null) => void,
   setError: (e: string | null) => void,
+  pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null },
 ) {
   useEffect(() => {
     if (analysisSource !== "preload" || !import.meta.hot) return;
@@ -20,7 +22,8 @@ export function useDbtArtifactsReload(
       refetchFromApi()
         .then((result) => {
           if (result) {
-            setAnalysis(result);
+            pendingMetricsRef.current = result.metrics;
+            setAnalysis(result.analysis);
             setError(null);
             debug("Reload: success");
           }
@@ -36,5 +39,5 @@ export function useDbtArtifactsReload(
 
     import.meta.hot.on("dbt-artifacts-changed", handler);
     return () => import.meta.hot?.off("dbt-artifacts-changed", handler);
-  }, [analysisSource, setAnalysis, setError]);
+  }, [analysisSource, pendingMetricsRef, setAnalysis, setError]);
 }

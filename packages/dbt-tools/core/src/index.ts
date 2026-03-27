@@ -4,6 +4,7 @@ export * from "./analysis/execution-analyzer";
 export * from "./analysis/dependency-service";
 export * from "./analysis/sql-analyzer";
 export * from "./analysis/run-results-search";
+export * from "./analysis/analysis-snapshot";
 
 // I/O exports
 export * from "./io/artifact-loader";

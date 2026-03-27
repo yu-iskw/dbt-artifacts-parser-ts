@@ -1,17 +1,14 @@
 import { useMemo, useState } from "react";
-import { analyzeArtifacts } from "../services/analyze";
-import type { AnalysisState } from "@web/types";
 import { Spinner } from "./ui/Spinner";
 import { useToast } from "./ui/Toast";
+import {
+  loadAnalysisFromBuffers,
+  type AnalysisLoadResult,
+} from "../services/analysisLoader";
 
 interface FileUploadProps {
-  onAnalysis: (analysis: AnalysisState) => void;
+  onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
-}
-
-async function readFileAsJson(file: File): Promise<Record<string, unknown>> {
-  const text = await file.text();
-  return JSON.parse(text) as Record<string, unknown>;
 }
 
 interface FileInputRowProps {
@@ -67,14 +64,18 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
     onError(null);
 
     try {
-      const [manifestJson, runResultsJson] = await Promise.all([
-        readFileAsJson(manifestFile),
-        readFileAsJson(runResultsFile),
+      const [manifestBytes, runResultsBytes] = await Promise.all([
+        manifestFile.arrayBuffer(),
+        runResultsFile.arrayBuffer(),
       ]);
-      const analysis = await analyzeArtifacts(manifestJson, runResultsJson);
-      onAnalysis(analysis);
+      const result = await loadAnalysisFromBuffers(
+        manifestBytes,
+        runResultsBytes,
+        "upload",
+      );
+      onAnalysis(result);
       toast(
-        `Analyzed ${analysis.summary.total_nodes} executions successfully`,
+        `Analyzed ${result.analysis.summary.total_nodes} executions successfully`,
         "positive",
       );
     } catch (err) {

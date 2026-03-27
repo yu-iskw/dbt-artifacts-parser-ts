@@ -167,6 +167,40 @@ export default [
     },
   },
   {
+    files: [
+      "packages/dbt-tools/web/src/components/**/*.ts",
+      "packages/dbt-tools/web/src/components/**/*.tsx",
+      "packages/dbt-tools/web/src/hooks/**/*.ts",
+      "packages/dbt-tools/web/src/hooks/**/*.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@dbt-tools/core",
+              message:
+                "React hooks/components must stay on the web facade side of the boundary. Use web services or @dbt-tools/core/browser only in non-React layers.",
+            },
+            {
+              name: "@dbt-tools/core/browser",
+              importNames: [
+                "ManifestGraph",
+                "ExecutionAnalyzer",
+                "detectBottlenecks",
+                "buildAnalysisSnapshotFromArtifacts",
+                "buildAnalysisSnapshotFromParsedArtifacts",
+              ],
+              message:
+                "React hooks/components must not import graph/engine primitives directly. Go through the worker-backed analysis service.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["**/*.js"],
     ignores: ["**/dist/**", "**/node_modules/**"],
     languageOptions: {
