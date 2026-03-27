@@ -1,5 +1,6 @@
 import http from "http";
 import path from "path";
+import { spawn } from "child_process";
 import { attachWebSocketServer } from "./serve-websocket";
 import { startArtifactWatcher } from "./serve-watcher";
 import { createServeApp } from "./serve-server";
@@ -62,8 +63,10 @@ export async function serveAction(options: ServeOptions): Promise<void> {
 function openBrowser(url: string): void {
   const { platform } = process;
   const cmd =
-    platform === "darwin" ? "open" :
-    platform === "win32"  ? "start" : "xdg-open";
-  const { spawn } = require("child_process") as typeof import("child_process");
+    platform === "darwin"
+      ? "open"
+      : platform === "win32"
+        ? "start"
+        : "xdg-open";
   spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
 }

@@ -5,6 +5,8 @@ import type { AnalysisState } from "@web/types";
 
 declare const __DBT_SERVE_MODE__: boolean;
 
+const ARTIFACTS_CHANGED_EVENT = "dbt-artifacts-changed";
+
 /**
  * Subscribes to dbt-artifacts-changed when analysis came from preload.
  * In serve mode (dbt-tools serve), connects to the WebSocket at /ws.
@@ -20,7 +22,7 @@ export function useDbtArtifactsReload(
     if (analysisSource !== "preload") return;
 
     const handler = () => {
-      debug("Reload: dbt-artifacts-changed received, refetching");
+      debug(`Reload: ${ARTIFACTS_CHANGED_EVENT} received, refetching`);
       refetchFromApi()
         .then((result) => {
           if (result) {
@@ -45,7 +47,7 @@ export function useDbtArtifactsReload(
       ws.addEventListener("message", (event: MessageEvent) => {
         try {
           const msg = JSON.parse(event.data as string) as { type?: string };
-          if (msg.type === "dbt-artifacts-changed") handler();
+          if (msg.type === ARTIFACTS_CHANGED_EVENT) handler();
         } catch {
           // ignore malformed messages
         }
@@ -55,7 +57,7 @@ export function useDbtArtifactsReload(
 
     // Vite dev mode: use HMR events
     if (!import.meta.hot) return;
-    import.meta.hot.on("dbt-artifacts-changed", handler);
-    return () => import.meta.hot?.off("dbt-artifacts-changed", handler);
+    import.meta.hot.on(ARTIFACTS_CHANGED_EVENT, handler);
+    return () => import.meta.hot?.off(ARTIFACTS_CHANGED_EVENT, handler);
   }, [analysisSource, setAnalysis, setError]);
 }

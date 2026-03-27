@@ -25,5 +25,7 @@ export function startArtifactWatcher(
     broadcast({ type: "dbt-artifacts-changed" });
   });
 
-  return () => { void watcher.close(); };
+  return () => {
+    void watcher.close();
+  };
 }

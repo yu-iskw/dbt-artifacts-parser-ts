@@ -10,6 +10,7 @@ import {
 import { EmptyState } from "../../EmptyState";
 import type {
   AnalysisState,
+  CatalogColumn,
   MetricDefinition,
   ResourceNode,
   SemanticModelDefinition,
@@ -290,6 +291,34 @@ function AssetSqlOrDefinitionCard({
   );
 }
 
+function ColumnsTable({ columns }: { columns: CatalogColumn[] }) {
+  return (
+    <div className="definition-block">
+      <span>Columns ({columns.length})</span>
+      <table className="catalog-columns-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {columns.map((col) => (
+            <tr key={col.name}>
+              <td className="catalog-columns-table__name">{col.name}</td>
+              <td className="catalog-columns-table__type">{col.type}</td>
+              <td className="catalog-columns-table__comment">
+                {col.comment ?? <span className="text-muted">—</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function AssetSummarySection({
   resource,
   dependencySummary,
@@ -337,6 +366,9 @@ function AssetSummarySection({
           No description was captured for this asset. Catalog-oriented metadata
           can surface here when present in the manifest.
         </p>
+      )}
+      {resource.columns && resource.columns.length > 0 && (
+        <ColumnsTable columns={resource.columns} />
       )}
     </SectionCard>
   );

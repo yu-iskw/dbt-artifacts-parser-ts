@@ -17,9 +17,10 @@ export async function refetchFromApi(): Promise<AnalysisState | null> {
     manifestRes.json() as Promise<Record<string, unknown>>,
     runResultsRes.json() as Promise<Record<string, unknown>>,
   ]);
-  const catalogJson =
-    catalogRes?.ok
-      ? await (catalogRes.json() as Promise<Record<string, unknown>>).catch(() => undefined)
-      : undefined;
+  const catalogJson = catalogRes?.ok
+    ? await (catalogRes.json() as Promise<Record<string, unknown>>).catch(
+        () => undefined,
+      )
+    : undefined;
   return analyzeArtifacts(manifestJson, runResultsJson, catalogJson);
 }

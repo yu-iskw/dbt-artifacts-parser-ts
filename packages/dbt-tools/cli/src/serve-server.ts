@@ -47,9 +47,9 @@ export function createServeApp(
   app.get("*", (_req, res) => {
     const indexPath = path.join(PUBLIC_DIR, "index.html");
     if (!fs.existsSync(indexPath)) {
-      res.status(503).send(
-        "SPA build not found. Run: pnpm --filter @dbt-tools/web build",
-      );
+      res
+        .status(503)
+        .send("SPA build not found. Run: pnpm --filter @dbt-tools/web build");
       return;
     }
     const html = fs.readFileSync(indexPath, "utf8");
@@ -63,10 +63,7 @@ export function createServeApp(
   return app;
 }
 
-function streamArtifact(
-  res: express.Response,
-  filePath: string,
-): void {
+function streamArtifact(res: express.Response, filePath: string): void {
   if (!fs.existsSync(filePath)) {
     res.status(404).json({ error: "Artifact not found", path: filePath });
     return;

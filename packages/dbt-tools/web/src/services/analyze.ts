@@ -672,7 +672,10 @@ function buildThreadStats(
 }
 
 type CatalogTableLike = {
-  columns: Record<string, { name: string; type: string; index: number; comment?: string | null }>;
+  columns: Record<
+    string,
+    { name: string; type: string; index: number; comment?: string | null }
+  >;
   unique_id?: string | null;
 };
 
@@ -695,7 +698,9 @@ function buildCatalogColumnIndex(
 
   const nodesRaw = catalogJson.nodes;
   if (nodesRaw != null && typeof nodesRaw === "object") {
-    for (const [key, table] of Object.entries(nodesRaw as Record<string, unknown>)) {
+    for (const [key, table] of Object.entries(
+      nodesRaw as Record<string, unknown>,
+    )) {
       if (table == null || typeof table !== "object") continue;
       const t = table as CatalogTableLike;
       const id = typeof t.unique_id === "string" ? t.unique_id : key;
@@ -705,7 +710,9 @@ function buildCatalogColumnIndex(
 
   const sourcesRaw = catalogJson.sources;
   if (sourcesRaw != null && typeof sourcesRaw === "object") {
-    for (const [key, table] of Object.entries(sourcesRaw as Record<string, unknown>)) {
+    for (const [key, table] of Object.entries(
+      sourcesRaw as Record<string, unknown>,
+    )) {
       if (table == null || typeof table !== "object") continue;
       const t = table as CatalogTableLike;
       const id = typeof t.unique_id === "string" ? t.unique_id : key;
@@ -776,9 +783,10 @@ export async function analyzeArtifacts(
   const ganttById = new Map(ganttData.map((item) => [item.unique_id, item]));
   const executionById = new Map(nodeExecutions.map((e) => [e.unique_id, e]));
 
-  const catalogColumnsByUniqueId = catalogJson != null
-    ? buildCatalogColumnIndex(catalogJson)
-    : new Map<string, CatalogColumn[]>();
+  const catalogColumnsByUniqueId =
+    catalogJson != null
+      ? buildCatalogColumnIndex(catalogJson)
+      : new Map<string, CatalogColumn[]>();
 
   const { resources, dependencyIndex } = buildResourcesAndDependencyIndex(
     graph as unknown as GraphLike,

@@ -60,6 +60,7 @@ export default [
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/public/**",
       "**/codeql-db/**",
       "**/resources/**",
       ".claude/**",

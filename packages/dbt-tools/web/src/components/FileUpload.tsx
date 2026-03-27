@@ -73,7 +73,11 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
         readFileAsJson(runResultsFile),
         catalogFile ? readFileAsJson(catalogFile) : Promise.resolve(undefined),
       ]);
-      const analysis = await analyzeArtifacts(manifestJson, runResultsJson, catalogJson);
+      const analysis = await analyzeArtifacts(
+        manifestJson,
+        runResultsJson,
+        catalogJson,
+      );
       onAnalysis(analysis);
       toast(
         `Analyzed ${analysis.summary.total_nodes} executions successfully`,

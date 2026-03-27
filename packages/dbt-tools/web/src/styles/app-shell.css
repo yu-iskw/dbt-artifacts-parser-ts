@@ -1906,3 +1906,48 @@ details.timeline-filter-accordion .timeline-controls {
   color: var(--text-muted);
   font-size: 0.82rem;
 }
+
+/* Catalog column table — rendered in AssetSummarySection when catalog.json is loaded */
+.catalog-columns-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.catalog-columns-table th,
+.catalog-columns-table td {
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.catalog-columns-table th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: var(--bg-surface-muted);
+}
+
+.catalog-columns-table__name {
+  font-weight: 600;
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.catalog-columns-table__type {
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.catalog-columns-table__comment {
+  color: var(--text-soft);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
