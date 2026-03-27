@@ -6,6 +6,7 @@ export interface GanttPointerContext {
   bundles: BundleRow[];
   layout: BundleLayout;
   scrollTop: number;
+  minTime: number;
   maxEnd: number;
   effectiveLabelW: number;
   canvas: HTMLCanvasElement | null;
@@ -23,6 +24,7 @@ export function applyGanttPointerInteraction(
     bundles,
     layout,
     scrollTop,
+    minTime,
     maxEnd,
     effectiveLabelW,
     canvas,
@@ -37,6 +39,7 @@ export function applyGanttPointerInteraction(
     maxEnd,
     effectiveLabelW,
     canvas,
+    minTime,
   );
   if (!hit) {
     if (mode === "move") setHover(null);

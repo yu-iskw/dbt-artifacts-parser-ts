@@ -93,6 +93,7 @@ export function GanttEdgeLayer({
   rowOffsets,
   canvasWidth,
   effectiveLabelW,
+  minTime = 0,
   maxEnd,
   scrollTop,
   viewportH,
@@ -107,6 +108,7 @@ export function GanttEdgeLayer({
   rowOffsets: number[];
   canvasWidth: number;
   effectiveLabelW: number;
+  minTime?: number;
   maxEnd: number;
   scrollTop: number;
   viewportH: number;
@@ -151,6 +153,7 @@ export function GanttEdgeLayer({
           scrollTop,
           showTests,
           effectiveLabelW,
+          minTime,
           maxEnd,
           chartW: approxChartW,
         });

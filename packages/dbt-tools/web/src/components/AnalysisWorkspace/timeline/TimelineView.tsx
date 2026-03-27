@@ -8,7 +8,7 @@ import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
 import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
-import { isPositiveStatus } from "./gantt/formatting";
+import { formatMs, isPositiveStatus } from "./gantt/formatting";
 import type { AnalysisState, GanttItem } from "@web/types";
 import type {
   InvestigationSelectionState,
@@ -49,6 +49,7 @@ function TimelineSurface({
   filters,
   effectiveActiveTypes,
   filteredData,
+  allGanttData,
   bundleRowCount,
   statusCounts,
   typeCounts,
@@ -64,6 +65,8 @@ function TimelineSurface({
   filters: TimelineFilterState;
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
+  /** All gantt items (pre-filter) for the time-range brush minimap. */
+  allGanttData: GanttItem[];
   bundleRowCount: number;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
@@ -94,6 +97,8 @@ function TimelineSurface({
     [analysis.ganttData],
   );
 
+  const { timeWindow } = filters;
+
   return (
     <SectionCard
       title="Execution timeline"
@@ -123,6 +128,19 @@ function TimelineSurface({
         typeFilterHint={typeFilterHint}
         setFilters={setFilters}
       />
+      {timeWindow != null && (
+        <p className="timeline-zoom-active" role="status">
+          Zoomed to {formatMs(timeWindow.end - timeWindow.start)} window
+          {" — "}
+          <button
+            type="button"
+            className="timeline-zoom-clear"
+            onClick={() => setFilters((c) => ({ ...c, timeWindow: null }))}
+          >
+            Clear zoom ×
+          </button>
+        </p>
+      )}
       {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
         <p className="timeline-large-dataset-hint" role="status">
           Showing {bundleRowCount.toLocaleString()} timeline rows. Use search or
@@ -131,6 +149,7 @@ function TimelineSurface({
       ) : null}
       <GanttChart
         data={filteredData}
+        allData={allGanttData}
         runStartedAt={analysis.runStartedAt}
         timelineAdjacency={analysis.timelineAdjacency}
         testStatsById={testStatsById}
@@ -138,6 +157,10 @@ function TimelineSurface({
         dependencyDirection={filters.dependencyDirection}
         dependencyDepthHops={filters.dependencyDepthHops}
         selectedId={filters.selectedExecutionId}
+        timeWindow={timeWindow}
+        onTimeWindowChange={(tw) =>
+          setFilters((c) => ({ ...c, timeWindow: tw }))
+        }
         onSelect={(id) => {
           setFilters((current) => ({ ...current, selectedExecutionId: id }));
           onInvestigationSelectionChange((current) => ({
@@ -370,6 +393,7 @@ export function TimelineView({
         filters={filters}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
+        allGanttData={analysis.ganttData}
         bundleRowCount={filteredParents.length}
         statusCounts={statusCounts}
         typeCounts={typeCounts}

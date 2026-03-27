@@ -1,7 +1,10 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
-import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
+import type {
+  TimelineDependencyDirection,
+  TimeWindow,
+} from "@web/lib/analysis-workspace/types";
 import type {
   GanttItem,
   ResourceTestStats,
@@ -21,6 +24,7 @@ import {
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
 import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
+import { TimeRangeBrush } from "./TimeRangeBrush";
 import { bundleRowHeight, computeRowLayout } from "./ganttChartHelpers";
 import { applyGanttPointerInteraction } from "./ganttPointerInteraction";
 import type { BundleLayout, HoverState } from "./hitTest";
@@ -31,29 +35,37 @@ export { getFailureBundleIds } from "./ganttChartHelpers";
 
 export interface GanttChartProps {
   data: GanttItem[];
+  /** All items before time-window filtering — used by the minimap brush. */
+  allData?: GanttItem[];
   /** Absolute epoch-ms of the earliest executed node — enables wall-clock timestamps. */
   runStartedAt?: number | null;
   /** Immediate manifest neighbors for executed timeline nodes (from analyze). */
   timelineAdjacency?: Record<string, TimelineAdjacencyEntry>;
   testStatsById?: Map<string, ResourceTestStats>;
-  /** Whether to show test chips inside bundle rows. Default: true. */
+  /** Whether to show test chips inside bundle rows. Default: false. */
   showTests?: boolean;
   dependencyDirection?: TimelineDependencyDirection;
   dependencyDepthHops?: number;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
+  /** Active time-range zoom window. null = full timeline. */
+  timeWindow?: TimeWindow | null;
+  onTimeWindowChange?: (tw: TimeWindow | null) => void;
 }
 
 export function GanttChart({
   data,
+  allData,
   runStartedAt,
   timelineAdjacency,
   testStatsById,
-  showTests = true,
+  showTests = false,
   dependencyDirection = "both",
   dependencyDepthHops = 2,
   selectedId = null,
   onSelect,
+  timeWindow = null,
+  onTimeWindowChange,
 }: GanttChartProps) {
   const theme = useSyncedDocumentTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -83,7 +95,37 @@ export function GanttChart({
       ? Math.max(80, Math.min(LABEL_W, Math.round(containerWidth * 0.35)))
       : LABEL_W;
 
-  const bundles = useMemo(() => groupIntoBundles(data), [data]);
+  // All bundles (unfiltered by time window) — used by the minimap brush.
+  const allBundles = useMemo(
+    () => groupIntoBundles(allData ?? data),
+    [allData, data],
+  );
+
+  // Absolute max end across all data (used as the brush's total span).
+  const absoluteMaxEnd = useMemo(() => {
+    let m = 1;
+    for (const b of allBundles) {
+      m = Math.max(m, b.item.end);
+      for (const t of b.tests) m = Math.max(m, t.end);
+    }
+    return m;
+  }, [allBundles]);
+
+  // When a time window is active, show only bundles that overlap it.
+  const bundles = useMemo(() => {
+    if (!timeWindow) return groupIntoBundles(data);
+    const { start, end } = timeWindow;
+    return groupIntoBundles(
+      data.filter((item) => item.end > start && item.start < end),
+    );
+  }, [data, timeWindow]);
+
+  // Derived zoom parameters for canvas rendering and hit-testing.
+  const minTime = timeWindow?.start ?? 0;
+  const maxEnd = timeWindow
+    ? timeWindow.end - timeWindow.start
+    : absoluteMaxEnd;
+
   const { rowOffsets, rowHeights } = useMemo(
     () => computeRowLayout(bundles, showTests),
     [bundles, showTests],
@@ -126,15 +168,6 @@ export function GanttChart({
       for (const test of bundle.tests) map.set(test.unique_id, i);
     }
     return map;
-  }, [bundles]);
-
-  const maxEnd = useMemo(() => {
-    let m = 1;
-    for (const b of bundles) {
-      m = Math.max(m, b.item.end);
-      for (const t of b.tests) m = Math.max(m, t.end);
-    }
-    return m;
   }, [bundles]);
 
   /** Selection wins over hover for which dependency edges are shown. */
@@ -186,6 +219,7 @@ export function GanttChart({
     rowOffsets,
     rowHeights,
     scrollTop,
+    minTime,
     maxEnd,
     activeMode,
     runStartedAt,
@@ -199,7 +233,7 @@ export function GanttChart({
     setContainerWidth,
   });
 
-  if (bundles.length === 0) {
+  if (allBundles.length === 0) {
     return (
       <div className="empty-state empty-state--chart">
         No Gantt data (run_results may lack timing info)
@@ -215,6 +249,7 @@ export function GanttChart({
       bundles,
       layout,
       scrollTop,
+      minTime,
       maxEnd,
       effectiveLabelW,
       canvas: canvasRef.current,
@@ -235,6 +270,17 @@ export function GanttChart({
         />
       )}
 
+      {absoluteMaxEnd > 1 && onTimeWindowChange != null && (
+        <TimeRangeBrush
+          bundles={allBundles}
+          maxEnd={absoluteMaxEnd}
+          labelW={effectiveLabelW}
+          timeWindow={timeWindow}
+          onChange={onTimeWindowChange}
+          theme={theme}
+        />
+      )}
+
       <GanttChartFrame
         canvasRef={canvasRef}
         scrollRef={scrollRef}
@@ -246,6 +292,7 @@ export function GanttChart({
         rowOffsets={rowOffsets}
         containerWidth={containerWidth}
         effectiveLabelW={effectiveLabelW}
+        minTime={minTime}
         maxEnd={maxEnd}
         scrollTop={scrollTop}
         viewportH={viewportH}

@@ -734,6 +734,8 @@ export interface FocusEdgePathParams {
   scrollTop: number;
   showTests: boolean;
   effectiveLabelW: number;
+  /** Start of the visible time window in ms (0 when no zoom). */
+  minTime?: number;
   maxEnd: number;
   chartW: number;
 }
@@ -751,6 +753,7 @@ export function focusEdgePath(p: FocusEdgePathParams): string {
     scrollTop,
     showTests,
     effectiveLabelW,
+    minTime = 0,
     maxEnd,
     chartW,
   } = p;
@@ -786,8 +789,9 @@ export function focusEdgePath(p: FocusEdgePathParams): string {
   if (sy == null || ty == null) return "";
 
   const sx =
-    effectiveLabelW + ((fromItem.start + fromItem.duration) / maxEnd) * chartW;
-  const tx = effectiveLabelW + (toItem.start / maxEnd) * chartW;
+    effectiveLabelW +
+    ((fromItem.start + fromItem.duration - minTime) / maxEnd) * chartW;
+  const tx = effectiveLabelW + ((toItem.start - minTime) / maxEnd) * chartW;
   const cx = Math.abs(tx - sx) * 0.4;
 
   return `M${sx},${sy} C${sx + cx},${sy} ${tx - cx},${ty} ${tx},${ty}`;

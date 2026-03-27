@@ -18,6 +18,7 @@ export function GanttChartFrame({
   rowOffsets,
   containerWidth,
   effectiveLabelW,
+  minTime,
   maxEnd,
   scrollTop,
   viewportH,
@@ -46,6 +47,7 @@ export function GanttChartFrame({
   rowOffsets: number[];
   containerWidth: number;
   effectiveLabelW: number;
+  minTime: number;
   maxEnd: number;
   scrollTop: number;
   viewportH: number;
@@ -91,6 +93,7 @@ export function GanttChartFrame({
         rowOffsets={rowOffsets}
         canvasWidth={containerWidth > 0 ? containerWidth : 600}
         effectiveLabelW={effectiveLabelW}
+        minTime={minTime}
         maxEnd={maxEnd}
         scrollTop={scrollTop}
         viewportH={viewportH}

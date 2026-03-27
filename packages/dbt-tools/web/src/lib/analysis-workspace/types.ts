@@ -46,12 +46,23 @@ export interface ResultsFilterState {
   query: string;
 }
 
+/**
+ * A selected time window used to zoom the timeline X-axis.
+ * Both `start` and `end` are milliseconds relative to the run's earliest node
+ * (i.e. relative to the implicit time-origin 0, same coordinate space as
+ * `GanttItem.start` / `GanttItem.end`).
+ */
+export interface TimeWindow {
+  start: number;
+  end: number;
+}
+
 export interface TimelineFilterState {
   query: string;
   activeStatuses: Set<string>;
   activeTypes: Set<string>;
   selectedExecutionId: string | null;
-  /** Show test chips inside bundle rows. Default true. */
+  /** Show test chips inside bundle rows. Default false for performance on large projects. */
   showTests: boolean;
   /**
    * When true: auto-expand all bundles with failures and visually collapse
@@ -65,6 +76,12 @@ export interface TimelineFilterState {
    * values > 1 enable capped extended BFS up to the given hop.
    */
   dependencyDepthHops: number;
+  /**
+   * When set, the timeline X-axis is zoomed to show only [start, end] ms.
+   * Bundles whose items do not overlap the window are hidden from the
+   * virtualizer. null means the full timeline is shown.
+   */
+  timeWindow: TimeWindow | null;
 }
 
 export interface AssetViewState {
