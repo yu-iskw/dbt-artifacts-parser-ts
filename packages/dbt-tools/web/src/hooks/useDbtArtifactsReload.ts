@@ -3,15 +3,16 @@ import { refetchFromApi } from "../services/artifactApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
 
-declare const __DBT_SERVE_MODE__: boolean;
-
 const ARTIFACTS_CHANGED_EVENT = "dbt-artifacts-changed";
 
 /**
  * Subscribes to dbt-artifacts-changed when analysis came from preload.
- * In serve mode (dbt-tools serve), connects to the WebSocket at /ws.
- * In Vite dev mode, listens to HMR events (existing behavior).
- * Refetches from /api/* and updates state on file change.
+ *
+ * Transport selection is done at runtime (not compile time) so the production
+ * bundle always includes both paths:
+ *  - Serve mode: the CLI injects `window.__DBT_SERVE_MODE__ = true` via a
+ *    <script> tag before index.html is served; we open a WebSocket to /ws.
+ *  - Vite dev mode: `window.__DBT_SERVE_MODE__` is undefined; fall back to HMR.
  */
 export function useDbtArtifactsReload(
   analysisSource: "preload" | "upload" | null,
@@ -40,8 +41,13 @@ export function useDbtArtifactsReload(
         });
     };
 
-    // Serve mode: connect to the CLI's WebSocket server
-    if (typeof __DBT_SERVE_MODE__ !== "undefined" && __DBT_SERVE_MODE__) {
+    // Runtime check — survives Vite tree-shaking because `window` is a
+    // dynamic lookup, not a compile-time define substitution.
+    const isServeMode =
+      typeof window !== "undefined" &&
+      (window as unknown as Record<string, unknown>).__DBT_SERVE_MODE__ === true;
+
+    if (isServeMode) {
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
       ws.addEventListener("message", (event: MessageEvent) => {

@@ -21,9 +21,11 @@ export function startArtifactWatcher(
     awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 },
   });
 
-  watcher.on("change", () => {
-    broadcast({ type: "dbt-artifacts-changed" });
-  });
+  const notify = () => broadcast({ type: "dbt-artifacts-changed" });
+  // `change` fires on modification; `add` fires on initial creation (first dbt run
+  // after starting serve against an empty target/ directory).
+  watcher.on("change", notify);
+  watcher.on("add", notify);
 
   return () => {
     void watcher.close();

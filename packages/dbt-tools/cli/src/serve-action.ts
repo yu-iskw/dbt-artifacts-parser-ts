@@ -62,11 +62,13 @@ export async function serveAction(options: ServeOptions): Promise<void> {
 
 function openBrowser(url: string): void {
   const { platform } = process;
-  const cmd =
+  // `start` is a cmd.exe built-in on Windows, not a standalone executable;
+  // spawn it via `cmd /c start` so the child process can be resolved.
+  const [cmd, args]: [string, string[]] =
     platform === "darwin"
-      ? "open"
+      ? ["open", [url]]
       : platform === "win32"
-        ? "start"
-        : "xdg-open";
-  spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
+        ? ["cmd", ["/c", "start", url]]
+        : ["xdg-open", [url]];
+  spawn(cmd, args, { detached: true, stdio: "ignore" }).unref();
 }

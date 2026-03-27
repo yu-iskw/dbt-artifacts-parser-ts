@@ -5,11 +5,6 @@ import { dbtTargetPlugin } from "./src/dbt-target-plugin";
 
 export default defineConfig({
   plugins: [dbtTargetPlugin(), react()],
-  define: {
-    // False in Vite dev mode; the CLI serve command injects `true` at runtime
-    // via a <script> tag so the WebSocket transport is used instead of HMR.
-    __DBT_SERVE_MODE__: false,
-  },
   server: {
     port: 5173,
   },

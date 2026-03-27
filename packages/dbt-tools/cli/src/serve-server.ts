@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import express, { type Express } from "express";
+import rateLimit from "express-rate-limit";
 import type { BroadcastFn } from "./serve-websocket";
 
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -43,8 +44,16 @@ export function createServeApp(
     express.static(path.join(PUBLIC_DIR, "assets"), { index: false }),
   );
 
+  // Rate-limit the SPA shell route: it reads index.html from disk on every hit
+  const spaLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
   // All other routes return the SPA shell with serve-mode flag injected
-  app.get("*", (_req, res) => {
+  app.get("*", spaLimiter, (_req, res) => {
     const indexPath = path.join(PUBLIC_DIR, "index.html");
     if (!fs.existsSync(indexPath)) {
       res
