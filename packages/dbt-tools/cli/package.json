@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "build:full": "pnpm --filter @dbt-tools/web build && cp -r ../web/dist ./public && tsc",
+    "build:full": "pnpm --filter @dbt-tools/web build && rm -rf ./public && cp -r ../web/dist ./public && tsc",
     "prepack": "npm run build",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"

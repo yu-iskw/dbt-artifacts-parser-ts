@@ -70,5 +70,7 @@ function openBrowser(url: string): void {
       : platform === "win32"
         ? ["cmd", ["/c", "start", url]]
         : ["xdg-open", [url]];
-  spawn(cmd, args, { detached: true, stdio: "ignore" }).unref();
+  const child = spawn(cmd, args, { detached: true, stdio: "ignore" });
+  child.on("error", () => undefined);
+  child.unref();
 }

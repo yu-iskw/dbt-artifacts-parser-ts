@@ -78,5 +78,13 @@ function streamArtifact(res: express.Response, filePath: string): void {
     return;
   }
   res.type("json");
-  fs.createReadStream(filePath).pipe(res);
+  fs.createReadStream(filePath)
+    .on("error", (err: NodeJS.ErrnoException) => {
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to read artifact" });
+      } else {
+        res.destroy();
+      }
+    })
+    .pipe(res);
 }
