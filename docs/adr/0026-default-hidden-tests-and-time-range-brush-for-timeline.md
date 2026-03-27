@@ -55,13 +55,13 @@ When `timeWindow` is set, the main chart:
 
 The rescaling formula in `canvasDraw.ts`, `hitTest.ts`, `edgeGeometry.ts`, and `GanttEdgeLayer.tsx` changes from:
 
-```
+```text
 x = labelW + (item.start / maxEnd) * chartW
 ```
 
 to:
 
-```
+```text
 x = labelW + ((item.start - minTime) / maxEnd) * chartW
 ```
 
