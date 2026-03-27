@@ -240,8 +240,7 @@ export function TimeRangeBrush({
     (drag: DragState) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const chartW =
-        canvas.getBoundingClientRect().width - labelW - X_PAD;
+      const chartW = canvas.getBoundingClientRect().width - labelW - X_PAD;
       if (chartW <= 0) return;
       drawBrush(canvas, bundles, maxEnd, labelW, timeWindow, theme, drag);
     },
@@ -372,7 +371,10 @@ export function TimeRangeBrush({
         } else if (moved && span >= minSpan) {
           onChange({ start: drag.selStart, end: drag.selEnd });
         }
-      } else if (drag.kind === DRAG_KIND_RESIZE_LEFT || drag.kind === DRAG_KIND_RESIZE_RIGHT) {
+      } else if (
+        drag.kind === DRAG_KIND_RESIZE_LEFT ||
+        drag.kind === DRAG_KIND_RESIZE_RIGHT
+      ) {
         const span = drag.selEnd - drag.selStart;
         if (span >= minSpan) {
           onChange({ start: drag.selStart, end: drag.selEnd });

@@ -89,7 +89,8 @@ export function hitTestBundle(
   }
 
   // Check parent bar
-  const barX = effectiveLabelW + ((bundle.item.start - minTime) / maxEnd) * chartW;
+  const barX =
+    effectiveLabelW + ((bundle.item.start - minTime) / maxEnd) * chartW;
   const barW = Math.max(2, (bundle.item.duration / maxEnd) * chartW);
   if (mouseX >= barX && mouseX <= barX + barW) {
     return { item: bundle.item, x: mouseX, y: mouseY };
@@ -97,7 +98,8 @@ export function hitTestBundle(
 
   if (showTests && bundle.lanes.length > 0) {
     for (const { item: test, lane } of bundle.lanes) {
-      const chipX = effectiveLabelW + ((test.start - minTime) / maxEnd) * chartW;
+      const chipX =
+        effectiveLabelW + ((test.start - minTime) / maxEnd) * chartW;
       const chipW = Math.max(2, (test.duration / maxEnd) * chartW);
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
       const chipH = 10; // TEST_BAR_H

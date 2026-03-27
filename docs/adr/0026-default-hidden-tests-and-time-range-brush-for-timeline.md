@@ -30,12 +30,12 @@ Change the initial value of `showTests` in `TimelineFilterState` from `true` to 
 
 The change touches four locations:
 
-| File | Change |
-|------|--------|
-| `src/App.tsx` | `showTests: false` in initial state |
+| File                                  | Change                                           |
+| ------------------------------------- | ------------------------------------------------ |
+| `src/App.tsx`                         | `showTests: false` in initial state              |
 | `src/lib/analysis-workspace/types.ts` | JSDoc updated to "Default false for performance" |
-| `gantt/GanttChart.tsx` | Default prop `showTests = false` |
-| `gantt/canvasDraw.ts` | Default destructure `showTests = false` |
+| `gantt/GanttChart.tsx`                | Default prop `showTests = false`                 |
+| `gantt/canvasDraw.ts`                 | Default destructure `showTests = false`          |
 
 ### Part B — Time-range brush for horizontal zoom
 
@@ -65,7 +65,7 @@ to:
 x = labelW + ((item.start - minTime) / maxEnd) * chartW
 ```
 
-where `maxEnd` is now the *visible span* rather than the absolute run duration. A `minTime = 0` default preserves existing behaviour for all callers that don't pass the parameter.
+where `maxEnd` is now the _visible span_ rather than the absolute run duration. A `minTime = 0` default preserves existing behaviour for all callers that don't pass the parameter.
 
 #### New component: `TimeRangeBrush`
 
@@ -100,9 +100,9 @@ When `timeWindow != null`, a `<p class="timeline-zoom-active">` element appears 
 
 ## Alternatives considered
 
-| Alternative | Why rejected |
-|---|---|
+| Alternative                                         | Why rejected                                                                                                                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Keep `showTests: true`, only optimise the algorithm | The lane-assignment is already greedy O(n·k); reducing per-test draw calls requires significant refactoring with uncertain payoff. A default toggle is simpler and reversible. |
-| Mouse-wheel horizontal zoom (no brush) | Requires scroll-event capture on the chart, conflicting with vertical scroll. The brush's explicit drag UX is more predictable. |
-| Preset time-range buttons (first 10%, last 25%, …) | Inflexible; doesn't let users zoom to a specific failure cluster. |
-| Progressive/virtual time buckets | Overkill for a client-side only tool; adds build-time complexity without clear benefit given existing virtualisation. |
+| Mouse-wheel horizontal zoom (no brush)              | Requires scroll-event capture on the chart, conflicting with vertical scroll. The brush's explicit drag UX is more predictable.                                                |
+| Preset time-range buttons (first 10%, last 25%, …)  | Inflexible; doesn't let users zoom to a specific failure cluster.                                                                                                              |
+| Progressive/virtual time buckets                    | Overkill for a client-side only tool; adds build-time complexity without clear benefit given existing virtualisation.                                                          |
