@@ -48,7 +48,8 @@ export function useDbtArtifactsReload(
     // dynamic lookup, not a compile-time define substitution.
     const isServeMode =
       typeof window !== "undefined" &&
-      (window as unknown as Record<string, unknown>).__DBT_SERVE_MODE__ === true;
+      (window as unknown as Record<string, unknown>).__DBT_SERVE_MODE__ ===
+        true;
 
     if (isServeMode) {
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";

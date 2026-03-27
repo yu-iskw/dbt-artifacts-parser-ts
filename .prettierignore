@@ -1,0 +1,10 @@
+# Generated build artifacts
+dist/
+build/
+packages/dbt-tools/cli/public/assets/
+packages/dbt-tools/cli/public/index.html
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock

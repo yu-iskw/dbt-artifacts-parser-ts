@@ -75,5 +75,8 @@ export async function analyzeArtifacts(
     ...r,
     columns: catalogColumnIndex.get(r.uniqueId) ?? [],
   }));
-  return { ...snapshot, resources: enrichedResources } as unknown as AnalysisState;
+  return {
+    ...snapshot,
+    resources: enrichedResources,
+  } as unknown as AnalysisState;
 }
