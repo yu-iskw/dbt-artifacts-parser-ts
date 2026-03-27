@@ -41,6 +41,10 @@ const BAR_H = BRUSH_H - BAR_MARGIN * 2;
 const HANDLE_W = 6;
 /** Minimum visible selection span as a fraction of maxEnd. */
 const MIN_SPAN_RATIO = 0.002;
+/** Drag state kind for resizing the left edge of the selection. */
+const DRAG_KIND_RESIZE_LEFT = "resize-left" as const;
+/** Drag state kind for resizing the right edge of the selection. */
+const DRAG_KIND_RESIZE_RIGHT = "resize-right" as const;
 
 // ---------------------------------------------------------------------------
 // Helpers
