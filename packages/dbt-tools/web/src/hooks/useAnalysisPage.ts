@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAnalysisPreload } from "./useAnalysisPreload";
 import { useDbtArtifactsReload } from "./useDbtArtifactsReload";
 import type { AnalysisState } from "@web/types";
+import type { AnalysisLoadResult } from "../services/analysisLoader";
+import { debug, markDebug, measureDebug } from "../debug";
 
 export interface UseAnalysisPageResult {
   analysis: AnalysisState | null;
@@ -9,7 +11,7 @@ export interface UseAnalysisPageResult {
   error: string | null;
   preloadLoading: boolean;
   onLoadDifferent: () => void;
-  onAnalysis: (analysis: AnalysisState) => void;
+  onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
 }
 
@@ -23,15 +25,44 @@ export function useAnalysisPage(): UseAnalysisPageResult {
     "preload" | "upload" | null
   >(null);
   const [preloadLoading, setPreloadLoading] = useState(true);
+  const pendingMetricsRef = useRef<AnalysisLoadResult["metrics"] | null>(null);
 
   useAnalysisPreload({
     setPreloadLoading,
     setAnalysis,
     setAnalysisSource,
     setError,
+    pendingMetricsRef,
   });
 
-  useDbtArtifactsReload(analysisSource, setAnalysis, setError);
+  useDbtArtifactsReload(
+    analysisSource,
+    setAnalysis,
+    setError,
+    pendingMetricsRef,
+  );
+
+  useEffect(() => {
+    if (analysis == null || pendingMetricsRef.current == null) return;
+    const metrics = pendingMetricsRef.current;
+    pendingMetricsRef.current = null;
+
+    requestAnimationFrame(() => {
+      const interactiveMarkName = `analysis-load:${metrics.requestId}:interactive`;
+      const interactiveMeasureName = `analysis-load:${metrics.requestId}:first-interactive-frame`;
+      markDebug(interactiveMarkName);
+      measureDebug(
+        interactiveMeasureName,
+        metrics.dispatchMarkName,
+        interactiveMarkName,
+      );
+      debug("Analysis load metrics", {
+        requestId: metrics.requestId,
+        source: metrics.source,
+        timings: metrics.timings,
+      });
+    });
+  }, [analysis]);
 
   return {
     analysis,
@@ -43,9 +74,10 @@ export function useAnalysisPage(): UseAnalysisPageResult {
       setAnalysisSource(null);
       setError(null);
     },
-    onAnalysis: (a) => {
+    onAnalysis: (result) => {
+      pendingMetricsRef.current = result.metrics;
       setAnalysisSource("upload");
-      setAnalysis(a);
+      setAnalysis(result.analysis);
     },
     onError: setError,
   };

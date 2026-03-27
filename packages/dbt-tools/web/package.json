@@ -11,7 +11,7 @@
   "author": "yu-iskw",
   "type": "module",
   "scripts": {
-    "build": "tsc && vite build",
+    "build": "pnpm --filter @dbt-tools/core build && tsc && vite build",
     "dev": "vite",
     "dev:debug": "DBT_DEBUG=1 vite",
     "dev:target": "DBT_TARGET=./target vite",

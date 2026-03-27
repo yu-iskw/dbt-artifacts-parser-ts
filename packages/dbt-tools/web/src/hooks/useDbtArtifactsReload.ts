@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { refetchFromApi } from "../services/artifactApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
+import type { AnalysisLoadResult } from "../services/analysisLoader";
 
 const ARTIFACTS_CHANGED_EVENT = "dbt-artifacts-changed";
 
@@ -18,6 +19,7 @@ export function useDbtArtifactsReload(
   analysisSource: "preload" | "upload" | null,
   setAnalysis: (a: AnalysisState | null) => void,
   setError: (e: string | null) => void,
+  pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null },
 ) {
   useEffect(() => {
     if (analysisSource !== "preload") return;
@@ -27,7 +29,8 @@ export function useDbtArtifactsReload(
       refetchFromApi()
         .then((result) => {
           if (result) {
-            setAnalysis(result);
+            pendingMetricsRef.current = result.metrics;
+            setAnalysis(result.analysis);
             setError(null);
             debug("Reload: success");
           }
@@ -65,5 +68,5 @@ export function useDbtArtifactsReload(
     if (!import.meta.hot) return;
     import.meta.hot.on(ARTIFACTS_CHANGED_EVENT, handler);
     return () => import.meta.hot?.off(ARTIFACTS_CHANGED_EVENT, handler);
-  }, [analysisSource, setAnalysis, setError]);
+  }, [analysisSource, pendingMetricsRef, setAnalysis, setError]);
 }

@@ -1,17 +1,14 @@
 import { useMemo, useState } from "react";
-import { analyzeArtifacts } from "../services/analyze";
-import type { AnalysisState } from "@web/types";
 import { Spinner } from "./ui/Spinner";
 import { useToast } from "./ui/Toast";
+import {
+  loadAnalysisFromBuffers,
+  type AnalysisLoadResult,
+} from "../services/analysisLoader";
 
 interface FileUploadProps {
-  onAnalysis: (analysis: AnalysisState) => void;
+  onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
-}
-
-async function readFileAsJson(file: File): Promise<Record<string, unknown>> {
-  const text = await file.text();
-  return JSON.parse(text) as Record<string, unknown>;
 }
 
 interface FileInputRowProps {
@@ -55,7 +52,6 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   const { toast } = useToast();
   const [manifestFile, setManifestFile] = useState<File | null>(null);
   const [runResultsFile, setRunResultsFile] = useState<File | null>(null);
-  const [catalogFile, setCatalogFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleAnalyze() {
@@ -68,19 +64,18 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
     onError(null);
 
     try {
-      const [manifestJson, runResultsJson, catalogJson] = await Promise.all([
-        readFileAsJson(manifestFile),
-        readFileAsJson(runResultsFile),
-        catalogFile ? readFileAsJson(catalogFile) : Promise.resolve(undefined),
+      const [manifestBytes, runResultsBytes] = await Promise.all([
+        manifestFile.arrayBuffer(),
+        runResultsFile.arrayBuffer(),
       ]);
-      const analysis = await analyzeArtifacts(
-        manifestJson,
-        runResultsJson,
-        catalogJson,
+      const result = await loadAnalysisFromBuffers(
+        manifestBytes,
+        runResultsBytes,
+        "upload",
       );
-      onAnalysis(analysis);
+      onAnalysis(result);
       toast(
-        `Analyzed ${analysis.summary.total_nodes} executions successfully`,
+        `Analyzed ${result.analysis.summary.total_nodes} executions successfully`,
         "positive",
       );
     } catch (err) {
@@ -156,12 +151,6 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
             label="run_results.json"
             file={runResultsFile}
             onFileChange={setRunResultsFile}
-          />
-          <FileInputRow
-            id="catalog-input"
-            label="catalog.json (optional)"
-            file={catalogFile}
-            onFileChange={setCatalogFile}
           />
         </div>
 
