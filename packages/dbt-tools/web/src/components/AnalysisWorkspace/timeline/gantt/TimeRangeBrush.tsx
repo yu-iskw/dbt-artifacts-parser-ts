@@ -25,6 +25,7 @@ import {
   getResourceTypeSoftFill,
 } from "@web/constants/themeColors";
 import type { TimeWindow } from "@web/lib/analysis-workspace/types";
+import { isPositiveStatus } from "./formatting";
 import { X_PAD } from "./constants";
 
 // ---------------------------------------------------------------------------
@@ -116,13 +117,21 @@ function drawBrush(
   ctx.textBaseline = "middle";
   ctx.fillText("Zoom", labelW / 2, h / 2);
 
+  // Returns true if the bundle or any of its tests has a non-positive status.
+  function isFailed(bundle: BundleRow): boolean {
+    if (!isPositiveStatus(bundle.item.status)) return true;
+    return bundle.tests.some((t) => !isPositiveStatus(t.status));
+  }
+
   // Minimap bars (all bundles, very compact)
   for (const bundle of bundles) {
     const item = bundle.item;
     if (item.end <= 0 || maxEnd <= 0) continue;
     const bx = timeToX(item.start, labelW, chartW, maxEnd);
     const bw = Math.max(1, (item.duration / maxEnd) * chartW);
-    ctx.fillStyle = getResourceTypeSoftFill(item.resourceType, theme);
+    ctx.fillStyle = isFailed(bundle)
+      ? palette.testFailStripe
+      : getResourceTypeSoftFill(item.resourceType, theme);
     ctx.globalAlpha = 0.7;
     ctx.fillRect(bx, BAR_MARGIN, bw, BAR_H);
     ctx.globalAlpha = 1;
