@@ -46,6 +46,10 @@ export function isPositiveStatus(status: string): boolean {
   return ["success", "pass", "passed"].includes(status.trim().toLowerCase());
 }
 
+export function isSkippedStatus(status: string): boolean {
+  return ["skipped", "no op"].includes(status.trim().toLowerCase());
+}
+
 export function computeTicks(
   maxEnd: number,
 ): Array<{ ms: number; label: string }> {

@@ -25,7 +25,7 @@ import {
   getResourceTypeSoftFill,
 } from "@web/constants/themeColors";
 import type { TimeWindow } from "@web/lib/analysis-workspace/types";
-import { isPositiveStatus } from "./formatting";
+import { formatMs, isPositiveStatus, isSkippedStatus } from "./formatting";
 import { X_PAD } from "./constants";
 
 // ---------------------------------------------------------------------------
@@ -76,6 +76,101 @@ function timeToX(
   return labelW + (time / maxEnd) * chartW;
 }
 
+/** Returns the first bundle whose minimap bar contains the given X pixel. */
+function hitBundle(
+  mouseX: number,
+  bundles: BundleRow[],
+  labelW: number,
+  chartW: number,
+  maxEnd: number,
+): BundleRow | null {
+  for (const bundle of bundles) {
+    const item = bundle.item;
+    if (item.end <= 0 || maxEnd <= 0) continue;
+    const bx = timeToX(item.start, labelW, chartW, maxEnd);
+    const bw = Math.max(1, (item.duration / maxEnd) * chartW);
+    if (mouseX >= bx && mouseX <= bx + bw) return bundle;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Bundle status helpers
+// ---------------------------------------------------------------------------
+
+/** True if the bundle or any test has a non-positive, non-skipped status. */
+function isBundleFailed(bundle: BundleRow): boolean {
+  const isNotable = (s: string) => !isPositiveStatus(s) && !isSkippedStatus(s);
+  if (isNotable(bundle.item.status)) return true;
+  return bundle.tests.some((t) => isNotable(t.status));
+}
+
+/** True if the bundle or any test is skipped/no-op (failure takes priority). */
+function isBundleSkipped(bundle: BundleRow): boolean {
+  if (isSkippedStatus(bundle.item.status)) return true;
+  return bundle.tests.some((t) => isSkippedStatus(t.status));
+}
+
+// ---------------------------------------------------------------------------
+// Canvas draw helpers
+// ---------------------------------------------------------------------------
+
+/** Resolves the active time-range selection from drag state or committed window. */
+function resolveSelection(
+  dragState: DragState | null,
+  timeWindow: TimeWindow | null,
+): { start: number; end: number } | null {
+  if (dragState && dragState.kind !== "idle") {
+    if (
+      dragState.kind === "new" ||
+      dragState.kind === DRAG_KIND_RESIZE_LEFT ||
+      dragState.kind === DRAG_KIND_RESIZE_RIGHT
+    ) {
+      return { start: dragState.selStart, end: dragState.selEnd };
+    }
+    return null;
+  }
+  return timeWindow ? { start: timeWindow.start, end: timeWindow.end } : null;
+}
+
+interface DrawSelectionGeo {
+  labelW: number;
+  chartW: number;
+  maxEnd: number;
+  w: number;
+  h: number;
+}
+
+/** Draws the dimmed overlay, selection outline, and resize handles for a selection. */
+function drawSelection(
+  ctx: CanvasRenderingContext2D,
+  selStart: number,
+  selEnd: number,
+  geo: DrawSelectionGeo,
+  theme: ThemeMode,
+  strokeColor: string,
+): void {
+  if (selEnd <= selStart) return;
+  const { labelW, chartW, maxEnd, w, h } = geo;
+  const sx = timeToX(selStart, labelW, chartW, maxEnd);
+  const ex = timeToX(selEnd, labelW, chartW, maxEnd);
+
+  ctx.fillStyle =
+    theme === "dark" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
+  ctx.fillRect(labelW, 0, sx - labelW, h);
+  ctx.fillRect(ex, 0, w - ex, h);
+
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(sx, 1, ex - sx, h - 2);
+
+  const handleColor =
+    theme === "dark" ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)";
+  ctx.fillStyle = handleColor;
+  ctx.fillRect(sx, (h - 16) / 2, HANDLE_W, 16);
+  ctx.fillRect(ex - HANDLE_W, (h - 16) / 2, HANDLE_W, 16);
+}
+
 // ---------------------------------------------------------------------------
 // Canvas draw
 // ---------------------------------------------------------------------------
@@ -117,67 +212,32 @@ function drawBrush(
   ctx.textBaseline = "middle";
   ctx.fillText("Zoom", labelW / 2, h / 2);
 
-  // Returns true if the bundle or any of its tests has a non-positive status.
-  function isFailed(bundle: BundleRow): boolean {
-    if (!isPositiveStatus(bundle.item.status)) return true;
-    return bundle.tests.some((t) => !isPositiveStatus(t.status));
-  }
-
   // Minimap bars (all bundles, very compact)
   for (const bundle of bundles) {
     const item = bundle.item;
     if (item.end <= 0 || maxEnd <= 0) continue;
     const bx = timeToX(item.start, labelW, chartW, maxEnd);
     const bw = Math.max(1, (item.duration / maxEnd) * chartW);
-    ctx.fillStyle = isFailed(bundle)
+    ctx.fillStyle = isBundleFailed(bundle)
       ? palette.testFailStripe
-      : getResourceTypeSoftFill(item.resourceType, theme);
+      : isBundleSkipped(bundle)
+        ? palette.testSkipStripe
+        : getResourceTypeSoftFill(item.resourceType, theme);
     ctx.globalAlpha = 0.7;
     ctx.fillRect(bx, BAR_MARGIN, bw, BAR_H);
     ctx.globalAlpha = 1;
   }
 
-  // Determine the active selection (committed window or live drag)
-  let selStart: number | null = null;
-  let selEnd: number | null = null;
-
-  if (dragState && dragState.kind !== "idle") {
-    if (
-      dragState.kind === "new" ||
-      dragState.kind === DRAG_KIND_RESIZE_LEFT ||
-      dragState.kind === DRAG_KIND_RESIZE_RIGHT
-    ) {
-      selStart = dragState.selStart;
-      selEnd = dragState.selEnd;
-    }
-  } else if (timeWindow) {
-    selStart = timeWindow.start;
-    selEnd = timeWindow.end;
-  }
-
-  if (selStart != null && selEnd != null && selEnd > selStart) {
-    const sx = timeToX(selStart, labelW, chartW, maxEnd);
-    const ex = timeToX(selEnd, labelW, chartW, maxEnd);
-    const sw = ex - sx;
-
-    // Dim the unselected regions
-    ctx.fillStyle =
-      theme === "dark" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)";
-    ctx.fillRect(labelW, 0, sx - labelW, h);
-    ctx.fillRect(ex, 0, w - ex, h);
-
-    // Selection outline
-    ctx.strokeStyle = palette.barHoverStroke;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(sx, 1, sw, h - 2);
-
-    // Resize handles
-    const handleColor =
-      theme === "dark" ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)";
-    ctx.fillStyle = handleColor;
-    ctx.fillRect(sx, (h - 16) / 2, HANDLE_W, 16);
-    ctx.fillRect(ex - HANDLE_W, (h - 16) / 2, HANDLE_W, 16);
-  }
+  const sel = resolveSelection(dragState, timeWindow);
+  if (sel)
+    drawSelection(
+      ctx,
+      sel.start,
+      sel.end,
+      { labelW, chartW, maxEnd, w, h },
+      theme,
+      palette.barHoverStroke,
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +281,80 @@ function hitHandle(
 }
 
 // ---------------------------------------------------------------------------
+// Tooltip
+// ---------------------------------------------------------------------------
+
+interface BrushTooltipProps {
+  bundle: BundleRow;
+  clientX: number;
+  canvasWidth: number;
+  theme: ThemeMode;
+}
+
+function BrushTooltip({
+  bundle,
+  clientX,
+  canvasWidth,
+  theme,
+}: BrushTooltipProps) {
+  const item = bundle.item;
+  const failedTests = bundle.tests.filter(
+    (t) => !isPositiveStatus(t.status) && !isSkippedStatus(t.status),
+  ).length;
+  const isItemSkipped = isSkippedStatus(item.status);
+  const statusColor = isItemSkipped
+    ? theme === "dark"
+      ? "#F5B95C"
+      : "#A56315"
+    : theme === "dark"
+      ? "#FF8D86"
+      : "#C0352B";
+  const left = Math.max(0, Math.min(clientX - 80, canvasWidth - 200));
+  return (
+    <div
+      role="tooltip"
+      style={{
+        position: "absolute",
+        left,
+        bottom: BRUSH_H + 4,
+        background: theme === "dark" ? "#1B2035" : "#fff",
+        border: `1px solid ${statusColor}`,
+        borderRadius: 6,
+        padding: "6px 10px",
+        pointerEvents: "none",
+        zIndex: 100,
+        minWidth: 160,
+        maxWidth: 280,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+        fontSize: 12,
+        lineHeight: 1.5,
+        color: theme === "dark" ? "#F3F6FC" : "#171C28",
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 2, wordBreak: "break-all" }}>
+        {item.name}
+      </div>
+      <div style={{ color: statusColor, textTransform: "capitalize" }}>
+        {item.status}
+      </div>
+      <div style={{ color: theme === "dark" ? "#98A3BC" : "#6B7385" }}>
+        {item.resourceType} · {formatMs(item.duration)}
+      </div>
+      {failedTests > 0 && (
+        <div
+          style={{
+            color: theme === "dark" ? "#FF8D86" : "#C0352B",
+            marginTop: 2,
+          }}
+        >
+          {failedTests} test{failedTests > 1 ? "s" : ""} failed
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -243,6 +377,10 @@ export function TimeRangeBrush({
 }: TimeRangeBrushProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<DragState>({ kind: "idle" });
+  const [tooltip, setTooltip] = useState<{
+    bundle: BundleRow;
+    clientX: number;
+  } | null>(null);
 
   // Redraw whenever relevant props change.
   const redraw = useCallback(
@@ -322,6 +460,7 @@ export function TimeRangeBrush({
         selEnd: t,
       };
     }
+    setTooltip(null);
     redraw(dragRef.current);
   };
 
@@ -430,14 +569,40 @@ export function TimeRangeBrush({
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (dragRef.current.kind !== "idle") return;
     setCursor(getCursor(e.clientX));
+    // Tooltip: show for failed / skipped bundles only.
+    const chartW = getChartW();
+    const x = getCanvasX(e.clientX);
+    const hit =
+      chartW > 0 ? hitBundle(x, bundles, labelW, chartW, maxEnd) : null;
+    const noteworthy =
+      hit != null && (isBundleFailed(hit) || isBundleSkipped(hit));
+    setTooltip(noteworthy ? { bundle: hit, clientX: e.clientX } : null);
   };
 
   const handleMouseLeave = () => {
     if (dragRef.current.kind === "idle") setCursor("crosshair");
+    setTooltip(null);
   };
 
+  const canvasWidth = canvasRef.current?.getBoundingClientRect().width ?? 400;
+  const tooltipClientX = tooltip
+    ? tooltip.clientX - (canvasRef.current?.getBoundingClientRect().left ?? 0)
+    : 0;
+
   return (
-    <div className="time-range-brush" aria-label="Timeline zoom brush">
+    <div
+      className="time-range-brush"
+      aria-label="Timeline zoom brush"
+      style={{ position: "relative" }}
+    >
+      {tooltip && (
+        <BrushTooltip
+          bundle={tooltip.bundle}
+          clientX={tooltipClientX}
+          canvasWidth={canvasWidth}
+          theme={theme}
+        />
+      )}
       <canvas
         ref={canvasRef}
         style={{
