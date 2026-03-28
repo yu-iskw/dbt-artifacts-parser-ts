@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build package
-        run: pnpm --filter dbt-artifacts-parser build
+        run: pnpm --filter ./packages/dbt-artifacts-parser build
       - name: Lint (ESLint report)
         run: pnpm lint:report
       - name: Upload lint report
