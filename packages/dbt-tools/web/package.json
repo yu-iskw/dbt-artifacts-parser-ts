@@ -10,7 +10,12 @@
   "license": "Apache-2.0",
   "author": "yu-iskw",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
+    "prepack": "npm run build",
     "build": "pnpm --filter @dbt-tools/core build && tsc && vite build",
     "dev": "vite",
     "dev:debug": "DBT_DEBUG=1 vite",
@@ -34,5 +39,8 @@
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.9.3",
     "vite": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

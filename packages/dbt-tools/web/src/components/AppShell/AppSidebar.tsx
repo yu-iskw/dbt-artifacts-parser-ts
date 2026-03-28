@@ -1,5 +1,6 @@
 import type { AnalysisState } from "@web/types";
 import type { WorkspaceView } from "../AnalysisWorkspace";
+import { AppLogo } from "./AppLogo";
 import {
   type NavigationSelectionTarget,
   isNavigationTargetActive,
@@ -38,7 +39,7 @@ export function AppSidebar({
         }}
         title="Go to Health"
       >
-        <div className="brand-mark">db</div>
+        <AppLogo className="app-logo app-logo--brand" />
         {!sidebarCollapsed && (
           <div>
             <strong>dbt-tools</strong>

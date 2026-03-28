@@ -24,6 +24,7 @@ import {
   SIDEBAR_STORAGE_KEY,
   type NavigationSelectionTarget,
 } from "./components/AppShell/appNavigation";
+import { AppLogo } from "./components/AppShell/AppLogo";
 import { LoadingCard } from "./components/AppShell/LoadingCard";
 import { buildWorkspaceSignals } from "./components/AppShell/workspaceSignals";
 import { ErrorBanner } from "./components/ErrorBanner";
@@ -422,8 +423,7 @@ function AppContent() {
               onClick={() => handleNavigateTo("health")}
               title="Go to Health"
             >
-              <span className="brand-mark">db</span>
-              <span className="app-header__brand-name">dbt-tools</span>
+              <AppLogo className="app-logo app-logo--brand" />
             </button>
           </div>
 
