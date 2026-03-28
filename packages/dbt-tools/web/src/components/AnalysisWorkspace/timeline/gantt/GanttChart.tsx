@@ -25,7 +25,6 @@ import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
 import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
 import { GanttTimeBrush } from "./GanttTimeBrush";
-import { TimeRangeBrush } from "./TimeRangeBrush";
 import { bundleRowHeight, computeRowLayout } from "./ganttChartHelpers";
 import { applyGanttPointerInteraction } from "./ganttPointerInteraction";
 import type { BundleLayout, HoverState } from "./hitTest";
@@ -36,8 +35,6 @@ export { getFailureBundleIds } from "./ganttChartHelpers";
 
 export interface GanttChartProps {
   data: GanttItem[];
-  /** All items before time-window filtering — used by the minimap brush. */
-  allData?: GanttItem[];
   /** Absolute epoch-ms of the earliest executed node — enables wall-clock timestamps. */
   runStartedAt?: number | null;
   /** Immediate manifest neighbors for executed timeline nodes (from analyze). */
@@ -56,7 +53,6 @@ export interface GanttChartProps {
 
 export function GanttChart({
   data,
-  allData,
   runStartedAt,
   timelineAdjacency,
   testStatsById,
@@ -96,11 +92,7 @@ export function GanttChart({
       ? Math.max(80, Math.min(LABEL_W, Math.round(containerWidth * 0.35)))
       : LABEL_W;
 
-  // All bundles (unfiltered by time window) — used by the minimap brush.
-  const allBundles = useMemo(
-    () => groupIntoBundles(allData ?? data),
-    [allData, data],
-  );
+  const allBundles = useMemo(() => groupIntoBundles(data), [data]);
 
   // Absolute max end across all data (used as the brush's total span).
   const absoluteMaxEnd = useMemo(() => {
@@ -124,15 +116,8 @@ export function GanttChart({
   /** Visible slice in absolute ms (same space as `GanttItem.start` / `end`). */
   const sliceStart = timeWindow?.start ?? 0;
   const sliceEnd = timeWindow ? timeWindow.end : absoluteMaxEnd;
-  const sliceSpan = Math.max(1, sliceEnd - sliceStart);
-
-  const [rangeStart, setRangeStart] = useState(sliceStart);
-  const [rangeEnd, setRangeEnd] = useState(sliceEnd);
-
-  useEffect(() => {
-    setRangeStart(sliceStart);
-    setRangeEnd(sliceEnd);
-  }, [sliceStart, sliceEnd]);
+  const rangeStart = sliceStart;
+  const rangeEnd = sliceEnd;
 
   const { rowOffsets, rowHeights } = useMemo(
     () => computeRowLayout(bundles, showTests),
@@ -278,27 +263,12 @@ export function GanttChart({
         />
       )}
       <GanttTimeBrush
-        bundles={bundles}
-        maxEnd={sliceSpan}
-        timeOffset={sliceStart}
-        rangeStart={rangeStart - sliceStart}
-        rangeEnd={rangeEnd - sliceStart}
-        onChange={(relStart, relEnd) => {
-          setRangeStart(relStart + sliceStart);
-          setRangeEnd(relEnd + sliceStart);
-        }}
+        bundles={allBundles}
+        maxEnd={absoluteMaxEnd}
+        timeWindow={timeWindow}
+        testStatsById={testStatsById}
+        onChange={onTimeWindowChange ?? (() => {})}
       />
-
-      {absoluteMaxEnd > 1 && onTimeWindowChange != null && (
-        <TimeRangeBrush
-          bundles={allBundles}
-          maxEnd={absoluteMaxEnd}
-          labelW={effectiveLabelW}
-          timeWindow={timeWindow}
-          onChange={onTimeWindowChange}
-          theme={theme}
-        />
-      )}
 
       <GanttChartFrame
         canvasRef={canvasRef}

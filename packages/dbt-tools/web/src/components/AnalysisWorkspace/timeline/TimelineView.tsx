@@ -49,7 +49,6 @@ function TimelineSurface({
   filters,
   effectiveActiveTypes,
   filteredData,
-  allGanttData,
   bundleRowCount,
   statusCounts,
   typeCounts,
@@ -65,8 +64,6 @@ function TimelineSurface({
   filters: TimelineFilterState;
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
-  /** All gantt items (pre-filter) for the time-range brush minimap. */
-  allGanttData: GanttItem[];
   bundleRowCount: number;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
@@ -149,7 +146,6 @@ function TimelineSurface({
       ) : null}
       <GanttChart
         data={filteredData}
-        allData={allGanttData}
         runStartedAt={analysis.runStartedAt}
         timelineAdjacency={analysis.timelineAdjacency}
         testStatsById={testStatsById}
@@ -393,7 +389,6 @@ export function TimelineView({
         filters={filters}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
-        allGanttData={analysis.ganttData}
         bundleRowCount={filteredParents.length}
         statusCounts={statusCounts}
         typeCounts={typeCounts}

@@ -1,4 +1,4 @@
-import type { MouseEvent, RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
 import type { GanttItem, ResourceTestStats } from "@web/types";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { ThemeMode } from "@web/constants/themeColors";
@@ -66,8 +66,22 @@ export function GanttChartFrame({
   onHoverClear: () => void;
   dependencyEdgeHint?: string;
 }) {
+  const frameRef = useRef<HTMLElement>(null);
+  const [frameWidth, setFrameWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const frameEl = frameRef.current;
+    if (!frameEl) return;
+    const syncWidth = () => setFrameWidth(frameEl.getBoundingClientRect().width);
+    syncWidth();
+    const observer = new ResizeObserver(syncWidth);
+    observer.observe(frameEl);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
+      ref={frameRef}
       className="chart-frame"
       style={{ position: "relative", userSelect: "none" }}
     >
@@ -131,6 +145,8 @@ export function GanttChartFrame({
       {hover && (
         <GanttTooltip
           hover={hover}
+          frameWidth={frameWidth > 0 ? frameWidth : containerWidth}
+          frameHeight={viewportH}
           runStartedAt={runStartedAt}
           canShowTimestamps={canShowTimestamps}
           timeZone={timeZone}
