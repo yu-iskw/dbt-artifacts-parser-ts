@@ -50,6 +50,11 @@ export function isSkippedStatus(status: string): boolean {
   return ["skipped", "no op"].includes(status.trim().toLowerCase());
 }
 
+export function isIssueStatus(status: string): boolean {
+  const normalized = status.trim().toLowerCase();
+  return !isPositiveStatus(normalized) && !isSkippedStatus(normalized);
+}
+
 export function computeTicks(
   rangeStart: number,
   rangeEnd: number,

@@ -2,15 +2,10 @@ import { useRef, useState } from "react";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { TimeWindow } from "@web/lib/analysis-workspace/types";
 import type { ResourceTestStats } from "@web/types";
-import { isPositiveStatus } from "./formatting";
+import { isIssueStatus } from "./formatting";
 
 const MIN_BRUSH_WINDOW_MS = 1_000;
 type BrushDragMode = "create" | "pan" | "start" | "end";
-
-function isIssueStatus(status: string): boolean {
-  const normalized = status.trim().toLowerCase();
-  return !isPositiveStatus(normalized) && normalized !== "skipped" && normalized !== "no op";
-}
 
 export function hasIssueSignal(
   bundle: BundleRow,

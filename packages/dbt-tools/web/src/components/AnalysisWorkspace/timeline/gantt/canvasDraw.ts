@@ -25,8 +25,18 @@ import {
   computeTicks,
   formatMs,
   formatTimestamp,
+  isIssueStatus,
   isPositiveStatus,
 } from "./formatting";
+
+const ISSUE_PARENT_STROKE_WIDTH = 3;
+const ISSUE_TEST_STROKE_WIDTH = 2.25;
+
+function hasAttachedTestIssue(
+  attachedTestStats: ResourceTestStats | undefined,
+): boolean {
+  return (attachedTestStats?.fail ?? 0) + (attachedTestStats?.error ?? 0) > 0;
+}
 
 // ---------------------------------------------------------------------------
 // Path helpers
@@ -194,6 +204,8 @@ function drawRowBar({
   const barX = Math.min(barStartX, barEndX);
   const barW = Math.max(2, barEndX - barStartX);
   const radius = 3;
+  const hasTestIssue = hasAttachedTestIssue(attachedTestStats);
+  const hasIssueOutline = isIssueStatus(item.status) || hasTestIssue;
 
   ctx.save();
   ctx.globalAlpha = emphasis;
@@ -220,17 +232,15 @@ function drawRowBar({
     }
   }
 
-  if (
-    attachedTestStats &&
-    attachedTestStats.fail + attachedTestStats.error > 0 &&
-    isPositiveStatus(item.status)
-  ) {
+  if (hasTestIssue && isPositiveStatus(item.status)) {
     ctx.fillStyle = palette.testFailStripe;
     fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
   }
 
-  ctx.strokeStyle = getStatusColor(item.status, theme);
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = hasIssueOutline
+    ? palette.testFailStripe
+    : getStatusColor(item.status, theme);
+  ctx.lineWidth = hasIssueOutline ? ISSUE_PARENT_STROKE_WIDTH : 2;
   strokeRoundRect(ctx, barX, barY, barW, BAR_H, radius);
   ctx.restore();
 
@@ -283,6 +293,7 @@ function drawTestChip({
   const chipW = Math.max(MIN_CHIP_W, chipEndX - chipStartX);
   const chipH = TEST_BAR_H;
   const radius = 2;
+  const hasIssueOutline = isIssueStatus(test.status);
 
   ctx.save();
   ctx.globalAlpha = emphasis;
@@ -309,8 +320,10 @@ function drawTestChip({
     }
   }
 
-  ctx.strokeStyle = getStatusColor(test.status, theme);
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = hasIssueOutline
+    ? palette.testFailStripe
+    : getStatusColor(test.status, theme);
+  ctx.lineWidth = hasIssueOutline ? ISSUE_TEST_STROKE_WIDTH : 1.5;
   strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
   ctx.restore();
 
