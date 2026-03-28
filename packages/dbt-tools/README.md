@@ -6,11 +6,11 @@ A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifact
 
 ## Packages
 
-| Package                               | npm                                                                                                   | Description                                                     |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`@dbt-tools/core`](./core/README.md) | [![npm](https://img.shields.io/npm/v/@dbt-tools/core)](https://www.npmjs.com/package/@dbt-tools/core) | Core library — dependency graphs, execution analysis, utilities |
-| [`@dbt-tools/cli`](./cli/README.md)   | [![npm](https://img.shields.io/npm/v/@dbt-tools/cli)](https://www.npmjs.com/package/@dbt-tools/cli)   | CLI tool (`dbt-tools`) for artifact analysis                    |
-| [`@dbt-tools/web`](./web/README.md)   | —                                                                                                     | React web app for visual artifact analysis                      |
+| Package                               | Description                                                     |
+| ------------------------------------- | --------------------------------------------------------------- |
+| [`@dbt-tools/core`](./core/README.md) | Core library — dependency graphs, execution analysis, utilities |
+| [`@dbt-tools/cli`](./cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis                    |
+| [`@dbt-tools/web`](./web/README.md)   | React web app for visual artifact analysis                      |
 
 ---
 
