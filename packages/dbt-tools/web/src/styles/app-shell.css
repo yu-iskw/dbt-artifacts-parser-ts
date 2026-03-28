@@ -774,7 +774,7 @@
   letter-spacing: 0.06em;
 }
 
-.workspace-search input {
+.workspace-search:not(.workspace-search--global) input {
   width: 100%;
   padding: 0.95rem 1rem;
   border-radius: 16px;
@@ -1733,7 +1733,7 @@ details.timeline-filter-accordion .timeline-controls {
     padding: 0.8rem;
   }
 
-  .workspace-search__field {
+  .app-header__search-shell {
     min-height: 58px;
   }
 
@@ -1937,6 +1937,10 @@ details.timeline-filter-accordion .timeline-controls {
   padding: 0.02rem 0 0;
 }
 
+.app-header__identity .eyebrow {
+  overflow-wrap: anywhere;
+}
+
 .app-header__subheadline {
   margin: 0;
   color: var(--text-muted);
@@ -2049,12 +2053,12 @@ details.timeline-filter-accordion .timeline-controls {
   width: 100%;
 }
 
-.workspace-search--global {
+.app-header__search-control {
   width: 100%;
   display: block;
 }
 
-.workspace-search__field {
+.app-header__search-shell {
   display: flex;
   align-items: center;
   gap: 0.9rem;
@@ -2068,14 +2072,12 @@ details.timeline-filter-accordion .timeline-controls {
     color-mix(in srgb, var(--bg-surface) 98%, white),
     color-mix(in srgb, var(--bg-surface) 94%, white)
   );
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 70%, transparent),
-    0 8px 20px
-      color-mix(
-        in srgb,
-        var(--shadow-color, rgb(15 23 42 / 8%)) 6%,
-        transparent
-      );
+  box-shadow: 0 8px 20px
+    color-mix(in srgb, var(--shadow-color, rgb(15 23 42 / 8%)) 6%, transparent);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
 }
 
 .workspace-search__icon {
@@ -2085,12 +2087,13 @@ details.timeline-filter-accordion .timeline-controls {
   color: var(--text-soft);
 }
 
-.workspace-search--global input {
+.app-header__search-shell input {
   width: 100%;
   min-width: 0;
   min-height: 58px;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
   color: var(--text-primary);
@@ -2098,11 +2101,11 @@ details.timeline-filter-accordion .timeline-controls {
   font-weight: 550;
 }
 
-.workspace-search--global input:focus {
+.app-header__search-shell input:focus {
   outline: none;
 }
 
-.workspace-search--global input::placeholder {
+.app-header__search-shell input::placeholder {
   color: var(--text-soft);
   opacity: 1;
 }

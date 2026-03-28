@@ -170,6 +170,10 @@ describe("AppWorkspaceChrome header", () => {
       container.querySelector(".app-header")?.textContent ?? "";
 
     expect(container.querySelector(".app-header__primary-label")).toBeNull();
+    expect(container.querySelector(".eyebrow")?.textContent).toBe(
+      "analytics_pipeline",
+    );
+    expect(headerText).not.toContain("Workspace session");
     expect(headerText).toContain("Invocation ID");
     expect(headerText).toContain("abc-123");
     expect(headerText).toContain("Timestamp");
@@ -183,6 +187,14 @@ describe("AppWorkspaceChrome header", () => {
     expect(container.querySelector(".app-header__summary-grid")).not.toBeNull();
     expect(container.querySelector(".app-header__metric-card")).toBeNull();
     expect(container.querySelector(".workspace-search__icon")).not.toBeNull();
+    expect(
+      container.querySelector(".app-header__search-control"),
+    ).not.toBeNull();
+    expect(container.querySelector(".app-header__search-shell")).not.toBeNull();
+    expect(
+      container.querySelector(".workspace-search.workspace-search--global"),
+    ).toBeNull();
+    expect(container.querySelector(".workspace-search__field")).toBeNull();
     expect(container.querySelector(".app-header__headline")).toBeNull();
     expect(container.querySelector(".app-header__subheadline")).toBeNull();
     expect(container.textContent).not.toContain("Search workspace");

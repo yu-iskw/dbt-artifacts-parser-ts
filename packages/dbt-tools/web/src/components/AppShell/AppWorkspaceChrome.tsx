@@ -42,6 +42,7 @@ interface HeaderSummaryItemModel {
 }
 
 interface HeaderModel {
+  label: string;
   subtitle: string | null;
   summaryItems: HeaderSummaryItemModel[];
 }
@@ -121,6 +122,7 @@ function buildHeaderModel(
       : null;
 
   return {
+    label: projectName ?? "Workspace session",
     subtitle:
       projectName == null &&
       invocationId == null &&
@@ -188,7 +190,9 @@ function HeaderSummary({
 function HeaderIdentity({ header }: { header: HeaderModel }) {
   return (
     <div className="app-header__identity">
-      <p className="eyebrow">Workspace session</p>
+      <p className="eyebrow" title={header.label}>
+        {header.label}
+      </p>
       {header.subtitle ? (
         <p className="app-header__subheadline">{header.subtitle}</p>
       ) : null}
@@ -212,8 +216,8 @@ function HeaderSearch({
 }) {
   return (
     <div className="app-header__omnibox">
-      <label className="workspace-search workspace-search--global">
-        <span className="workspace-search__field app-header__search-field">
+      <label className="app-header__search-control">
+        <div className="app-header__search-shell">
           <svg
             className="workspace-search__icon"
             viewBox="0 0 24 24"
@@ -250,7 +254,7 @@ function HeaderSearch({
             placeholder="Search runs, pipelines, assets..."
             aria-label="Global search"
           />
-        </span>
+        </div>
       </label>
       {searchState.isOpen && analysis && (
         <div className="omnibox-results">
