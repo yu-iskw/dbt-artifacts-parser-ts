@@ -28,8 +28,8 @@
   "scripts": {
     "build": "tsc",
     "prepack": "npm run build",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run packages/dbt-tools/core/src",
+    "test:watch": "vitest packages/dbt-tools/core/src"
   },
   "dependencies": {
     "dbt-artifacts-parser": "workspace:*",

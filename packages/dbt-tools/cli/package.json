@@ -19,8 +19,8 @@
   "scripts": {
     "build": "tsc",
     "prepack": "npm run build",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest"
+    "test": "vitest run packages/dbt-tools/cli/src",
+    "test:watch": "vitest packages/dbt-tools/cli/src"
   },
   "dependencies": {
     "@dbt-tools/core": "workspace:*",
