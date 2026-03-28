@@ -169,7 +169,8 @@ describe("drawGantt", () => {
 
     drawGantt(canvas, bundles, rowOffsets, rowHeights, {
       scrollTop: 0,
-      maxEnd: 1000,
+      rangeStart: 0,
+      rangeEnd: 1000,
       displayMode: "duration",
       runStartedAt: null,
       focusIds: null,
@@ -189,7 +190,8 @@ describe("drawGantt", () => {
 
     drawGantt(canvas, [], [], [], {
       scrollTop: 0,
-      maxEnd: 1,
+      rangeStart: 0,
+      rangeEnd: 1,
       displayMode: "duration",
       runStartedAt: null,
       focusIds: null,

@@ -1550,6 +1550,75 @@ details.timeline-filter-accordion .timeline-controls {
   min-height: 320px;
 }
 
+.gantt-brush-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.gantt-brush__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.gantt-brush__title {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gantt-brush {
+  position: relative;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.gantt-brush__bar {
+  position: absolute;
+  top: 16px;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
+  pointer-events: none;
+}
+
+.gantt-brush__selection {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: color-mix(in oklab, var(--accent) 15%, transparent);
+  cursor: grab;
+}
+
+.gantt-brush__selection:active {
+  cursor: grabbing;
+}
+
+.gantt-brush__handle {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: var(--accent);
+  cursor: ew-resize;
+}
+
+.gantt-brush__handle--start {
+  left: 0;
+}
+
+.gantt-brush__handle--end {
+  right: 0;
+}
+
 .chart-tooltip {
   padding: 0.65rem 0.8rem;
   border-radius: 16px;

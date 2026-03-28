@@ -51,17 +51,25 @@ export function isSkippedStatus(status: string): boolean {
 }
 
 export function computeTicks(
-  maxEnd: number,
+  rangeStart: number,
+  rangeEnd: number,
 ): Array<{ ms: number; label: string }> {
-  if (maxEnd <= 0) return [];
+  if (rangeEnd <= rangeStart) return [];
+  const span = rangeEnd - rangeStart;
   const STEPS = [
     50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000, 120000,
   ];
   const TARGET = 6;
-  const step = STEPS.find((s) => maxEnd / s <= TARGET) ?? 120_000;
+  const step = STEPS.find((s) => span / s <= TARGET) ?? 120_000;
   const ticks: Array<{ ms: number; label: string }> = [];
-  for (let ms = 0; ms <= maxEnd; ms += step) {
+  const first = Math.ceil(rangeStart / step) * step;
+  if (rangeStart > 0) {
+    ticks.push({ ms: rangeStart, label: formatMs(rangeStart) });
+  }
+  for (let ms = first; ms <= rangeEnd; ms += step) {
+    if (ms <= rangeStart || ms >= rangeEnd) continue;
     ticks.push({ ms, label: formatMs(ms) });
   }
+  ticks.push({ ms: rangeEnd, label: formatMs(rangeEnd) });
   return ticks;
 }

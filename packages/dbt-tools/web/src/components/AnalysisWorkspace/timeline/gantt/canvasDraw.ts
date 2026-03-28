@@ -161,8 +161,8 @@ interface DrawRowBarParams {
   ctx: CanvasRenderingContext2D;
   item: GanttItem;
   rowY: number;
-  minTime: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   chartW: number;
   labelW: number;
   emphasis: number;
@@ -176,8 +176,8 @@ function drawRowBar({
   ctx,
   item,
   rowY,
-  minTime,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   chartW,
   labelW,
   emphasis,
@@ -186,9 +186,13 @@ function drawRowBar({
   palette,
   theme,
 }: DrawRowBarParams) {
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
   const barY = rowY + BAR_PAD;
-  const barX = labelW + ((item.start - minTime) / maxEnd) * chartW;
-  const barW = Math.max(2, (item.duration / maxEnd) * chartW);
+  const barStartX =
+    labelW + ((item.start - rangeStart) / rangeDuration) * chartW;
+  const barEndX = labelW + ((item.end - rangeStart) / rangeDuration) * chartW;
+  const barX = Math.min(barStartX, barEndX);
+  const barW = Math.max(2, barEndX - barStartX);
   const radius = 3;
 
   ctx.save();
@@ -198,10 +202,10 @@ function drawRowBar({
 
   const cs = item.compileStart;
   const ce = item.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  const hasCompile = cs != null && ce != null && ce > cs;
   if (hasCompile) {
-    const compileX = labelW + ((cs - minTime) / maxEnd) * chartW;
-    const compileEndX = labelW + ((ce - minTime) / maxEnd) * chartW;
+    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
+    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
     const segLeft = Math.max(barX, compileX);
     const segRight = Math.min(barX + barW, compileEndX);
     const segW = segRight - segLeft;
@@ -248,8 +252,8 @@ interface DrawTestChipParams {
   ctx: CanvasRenderingContext2D;
   test: GanttItem;
   chipY: number;
-  minTime: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   chartW: number;
   labelW: number;
   palette: CanvasPalette;
@@ -262,8 +266,8 @@ function drawTestChip({
   ctx,
   test,
   chipY,
-  minTime,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   chartW,
   labelW,
   palette,
@@ -271,8 +275,12 @@ function drawTestChip({
   emphasis,
   isHovered,
 }: DrawTestChipParams) {
-  const chipX = labelW + ((test.start - minTime) / maxEnd) * chartW;
-  const chipW = Math.max(MIN_CHIP_W, (test.duration / maxEnd) * chartW);
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
+  const chipStartX =
+    labelW + ((test.start - rangeStart) / rangeDuration) * chartW;
+  const chipEndX = labelW + ((test.end - rangeStart) / rangeDuration) * chartW;
+  const chipX = Math.min(chipStartX, chipEndX);
+  const chipW = Math.max(MIN_CHIP_W, chipEndX - chipStartX);
   const chipH = TEST_BAR_H;
   const radius = 2;
 
@@ -283,10 +291,10 @@ function drawTestChip({
 
   const cs = test.compileStart;
   const ce = test.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  const hasCompile = cs != null && ce != null && ce > cs;
   if (hasCompile) {
-    const compileX = labelW + ((cs - minTime) / maxEnd) * chartW;
-    const compileEndX = labelW + ((ce - minTime) / maxEnd) * chartW;
+    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
+    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
     const segLeft = Math.max(chipX, compileX);
     const segRight = Math.min(chipX + chipW, compileEndX);
     const segW = segRight - segLeft;
@@ -366,8 +374,8 @@ interface DrawGanttAxisTicksParams {
   labelW: number;
   chartW: number;
   h: number;
-  minTime: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   displayMode: DisplayMode;
   runStartedAt: number | null | undefined;
   timeZone: string;
@@ -379,21 +387,22 @@ function drawGanttAxisTicks({
   labelW,
   chartW,
   h,
-  minTime,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   displayMode,
   runStartedAt,
   timeZone,
   palette,
 }: DrawGanttAxisTicksParams): void {
-  const ticks = computeTicks(maxEnd);
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
+  const ticks = computeTicks(rangeStart, rangeEnd);
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = palette.axisTick;
 
   for (const tick of ticks) {
-    const x = labelW + (tick.ms / maxEnd) * chartW;
+    const x = labelW + ((tick.ms - rangeStart) / rangeDuration) * chartW;
     ctx.strokeStyle = palette.gridLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -402,7 +411,7 @@ function drawGanttAxisTicks({
     ctx.stroke();
     const label =
       displayMode === "timestamps" && runStartedAt != null
-        ? formatTimestamp(runStartedAt + minTime + tick.ms, timeZone)
+        ? formatTimestamp(runStartedAt + tick.ms, timeZone)
         : tick.label;
     ctx.fillText(label, x, AXIS_TOP / 2);
   }
@@ -416,8 +425,8 @@ interface DrawGanttVisibleRowParams {
   w: number;
   labelW: number;
   chartW: number;
-  minTime: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   focusIds: Set<string> | null;
   hoveredId: string | null;
   displayMode: DisplayMode;
@@ -438,8 +447,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     w,
     labelW,
     chartW,
-    minTime,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     focusIds,
     hoveredId,
     displayMode,
@@ -478,8 +487,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     ctx,
     item: bundle.item,
     rowY,
-    minTime,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     chartW,
     labelW,
     emphasis,
@@ -499,8 +508,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
       ctx,
       test,
       chipY,
-      minTime,
-      maxEnd,
+      rangeStart,
+      rangeEnd,
       chartW,
       labelW,
       palette,
@@ -517,17 +526,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
 
 export interface DrawGanttParams {
   scrollTop: number;
-  /**
-   * The start of the visible time window in ms (same coordinate space as
-   * `GanttItem.start`). Defaults to `0` (full timeline from the beginning).
-   * When a time-range brush is active this is `timeWindow.start`.
-   */
-  minTime?: number;
-  /**
-   * The visible time span in ms. When a time-range brush is active this is
-   * `timeWindow.end - timeWindow.start`; otherwise it is the full run duration.
-   */
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   displayMode: DisplayMode;
   runStartedAt: number | null | undefined;
   focusIds: Set<string> | null;
@@ -548,8 +548,8 @@ export function drawGantt(
   rowHeights: number[],
   {
     scrollTop,
-    minTime = 0,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     displayMode,
     runStartedAt,
     focusIds,
@@ -572,8 +572,8 @@ export function drawGantt(
     labelW,
     chartW,
     h,
-    minTime,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     displayMode,
     runStartedAt,
     timeZone,
@@ -600,8 +600,8 @@ export function drawGantt(
       w,
       labelW,
       chartW,
-      minTime,
-      maxEnd,
+      rangeStart,
+      rangeEnd,
       focusIds,
       hoveredId,
       displayMode,

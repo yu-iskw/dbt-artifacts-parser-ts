@@ -5,6 +5,7 @@ import {
   AXIS_TOP,
   BUNDLE_HULL_PAD,
   ROW_H,
+  TEST_BAR_H,
   TEST_LANE_H,
   X_PAD,
 } from "./constants";
@@ -60,10 +61,10 @@ export function hitTestBundle(
   bundles: BundleRow[],
   layout: BundleLayout,
   scrollTop: number,
-  maxEnd: number,
+  rangeStart: number,
+  rangeEnd: number,
   effectiveLabelW: number,
   canvas: HTMLCanvasElement | null,
-  minTime = 0,
 ): { item: GanttItem; x: number; y: number } | null {
   const { rowOffsets, rowHeights, showTests } = layout;
   if (!canvas) return null;
@@ -79,6 +80,7 @@ export function hitTestBundle(
 
   const bundle = bundles[bundleIdx];
   if (!bundle) return null;
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
 
   const chartW = canvas.getBoundingClientRect().width - effectiveLabelW - X_PAD;
   const bundleRowY = AXIS_TOP + (rowOffsets[bundleIdx] ?? 0) - scrollTop;
@@ -89,26 +91,32 @@ export function hitTestBundle(
   }
 
   // Check parent bar
-  const barX =
-    effectiveLabelW + ((bundle.item.start - minTime) / maxEnd) * chartW;
-  const barW = Math.max(2, (bundle.item.duration / maxEnd) * chartW);
+  const barStartX =
+    effectiveLabelW +
+    ((bundle.item.start - rangeStart) / rangeDuration) * chartW;
+  const barEndX =
+    effectiveLabelW + ((bundle.item.end - rangeStart) / rangeDuration) * chartW;
+  const barX = Math.min(barStartX, barEndX);
+  const barW = Math.max(2, barEndX - barStartX);
   if (mouseX >= barX && mouseX <= barX + barW) {
     return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
   if (showTests && bundle.lanes.length > 0) {
     for (const { item: test, lane } of bundle.lanes) {
-      const chipX =
-        effectiveLabelW + ((test.start - minTime) / maxEnd) * chartW;
-      const chipW = Math.max(2, (test.duration / maxEnd) * chartW);
+      const chipStartX =
+        effectiveLabelW + ((test.start - rangeStart) / rangeDuration) * chartW;
+      const chipEndX =
+        effectiveLabelW + ((test.end - rangeStart) / rangeDuration) * chartW;
+      const chipX = Math.min(chipStartX, chipEndX);
+      const chipW = Math.max(2, chipEndX - chipStartX);
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
-      const chipH = 10; // TEST_BAR_H
 
       if (
         mouseX >= chipX &&
         mouseX <= chipX + chipW &&
         mouseY >= chipY &&
-        mouseY <= chipY + chipH
+        mouseY <= chipY + TEST_BAR_H
       ) {
         return { item: test, x: mouseX, y: mouseY };
       }

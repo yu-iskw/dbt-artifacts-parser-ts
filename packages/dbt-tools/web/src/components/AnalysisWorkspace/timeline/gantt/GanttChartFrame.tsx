@@ -18,8 +18,8 @@ export function GanttChartFrame({
   rowOffsets,
   containerWidth,
   effectiveLabelW,
-  minTime,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   scrollTop,
   viewportH,
   needsScroll,
@@ -47,8 +47,8 @@ export function GanttChartFrame({
   rowOffsets: number[];
   containerWidth: number;
   effectiveLabelW: number;
-  minTime: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   scrollTop: number;
   viewportH: number;
   needsScroll: boolean;
@@ -93,42 +93,40 @@ export function GanttChartFrame({
         rowOffsets={rowOffsets}
         canvasWidth={containerWidth > 0 ? containerWidth : 600}
         effectiveLabelW={effectiveLabelW}
-        minTime={minTime}
-        maxEnd={maxEnd}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
         scrollTop={scrollTop}
         viewportH={viewportH}
         theme={theme}
         showTests={showTests}
       />
 
-      {
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- chart viewport hit-test + scroll
-        <div
-          ref={scrollRef}
-          className="chart-frame__viewport"
-          role="region"
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard scroll / activation
-          tabIndex={0}
-          aria-label="Timeline chart viewport — use arrow keys to scroll"
-          style={{
-            position: "relative",
-            height: viewportH,
-            overflowY: needsScroll ? "auto" : "hidden",
-          }}
-          onMouseMove={(e) => onPointer(e, "move")}
-          onClick={(e) => onPointer(e, "click")}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter" && e.key !== " ") return;
-            e.preventDefault();
-            const activeId = hover?.item.unique_id ?? selectedId;
-            if (!activeId) return;
-            onSelect?.(activeId);
-          }}
-          onMouseLeave={onHoverClear}
-        >
-          <div style={{ height: totalScrollH }} />
-        </div>
-      }
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- chart viewport hit-test + scroll */}
+      <div
+        ref={scrollRef}
+        className="chart-frame__viewport"
+        role="region"
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard scroll / activation
+        tabIndex={0}
+        aria-label="Timeline chart viewport — use arrow keys to scroll"
+        style={{
+          position: "relative",
+          height: viewportH,
+          overflowY: needsScroll ? "auto" : "hidden",
+        }}
+        onMouseMove={(e) => onPointer(e, "move")}
+        onClick={(e) => onPointer(e, "click")}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          const activeId = hover?.item.unique_id ?? selectedId;
+          if (!activeId) return;
+          onSelect?.(activeId);
+        }}
+        onMouseLeave={onHoverClear}
+      >
+        <div style={{ height: totalScrollH }} />
+      </div>
 
       {hover && (
         <GanttTooltip

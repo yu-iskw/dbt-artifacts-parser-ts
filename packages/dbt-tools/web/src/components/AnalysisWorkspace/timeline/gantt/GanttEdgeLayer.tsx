@@ -93,8 +93,8 @@ export function GanttEdgeLayer({
   rowOffsets,
   canvasWidth,
   effectiveLabelW,
-  minTime = 0,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   scrollTop,
   viewportH,
   theme = "light",
@@ -108,8 +108,8 @@ export function GanttEdgeLayer({
   rowOffsets: number[];
   canvasWidth: number;
   effectiveLabelW: number;
-  minTime?: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   scrollTop: number;
   viewportH: number;
   theme?: ThemeMode;
@@ -123,6 +123,11 @@ export function GanttEdgeLayer({
   const markerPrimary = "gantt-edge-mk-primary";
   const markerSecondary = "gantt-edge-mk-secondary";
   const markerDownstream = "gantt-edge-mk-downstream";
+  const markerRefs = {
+    primary: markerPrimary,
+    secondary: markerSecondary,
+    downstream: markerDownstream,
+  };
 
   return (
     <svg
@@ -153,18 +158,14 @@ export function GanttEdgeLayer({
           scrollTop,
           showTests,
           effectiveLabelW,
-          minTime,
-          maxEnd,
+          rangeStart,
+          rangeEnd,
           chartW: approxChartW,
         });
         if (!d) return null;
 
         const { stroke, strokeWidth, strokeDasharray, opacity, markerEnd } =
-          focusEdgeVisualProps(edge, t, {
-            primary: markerPrimary,
-            secondary: markerSecondary,
-            downstream: markerDownstream,
-          });
+          focusEdgeVisualProps(edge, t, markerRefs);
 
         return (
           <path

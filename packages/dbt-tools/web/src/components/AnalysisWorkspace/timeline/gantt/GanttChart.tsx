@@ -24,6 +24,7 @@ import {
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
 import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
+import { GanttTimeBrush } from "./GanttTimeBrush";
 import { TimeRangeBrush } from "./TimeRangeBrush";
 import { bundleRowHeight, computeRowLayout } from "./ganttChartHelpers";
 import { applyGanttPointerInteraction } from "./ganttPointerInteraction";
@@ -120,11 +121,18 @@ export function GanttChart({
     );
   }, [data, timeWindow]);
 
-  // Derived zoom parameters for canvas rendering and hit-testing.
-  const minTime = timeWindow?.start ?? 0;
-  const maxEnd = timeWindow
-    ? timeWindow.end - timeWindow.start
-    : absoluteMaxEnd;
+  /** Visible slice in absolute ms (same space as `GanttItem.start` / `end`). */
+  const sliceStart = timeWindow?.start ?? 0;
+  const sliceEnd = timeWindow ? timeWindow.end : absoluteMaxEnd;
+  const sliceSpan = Math.max(1, sliceEnd - sliceStart);
+
+  const [rangeStart, setRangeStart] = useState(sliceStart);
+  const [rangeEnd, setRangeEnd] = useState(sliceEnd);
+
+  useEffect(() => {
+    setRangeStart(sliceStart);
+    setRangeEnd(sliceEnd);
+  }, [sliceStart, sliceEnd]);
 
   const { rowOffsets, rowHeights } = useMemo(
     () => computeRowLayout(bundles, showTests),
@@ -219,8 +227,8 @@ export function GanttChart({
     rowOffsets,
     rowHeights,
     scrollTop,
-    minTime,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     activeMode,
     runStartedAt,
     focusedIds,
@@ -249,8 +257,8 @@ export function GanttChart({
       bundles,
       layout,
       scrollTop,
-      minTime,
-      maxEnd,
+      rangeStart,
+      rangeEnd,
       effectiveLabelW,
       canvas: canvasRef.current,
       setHover,
@@ -269,6 +277,17 @@ export function GanttChart({
           onTimeZoneChange={setTimeZone}
         />
       )}
+      <GanttTimeBrush
+        bundles={bundles}
+        maxEnd={sliceSpan}
+        timeOffset={sliceStart}
+        rangeStart={rangeStart - sliceStart}
+        rangeEnd={rangeEnd - sliceStart}
+        onChange={(relStart, relEnd) => {
+          setRangeStart(relStart + sliceStart);
+          setRangeEnd(relEnd + sliceStart);
+        }}
+      />
 
       {absoluteMaxEnd > 1 && onTimeWindowChange != null && (
         <TimeRangeBrush
@@ -292,8 +311,8 @@ export function GanttChart({
         rowOffsets={rowOffsets}
         containerWidth={containerWidth}
         effectiveLabelW={effectiveLabelW}
-        minTime={minTime}
-        maxEnd={maxEnd}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
         scrollTop={scrollTop}
         viewportH={viewportH}
         needsScroll={needsScroll}
