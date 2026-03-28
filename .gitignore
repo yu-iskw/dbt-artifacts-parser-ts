@@ -161,3 +161,4 @@ test-results/
 playwright-report/
 playwright/.cache/
 .worktrees/
+.claude/worktrees/
