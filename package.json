@@ -1,5 +1,5 @@
 {
-  "name": "dbt-artifacts-parser",
+  "name": "dbt-artifacts-parser-ts",
   "version": "0.3.0",
   "private": true,
   "description": "A community-driven TypeScript library for parsing dbt artifacts with full type safety and automatic version detection.",
