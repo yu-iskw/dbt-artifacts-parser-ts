@@ -4,6 +4,28 @@ React web application for visual dbt artifact analysis. Provides interactive dep
 
 ---
 
+## Prerequisites
+
+- **Node.js** ≥ 18
+- **pnpm** ≥ 8 (the monorepo uses pnpm workspaces)
+- A dbt project with a `./target/` directory containing `manifest.json` and/or `run_results.json`
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| UI framework | [React 18](https://react.dev/) |
+| Build tool | [Vite 6](https://vitejs.dev/) |
+| Charts | [Recharts](https://recharts.org/) |
+| Virtualization | [@tanstack/react-virtual](https://tanstack.com/virtual) |
+| Analysis engine | `@dbt-tools/core` (web worker, `@dbt-tools/core/browser` export) |
+| E2E tests | [Playwright](https://playwright.dev/) |
+| Language | TypeScript 5 |
+
+---
+
 ## Features
 
 - **Dependency graph visualization** — explore model relationships as an interactive graph
@@ -55,8 +77,8 @@ Set `DBT_TARGET` to serve `manifest.json` and `run_results.json` from that direc
 
 ```bash
 DBT_TARGET=./target pnpm dev
-# or use the convenience script from repo root:
-pnpm dev:web   # (configures DBT_TARGET=./target automatically)
+# or use the dev:target convenience script from the package directory:
+pnpm dev:target   # shorthand for DBT_TARGET=./target vite
 ```
 
 Then open the URL Vite prints (e.g. `http://localhost:5173/`).
@@ -112,6 +134,30 @@ pnpm preview   # serve the production build locally
 
 ---
 
+## Project Structure
+
+```text
+packages/dbt-tools/web/
+├── src/
+│   ├── components/          # React UI components
+│   │   ├── AnalysisWorkspace/   # Gantt timeline and execution view
+│   │   ├── AppShell/            # Top-level layout shell
+│   │   └── ui/                  # Shared primitive components
+│   ├── hooks/               # Custom React hooks
+│   ├── services/            # Data-fetching and artifact API services
+│   ├── workers/             # Web worker for off-thread analysis
+│   ├── constants/           # Theme colors and shared constants
+│   ├── lib/                 # Analysis workspace helpers
+│   ├── styles/              # CSS tokens, base, and component styles
+│   ├── App.tsx              # Root application component
+│   └── main.tsx             # Entry point
+├── e2e/                     # Playwright end-to-end test specs
+├── vite.config.ts           # Vite + Vite middleware (DBT_TARGET proxy)
+└── package.json
+```
+
+---
+
 ## E2E Tests
 
 The web app has Playwright end-to-end tests:
@@ -124,6 +170,18 @@ See `e2e/` for test specs.
 
 ---
 
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Blank page / "No artifacts found" | Ensure `DBT_TARGET` points to a directory that contains `manifest.json` |
+| Auto-reload not triggering | Check `DBT_WATCH` is not set to `0`; verify the file watcher has read access to the target directory |
+| Slow UI with large manifests | The web worker and virtualized lists should handle 100k+ nodes; if performance still degrades, open the browser profiler and check for main-thread analysis code paths |
+| `GET /api/manifest.json` returns 404 | `DBT_TARGET` is not set or the Vite dev server was started without it |
+| Debug logs not appearing | Server-side: restart dev with `DBT_DEBUG=1`; client-side: add `?debug=1` to the URL |
+
+---
+
 ## Development
 
 ```bash
@@ -132,6 +190,16 @@ pnpm dev     # Vite dev server with HMR
 ```
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide, including how to set up the monorepo and run all tests.
+
+---
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@dbt-tools/core`](../core/README.md) | Analysis engine used by this web app (dependency graphs, execution analysis) |
+| [`@dbt-tools/cli`](../cli/README.md) | Command-line interface for the same analysis, optimized for AI agents |
+| [`dbt-artifacts-parser`](../../dbt-artifacts-parser/README.md) | Standalone library for parsing and typing dbt JSON artifacts |
 
 ---
 
