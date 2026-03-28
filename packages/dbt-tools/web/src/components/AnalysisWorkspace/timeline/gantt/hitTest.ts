@@ -90,26 +90,33 @@ export function hitTestBundle(
     return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
+  // Chart bounds used to clamp hitboxes so that bars extending outside the
+  // visible window do not make items hittable in the label column or beyond.
+  const chartLeft = effectiveLabelW;
+  const chartRight = effectiveLabelW + chartW;
+
   // Check parent bar
-  const barStartX =
+  const rawBarStartX =
     effectiveLabelW +
     ((bundle.item.start - rangeStart) / rangeDuration) * chartW;
-  const barEndX =
+  const rawBarEndX =
     effectiveLabelW + ((bundle.item.end - rangeStart) / rangeDuration) * chartW;
-  const barX = Math.min(barStartX, barEndX);
-  const barW = Math.max(2, barEndX - barStartX);
+  const barX = Math.max(chartLeft, Math.min(rawBarStartX, rawBarEndX));
+  const barXEnd = Math.min(chartRight, Math.max(rawBarStartX, rawBarEndX));
+  const barW = Math.max(2, barXEnd - barX);
   if (mouseX >= barX && mouseX <= barX + barW) {
     return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
   if (showTests && bundle.lanes.length > 0) {
     for (const { item: test, lane } of bundle.lanes) {
-      const chipStartX =
+      const rawChipStartX =
         effectiveLabelW + ((test.start - rangeStart) / rangeDuration) * chartW;
-      const chipEndX =
+      const rawChipEndX =
         effectiveLabelW + ((test.end - rangeStart) / rangeDuration) * chartW;
-      const chipX = Math.min(chipStartX, chipEndX);
-      const chipW = Math.max(2, chipEndX - chipStartX);
+      const chipX = Math.max(chartLeft, Math.min(rawChipStartX, rawChipEndX));
+      const chipXEnd = Math.min(chartRight, Math.max(rawChipStartX, rawChipEndX));
+      const chipW = Math.max(2, chipXEnd - chipX);
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
 
       if (

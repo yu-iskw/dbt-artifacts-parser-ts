@@ -105,13 +105,33 @@ export function GanttChart({
   }, [allBundles]);
 
   // When a time window is active, show only bundles that overlap it.
+  // Parents whose bar is outside the window but have tests inside the window are
+  // also kept so their tests are not orphaned and silently dropped by groupIntoBundles.
   const bundles = useMemo(() => {
-    if (!timeWindow) return groupIntoBundles(data);
+    if (!timeWindow) return allBundles;
     const { start, end } = timeWindow;
+
+    // Collect parent unique_ids that have at least one test overlapping the window.
+    const parentIdsWithWindowTests = new Set<string>();
+    for (const bundle of allBundles) {
+      for (const test of bundle.tests) {
+        if (test.end > start && test.start < end) {
+          parentIdsWithWindowTests.add(bundle.item.unique_id);
+          break;
+        }
+      }
+    }
+
     return groupIntoBundles(
-      data.filter((item) => item.end > start && item.start < end),
+      data.filter((item) => {
+        // Keep any item whose bar overlaps the window.
+        if (item.end > start && item.start < end) return true;
+        // Also keep parent items whose tests overlap the window even if the
+        // parent bar itself is entirely outside the window.
+        return parentIdsWithWindowTests.has(item.unique_id);
+      }),
     );
-  }, [data, timeWindow]);
+  }, [data, allBundles, timeWindow]);
 
   /** Visible slice in absolute ms (same space as `GanttItem.start` / `end`). */
   const sliceStart = timeWindow?.start ?? 0;
