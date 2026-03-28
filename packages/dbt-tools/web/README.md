@@ -87,6 +87,21 @@ DBT_WATCH=0 DBT_TARGET=./target pnpm dev
 
 ---
 
+## Configuration
+
+All configuration is via environment variables passed to the Vite dev server or build:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DBT_TARGET` | — | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
+| `DBT_DEBUG` | `0` | Set to `1` to enable server-side debug logging in the Vite middleware |
+| `DBT_WATCH` | `1` | Enable (`1`) or disable (`0`) file watching and auto-reload when artifacts change |
+| `DBT_RELOAD_DEBOUNCE_MS` | `300` | Debounce delay in ms before triggering a reload on rapid file writes |
+
+Add `?debug=1` to the browser URL to enable client-side debug logging.
+
+---
+
 ## Building for Production
 
 ```bash
