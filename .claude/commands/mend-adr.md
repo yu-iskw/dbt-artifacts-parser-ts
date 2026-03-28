@@ -1,3 +1,5 @@
+# Mend ADR
+
 Detect drift between the Architecture Decision Records in `docs/adr/` and the actual
 codebase, then amend every drifted ADR in-place.
 
@@ -25,12 +27,13 @@ codebase, then amend every drifted ADR in-place.
 
 4. **Amend each drifted ADR** — append at the bottom of the file:
 
-   ```
+   ```markdown
    ## Amendment (YYYY-MM-DD)
 
    One-sentence summary of what changed.
 
    ### [Topic]
+
    Specific details: actual values, file paths, updated tables.
    ```
 

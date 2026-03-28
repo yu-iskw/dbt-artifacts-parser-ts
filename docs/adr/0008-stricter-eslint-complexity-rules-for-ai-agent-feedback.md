@@ -68,12 +68,12 @@ added. The `complexity` (core ESLint) rule was removed entirely as it duplicates
 
 **Actual thresholds in `eslint.config.mjs` (as of 2026-03-28):**
 
-| Rule                              | Decision target | Actual (prod) | Actual (test) | Actual (E2E spec) |
-| --------------------------------- | --------------- | ------------- | ------------- | ----------------- |
-| `complexity` (core)               | error @ 12      | **Removed**   | Removed       | Removed           |
-| `max-lines-per-function`          | error @ 40      | error @ 280   | error @ 700   | error @ 400       |
-| `sonarjs/cyclomatic-complexity`   | error @ 8       | error @ 20    | error @ 20    | error @ 30        |
-| `sonarjs/cognitive-complexity`    | error @ 12      | error @ 20    | error @ 20    | error @ 35        |
+| Rule                            | Decision target | Actual (prod) | Actual (test) | Actual (E2E spec) |
+| ------------------------------- | --------------- | ------------- | ------------- | ----------------- |
+| `complexity` (core)             | error @ 12      | **Removed**   | Removed       | Removed           |
+| `max-lines-per-function`        | error @ 40      | error @ 280   | error @ 700   | error @ 400       |
+| `sonarjs/cyclomatic-complexity` | error @ 8       | error @ 20    | error @ 20    | error @ 30        |
+| `sonarjs/cognitive-complexity`  | error @ 12      | error @ 20    | error @ 20    | error @ 35        |
 
 **Additional rules added (not in original decision):**
 
