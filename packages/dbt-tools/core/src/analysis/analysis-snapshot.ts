@@ -1,6 +1,4 @@
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import { detectBottlenecks, type BottleneckResult } from "./run-results-search";
 import { ExecutionAnalyzer, type ExecutionSummary } from "./execution-analyzer";
@@ -1004,13 +1002,11 @@ export async function buildAnalysisSnapshotFromArtifacts(
   runResultsJson: Record<string, unknown>,
 ): Promise<AnalysisSnapshot> {
   const [{ parseManifest }, { parseRunResults }] = await Promise.all([
-    // @ts-expect-error - workspace subpath types are resolved by consumers/build tooling even though this package uses legacy moduleResolution
     import("dbt-artifacts-parser/manifest") as Promise<{
       parseManifest: (
         nextManifestJson: Record<string, unknown>,
       ) => ParsedManifest;
     }>,
-    // @ts-expect-error - workspace subpath types are resolved by consumers/build tooling even though this package uses legacy moduleResolution
     import("dbt-artifacts-parser/run_results") as Promise<{
       parseRunResults: (
         nextRunResultsJson: Record<string, unknown>,

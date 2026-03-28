@@ -1,17 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { resolveSafePath } from "../validation/input-validator";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { parseCatalog } from "dbt-artifacts-parser/catalog";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 
 /**

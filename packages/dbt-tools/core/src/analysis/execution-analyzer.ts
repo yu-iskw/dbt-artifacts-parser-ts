@@ -1,6 +1,17 @@
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ManifestGraph } from "./manifest-graph";
+
+type RunResultLike = {
+  unique_id: string;
+  status: string;
+  execution_time: number;
+  thread_id?: string | null;
+  timing: Array<{
+    name: string;
+    started_at?: string | null;
+    completed_at?: string | null;
+  }>;
+};
 /**
  * Execution timing information for a single node
  */
@@ -82,27 +93,24 @@ export class ExecutionAnalyzer {
       return [];
     }
 
-    return this.runResults.results.map((result: Record<string, unknown>) => {
+    const results = this.runResults.results as unknown as RunResultLike[];
+
+    return results.map((result) => {
       // Find execute timing (most relevant for execution time)
-      const timingArray =
-        (result.timing as Array<Record<string, unknown>>) || [];
-      const executeTiming = timingArray.find(
-        (t: Record<string, unknown>) => t.name === "execute",
-      );
-      const compileTiming = timingArray.find(
-        (t: Record<string, unknown>) => t.name === "compile",
-      );
+      const timingArray = result.timing || [];
+      const executeTiming = timingArray.find((t) => t.name === "execute");
+      const compileTiming = timingArray.find((t) => t.name === "compile");
 
       // Use execute timing if available, otherwise fall back to compile
       const timing = executeTiming || compileTiming || timingArray[0];
 
       return {
-        unique_id: (result.unique_id as string) || "",
-        status: (result.status as string) || "unknown",
-        execution_time: (result.execution_time as number) || 0,
-        started_at: (timing?.started_at as string) || undefined,
-        completed_at: (timing?.completed_at as string) || undefined,
-        thread_id: (result.thread_id as string) || undefined,
+        unique_id: result.unique_id || "",
+        status: result.status || "unknown",
+        execution_time: result.execution_time || 0,
+        started_at: timing?.started_at ?? undefined,
+        completed_at: timing?.completed_at ?? undefined,
+        thread_id: result.thread_id ?? undefined,
       };
     });
   }
@@ -246,19 +254,15 @@ export class ExecutionAnalyzer {
   /**
    * Wall-clock span and optional compile/execute intervals (epoch ms).
    */
-  private wallClockFromResult(result: Record<string, unknown>): {
+  private wallClockFromResult(result: RunResultLike): {
     wallStart: number;
     wallEnd: number;
     compile: { start: number; end: number } | null;
     execute: { start: number; end: number } | null;
   } | null {
-    const timingArray = (result.timing as Array<Record<string, unknown>>) || [];
-    const executeTiming = timingArray.find(
-      (t: Record<string, unknown>) => t.name === "execute",
-    );
-    const compileTiming = timingArray.find(
-      (t: Record<string, unknown>) => t.name === "compile",
-    );
+    const timingArray = result.timing || [];
+    const executeTiming = timingArray.find((t) => t.name === "execute");
+    const compileTiming = timingArray.find((t) => t.name === "compile");
     const compile = this.parseTimingInterval(compileTiming);
     const execute = this.parseTimingInterval(executeTiming);
 
@@ -315,8 +319,9 @@ export class ExecutionAnalyzer {
       };
     }> = [];
 
-    for (const result of this.runResults.results as Record<string, unknown>[]) {
-      const uniqueId = (result.unique_id as string) || "";
+    for (const result of this.runResults
+      .results as unknown as RunResultLike[]) {
+      const uniqueId = result.unique_id || "";
       if (!uniqueId) continue;
       const wall = this.wallClockFromResult(result);
       if (!wall) continue;
@@ -325,7 +330,7 @@ export class ExecutionAnalyzer {
         ? graphologyGraph.getNodeAttributes(uniqueId)
         : undefined;
       const name = nodeAttributes?.name || uniqueId;
-      const status = (result.status as string) || "unknown";
+      const status = result.status || "unknown";
 
       rows.push({ unique_id: uniqueId, name, status, wall });
     }
