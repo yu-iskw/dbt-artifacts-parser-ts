@@ -2,11 +2,33 @@
 
 Command-line interface for dbt artifact analysis. Optimized for both human and AI agent consumption.
 
+## Commands
+
+```mermaid
+graph TD
+  CLI[dbt-tools]
+  CLI --> summary["summary\nmanifest statistics"]
+  CLI --> graph["graph\nexport dependency graph"]
+  CLI --> rr["run-report\nexecution report"]
+  CLI --> deps["deps\nupstream / downstream deps"]
+  CLI --> schema["schema\nruntime introspection"]
+
+  summary -->|manifest.json| MG[ManifestGraph]
+  graph -->|manifest.json| MG
+  rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
+  deps -->|manifest.json| DS[DependencyService]
+  schema -.->|describes| CLI
+```
+
+---
+
 ## Installation
 
 ```bash
 pnpm add -g @dbt-tools/cli
 ```
+
+---
 
 ## Features
 
@@ -16,6 +38,8 @@ pnpm add -g @dbt-tools/cli
 - **Field filtering**: Reduce context window usage with `--fields` option
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
+
+---
 
 ## Commands
 
@@ -83,9 +107,6 @@ Generate execution report from run_results.json.
 
 ```bash
 # Uses ./target/run_results.json and ./target/manifest.json by default
-dbt-tools run-report
-
-# With critical path analysis
 dbt-tools run-report
 
 # Include bottleneck section (top 10 slowest nodes by default)
@@ -200,6 +221,8 @@ dbt-tools schema
 - Understand argument requirements
 - Get example usage for each command
 
+---
+
 ## Default Directory Behavior
 
 All commands default to the `./target` directory where dbt stores artifacts:
@@ -212,6 +235,8 @@ Override with:
 - `--target-dir <directory>` flag
 - `DBT_TARGET_DIR` environment variable
 
+---
+
 ## JSON Output
 
 The CLI automatically outputs JSON when stdout is not a TTY (non-interactive environments):
@@ -221,9 +246,11 @@ The CLI automatically outputs JSON when stdout is not a TTY (non-interactive env
 - Use `--json` to force JSON
 - Use `--no-json` to force human-readable
 
+---
+
 ## Field Filtering
 
-Use `--fields` to limit response size and reduce context window usage. This is supported in `summary`, `deps`, `graph` (JSON), and `run-report`.
+Use `--fields` to limit response size and reduce context window usage. Supported in `summary`, `deps`, `graph` (JSON), and `run-report`.
 
 ```bash
 # Only return specific fields
@@ -233,21 +260,25 @@ dbt-tools deps model.my_project.customers --fields "unique_id,name"
 dbt-tools deps model.my_project.customers --fields "unique_id,name,attributes.resource_type"
 ```
 
+---
+
 ## Input Validation
 
 The CLI validates all inputs to prevent common mistakes:
 
-- **Path traversals**: Rejects `../` and `..\\` patterns
+- **Path traversals**: Rejects `../` and `..\` patterns
 - **Control characters**: Rejects invisible characters (< 0x20 except `\n`, `\r`, `\t`)
 - **Resource IDs**: Rejects embedded query params (`?`, `#`) and URL-encoded strings (`%`)
 - **Pre-encoded URLs**: Rejects patterns like `%2e%2e` (encoded `..`)
 
 **Common mistakes to avoid:**
 
-- ❌ `model.x?fields=name` (embedded query param)
-- ❌ `model%2ex` (pre-encoded)
-- ❌ `../../.ssh` (path traversal)
-- ✅ `model.my_project.customers` (correct)
+- `model.x?fields=name` — embedded query param
+- `model%2ex` — pre-encoded
+- `../../.ssh` — path traversal
+- `model.my_project.customers` — correct
+
+---
 
 ## Error Handling
 
@@ -272,6 +303,8 @@ Errors are formatted as JSON in non-TTY environments:
 - `UNSUPPORTED_VERSION`: Unsupported dbt version
 - `UNKNOWN_ERROR`: Other errors
 
+---
+
 ## Best Practices for AI Agents
 
 1. **Always use field filtering** for dependency queries and analysis to reduce context window usage.
@@ -279,6 +312,8 @@ Errors are formatted as JSON in non-TTY environments:
 3. **Validate resource IDs** before querying (use schema introspection if unsure).
 4. **Handle errors programmatically** using error codes in non-interactive environments.
 5. **Use schema introspection** to discover command capabilities at runtime.
+
+---
 
 ## Examples
 
@@ -302,6 +337,25 @@ dbt-tools run-report
 dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 ```
 
+---
+
 ## Environment Variables
 
 - `DBT_TARGET_DIR` - Override default target directory (defaults to `./target`)
+
+---
+
+## Development
+
+```bash
+pnpm build
+pnpm test
+```
+
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide.
+
+---
+
+## License
+
+Apache License 2.0.
