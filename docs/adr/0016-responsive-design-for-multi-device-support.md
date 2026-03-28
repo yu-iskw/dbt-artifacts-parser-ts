@@ -116,3 +116,14 @@ stacking the explorer pane above the main panel with no JS change required.
   visible effect above 640 px).
 - `LABEL_W` is retained as a module-level constant serving as the default cap,
   preserving the existing mental model while the parameter provides flexibility.
+
+## Amendment (2026-03-28)
+
+The five-tier structural breakpoint system described above was implemented as specified.
+In addition, component-level media queries may exist outside these tiers to adapt
+specific toolbar or control layouts at intermediate widths.
+
+**First instance**: `@media (max-width: 860px)` in `app-shell.css` scoped exclusively
+to `.timeline-dependency-controls`: hides the divider element and makes the direction
+zone full-width so the toolbar wraps cleanly on smaller tablets. This does not affect
+the overall page layout or sidebar behavior and is **not** a new structural tier.

@@ -38,6 +38,14 @@ When an ADR requires implementation, link to design docs or relevant code in the
 - When standardizing a pattern across the codebase.
 - When you want to understand previous design decisions (use `list`).
 
+## Relationship to `mend-adr`
+
+`manage-adr` is for authoring and lifecycle management of ADRs (create, supersede,
+link, and organize). It is **not** a drift-audit workflow.
+
+Use `mend-adr` when the codebase may have diverged from accepted ADR claims and you
+need to append dated amendment sections that document current reality.
+
 ## Instructions
 
 ### 1. Initialization

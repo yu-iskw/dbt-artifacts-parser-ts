@@ -201,3 +201,34 @@ flowchart TB
 - [About dbt docs commands](https://docs.getdbt.com/reference/commands/cmd-docs)
 - [Elementary home page](https://www.elementary-data.com/)
 - [Elementary data catalog docs](https://docs.elementary-data.com/cloud/features/collaboration-and-communication/catalog)
+
+## Amendment (2026-03-28)
+
+### Navigation label renaming
+
+During implementation the top-level destination labels were renamed for product clarity:
+
+| ADR name | Implemented name | `WorkspaceView` value |
+| -------- | ---------------- | --------------------- |
+| Overview | **Health**       | `"health"`            |
+| Catalog  | **Inventory**    | `"inventory"`         |
+| Runs     | Runs             | `"runs"`              |
+
+Legacy URL aliases are preserved as redirect targets in
+`packages/dbt-tools/web/src/lib/analysis-workspace/types.ts`:
+`catalog → inventory`, `overview → health`, `execution/quality → runs`,
+`dependencies/search/lineage → inventory`.
+
+### Timeline remains a first-class navigation destination
+
+Contrary to the decision above, Timeline was kept as a separate top-level sidebar
+navigation item (`view: "timeline"`) rather than being folded into Runs as a sub-surface.
+
+**Rationale**: The Gantt timeline visualization requires full vertical screen space and a
+dedicated filter toolbar (status, resource types, search, dependency controls) that cannot
+share the Runs chrome without significant layout compromise. Keeping Timeline as a
+first-class destination also makes it directly accessible during incident response
+without navigating through the Runs results list.
+
+The `Models` and `Tests` result surfaces are sub-surfaces within Runs (via the `kind`
+filter in `runsViewState`), consistent with the original decision.
