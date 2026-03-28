@@ -115,7 +115,10 @@ export function hitTestBundle(
       const rawChipEndX =
         effectiveLabelW + ((test.end - rangeStart) / rangeDuration) * chartW;
       const chipX = Math.max(chartLeft, Math.min(rawChipStartX, rawChipEndX));
-      const chipXEnd = Math.min(chartRight, Math.max(rawChipStartX, rawChipEndX));
+      const chipXEnd = Math.min(
+        chartRight,
+        Math.max(rawChipStartX, rawChipEndX),
+      );
       const chipW = Math.max(2, chipXEnd - chipX);
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
 
