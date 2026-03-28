@@ -86,7 +86,7 @@ export function TypeStatusDonutCard({
               ))}
             </Pie>
             <RechartsTooltip
-              formatter={(value: number) => [`${value} runs`, "Count"]}
+              formatter={(value) => [`${Number(value ?? 0)} runs`, "Count"]}
               contentStyle={tooltipContentStyle}
             />
           </PieChart>
@@ -251,7 +251,7 @@ export function StatusDonutChart({
               ))}
             </Pie>
             <RechartsTooltip
-              formatter={(value: number) => [`${value} runs`, "Count"]}
+              formatter={(value) => [`${Number(value ?? 0)} runs`, "Count"]}
               contentStyle={tooltipContentStyle}
             />
           </PieChart>

@@ -225,7 +225,7 @@ function RunsResultsTable({
   analysis: AnalysisState;
   runsResults: RunsResultsState;
   runsViewState: RunsViewState;
-  resultsBodyRef: React.RefObject<HTMLDivElement>;
+  resultsBodyRef: React.RefObject<HTMLDivElement | null>;
   virtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>;
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
   onInvestigationSelectionChange: Dispatch<
