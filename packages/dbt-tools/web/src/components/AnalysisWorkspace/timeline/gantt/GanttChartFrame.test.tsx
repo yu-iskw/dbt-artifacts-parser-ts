@@ -83,19 +83,20 @@ beforeEach(() => {
     },
   });
 
-  HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-    return {
-      width: 600,
-      height: 320,
-      top: 0,
-      left: 0,
-      right: 600,
-      bottom: 320,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    } as DOMRect;
-  };
+  HTMLElement.prototype.getBoundingClientRect =
+    function getBoundingClientRect() {
+      return {
+        width: 600,
+        height: 320,
+        top: 0,
+        left: 0,
+        right: 600,
+        bottom: 320,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      } as DOMRect;
+    };
 });
 
 afterEach(() => {

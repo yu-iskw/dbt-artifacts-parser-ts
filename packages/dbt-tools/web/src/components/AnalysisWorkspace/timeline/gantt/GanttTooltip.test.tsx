@@ -143,4 +143,3 @@ describe("GanttTooltip", () => {
     cleanupRoot(root, container);
   });
 });
-

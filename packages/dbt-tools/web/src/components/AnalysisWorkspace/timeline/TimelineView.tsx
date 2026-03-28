@@ -22,7 +22,10 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
 import { SectionCard, WorkspaceScaffold } from "../shared";
-import { TimelineSearchControls } from "../views/ResultsView";
+import {
+  TimelineSearchControls,
+  type TimelineTypeFilterHint,
+} from "./TimelineSearchControls";
 
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
   if (left.size !== right.size) return false;
@@ -68,10 +71,7 @@ function TimelineSurface({
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   hasActiveFilters: boolean;
-  typeFilterHint: {
-    shown: string[];
-    hidden: Array<{ type: string; count: number }>;
-  } | null;
+  typeFilterHint: TimelineTypeFilterHint | null;
   testStatsById: ReturnType<typeof buildResourceTestStats>;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
   toggleStatus: (status: string) => void;

@@ -1,4 +1,10 @@
-import { useLayoutEffect, useRef, useState, type MouseEvent, type RefObject } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type RefObject,
+} from "react";
 import type { GanttItem, ResourceTestStats } from "@web/types";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { ThemeMode } from "@web/constants/themeColors";
@@ -72,7 +78,8 @@ export function GanttChartFrame({
   useLayoutEffect(() => {
     const frameEl = frameRef.current;
     if (!frameEl) return;
-    const syncWidth = () => setFrameWidth(frameEl.getBoundingClientRect().width);
+    const syncWidth = () =>
+      setFrameWidth(frameEl.getBoundingClientRect().width);
     syncWidth();
     const observer = new ResizeObserver(syncWidth);
     observer.observe(frameEl);

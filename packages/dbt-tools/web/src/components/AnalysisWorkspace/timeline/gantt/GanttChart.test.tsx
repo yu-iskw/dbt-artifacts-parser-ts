@@ -110,9 +110,9 @@ describe("GanttChart", () => {
       />,
     );
 
-    expect(container.querySelector('[data-testid="chart-frame"]')?.textContent).toBe(
-      "b",
-    );
+    expect(
+      container.querySelector('[data-testid="chart-frame"]')?.textContent,
+    ).toBe("b");
 
     cleanupRoot(root, container);
   });

@@ -254,7 +254,9 @@ export function GanttTimeBrush({
                 ? "gantt-brush__selection"
                 : "gantt-brush__selection gantt-brush__selection--default"
             }
-            data-default-range={hasActiveZoom || previewWindow != null ? "false" : "true"}
+            data-default-range={
+              hasActiveZoom || previewWindow != null ? "false" : "true"
+            }
             style={{ left: `${brushLeftPct}%`, width: `${brushWidthPct}%` }}
             onPointerDown={(e) => beginBrushDrag(e, "pan")}
           >

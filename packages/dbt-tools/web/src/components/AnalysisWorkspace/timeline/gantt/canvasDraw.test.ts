@@ -237,12 +237,18 @@ describe("drawGantt", () => {
     const canvas = createCanvasStub(500, 300);
     const bundles = [
       bundle(parent("model.error", { status: "error" }), [], 0),
-      bundle(parent("model.test-fail"), [testItem("test.pass", "model.test-fail")], 1),
+      bundle(
+        parent("model.test-fail"),
+        [testItem("test.pass", "model.test-fail")],
+        1,
+      ),
       bundle(parent("model.skip", { status: "skipped" }), [], 0),
     ];
     const rowOffsets = [0, ROW_H, ROW_H * 2];
     const rowHeights = [ROW_H, bundleRowHeight(bundles[1]!, true), ROW_H];
-    const testStatsById = new Map([["model.test-fail", { pass: 0, fail: 1, error: 0 }]]);
+    const testStatsById = new Map([
+      ["model.test-fail", { pass: 0, fail: 1, error: 0 }],
+    ]);
 
     drawGantt(canvas, bundles, rowOffsets, rowHeights, {
       scrollTop: 0,
@@ -288,7 +294,9 @@ describe("drawGantt", () => {
       bundle(
         p,
         [
-          testItemWithOverrides("test.fail", "model.parent", { status: "fail" }),
+          testItemWithOverrides("test.fail", "model.parent", {
+            status: "fail",
+          }),
           testItemWithOverrides("test.skip", "model.parent", {
             status: "skipped",
             start: 220,
@@ -316,7 +324,9 @@ describe("drawGantt", () => {
 
     expect(
       canvas.__ctx.__strokeOps.some(
-        (op) => op.strokeStyle === CANVAS_LIGHT.testFailStripe && op.lineWidth === 2.25,
+        (op) =>
+          op.strokeStyle === CANVAS_LIGHT.testFailStripe &&
+          op.lineWidth === 2.25,
       ),
     ).toBe(true);
     expect(

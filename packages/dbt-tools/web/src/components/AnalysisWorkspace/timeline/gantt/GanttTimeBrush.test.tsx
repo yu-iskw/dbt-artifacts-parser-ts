@@ -142,10 +142,11 @@ beforeEach(() => {
     current.add(pointerId);
     captured.set(this, current);
   };
-  HTMLElement.prototype.releasePointerCapture =
-    function releasePointerCapture(pointerId: number) {
-      captured.get(this)?.delete(pointerId);
-    };
+  HTMLElement.prototype.releasePointerCapture = function releasePointerCapture(
+    pointerId: number,
+  ) {
+    captured.get(this)?.delete(pointerId);
+  };
   HTMLElement.prototype.hasPointerCapture = function hasPointerCapture(
     pointerId: number,
   ) {
@@ -168,9 +169,9 @@ describe("hasIssueSignal", () => {
         bundle(parent("ok"), [testItem("t1", "ok", { status: "fail" })]),
       ),
     ).toBe(true);
-    expect(
-      hasIssueSignal(bundle(parent("skip", { status: "skipped" }))),
-    ).toBe(false);
+    expect(hasIssueSignal(bundle(parent("skip", { status: "skipped" })))).toBe(
+      false,
+    );
   });
 });
 
