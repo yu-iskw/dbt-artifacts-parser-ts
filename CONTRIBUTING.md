@@ -146,6 +146,7 @@ pnpm coverage:report
 All publishable packages have `"publishConfig": { "access": "public" }` in their `package.json`. Internal workspace references (`"workspace:*"`) are resolved to real version numbers by pnpm at publish time.
 
 Packages:
+
 - `dbt-artifacts-parser` — `npm publish` from `packages/dbt-artifacts-parser/`
 - `@dbt-tools/core` — `npm publish` from `packages/dbt-tools/core/`
 - `@dbt-tools/cli` — `npm publish` from `packages/dbt-tools/cli/`

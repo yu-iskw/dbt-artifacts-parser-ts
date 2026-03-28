@@ -49,7 +49,9 @@ const downstream = graph.getDownstream("model.my_project.my_model");
 // Execution analysis
 const analyzer = new ExecutionAnalyzer(runResults, manifest);
 const report = analyzer.getSummary();
-console.log(`Critical path: ${report.critical_path.map(n => n.name).join(" → ")}`);
+console.log(
+  `Critical path: ${report.critical_path.map((n) => n.name).join(" → ")}`,
+);
 ```
 
 ---
@@ -103,31 +105,31 @@ import {
 
 Builds a directed acyclic graph (DAG) from a parsed dbt manifest using [graphology](https://graphology.github.io/).
 
-| Method | Description |
-|--------|-------------|
-| `getGraph()` | Returns the underlying `graphology` `DirectedGraph` |
-| `getSummary()` | Returns `{ total_nodes, total_edges, has_cycles, node_counts_by_type }` |
-| `getUpstream(nodeId, depth?)` | All nodes that `nodeId` depends on (transitive, optional depth limit) |
-| `getDownstream(nodeId, depth?)` | All nodes that depend on `nodeId` (transitive, optional depth limit) |
+| Method                          | Description                                                             |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `getGraph()`                    | Returns the underlying `graphology` `DirectedGraph`                     |
+| `getSummary()`                  | Returns `{ total_nodes, total_edges, has_cycles, node_counts_by_type }` |
+| `getUpstream(nodeId, depth?)`   | All nodes that `nodeId` depends on (transitive, optional depth limit)   |
+| `getDownstream(nodeId, depth?)` | All nodes that depend on `nodeId` (transitive, optional depth limit)    |
 
 ### ExecutionAnalyzer
 
 Analyzes dbt execution results to compute critical paths and bottlenecks.
 
-| Method | Description |
-|--------|-------------|
-| `getSummary()` | Returns execution summary with critical path, total time, slowest nodes |
-| `getNodeExecutions()` | Per-node execution details (status, duration, thread) |
-| `getGanttData()` | Gantt chart data for timeline visualization |
+| Method                | Description                                                             |
+| --------------------- | ----------------------------------------------------------------------- |
+| `getSummary()`        | Returns execution summary with critical path, total time, slowest nodes |
+| `getNodeExecutions()` | Per-node execution details (status, duration, thread)                   |
+| `getGanttData()`      | Gantt chart data for timeline visualization                             |
 
 ### DependencyService
 
 Higher-level dependency queries with build-order support.
 
-| Method | Description |
-|--------|-------------|
-| `getUpstreamBuildOrder(nodeId)` | Topological ordering of upstream dependencies |
-| `getDependencyTree(nodeId, direction)` | Nested tree structure of dependencies |
+| Method                                 | Description                                   |
+| -------------------------------------- | --------------------------------------------- |
+| `getUpstreamBuildOrder(nodeId)`        | Topological ordering of upstream dependencies |
+| `getDependencyTree(nodeId, direction)` | Nested tree structure of dependencies         |
 
 ### ArtifactLoader
 

@@ -44,24 +44,19 @@ import { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
 
 #### 2. Version-Specific Imports
 
-```typescript
-import { Manifest } from "dbt-artifacts-parser/manifest/v1";
-import { WritableManifest } from "dbt-artifacts-parser/manifest/v12";
-import { RunResults } from "dbt-artifacts-parser/run_results/v1";
-import { RunResultsArtifact } from "dbt-artifacts-parser/run_results/v6";
-```
-
-#### 3. Namespaced Imports
+Use the category import path and the versioned parser functions:
 
 ```typescript
-import { catalog, manifest, run_results, sources } from 'dbt-artifacts-parser';
-
-// Access types
-const catalogType: catalog.CatalogArtifact = { ... };
-const manifestType: manifest.WritableManifest = { ... };
-
-// Access parser functions
-const parsed = manifest.parseManifest(manifestJson);
+import {
+  parseManifestV1,
+  parseManifestV12,
+} from "dbt-artifacts-parser/manifest";
+import {
+  parseRunResultsV1,
+  parseRunResultsV6,
+} from "dbt-artifacts-parser/run_results";
+import { parseCatalogV1 } from "dbt-artifacts-parser/catalog";
+import { parseSourcesV3 } from "dbt-artifacts-parser/sources";
 ```
 
 ---
@@ -79,16 +74,24 @@ import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import { parseSources } from "dbt-artifacts-parser/sources";
 import fs from "fs";
 
-const manifest = parseManifest(JSON.parse(fs.readFileSync("manifest.json", "utf-8")));
+const manifest = parseManifest(
+  JSON.parse(fs.readFileSync("manifest.json", "utf-8")),
+);
 // Returns: ParsedManifest (union of all manifest versions)
 
-const catalog = parseCatalog(JSON.parse(fs.readFileSync("catalog.json", "utf-8")));
+const catalog = parseCatalog(
+  JSON.parse(fs.readFileSync("catalog.json", "utf-8")),
+);
 // Returns: ParsedCatalog
 
-const runResults = parseRunResults(JSON.parse(fs.readFileSync("run-results.json", "utf-8")));
+const runResults = parseRunResults(
+  JSON.parse(fs.readFileSync("run-results.json", "utf-8")),
+);
 // Returns: ParsedRunResults
 
-const sources = parseSources(JSON.parse(fs.readFileSync("sources.json", "utf-8")));
+const sources = parseSources(
+  JSON.parse(fs.readFileSync("sources.json", "utf-8")),
+);
 // Returns: ParsedSources
 ```
 
@@ -103,11 +106,11 @@ import { parseRunResultsV6 } from "dbt-artifacts-parser/run_results";
 import { parseCatalogV1 } from "dbt-artifacts-parser/catalog";
 import { parseSourcesV3 } from "dbt-artifacts-parser/sources";
 
-const manifestV1 = parseManifestV1(manifestJson);   // Returns: ManifestV1
-const manifestV12 = parseManifestV12(manifestJson); // Returns: WritableManifestV12
-const runResultsV6 = parseRunResultsV6(runResultsJson); // Returns: RunResultsArtifactV6
-const catalogV1 = parseCatalogV1(catalogJson);     // Returns: CatalogArtifactV1
-const sourcesV3 = parseSourcesV3(sourcesJson);     // Returns: FreshnessExecutionResultArtifactV3
+const manifestV1 = parseManifestV1(manifestJson); // Returns: Manifest (v1)
+const manifestV12 = parseManifestV12(manifestJson); // Returns: WritableManifest (v12)
+const runResultsV6 = parseRunResultsV6(runResultsJson); // Returns: RunResultsArtifact (v6)
+const catalogV1 = parseCatalogV1(catalogJson); // Returns: CatalogArtifact (v1)
+const sourcesV3 = parseSourcesV3(sourcesJson); // Returns: FreshnessExecutionResultArtifact (v3)
 ```
 
 ---
@@ -130,18 +133,13 @@ function processManifest(manifest: ParsedManifest) {
 
 #### Versioned Type Exports
 
+Each category path re-exports the latest version's types by default:
+
 ```typescript
-import type {
-  ManifestV1,
-  ManifestV2,
-  WritableManifestV12,
-} from "dbt-artifacts-parser/manifest";
-import type {
-  RunResultsV1,
-  RunResultsArtifactV6,
-} from "dbt-artifacts-parser/run_results";
-import type { CatalogArtifactV1 } from "dbt-artifacts-parser/catalog";
-import type { SourcesV1, SourceV3 } from "dbt-artifacts-parser/sources";
+import type { WritableManifest } from "dbt-artifacts-parser/manifest";
+import type { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
+import type { CatalogArtifact } from "dbt-artifacts-parser/catalog";
+import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
 ```
 
 ---

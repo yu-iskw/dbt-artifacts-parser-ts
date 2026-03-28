@@ -14,15 +14,15 @@ React web application for visual dbt artifact analysis. Provides interactive dep
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| UI framework | [React 18](https://react.dev/) |
-| Build tool | [Vite 6](https://vitejs.dev/) |
-| Charts | [Recharts](https://recharts.org/) |
-| Virtualization | [@tanstack/react-virtual](https://tanstack.com/virtual) |
+| Layer           | Technology                                                       |
+| --------------- | ---------------------------------------------------------------- |
+| UI framework    | [React 18](https://react.dev/)                                   |
+| Build tool      | [Vite 6](https://vitejs.dev/)                                    |
+| Charts          | [Recharts](https://recharts.org/)                                |
+| Virtualization  | [@tanstack/react-virtual](https://tanstack.com/virtual)          |
 | Analysis engine | `@dbt-tools/core` (web worker, `@dbt-tools/core/browser` export) |
-| E2E tests | [Playwright](https://playwright.dev/) |
-| Language | TypeScript 5 |
+| E2E tests       | [Playwright](https://playwright.dev/)                            |
+| Language        | TypeScript 5                                                     |
 
 ---
 
@@ -97,10 +97,10 @@ DBT_DEBUG=1 DBT_TARGET=~/path/to/target pnpm dev
 
 When `DBT_TARGET` is set, the app automatically reloads and re-analyzes when `manifest.json` or `run_results.json` change on disk (e.g. after `dbt run`):
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DBT_WATCH` | `1` | Enable (`1`) or disable (`0`) file watching and auto-reload |
-| `DBT_RELOAD_DEBOUNCE_MS` | `300` | Debounce in ms for rapid file writes |
+| Variable                 | Default | Description                                                 |
+| ------------------------ | ------- | ----------------------------------------------------------- |
+| `DBT_WATCH`              | `1`     | Enable (`1`) or disable (`0`) file watching and auto-reload |
+| `DBT_RELOAD_DEBOUNCE_MS` | `300`   | Debounce in ms for rapid file writes                        |
 
 ```bash
 # Disable auto-reload
@@ -113,12 +113,12 @@ DBT_WATCH=0 DBT_TARGET=./target pnpm dev
 
 All configuration is via environment variables passed to the Vite dev server or build:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DBT_TARGET` | — | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
-| `DBT_DEBUG` | `0` | Set to `1` to enable server-side debug logging in the Vite middleware |
-| `DBT_WATCH` | `1` | Enable (`1`) or disable (`0`) file watching and auto-reload when artifacts change |
-| `DBT_RELOAD_DEBOUNCE_MS` | `300` | Debounce delay in ms before triggering a reload on rapid file writes |
+| Variable                 | Default | Description                                                                                        |
+| ------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
+| `DBT_TARGET`             | —       | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
+| `DBT_DEBUG`              | `0`     | Set to `1` to enable server-side debug logging in the Vite middleware                              |
+| `DBT_WATCH`              | `1`     | Enable (`1`) or disable (`0`) file watching and auto-reload when artifacts change                  |
+| `DBT_RELOAD_DEBOUNCE_MS` | `300`   | Debounce delay in ms before triggering a reload on rapid file writes                               |
 
 Add `?debug=1` to the browser URL to enable client-side debug logging.
 
@@ -172,13 +172,13 @@ See `e2e/` for test specs.
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---------|-----|
-| Blank page / "No artifacts found" | Ensure `DBT_TARGET` points to a directory that contains `manifest.json` |
-| Auto-reload not triggering | Check `DBT_WATCH` is not set to `0`; verify the file watcher has read access to the target directory |
-| Slow UI with large manifests | The web worker and virtualized lists should handle 100k+ nodes; if performance still degrades, open the browser profiler and check for main-thread analysis code paths |
-| `GET /api/manifest.json` returns 404 | `DBT_TARGET` is not set or the Vite dev server was started without it |
-| Debug logs not appearing | Server-side: restart dev with `DBT_DEBUG=1`; client-side: add `?debug=1` to the URL |
+| Symptom                              | Fix                                                                                                                                                                    |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blank page / "No artifacts found"    | Ensure `DBT_TARGET` points to a directory that contains `manifest.json`                                                                                                |
+| Auto-reload not triggering           | Check `DBT_WATCH` is not set to `0`; verify the file watcher has read access to the target directory                                                                   |
+| Slow UI with large manifests         | The web worker and virtualized lists should handle 100k+ nodes; if performance still degrades, open the browser profiler and check for main-thread analysis code paths |
+| `GET /api/manifest.json` returns 404 | `DBT_TARGET` is not set or the Vite dev server was started without it                                                                                                  |
+| Debug logs not appearing             | Server-side: restart dev with `DBT_DEBUG=1`; client-side: add `?debug=1` to the URL                                                                                    |
 
 ---
 
@@ -195,11 +195,11 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide, in
 
 ## Related Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@dbt-tools/core`](../core/README.md) | Analysis engine used by this web app (dependency graphs, execution analysis) |
-| [`@dbt-tools/cli`](../cli/README.md) | Command-line interface for the same analysis, optimized for AI agents |
-| [`dbt-artifacts-parser`](../../dbt-artifacts-parser/README.md) | Standalone library for parsing and typing dbt JSON artifacts |
+| Package                                                        | Description                                                                  |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [`@dbt-tools/core`](../core/README.md)                         | Analysis engine used by this web app (dependency graphs, execution analysis) |
+| [`@dbt-tools/cli`](../cli/README.md)                           | Command-line interface for the same analysis, optimized for AI agents        |
+| [`dbt-artifacts-parser`](../../dbt-artifacts-parser/README.md) | Standalone library for parsing and typing dbt JSON artifacts                 |
 
 ---
 
