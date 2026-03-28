@@ -226,7 +226,7 @@
 }
 
 .overview-banner--embedded {
-  margin: 0.75rem 1.25rem 0.75rem;
+  margin: 0.75rem 1.25rem;
 }
 
 .overview-banner--positive {
@@ -411,7 +411,7 @@
   grid-template-columns: 1fr 1fr;
 }
 
-@media (max-width: 860px) {
+@media (width <= 860px) {
   .overview-band--triage,
   .overview-band--context,
   .overview-band--structure {
@@ -1748,13 +1748,13 @@
 .settings-hero {
   display: grid;
   gap: 0.85rem;
-  padding: 1.35rem 1.45rem;
+  padding: 1.1rem 1.2rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-default);
   background:
     radial-gradient(
       circle at top right,
-      color-mix(in srgb, var(--accent-soft) 42%, transparent),
+      color-mix(in srgb, var(--accent-soft) 24%, transparent),
       transparent 40%
     ),
     linear-gradient(
@@ -1762,12 +1762,19 @@
       color-mix(in srgb, var(--bg-surface) 95%, white),
       var(--bg-surface)
     );
-  box-shadow: var(--panel-shadow);
+  box-shadow:
+    0 12px 26px
+      color-mix(
+        in srgb,
+        var(--shadow-color, rgb(15 23 42 / 8%)) 7%,
+        transparent
+      ),
+    inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
 }
 
 .settings-hero h3 {
   margin: 0;
-  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  font-size: clamp(1.15rem, 1.8vw, 1.45rem);
   letter-spacing: -0.03em;
 }
 
@@ -1957,14 +1964,14 @@
   scroll-margin-top: 1rem;
 }
 
-@media (max-width: 1099px) {
+@media (width <= 1099px) {
   .workspace-scaffold__body--with-inspector,
   .workspace-scaffold__body--with-leading.workspace-scaffold__body--with-inspector {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .settings-inline-grid {
     grid-template-columns: 1fr;
   }

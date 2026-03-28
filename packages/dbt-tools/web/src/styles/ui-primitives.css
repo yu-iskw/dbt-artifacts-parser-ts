@@ -8,6 +8,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -25,6 +26,7 @@
   from {
     background-position: 200% 0;
   }
+
   to {
     background-position: -200% 0;
   }
@@ -67,17 +69,20 @@
 /* ─── Tooltip ────────────────────────────────────────────────────────────── */
 .tooltip-host {
   position: relative;
+
   /* Preserve the inline/flow context of children */
   display: inline;
 }
 
 .tooltip-host::after {
   content: attr(data-tooltip);
+
   /* Positioning */
   position: absolute;
   bottom: calc(100% + 7px);
   left: 50%;
   transform: translateX(-50%);
+
   /* Appearance */
   padding: 0.42rem 0.7rem;
   border-radius: 10px;
@@ -90,11 +95,13 @@
   word-break: break-all;
   max-width: 300px;
   text-align: left;
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.22);
+  box-shadow: 0 8px 24px rgb(17 24 39 / 22%);
+
   /* Visibility */
   opacity: 0;
   pointer-events: none;
   transition: opacity 140ms ease;
+
   /* Ensure it renders above card content */
   z-index: 300;
 }
@@ -142,6 +149,7 @@
     opacity: 0;
     transform: translateY(10px) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -229,7 +237,7 @@
 }
 
 /* Tighten toast layout on mobile */
-@media (max-width: 479px) {
+@media (width <= 479px) {
   .toast-portal {
     left: 1rem;
     right: 1rem;
@@ -271,8 +279,7 @@
   color: var(--icon-accent);
 }
 
-.sidebar-link:hover:not(:disabled):not(.sidebar-link--active)
-  .sidebar-link__icon {
+.sidebar-link:hover:not(:disabled, .sidebar-link--active) .sidebar-link__icon {
   color: var(--icon-primary);
 }
 
@@ -482,7 +489,7 @@
   padding: 0.9rem 1rem;
 }
 
-@media (max-width: 1100px) {
+@media (width <= 1100px) {
   .workspace-signals,
   .upload-feature-grid,
   .overview-hero {
@@ -490,7 +497,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (width <= 720px) {
   .workspace-signals {
     grid-template-columns: 1fr;
   }

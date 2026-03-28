@@ -26,7 +26,7 @@ button {
 }
 
 code {
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
 }
 
 #root {

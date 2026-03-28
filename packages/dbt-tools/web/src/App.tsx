@@ -22,7 +22,7 @@ function AppContent() {
     onAnalysis,
     onError,
   } = useAnalysisPage();
-  const { theme, themePreference, setThemePreference } = useTheme();
+  const { themePreference, setThemePreference } = useTheme();
 
   useEffect(() => {
     if (preferences.theme !== themePreference) {
@@ -58,7 +58,6 @@ function AppContent() {
       onLoadDifferent={onLoadDifferent}
       onAnalysis={onAnalysis}
       onError={onError}
-      theme={theme}
       themePreference={themePreference}
       setPreferences={setPreferences}
       preferences={preferences}

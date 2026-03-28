@@ -31,6 +31,8 @@ describe("analysis snapshot facade", () => {
     expect(snapshot.executions.length).toBe(snapshot.summary.total_nodes);
     expect(snapshot.selectedResourceId).not.toBeNull();
     expect(snapshot.timelineAdjacency).not.toEqual({});
+    expect(snapshot.projectName).toBe("jaffle_shop");
+    expect(snapshot.warehouseType).toBe("duckdb");
   });
 
   it("keeps the parsed-artifact builder aligned with the raw facade", () => {
@@ -54,6 +56,8 @@ describe("analysis snapshot facade", () => {
 
     expect(analysis.summary.total_nodes).toBeGreaterThan(0);
     expect(analysis.graphSummary.totalNodes).toBeGreaterThan(0);
+    expect(analysis.projectName).toBe("jaffle_shop");
+    expect(analysis.warehouseType).toBe("duckdb");
     expect(timings.graphBuildMs).toBeGreaterThanOrEqual(0);
     expect(timings.snapshotBuildMs).toBeGreaterThanOrEqual(0);
   });

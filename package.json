@@ -26,6 +26,7 @@
     "lint": "pnpm lint:trunk && pnpm lint:eslint",
     "lint:all": "pnpm lint:trunk-all",
     "lint:eslint": "eslint .",
+    "lint:stylelint": "stylelint \"packages/dbt-tools/web/src/**/*.css\"",
     "lint:report": "node scripts/eslint-score.mjs",
     "lint:security": "trunk check --all --scope security -y",
     "lint:semgrep": "semgrep ci",
@@ -36,28 +37,37 @@
     "test:e2e": "pnpm --filter @dbt-tools/web test:e2e"
   },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^15.3.1",
-    "@typescript-eslint/eslint-plugin": "^8.57.0",
-    "@typescript-eslint/parser": "^8.57.0",
-    "@vitest/coverage-v8": "^4.1.0",
-    "@vitest/eslint-plugin": "^1.6.11",
-    "eslint": "^10.0.3",
+    "@apidevtools/json-schema-ref-parser": "^15.3.4",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/eslint-plugin": "^1.6.13",
+    "eslint": "^10.1.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-sonarjs": "^4.0.2",
-    "jsdom": "26.1.0",
+    "jsdom": "^29.0.1",
     "json-schema-to-typescript": "^15.0.4",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "stylelint": "^17.6.0",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   },
   "pnpm": {
     "overrides": {
       "esbuild": "^0.27.2",
       "flatted": ">=3.4.2",
-      "jsdom": "26.1.0",
       "lodash": "^4.17.23",
       "rollup": ">=4.59.0"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "typescript": "6",
+        "eslint-plugin-jsx-a11y>eslint": "10",
+        "eslint-plugin-react>eslint": "10",
+        "eslint-plugin-react-hooks>eslint": "10"
+      }
     }
   }
 }

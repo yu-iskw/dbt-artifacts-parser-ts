@@ -110,7 +110,6 @@ function renderChrome(analysis: AnalysisState | null) {
         onLoadDifferent={vi.fn()}
         onAnalysis={vi.fn()}
         onError={vi.fn()}
-        theme="light"
         themePreference="light"
         setThemePreference={vi.fn()}
         preferences={{
@@ -160,26 +159,44 @@ describe("AppWorkspaceChrome header", () => {
     const analysis = {
       resources: new Array(5).fill(null),
       summary: { total_nodes: 78 },
+      projectName: "analytics_pipeline",
+      warehouseType: "Snowflake",
       invocationId: "abc-123",
       runStartedAt: Date.parse("2024-12-16T07:45:20.000Z"),
     } as unknown as AnalysisState;
     const { container, root } = renderChrome(analysis);
 
     const headerText =
-      container.querySelector(".app-header__context")?.textContent ?? "";
+      container.querySelector(".app-header")?.textContent ?? "";
 
-    expect(headerText).toContain("Invocation abc-123");
-    expect(headerText).toContain("Dec");
+    expect(container.querySelector(".app-header__primary-label")).toBeNull();
+    expect(headerText).toContain("Invocation ID");
+    expect(headerText).toContain("abc-123");
+    expect(headerText).toContain("Timestamp");
+    expect(headerText).toContain("Warehouse type");
+    expect(headerText).toContain("Snowflake");
     expect(headerText).not.toContain("assets");
     expect(headerText).not.toContain("executions");
+    expect(headerText).toContain("Source mode");
+    expect(headerText).toContain("Live target");
+    expect(container.querySelector(".app-header__summary-item")).not.toBeNull();
+    expect(container.querySelector(".app-header__summary-grid")).not.toBeNull();
+    expect(container.querySelector(".app-header__metric-card")).toBeNull();
+    expect(container.querySelector(".workspace-search__icon")).not.toBeNull();
+    expect(container.querySelector(".app-header__headline")).toBeNull();
+    expect(container.querySelector(".app-header__subheadline")).toBeNull();
+    expect(container.textContent).not.toContain("Search workspace");
     expect(
-      container.querySelector(".app-header__chip-row")?.textContent,
-    ).toContain("Live target");
+      container
+        .querySelector('input[aria-label="Global search"]')
+        ?.getAttribute("placeholder"),
+    ).toBe("Search runs, pipelines, assets...");
+    expect(headerText.match(/Dec/g)?.length ?? 0).toBe(1);
 
     cleanupRoot(root, container);
   });
 
-  it("omits the metadata block when invocation details are missing", () => {
+  it("renders the fallback header layout when invocation details are missing", () => {
     const analysis = {
       resources: [],
       summary: { total_nodes: 0 },
@@ -188,9 +205,15 @@ describe("AppWorkspaceChrome header", () => {
     } as unknown as AnalysisState;
     const { container, root } = renderChrome(analysis);
 
-    expect(
-      container.querySelector(".app-header__context")?.textContent,
-    ).toContain("No invocation metadata available");
+    expect(container.querySelector(".app-header__primary-label")).toBeNull();
+    expect(container.textContent).toContain(
+      "Load artifacts to populate session details.",
+    );
+    expect(container.textContent).toContain("Source mode");
+    expect(container.querySelector(".eyebrow")?.textContent).toBe(
+      "Workspace session",
+    );
+    expect(container.textContent).not.toContain("Warehouse type");
 
     cleanupRoot(root, container);
   });
@@ -215,7 +238,6 @@ describe("AppWorkspaceChrome header", () => {
           onLoadDifferent={vi.fn()}
           onAnalysis={vi.fn()}
           onError={vi.fn()}
-          theme="light"
           themePreference="system"
           setThemePreference={vi.fn()}
           preferences={{
