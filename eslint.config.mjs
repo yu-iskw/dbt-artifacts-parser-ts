@@ -166,6 +166,30 @@ export default [
       ],
     },
   },
+  /** @dbt-tools/web: cap non-test .ts modules (services, lib, workers, etc.) */
+  {
+    files: ["packages/dbt-tools/web/src/**/*.ts"],
+    ignores: ["**/dist/**", "**/*.test.ts"],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 1200, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  /** Stricter than web TSX default — agent churn hotspots (must follow looser blocks above) */
+  {
+    files: [
+      "packages/dbt-tools/web/src/components/**/*.{ts,tsx}",
+      "packages/dbt-tools/web/src/hooks/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 900, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
   {
     files: [
       "packages/dbt-tools/web/src/components/**/*.ts",
