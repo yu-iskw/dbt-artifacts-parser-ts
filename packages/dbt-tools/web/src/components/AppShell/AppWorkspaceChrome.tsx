@@ -1,14 +1,21 @@
+import type { Dispatch, SetStateAction } from "react";
 import { AnalysisWorkspace, type WorkspaceSignal } from "../AnalysisWorkspace";
 import { ErrorBanner } from "../ErrorBanner";
 import { FileUpload } from "../FileUpload";
 import type { Theme } from "@web/hooks/useTheme";
+import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
+import {
+  formatRunStartedAt,
+  getInvocationTimestamp,
+} from "@web/lib/analysis-workspace/utils";
+import type { ThemePreference } from "@web/lib/analysis-workspace/types";
 import type { UseWorkspaceUrlStateResult } from "@web/hooks/useWorkspaceUrlState";
 import { useOmniboxResults } from "@web/hooks/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";
 import type { AnalysisState } from "@web/types";
-import { AppLogo } from "./AppLogo";
 import { AppSidebar } from "./AppSidebar";
 import { LoadingCard } from "./LoadingCard";
+import { SettingsView } from "./SettingsView";
 
 export interface AppWorkspaceChromeProps {
   workspace: UseWorkspaceUrlStateResult;
@@ -20,7 +27,10 @@ export interface AppWorkspaceChromeProps {
   onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
   theme: Theme;
-  toggleTheme: () => void;
+  themePreference: ThemePreference;
+  setThemePreference: Dispatch<SetStateAction<ThemePreference>>;
+  preferences: WorkspacePreferences;
+  setPreferences: Dispatch<SetStateAction<WorkspacePreferences>>;
   workspaceSignals: WorkspaceSignal[];
 }
 
@@ -34,7 +44,10 @@ export function AppWorkspaceChrome({
   onAnalysis,
   onError,
   theme,
-  toggleTheme,
+  themePreference,
+  setThemePreference,
+  preferences,
+  setPreferences,
   workspaceSignals,
 }: AppWorkspaceChromeProps) {
   const {
@@ -63,6 +76,14 @@ export function AppWorkspaceChrome({
   } = workspace;
 
   const omniboxResults = useOmniboxResults(analysis, searchState);
+  const headerMeta = analysis
+    ? [
+        analysis.invocationId ? `Invocation ${analysis.invocationId}` : null,
+        getInvocationTimestamp(analysis) != null
+          ? formatRunStartedAt(getInvocationTimestamp(analysis)!)
+          : null,
+      ].filter((value): value is string => Boolean(value))
+    : [];
 
   return (
     <div className={frameClass}>
@@ -97,25 +118,36 @@ export function AppWorkspaceChrome({
             <span aria-hidden="true">☰</span>
           </button>
 
-          <div className="app-header__brand">
-            <button
-              type="button"
-              className="app-header__brand-btn"
-              onClick={() => handleNavigateTo("health")}
-              title="Go to Health"
-            >
-              <AppLogo className="app-logo app-logo--brand" />
-            </button>
-          </div>
-
-          <div className="app-header__context">
-            {analysis ? (
-              <span className="app-header__run-context" title="Run context">
-                {analysis.resources.length} assets
-                <span className="app-header__context-sep">·</span>
-                {analysis.summary.total_nodes} executions
+          <div className="app-header__identity">
+            <p className="eyebrow">Workspace session</p>
+            {headerMeta.length > 0 ? (
+              <div className="app-header__context">
+                <span className="app-header__run-context" title="Run context">
+                  {headerMeta.join(" · ")}
+                </span>
+              </div>
+            ) : (
+              <div className="app-header__context">
+                <span className="app-header__run-context">
+                  No invocation metadata available
+                </span>
+              </div>
+            )}
+            <div className="app-header__chip-row">
+              <span className="app-badge">
+                {analysisSource === "preload"
+                  ? "Live target"
+                  : analysisSource === "upload"
+                    ? "Local upload"
+                    : "Waiting for artifacts"}
               </span>
-            ) : null}
+              <span className="settings-chip">
+                {activeView === "settings" ? "Settings" : "Analysis workspace"}
+              </span>
+              <span className="settings-chip">
+                {theme === "dark" ? "Dark canvas" : "Light canvas"}
+              </span>
+            </div>
           </div>
 
           <div className="app-header__omnibox">
@@ -176,52 +208,21 @@ export function AppWorkspaceChrome({
               </div>
             )}
           </div>
-
-          <div className="app-header__actions">
-            {analysis ? (
-              <>
-                <span className="app-badge">
-                  {analysisSource === "preload"
-                    ? "DBT_TARGET"
-                    : "Uploaded files"}
-                </span>
-                <button
-                  type="button"
-                  className="secondary-action"
-                  onClick={toggleTheme}
-                  aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-                >
-                  {theme === "light" ? "Dark" : "Light"}
-                </button>
-                <button type="button" className="secondary-action">
-                  {analysisSource === "preload"
-                    ? "Live target"
-                    : "Local upload"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-action"
-                  onClick={onLoadDifferent}
-                >
-                  Load different
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                className="secondary-action"
-                onClick={toggleTheme}
-                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-              >
-                {theme === "light" ? "Dark" : "Light"}
-              </button>
-            )}
-          </div>
         </header>
 
         {error && <ErrorBanner message={error} />}
 
-        {analysis ? (
+        {activeView === "settings" ? (
+          <SettingsView
+            preferences={preferences}
+            setPreferences={setPreferences}
+            themePreference={themePreference}
+            setThemePreference={setThemePreference}
+            analysisSource={analysisSource}
+            executionCount={analysis?.summary.total_nodes ?? null}
+            onLoadDifferent={onLoadDifferent}
+          />
+        ) : analysis ? (
           <AnalysisWorkspace
             analysis={analysis}
             activeView={activeView}

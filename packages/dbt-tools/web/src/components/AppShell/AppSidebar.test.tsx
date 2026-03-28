@@ -11,10 +11,12 @@ const actEnvironment = globalThis as typeof globalThis & {
 
 function renderSidebar({
   sidebarCollapsed = false,
+  activeView = "health",
   onNavigate = vi.fn<() => void>(),
   setNavigationTarget = vi.fn<(target: { view: string }) => void>(),
 }: {
   sidebarCollapsed?: boolean;
+  activeView?: "health" | "settings";
   onNavigate?: () => void;
   setNavigationTarget?: (target: { view: string }) => void;
 } = {}) {
@@ -26,7 +28,7 @@ function renderSidebar({
   act(() => {
     root.render(
       <AppSidebar
-        activeView="health"
+        activeView={activeView}
         setNavigationTarget={setNavigationTarget}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
@@ -88,6 +90,58 @@ describe("AppSidebar branding", () => {
 
     expect(setNavigationTarget).toHaveBeenCalledWith({ view: "health" });
     expect(onNavigate).toHaveBeenCalled();
+
+    cleanupRoot(root, container);
+  });
+
+  it("renders a settings affordance in the expanded footer", () => {
+    const { container, root } = renderSidebar();
+    const settingsButton = Array.from(
+      container.querySelectorAll("button"),
+    ).find((button) => button.getAttribute("title") === "Settings");
+
+    expect(settingsButton).not.toBeUndefined();
+    expect(settingsButton?.textContent).toContain("Settings");
+
+    cleanupRoot(root, container);
+  });
+
+  it("keeps the settings affordance accessible when collapsed", () => {
+    const { container, root } = renderSidebar({ sidebarCollapsed: true });
+    const settingsButton = Array.from(
+      container.querySelectorAll("button"),
+    ).find((button) => button.getAttribute("title") === "Settings");
+
+    expect(settingsButton).not.toBeUndefined();
+    expect(settingsButton?.querySelector(".sidebar-link__body")).toBeNull();
+
+    cleanupRoot(root, container);
+  });
+
+  it("routes to the settings view from the footer icon", () => {
+    const { container, root, setNavigationTarget, onNavigate } =
+      renderSidebar();
+    const settingsButton = Array.from(
+      container.querySelectorAll("button"),
+    ).find((button) => button.getAttribute("title") === "Settings");
+
+    act(() => {
+      settingsButton?.click();
+    });
+
+    expect(setNavigationTarget).toHaveBeenCalledWith({ view: "settings" });
+    expect(onNavigate).toHaveBeenCalled();
+
+    cleanupRoot(root, container);
+  });
+
+  it("highlights the footer icon when settings is active", () => {
+    const { container, root } = renderSidebar({ activeView: "settings" });
+    const settingsButton = Array.from(
+      container.querySelectorAll("button"),
+    ).find((button) => button.getAttribute("title") === "Settings");
+
+    expect(settingsButton?.className).toContain("sidebar-link--active");
 
     cleanupRoot(root, container);
   });

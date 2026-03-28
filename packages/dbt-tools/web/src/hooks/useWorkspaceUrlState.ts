@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -15,6 +16,7 @@ import type {
   TimelineFilterState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
+import type { WorkspacePreferences } from "./useWorkspacePreferences";
 import {
   getInitialSidebarCollapsed,
   SIDEBAR_STORAGE_KEY,
@@ -61,12 +63,19 @@ export interface UseWorkspaceUrlStateResult {
   frameClass: string;
 }
 
-export function useWorkspaceUrlState(): UseWorkspaceUrlStateResult {
-  const [activeView, setActiveViewRaw] = useState<WorkspaceView>(
-    () => createInitialNavigationState(window.location.search).activeView,
+export function useWorkspaceUrlState(
+  preferences: WorkspacePreferences,
+): UseWorkspaceUrlStateResult {
+  const preferencesHydratedRef = useRef(false);
+  const initialNavigationState = createInitialNavigationState(
+    window.location.search,
+    preferences,
   );
-  const [sidebarCollapsed, setSidebarCollapsedRaw] = useState(
-    getInitialSidebarCollapsed,
+  const [activeView, setActiveViewRaw] = useState<WorkspaceView>(
+    () => initialNavigationState.activeView,
+  );
+  const [sidebarCollapsed, setSidebarCollapsedRaw] = useState(() =>
+    getInitialSidebarCollapsed(preferences.sidebarCollapsedDefault),
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [overviewFilters, setOverviewFilters] = useState<OverviewFilterState>({
@@ -75,16 +84,16 @@ export function useWorkspaceUrlState(): UseWorkspaceUrlStateResult {
     query: "",
   });
   const [timelineFilters, setTimelineFilters] = useState<TimelineFilterState>(
-    () => createInitialNavigationState(window.location.search).timelineFilters,
+    () => initialNavigationState.timelineFilters,
   );
   const [assetViewState, setAssetViewState] = useState<AssetViewState>(
-    () => createInitialNavigationState(window.location.search).assetViewState,
+    () => initialNavigationState.assetViewState,
   );
   const [runsViewState, setRunsViewState] = useState<RunsViewState>(
-    () => createInitialNavigationState(window.location.search).runsViewState,
+    () => initialNavigationState.runsViewState,
   );
   const [lineageViewState, setLineageViewState] = useState<LineageViewState>(
-    () => createInitialNavigationState(window.location.search).lineageViewState,
+    () => initialNavigationState.lineageViewState,
   );
   const [searchState, setSearchState] = useState<SearchState>({
     query: "",
@@ -93,9 +102,7 @@ export function useWorkspaceUrlState(): UseWorkspaceUrlStateResult {
   });
   const [investigationSelection, setInvestigationSelection] =
     useState<InvestigationSelectionState>(
-      () =>
-        createInitialNavigationState(window.location.search)
-          .investigationSelection,
+      () => initialNavigationState.investigationSelection,
     );
 
   const setSidebarCollapsed: (fn: (c: boolean) => boolean) => void =
@@ -214,6 +221,40 @@ export function useWorkspaceUrlState(): UseWorkspaceUrlStateResult {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    if (!preferencesHydratedRef.current) {
+      preferencesHydratedRef.current = true;
+      return;
+    }
+    setTimelineFilters((current) => ({
+      ...current,
+      showTests: preferences.timelineDefaults.showTests,
+      failuresOnly: preferences.timelineDefaults.failuresOnly,
+      dependencyDirection: preferences.timelineDefaults.dependencyDirection,
+      dependencyDepthHops: preferences.timelineDefaults.dependencyDepthHops,
+    }));
+    setAssetViewState((current) => ({
+      ...current,
+      explorerMode: preferences.inventoryDefaults.explorerMode,
+    }));
+    setLineageViewState((current) => ({
+      ...current,
+      upstreamDepth: preferences.inventoryDefaults.lineageUpstreamDepth,
+      downstreamDepth: preferences.inventoryDefaults.lineageDownstreamDepth,
+      allDepsMode: preferences.inventoryDefaults.allDepsMode,
+      lensMode: preferences.inventoryDefaults.lineageLensMode,
+    }));
+    setSidebarCollapsedRaw(preferences.sidebarCollapsedDefault);
+    try {
+      window.localStorage.setItem(
+        SIDEBAR_STORAGE_KEY,
+        String(preferences.sidebarCollapsedDefault),
+      );
+    } catch {
+      // ignore
+    }
+  }, [preferences]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -77,6 +77,11 @@ describe("createInitialNavigationState", () => {
     expect(s.runsViewState.kind).toBe("models");
     expect(s.runsViewState.selectedExecutionId).toBe("run-9");
   });
+
+  it("supports settings as an initial destination", () => {
+    const s = createInitialNavigationState("?view=settings");
+    expect(s.activeView).toBe("settings");
+  });
 });
 
 describe("applySearchToWorkspaceState", () => {
@@ -237,5 +242,22 @@ describe("buildNextUrlFromWorkspaceState", () => {
     expect(url).toContain("view=timeline");
     expect(url).toContain("selected=t-1");
     expect(url).not.toContain("kind=");
+  });
+
+  it("serializes the settings view without extra navigation params", () => {
+    const url = buildNextUrlFromWorkspaceState({
+      pathname: "/",
+      hash: "",
+      activeView: "settings",
+      assetViewState: inv({ selectedResourceId: "x", activeTab: "lineage" }),
+      runsViewState: {
+        ...baseRuns(),
+        kind: "tests",
+        selectedExecutionId: "ex-2",
+      },
+      timelineSelectedExecutionId: "t-1",
+      lineageViewState: baseLineage(),
+    });
+    expect(url).toBe("/?view=settings");
   });
 });

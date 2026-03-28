@@ -6,9 +6,14 @@ import type {
   TimelineFilterState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
+import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
 import {
   buildInitialLineageViewState,
   getInitialAssetTab,
+  parseLineageAllDepsMode,
+  parseLineageDownstreamDepth,
+  parseLineageLensMode,
+  parseLineageUpstreamDepth,
   parseRunsKind,
   parseSelectedExecutionId,
   parseSelectedResourceId,
@@ -24,18 +29,33 @@ export interface UrlDerivedNavigationState {
   investigationSelection: InvestigationSelectionState;
 }
 
-const defaultAssetViewState = (search: string): AssetViewState => ({
+const defaultAssetViewState = (
+  search: string,
+  preferences?: WorkspacePreferences,
+): AssetViewState => ({
   activeTab: getInitialAssetTab(search),
   expandedNodeIds: new Set(),
-  explorerMode: "project",
+  explorerMode: preferences?.inventoryDefaults.explorerMode ?? "project",
   status: "all",
   resourceTypes: new Set(),
   resourceQuery: "",
   selectedResourceId: parseSelectedResourceId(search),
-  upstreamDepth: 2,
-  downstreamDepth: 2,
-  allDepsMode: false,
-  lensMode: "type",
+  upstreamDepth:
+    parseLineageUpstreamDepth(search) ??
+    preferences?.inventoryDefaults.lineageUpstreamDepth ??
+    2,
+  downstreamDepth:
+    parseLineageDownstreamDepth(search) ??
+    preferences?.inventoryDefaults.lineageDownstreamDepth ??
+    2,
+  allDepsMode:
+    parseLineageAllDepsMode(search) ??
+    preferences?.inventoryDefaults.allDepsMode ??
+    false,
+  lensMode:
+    parseLineageLensMode(search) ??
+    preferences?.inventoryDefaults.lineageLensMode ??
+    "type",
   activeLegendKeys: new Set(),
 });
 
@@ -55,7 +75,10 @@ const defaultRunsViewState = (search: string): RunsViewState => {
   };
 };
 
-const defaultTimelineFilters = (search: string): TimelineFilterState => {
+const defaultTimelineFilters = (
+  search: string,
+  preferences?: WorkspacePreferences,
+): TimelineFilterState => {
   const view = parseViewFromSearch(search);
   const selected =
     view === "runs" || view === "timeline"
@@ -66,10 +89,11 @@ const defaultTimelineFilters = (search: string): TimelineFilterState => {
     activeStatuses: new Set(),
     activeTypes: new Set(),
     selectedExecutionId: selected,
-    showTests: false,
-    failuresOnly: false,
-    dependencyDirection: "both",
-    dependencyDepthHops: 2,
+    showTests: preferences?.timelineDefaults.showTests ?? false,
+    failuresOnly: preferences?.timelineDefaults.failuresOnly ?? false,
+    dependencyDirection:
+      preferences?.timelineDefaults.dependencyDirection ?? "both",
+    dependencyDepthHops: preferences?.timelineDefaults.dependencyDepthHops ?? 2,
     timeWindow: null,
   };
 };
@@ -91,14 +115,33 @@ const defaultInvestigationSelection = (
 /** Full URL-derived slices for first paint (matches previous App.tsx initializers). */
 export function createInitialNavigationState(
   search: string,
+  preferences?: WorkspacePreferences,
 ): UrlDerivedNavigationState {
   const activeView = parseViewFromSearch(search) ?? "health";
   return {
     activeView,
-    assetViewState: defaultAssetViewState(search),
+    assetViewState: defaultAssetViewState(search, preferences),
     runsViewState: defaultRunsViewState(search),
-    timelineFilters: defaultTimelineFilters(search),
-    lineageViewState: buildInitialLineageViewState(search),
+    timelineFilters: defaultTimelineFilters(search, preferences),
+    lineageViewState: {
+      ...buildInitialLineageViewState(search),
+      upstreamDepth:
+        parseLineageUpstreamDepth(search) ??
+        preferences?.inventoryDefaults.lineageUpstreamDepth ??
+        2,
+      downstreamDepth:
+        parseLineageDownstreamDepth(search) ??
+        preferences?.inventoryDefaults.lineageDownstreamDepth ??
+        2,
+      allDepsMode:
+        parseLineageAllDepsMode(search) ??
+        preferences?.inventoryDefaults.allDepsMode ??
+        false,
+      lensMode:
+        parseLineageLensMode(search) ??
+        preferences?.inventoryDefaults.lineageLensMode ??
+        "type",
+    },
     investigationSelection: defaultInvestigationSelection(search),
   };
 }
