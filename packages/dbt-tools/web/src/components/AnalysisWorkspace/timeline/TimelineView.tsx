@@ -8,7 +8,7 @@ import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
 import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
-import { isPositiveStatus } from "./gantt/formatting";
+import { formatMs, isPositiveStatus } from "./gantt/formatting";
 import type { AnalysisState, GanttItem } from "@web/types";
 import type {
   InvestigationSelectionState,
@@ -22,7 +22,10 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
 import { SectionCard, WorkspaceScaffold } from "../shared";
-import { TimelineSearchControls } from "../views/ResultsView";
+import {
+  TimelineSearchControls,
+  type TimelineTypeFilterHint,
+} from "./TimelineSearchControls";
 
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
   if (left.size !== right.size) return false;
@@ -68,10 +71,7 @@ function TimelineSurface({
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   hasActiveFilters: boolean;
-  typeFilterHint: {
-    shown: string[];
-    hidden: Array<{ type: string; count: number }>;
-  } | null;
+  typeFilterHint: TimelineTypeFilterHint | null;
   testStatsById: ReturnType<typeof buildResourceTestStats>;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
   toggleStatus: (status: string) => void;
@@ -93,6 +93,8 @@ function TimelineSurface({
       ),
     [analysis.ganttData],
   );
+
+  const { timeWindow } = filters;
 
   return (
     <SectionCard
@@ -123,6 +125,19 @@ function TimelineSurface({
         typeFilterHint={typeFilterHint}
         setFilters={setFilters}
       />
+      {timeWindow != null && (
+        <p className="timeline-zoom-active" role="status">
+          Zoomed to {formatMs(timeWindow.end - timeWindow.start)} window
+          {" — "}
+          <button
+            type="button"
+            className="timeline-zoom-clear"
+            onClick={() => setFilters((c) => ({ ...c, timeWindow: null }))}
+          >
+            Clear zoom ×
+          </button>
+        </p>
+      )}
       {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
         <p className="timeline-large-dataset-hint" role="status">
           Showing {bundleRowCount.toLocaleString()} timeline rows. Use search or
@@ -138,6 +153,10 @@ function TimelineSurface({
         dependencyDirection={filters.dependencyDirection}
         dependencyDepthHops={filters.dependencyDepthHops}
         selectedId={filters.selectedExecutionId}
+        timeWindow={timeWindow}
+        onTimeWindowChange={(tw) =>
+          setFilters((c) => ({ ...c, timeWindow: tw }))
+        }
         onSelect={(id) => {
           setFilters((current) => ({ ...current, selectedExecutionId: id }));
           onInvestigationSelectionChange((current) => ({

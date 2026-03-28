@@ -5,6 +5,7 @@ import {
   AXIS_TOP,
   BUNDLE_HULL_PAD,
   ROW_H,
+  TEST_BAR_H,
   TEST_LANE_H,
   X_PAD,
 } from "./constants";
@@ -60,7 +61,8 @@ export function hitTestBundle(
   bundles: BundleRow[],
   layout: BundleLayout,
   scrollTop: number,
-  maxEnd: number,
+  rangeStart: number,
+  rangeEnd: number,
   effectiveLabelW: number,
   canvas: HTMLCanvasElement | null,
 ): { item: GanttItem; x: number; y: number } | null {
@@ -78,6 +80,7 @@ export function hitTestBundle(
 
   const bundle = bundles[bundleIdx];
   if (!bundle) return null;
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
 
   const chartW = canvas.getBoundingClientRect().width - effectiveLabelW - X_PAD;
   const bundleRowY = AXIS_TOP + (rowOffsets[bundleIdx] ?? 0) - scrollTop;
@@ -87,25 +90,43 @@ export function hitTestBundle(
     return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
+  // Chart bounds used to clamp hitboxes so that bars extending outside the
+  // visible window do not make items hittable in the label column or beyond.
+  const chartLeft = effectiveLabelW;
+  const chartRight = effectiveLabelW + chartW;
+
   // Check parent bar
-  const barX = effectiveLabelW + (bundle.item.start / maxEnd) * chartW;
-  const barW = Math.max(2, (bundle.item.duration / maxEnd) * chartW);
+  const rawBarStartX =
+    effectiveLabelW +
+    ((bundle.item.start - rangeStart) / rangeDuration) * chartW;
+  const rawBarEndX =
+    effectiveLabelW + ((bundle.item.end - rangeStart) / rangeDuration) * chartW;
+  const barX = Math.max(chartLeft, Math.min(rawBarStartX, rawBarEndX));
+  const barXEnd = Math.min(chartRight, Math.max(rawBarStartX, rawBarEndX));
+  const barW = Math.max(2, barXEnd - barX);
   if (mouseX >= barX && mouseX <= barX + barW) {
     return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
   if (showTests && bundle.lanes.length > 0) {
     for (const { item: test, lane } of bundle.lanes) {
-      const chipX = effectiveLabelW + (test.start / maxEnd) * chartW;
-      const chipW = Math.max(2, (test.duration / maxEnd) * chartW);
+      const rawChipStartX =
+        effectiveLabelW + ((test.start - rangeStart) / rangeDuration) * chartW;
+      const rawChipEndX =
+        effectiveLabelW + ((test.end - rangeStart) / rangeDuration) * chartW;
+      const chipX = Math.max(chartLeft, Math.min(rawChipStartX, rawChipEndX));
+      const chipXEnd = Math.min(
+        chartRight,
+        Math.max(rawChipStartX, rawChipEndX),
+      );
+      const chipW = Math.max(2, chipXEnd - chipX);
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
-      const chipH = 10; // TEST_BAR_H
 
       if (
         mouseX >= chipX &&
         mouseX <= chipX + chipW &&
         mouseY >= chipY &&
-        mouseY <= chipY + chipH
+        mouseY <= chipY + TEST_BAR_H
       ) {
         return { item: test, x: mouseX, y: mouseY };
       }
@@ -126,6 +147,7 @@ export function hitTestBar(
   maxEnd: number,
   effectiveLabelW: number,
   canvas: HTMLCanvasElement | null,
+  minTime = 0,
 ): HoverState | null {
   if (!canvas) return null;
   const rect = event.currentTarget.getBoundingClientRect();
@@ -140,7 +162,7 @@ export function hitTestBar(
   const chartW = canvas.getBoundingClientRect().width - effectiveLabelW - X_PAD;
   const item = data[rowIdx];
   if (!item) return null;
-  const barX = effectiveLabelW + (item.start / maxEnd) * chartW;
+  const barX = effectiveLabelW + ((item.start - minTime) / maxEnd) * chartW;
   const barW = Math.max(2, (item.duration / maxEnd) * chartW);
 
   return mouseX >= barX && mouseX <= barX + barW

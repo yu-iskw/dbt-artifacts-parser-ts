@@ -163,6 +163,8 @@ export const CANVAS_LIGHT = {
   gridLine: "#E6E9F0",
   barHoverStroke: THEME_HEX_LIGHT.accent,
   testFailStripe: "rgba(192, 53, 43, 0.9)",
+  /** Skipped/no-op bundle fill in the minimap — amber. */
+  testSkipStripe: "rgba(165, 99, 21, 0.88)",
   /** Bundle hull stroke — light neutral border. */
   hullStroke: "#C8CEDB",
   /** Bundle hull fill — near-transparent background. */
@@ -178,6 +180,8 @@ export const CANVAS_DARK = {
   gridLine: "#262E47",
   barHoverStroke: THEME_HEX_DARK.accent,
   testFailStripe: "rgba(255, 141, 134, 0.88)",
+  /** Skipped/no-op bundle fill in the minimap — amber. */
+  testSkipStripe: "rgba(245, 185, 92, 0.88)",
   /** Bundle hull stroke — dark neutral border. */
   hullStroke: "#2E3759",
   /** Bundle hull fill — near-transparent background. */

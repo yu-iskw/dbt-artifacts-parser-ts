@@ -734,7 +734,8 @@ export interface FocusEdgePathParams {
   scrollTop: number;
   showTests: boolean;
   effectiveLabelW: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   chartW: number;
 }
 
@@ -751,7 +752,8 @@ export function focusEdgePath(p: FocusEdgePathParams): string {
     scrollTop,
     showTests,
     effectiveLabelW,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     chartW,
   } = p;
   const fromItem = itemById.get(edge.fromId);
@@ -785,9 +787,13 @@ export function focusEdgePath(p: FocusEdgePathParams): string {
   );
   if (sy == null || ty == null) return "";
 
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
   const sx =
-    effectiveLabelW + ((fromItem.start + fromItem.duration) / maxEnd) * chartW;
-  const tx = effectiveLabelW + (toItem.start / maxEnd) * chartW;
+    effectiveLabelW +
+    ((fromItem.start + fromItem.duration - rangeStart) / rangeDuration) *
+      chartW;
+  const tx =
+    effectiveLabelW + ((toItem.start - rangeStart) / rangeDuration) * chartW;
   const cx = Math.abs(tx - sx) * 0.4;
 
   return `M${sx},${sy} C${sx + cx},${sy} ${tx - cx},${ty} ${tx},${ty}`;

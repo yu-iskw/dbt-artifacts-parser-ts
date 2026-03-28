@@ -714,7 +714,8 @@ describe("parcelCenterY and focusEdgePath", () => {
       scrollTop: 0,
       showTests: true,
       effectiveLabelW: 100,
-      maxEnd: 500,
+      rangeStart: 0,
+      rangeEnd: 500,
       chartW: 400,
     });
     expect(d.startsWith("M")).toBe(true);

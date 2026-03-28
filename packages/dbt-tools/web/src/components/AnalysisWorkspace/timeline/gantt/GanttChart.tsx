@@ -1,7 +1,10 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
-import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
+import type {
+  TimelineDependencyDirection,
+  TimeWindow,
+} from "@web/lib/analysis-workspace/types";
 import type {
   GanttItem,
   ResourceTestStats,
@@ -21,6 +24,7 @@ import {
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
 import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
+import { GanttTimeBrush } from "./GanttTimeBrush";
 import { bundleRowHeight, computeRowLayout } from "./ganttChartHelpers";
 import { applyGanttPointerInteraction } from "./ganttPointerInteraction";
 import type { BundleLayout, HoverState } from "./hitTest";
@@ -36,12 +40,15 @@ export interface GanttChartProps {
   /** Immediate manifest neighbors for executed timeline nodes (from analyze). */
   timelineAdjacency?: Record<string, TimelineAdjacencyEntry>;
   testStatsById?: Map<string, ResourceTestStats>;
-  /** Whether to show test chips inside bundle rows. Default: true. */
+  /** Whether to show test chips inside bundle rows. Default: false. */
   showTests?: boolean;
   dependencyDirection?: TimelineDependencyDirection;
   dependencyDepthHops?: number;
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
+  /** Active time-range zoom window. null = full timeline. */
+  timeWindow?: TimeWindow | null;
+  onTimeWindowChange?: (tw: TimeWindow | null) => void;
 }
 
 export function GanttChart({
@@ -49,11 +56,13 @@ export function GanttChart({
   runStartedAt,
   timelineAdjacency,
   testStatsById,
-  showTests = true,
+  showTests = false,
   dependencyDirection = "both",
   dependencyDepthHops = 2,
   selectedId = null,
   onSelect,
+  timeWindow = null,
+  onTimeWindowChange,
 }: GanttChartProps) {
   const theme = useSyncedDocumentTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -83,7 +92,53 @@ export function GanttChart({
       ? Math.max(80, Math.min(LABEL_W, Math.round(containerWidth * 0.35)))
       : LABEL_W;
 
-  const bundles = useMemo(() => groupIntoBundles(data), [data]);
+  const allBundles = useMemo(() => groupIntoBundles(data), [data]);
+
+  // Absolute max end across all data (used as the brush's total span).
+  const absoluteMaxEnd = useMemo(() => {
+    let m = 1;
+    for (const b of allBundles) {
+      m = Math.max(m, b.item.end);
+      for (const t of b.tests) m = Math.max(m, t.end);
+    }
+    return m;
+  }, [allBundles]);
+
+  // When a time window is active, show only bundles that overlap it.
+  // Parents whose bar is outside the window but have tests inside the window are
+  // also kept so their tests are not orphaned and silently dropped by groupIntoBundles.
+  const bundles = useMemo(() => {
+    if (!timeWindow) return allBundles;
+    const { start, end } = timeWindow;
+
+    // Collect parent unique_ids that have at least one test overlapping the window.
+    const parentIdsWithWindowTests = new Set<string>();
+    for (const bundle of allBundles) {
+      for (const test of bundle.tests) {
+        if (test.end > start && test.start < end) {
+          parentIdsWithWindowTests.add(bundle.item.unique_id);
+          break;
+        }
+      }
+    }
+
+    return groupIntoBundles(
+      data.filter((item) => {
+        // Keep any item whose bar overlaps the window.
+        if (item.end > start && item.start < end) return true;
+        // Also keep parent items whose tests overlap the window even if the
+        // parent bar itself is entirely outside the window.
+        return parentIdsWithWindowTests.has(item.unique_id);
+      }),
+    );
+  }, [data, allBundles, timeWindow]);
+
+  /** Visible slice in absolute ms (same space as `GanttItem.start` / `end`). */
+  const sliceStart = timeWindow?.start ?? 0;
+  const sliceEnd = timeWindow ? timeWindow.end : absoluteMaxEnd;
+  const rangeStart = sliceStart;
+  const rangeEnd = sliceEnd;
+
   const { rowOffsets, rowHeights } = useMemo(
     () => computeRowLayout(bundles, showTests),
     [bundles, showTests],
@@ -126,15 +181,6 @@ export function GanttChart({
       for (const test of bundle.tests) map.set(test.unique_id, i);
     }
     return map;
-  }, [bundles]);
-
-  const maxEnd = useMemo(() => {
-    let m = 1;
-    for (const b of bundles) {
-      m = Math.max(m, b.item.end);
-      for (const t of b.tests) m = Math.max(m, t.end);
-    }
-    return m;
   }, [bundles]);
 
   /** Selection wins over hover for which dependency edges are shown. */
@@ -186,7 +232,8 @@ export function GanttChart({
     rowOffsets,
     rowHeights,
     scrollTop,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     activeMode,
     runStartedAt,
     focusedIds,
@@ -199,7 +246,7 @@ export function GanttChart({
     setContainerWidth,
   });
 
-  if (bundles.length === 0) {
+  if (allBundles.length === 0) {
     return (
       <div className="empty-state empty-state--chart">
         No Gantt data (run_results may lack timing info)
@@ -215,7 +262,8 @@ export function GanttChart({
       bundles,
       layout,
       scrollTop,
-      maxEnd,
+      rangeStart,
+      rangeEnd,
       effectiveLabelW,
       canvas: canvasRef.current,
       setHover,
@@ -234,6 +282,13 @@ export function GanttChart({
           onTimeZoneChange={setTimeZone}
         />
       )}
+      <GanttTimeBrush
+        bundles={allBundles}
+        maxEnd={absoluteMaxEnd}
+        timeWindow={timeWindow}
+        testStatsById={testStatsById}
+        onChange={onTimeWindowChange ?? (() => {})}
+      />
 
       <GanttChartFrame
         canvasRef={canvasRef}
@@ -246,7 +301,8 @@ export function GanttChart({
         rowOffsets={rowOffsets}
         containerWidth={containerWidth}
         effectiveLabelW={effectiveLabelW}
-        maxEnd={maxEnd}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
         scrollTop={scrollTop}
         viewportH={viewportH}
         needsScroll={needsScroll}

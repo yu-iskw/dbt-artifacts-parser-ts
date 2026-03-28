@@ -72,10 +72,11 @@ function AppContent() {
         activeStatuses: new Set(),
         activeTypes: new Set(),
         selectedExecutionId: selected,
-        showTests: true,
+        showTests: false,
         failuresOnly: false,
         dependencyDirection: "both",
         dependencyDepthHops: 2,
+        timeWindow: null,
       };
     },
   );

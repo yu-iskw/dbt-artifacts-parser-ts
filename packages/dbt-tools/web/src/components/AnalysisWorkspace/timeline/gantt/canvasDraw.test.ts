@@ -1,6 +1,7 @@
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { GanttItem } from "@web/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CANVAS_LIGHT } from "@web/constants/themeColors";
 import {
   drawGantt,
   fillRoundRect,
@@ -41,6 +42,14 @@ function testItem(id: string, parentId: string): GanttItem {
   };
 }
 
+function testItemWithOverrides(
+  id: string,
+  parentId: string,
+  overrides: Partial<GanttItem> = {},
+): GanttItem {
+  return { ...testItem(id, parentId), ...overrides };
+}
+
 function bundle(
   item: GanttItem,
   tests: GanttItem[],
@@ -54,7 +63,9 @@ function bundle(
 }
 
 /** Minimal 2D context stub so drawGantt can run without jsdom. */
-function createMock2dContext(): CanvasRenderingContext2D {
+function createMock2dContext(): CanvasRenderingContext2D & {
+  __strokeOps: Array<{ strokeStyle: unknown; lineWidth: unknown }>;
+} {
   const store: Record<string, unknown> = {
     fillStyle: "",
     strokeStyle: "",
@@ -66,9 +77,19 @@ function createMock2dContext(): CanvasRenderingContext2D {
     textAlign: "start",
     textBaseline: "alphabetic",
   };
+  const strokeOps: Array<{ strokeStyle: unknown; lineWidth: unknown }> = [];
   const fn = () => {};
   return new Proxy({} as CanvasRenderingContext2D, {
     get(_t, prop) {
+      if (prop === "__strokeOps") return strokeOps;
+      if (prop === "stroke") {
+        return () => {
+          strokeOps.push({
+            strokeStyle: store.strokeStyle,
+            lineWidth: store.lineWidth,
+          });
+        };
+      }
       if (prop === "canvas") return null;
       if (typeof prop === "string" && prop in store) return store[prop];
       return fn;
@@ -80,9 +101,17 @@ function createMock2dContext(): CanvasRenderingContext2D {
   });
 }
 
-function createCanvasStub(cssW: number, cssH: number): HTMLCanvasElement {
+function createCanvasStub(
+  cssW: number,
+  cssH: number,
+): HTMLCanvasElement & {
+  __ctx: CanvasRenderingContext2D & {
+    __strokeOps: Array<{ strokeStyle: unknown; lineWidth: unknown }>;
+  };
+} {
   const ctx = createMock2dContext();
   const el = {
+    __ctx: ctx,
     width: 0,
     height: 0,
     getBoundingClientRect: () =>
@@ -169,7 +198,8 @@ describe("drawGantt", () => {
 
     drawGantt(canvas, bundles, rowOffsets, rowHeights, {
       scrollTop: 0,
-      maxEnd: 1000,
+      rangeStart: 0,
+      rangeEnd: 1000,
       displayMode: "duration",
       runStartedAt: null,
       focusIds: null,
@@ -189,7 +219,8 @@ describe("drawGantt", () => {
 
     drawGantt(canvas, [], [], [], {
       scrollTop: 0,
-      maxEnd: 1,
+      rangeStart: 0,
+      rangeEnd: 1,
       displayMode: "duration",
       runStartedAt: null,
       focusIds: null,
@@ -198,5 +229,110 @@ describe("drawGantt", () => {
     });
 
     expect(canvas.width).toBe(0);
+  });
+
+  it("uses stronger red outlines for failed parents and parents with failing tests", () => {
+    vi.stubGlobal("window", { devicePixelRatio: 1 });
+
+    const canvas = createCanvasStub(500, 300);
+    const bundles = [
+      bundle(parent("model.error", { status: "error" }), [], 0),
+      bundle(
+        parent("model.test-fail"),
+        [testItem("test.pass", "model.test-fail")],
+        1,
+      ),
+      bundle(parent("model.skip", { status: "skipped" }), [], 0),
+    ];
+    const rowOffsets = [0, ROW_H, ROW_H * 2];
+    const rowHeights = [ROW_H, bundleRowHeight(bundles[1]!, true), ROW_H];
+    const testStatsById = new Map([
+      ["model.test-fail", { pass: 0, fail: 1, error: 0 }],
+    ]);
+
+    drawGantt(canvas, bundles, rowOffsets, rowHeights, {
+      scrollTop: 0,
+      rangeStart: 0,
+      rangeEnd: 1000,
+      displayMode: "duration",
+      runStartedAt: null,
+      focusIds: null,
+      hoveredId: null,
+      timeZone: "UTC",
+      theme: "light",
+      showTests: true,
+      testStatsById,
+    });
+
+    expect(canvas.__ctx.__strokeOps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          strokeStyle: CANVAS_LIGHT.testFailStripe,
+          lineWidth: 3,
+        }),
+      ]),
+    );
+    expect(
+      canvas.__ctx.__strokeOps.filter(
+        (op) =>
+          op.strokeStyle === CANVAS_LIGHT.testFailStripe && op.lineWidth === 3,
+      ).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      canvas.__ctx.__strokeOps.some(
+        (op) => op.strokeStyle === "#64748B" && op.lineWidth === 2,
+      ),
+    ).toBe(true);
+  });
+
+  it("uses stronger red outlines for failing test chips but not skipped ones", () => {
+    vi.stubGlobal("window", { devicePixelRatio: 1 });
+
+    const canvas = createCanvasStub(500, 300);
+    const p = parent("model.parent");
+    const bundles = [
+      bundle(
+        p,
+        [
+          testItemWithOverrides("test.fail", "model.parent", {
+            status: "fail",
+          }),
+          testItemWithOverrides("test.skip", "model.parent", {
+            status: "skipped",
+            start: 220,
+            end: 320,
+          }),
+        ],
+        2,
+      ),
+    ];
+    const rowOffsets = [0];
+    const rowHeights = [bundleRowHeight(bundles[0]!, true)];
+
+    drawGantt(canvas, bundles, rowOffsets, rowHeights, {
+      scrollTop: 0,
+      rangeStart: 0,
+      rangeEnd: 1000,
+      displayMode: "duration",
+      runStartedAt: null,
+      focusIds: null,
+      hoveredId: null,
+      timeZone: "UTC",
+      theme: "light",
+      showTests: true,
+    });
+
+    expect(
+      canvas.__ctx.__strokeOps.some(
+        (op) =>
+          op.strokeStyle === CANVAS_LIGHT.testFailStripe &&
+          op.lineWidth === 2.25,
+      ),
+    ).toBe(true);
+    expect(
+      canvas.__ctx.__strokeOps.some(
+        (op) => op.strokeStyle === "#64748B" && op.lineWidth === 1.5,
+      ),
+    ).toBe(true);
   });
 });

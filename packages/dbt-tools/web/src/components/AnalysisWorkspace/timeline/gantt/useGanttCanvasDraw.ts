@@ -11,7 +11,8 @@ export interface UseGanttCanvasDrawParams {
   rowOffsets: number[];
   rowHeights: number[];
   scrollTop: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   activeMode: DisplayMode;
   runStartedAt?: number | null;
   focusedIds: Set<string> | null;
@@ -30,7 +31,8 @@ export function useGanttCanvasDraw({
   rowOffsets,
   rowHeights,
   scrollTop,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   activeMode,
   runStartedAt,
   focusedIds,
@@ -50,7 +52,8 @@ export function useGanttCanvasDraw({
       if (!c) return;
       drawGantt(c, bundles, rowOffsets, rowHeights, {
         scrollTop,
-        maxEnd,
+        rangeStart,
+        rangeEnd,
         displayMode: activeMode,
         runStartedAt,
         focusIds: focusedIds,
@@ -79,7 +82,8 @@ export function useGanttCanvasDraw({
     rowOffsets,
     rowHeights,
     scrollTop,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     activeMode,
     runStartedAt,
     focusedIds,

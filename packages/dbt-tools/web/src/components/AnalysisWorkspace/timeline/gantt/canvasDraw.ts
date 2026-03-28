@@ -25,8 +25,18 @@ import {
   computeTicks,
   formatMs,
   formatTimestamp,
+  isIssueStatus,
   isPositiveStatus,
 } from "./formatting";
+
+const ISSUE_PARENT_STROKE_WIDTH = 3;
+const ISSUE_TEST_STROKE_WIDTH = 2.25;
+
+function hasAttachedTestIssue(
+  attachedTestStats: ResourceTestStats | undefined,
+): boolean {
+  return (attachedTestStats?.fail ?? 0) + (attachedTestStats?.error ?? 0) > 0;
+}
 
 // ---------------------------------------------------------------------------
 // Path helpers
@@ -161,7 +171,8 @@ interface DrawRowBarParams {
   ctx: CanvasRenderingContext2D;
   item: GanttItem;
   rowY: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   chartW: number;
   labelW: number;
   emphasis: number;
@@ -175,7 +186,8 @@ function drawRowBar({
   ctx,
   item,
   rowY,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   chartW,
   labelW,
   emphasis,
@@ -184,10 +196,16 @@ function drawRowBar({
   palette,
   theme,
 }: DrawRowBarParams) {
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
   const barY = rowY + BAR_PAD;
-  const barX = labelW + (item.start / maxEnd) * chartW;
-  const barW = Math.max(2, (item.duration / maxEnd) * chartW);
+  const barStartX =
+    labelW + ((item.start - rangeStart) / rangeDuration) * chartW;
+  const barEndX = labelW + ((item.end - rangeStart) / rangeDuration) * chartW;
+  const barX = Math.min(barStartX, barEndX);
+  const barW = Math.max(2, barEndX - barStartX);
   const radius = 3;
+  const hasTestIssue = hasAttachedTestIssue(attachedTestStats);
+  const hasIssueOutline = isIssueStatus(item.status) || hasTestIssue;
 
   ctx.save();
   ctx.globalAlpha = emphasis;
@@ -196,10 +214,10 @@ function drawRowBar({
 
   const cs = item.compileStart;
   const ce = item.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  const hasCompile = cs != null && ce != null && ce > cs;
   if (hasCompile) {
-    const compileX = labelW + (cs / maxEnd) * chartW;
-    const compileEndX = labelW + (ce / maxEnd) * chartW;
+    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
+    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
     const segLeft = Math.max(barX, compileX);
     const segRight = Math.min(barX + barW, compileEndX);
     const segW = segRight - segLeft;
@@ -214,17 +232,15 @@ function drawRowBar({
     }
   }
 
-  if (
-    attachedTestStats &&
-    attachedTestStats.fail + attachedTestStats.error > 0 &&
-    isPositiveStatus(item.status)
-  ) {
+  if (hasTestIssue && isPositiveStatus(item.status)) {
     ctx.fillStyle = palette.testFailStripe;
     fillRoundRect(ctx, barX, barY + BAR_H - 4, barW, 4, 2);
   }
 
-  ctx.strokeStyle = getStatusColor(item.status, theme);
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = hasIssueOutline
+    ? palette.testFailStripe
+    : getStatusColor(item.status, theme);
+  ctx.lineWidth = hasIssueOutline ? ISSUE_PARENT_STROKE_WIDTH : 2;
   strokeRoundRect(ctx, barX, barY, barW, BAR_H, radius);
   ctx.restore();
 
@@ -246,7 +262,8 @@ interface DrawTestChipParams {
   ctx: CanvasRenderingContext2D;
   test: GanttItem;
   chipY: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   chartW: number;
   labelW: number;
   palette: CanvasPalette;
@@ -259,7 +276,8 @@ function drawTestChip({
   ctx,
   test,
   chipY,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   chartW,
   labelW,
   palette,
@@ -267,10 +285,15 @@ function drawTestChip({
   emphasis,
   isHovered,
 }: DrawTestChipParams) {
-  const chipX = labelW + (test.start / maxEnd) * chartW;
-  const chipW = Math.max(MIN_CHIP_W, (test.duration / maxEnd) * chartW);
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
+  const chipStartX =
+    labelW + ((test.start - rangeStart) / rangeDuration) * chartW;
+  const chipEndX = labelW + ((test.end - rangeStart) / rangeDuration) * chartW;
+  const chipX = Math.min(chipStartX, chipEndX);
+  const chipW = Math.max(MIN_CHIP_W, chipEndX - chipStartX);
   const chipH = TEST_BAR_H;
   const radius = 2;
+  const hasIssueOutline = isIssueStatus(test.status);
 
   ctx.save();
   ctx.globalAlpha = emphasis;
@@ -279,10 +302,10 @@ function drawTestChip({
 
   const cs = test.compileStart;
   const ce = test.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs && maxEnd > 0;
+  const hasCompile = cs != null && ce != null && ce > cs;
   if (hasCompile) {
-    const compileX = labelW + (cs / maxEnd) * chartW;
-    const compileEndX = labelW + (ce / maxEnd) * chartW;
+    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
+    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
     const segLeft = Math.max(chipX, compileX);
     const segRight = Math.min(chipX + chipW, compileEndX);
     const segW = segRight - segLeft;
@@ -297,8 +320,10 @@ function drawTestChip({
     }
   }
 
-  ctx.strokeStyle = getStatusColor(test.status, theme);
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = hasIssueOutline
+    ? palette.testFailStripe
+    : getStatusColor(test.status, theme);
+  ctx.lineWidth = hasIssueOutline ? ISSUE_TEST_STROKE_WIDTH : 1.5;
   strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
   ctx.restore();
 
@@ -362,7 +387,8 @@ interface DrawGanttAxisTicksParams {
   labelW: number;
   chartW: number;
   h: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   displayMode: DisplayMode;
   runStartedAt: number | null | undefined;
   timeZone: string;
@@ -374,20 +400,22 @@ function drawGanttAxisTicks({
   labelW,
   chartW,
   h,
-  maxEnd,
+  rangeStart,
+  rangeEnd,
   displayMode,
   runStartedAt,
   timeZone,
   palette,
 }: DrawGanttAxisTicksParams): void {
-  const ticks = computeTicks(maxEnd);
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
+  const ticks = computeTicks(rangeStart, rangeEnd);
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = palette.axisTick;
 
   for (const tick of ticks) {
-    const x = labelW + (tick.ms / maxEnd) * chartW;
+    const x = labelW + ((tick.ms - rangeStart) / rangeDuration) * chartW;
     ctx.strokeStyle = palette.gridLine;
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -410,7 +438,8 @@ interface DrawGanttVisibleRowParams {
   w: number;
   labelW: number;
   chartW: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   focusIds: Set<string> | null;
   hoveredId: string | null;
   displayMode: DisplayMode;
@@ -431,7 +460,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     w,
     labelW,
     chartW,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     focusIds,
     hoveredId,
     displayMode,
@@ -470,7 +500,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     ctx,
     item: bundle.item,
     rowY,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     chartW,
     labelW,
     emphasis,
@@ -490,7 +521,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
       ctx,
       test,
       chipY,
-      maxEnd,
+      rangeStart,
+      rangeEnd,
       chartW,
       labelW,
       palette,
@@ -507,7 +539,8 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
 
 export interface DrawGanttParams {
   scrollTop: number;
-  maxEnd: number;
+  rangeStart: number;
+  rangeEnd: number;
   displayMode: DisplayMode;
   runStartedAt: number | null | undefined;
   focusIds: Set<string> | null;
@@ -528,7 +561,8 @@ export function drawGantt(
   rowHeights: number[],
   {
     scrollTop,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     displayMode,
     runStartedAt,
     focusIds,
@@ -537,7 +571,7 @@ export function drawGantt(
     timeZone,
     testStatsById,
     theme = "light",
-    showTests = true,
+    showTests = false,
   }: DrawGanttParams,
 ) {
   const prepared = initGanttCanvas(canvas, labelW);
@@ -551,7 +585,8 @@ export function drawGantt(
     labelW,
     chartW,
     h,
-    maxEnd,
+    rangeStart,
+    rangeEnd,
     displayMode,
     runStartedAt,
     timeZone,
@@ -578,7 +613,8 @@ export function drawGantt(
       w,
       labelW,
       chartW,
-      maxEnd,
+      rangeStart,
+      rangeEnd,
       focusIds,
       hoveredId,
       displayMode,
