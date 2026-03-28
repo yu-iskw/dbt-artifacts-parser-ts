@@ -41,7 +41,7 @@ pnpm add -g @dbt-tools/cli
 
 ---
 
-## Commands
+## Command Reference
 
 ### summary
 

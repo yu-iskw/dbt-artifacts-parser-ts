@@ -158,7 +158,7 @@ Packages:
 
 Use concise, imperative commit messages:
 
-```
+```text
 feat: add manifest v13 support
 fix: handle missing metadata in sources parser
 docs: update @dbt-tools/core API reference
