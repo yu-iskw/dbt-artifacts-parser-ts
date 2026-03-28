@@ -200,6 +200,54 @@ export default [
       ],
     },
   },
+  /** @dbt-tools/web: keep analysis-workspace lib free of UI and worker graphs */
+  {
+    files: ["packages/dbt-tools/web/src/lib/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@web/components/*", "@web/components/**/*"],
+              message:
+                "lib/analysis-workspace must not import UI components; keep domain logic UI-agnostic.",
+            },
+            {
+              group: ["@web/workers/*", "@web/workers/**/*"],
+              message: "lib must not import Vite worker entrypoints.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["packages/dbt-tools/web/src/workers/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react",
+              message: "Workers must not import React.",
+            },
+            {
+              name: "react-dom",
+              message: "Workers must not import react-dom.",
+            },
+            {
+              name: "react/jsx-runtime",
+              message: "Workers must not import the JSX runtime.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ["**/*.js"],
     ignores: ["**/dist/**", "**/node_modules/**"],
