@@ -15,6 +15,7 @@ import {
   formatDeps,
   shouldOutputJSON,
 } from "@dbt-tools/core";
+import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 
 type DepsOptions = {
   direction?: string;
@@ -32,7 +33,7 @@ type DepsOptions = {
 
 /** Add field-level lineage to graph and return targetId */
 function addFieldLevelLineage(
-  manifest: Record<string, unknown>,
+  manifest: ParsedManifest,
   graph: ManifestGraph,
   paths: { catalog?: string },
   resourceId: string,
@@ -51,12 +52,9 @@ function addFieldLevelLineage(
     graph.addFieldNodes(catalog);
 
     const analyzer = new SQLAnalyzer();
-    const adapterType =
-      (manifest.metadata as { adapter_type?: string })?.adapter_type || "mysql";
+    const adapterType = manifest.metadata?.adapter_type || "mysql";
 
-    const nodes = manifest.nodes as
-      | Record<string, Record<string, unknown>>
-      | undefined;
+    const nodes = manifest.nodes;
     if (nodes) {
       for (const [uniqueId, node] of Object.entries(nodes)) {
         const compiledCode = node.compiled_code;
@@ -123,7 +121,7 @@ export function depsAction(
     let targetId = resourceId;
     if (options.field) {
       targetId = addFieldLevelLineage(
-        manifest as Record<string, unknown>,
+        manifest,
         graph,
         paths,
         resourceId,

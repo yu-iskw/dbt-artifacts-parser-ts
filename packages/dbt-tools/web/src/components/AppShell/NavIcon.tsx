@@ -1,6 +1,8 @@
 import type { SidebarNavigationTarget } from "./appNavigation";
 
-export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
+type NavIconId = SidebarNavigationTarget["id"] | "settings";
+
+export function NavIcon({ id }: { id: NavIconId }) {
   const svgProps = {
     viewBox: "0 0 24 24" as const,
     fill: "none" as const,
@@ -55,6 +57,22 @@ export function NavIcon({ id }: { id: SidebarNavigationTarget["id"] }) {
         <path d="M2 7l10-4 10 4-10 4-10-4z" />
         <path d="M2 12l10 4 10-4" />
         <path d="M2 17l10 4 10-4" />
+      </svg>
+    );
+  }
+
+  if (id === "settings") {
+    return (
+      <svg {...svgProps}>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2.75v2.5" />
+        <path d="M12 18.75v2.5" />
+        <path d="M21.25 12h-2.5" />
+        <path d="M5.25 12h-2.5" />
+        <path d="M18.54 5.46l-1.77 1.77" />
+        <path d="M7.23 16.77l-1.77 1.77" />
+        <path d="M18.54 18.54l-1.77-1.77" />
+        <path d="M7.23 7.23L5.46 5.46" />
       </svg>
     );
   }

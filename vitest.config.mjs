@@ -29,6 +29,7 @@ export default defineConfig({
   test: {
     include: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
     exclude: [".trunk/**", "node_modules/**"],
+    pool: "threads",
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "json"],

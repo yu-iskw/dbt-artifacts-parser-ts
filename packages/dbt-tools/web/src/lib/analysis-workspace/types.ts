@@ -11,6 +11,7 @@ export type WorkspaceView =
   | "inventory"
   | "runs"
   | "timeline"
+  | "settings"
   // legacy — redirect targets below
   | "overview"
   | "catalog"
@@ -34,6 +35,7 @@ export type DashboardStatusFilter = "all" | StatusTone;
 export type AssetExplorerMode = "project" | "database";
 export type LensMode = "status" | "type" | "coverage";
 export type TimelineDependencyDirection = "upstream" | "both" | "downstream";
+export type ThemePreference = "light" | "dark" | "system";
 
 export interface OverviewFilterState {
   status: DashboardStatusFilter;

@@ -1,4 +1,3 @@
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { VersionInfo } from "./types";
 

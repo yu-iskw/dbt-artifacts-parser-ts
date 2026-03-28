@@ -5,12 +5,14 @@ import { buildWorkspaceSignals } from "./components/AppShell/workspaceSignals";
 import { ToastProvider, useToast } from "./components/ui/Toast";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
 import { useTheme } from "./hooks/useTheme";
+import { useWorkspacePreferences } from "./hooks/useWorkspacePreferences";
 import { useWorkspaceUrlState } from "./hooks/useWorkspaceUrlState";
 import type { AnalysisState } from "@web/types";
 
 function AppContent() {
   const { toast } = useToast();
-  const workspace = useWorkspaceUrlState();
+  const { preferences, setPreferences } = useWorkspacePreferences();
+  const workspace = useWorkspaceUrlState(preferences);
   const {
     analysis,
     analysisSource,
@@ -20,7 +22,13 @@ function AppContent() {
     onAnalysis,
     onError,
   } = useAnalysisPage();
-  const { theme, toggleTheme } = useTheme();
+  const { themePreference, setThemePreference } = useTheme();
+
+  useEffect(() => {
+    if (preferences.theme !== themePreference) {
+      setThemePreference(preferences.theme);
+    }
+  }, [preferences.theme, setThemePreference, themePreference]);
 
   const prevAnalysisRef = useRef<AnalysisState | null>(null);
   useEffect(() => {
@@ -50,8 +58,10 @@ function AppContent() {
       onLoadDifferent={onLoadDifferent}
       onAnalysis={onAnalysis}
       onError={onError}
-      theme={theme}
-      toggleTheme={toggleTheme}
+      themePreference={themePreference}
+      setPreferences={setPreferences}
+      preferences={preferences}
+      setThemePreference={setThemePreference}
       workspaceSignals={workspaceSignals}
     />
   );

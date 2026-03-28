@@ -50,6 +50,7 @@ describe("resolveView", () => {
     expect(resolveView("inventory")).toBe("inventory");
     expect(resolveView("runs")).toBe("runs");
     expect(resolveView("timeline")).toBe("timeline");
+    expect(resolveView("settings")).toBe("settings");
   });
 
   it("defaults unknown values to health", () => {
@@ -73,6 +74,10 @@ describe("parseViewFromSearch", () => {
 
   it("returns null for invalid view values", () => {
     expect(parseViewFromSearch("?view=not-a-view")).toBeNull();
+  });
+
+  it("accepts settings as a first-class destination", () => {
+    expect(parseViewFromSearch("?view=settings")).toBe("settings");
   });
 });
 

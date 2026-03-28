@@ -8,6 +8,10 @@ import {
 } from "./appNavigation";
 import { NavIcon } from "./NavIcon";
 
+const WAITING_FOR_ARTIFACTS = "Waiting for artifacts";
+const LIVE_TARGET = "Live target";
+const LOCAL_UPLOAD = "Local upload";
+
 export function AppSidebar({
   activeView,
   setNavigationTarget,
@@ -25,6 +29,13 @@ export function AppSidebar({
   analysis: AnalysisState | null;
   analysisSource: "preload" | "upload" | null;
 }) {
+  const sourceLabel =
+    analysisSource === "preload"
+      ? LIVE_TARGET
+      : analysisSource === "upload"
+        ? LOCAL_UPLOAD
+        : WAITING_FOR_ARTIFACTS;
+
   return (
     <aside
       id="app-sidebar"
@@ -89,20 +100,47 @@ export function AppSidebar({
         {sidebarCollapsed ? "›" : "‹"}
       </button>
 
-      {!sidebarCollapsed && (
-        <div className="app-sidebar__footer">
-          <p className="eyebrow">Session</p>
-          <strong>
-            {analysisSource === "preload" ? "Live target" : "Local upload"}
-            {analysisSource === null && " (loading…)"}
-          </strong>
-          <span>
-            {analysis
-              ? `${analysis.summary.total_nodes} executions analyzed`
-              : "Waiting for artifacts"}
+      <div className="app-sidebar__footer">
+        <button
+          type="button"
+          className={
+            activeView === "settings"
+              ? "sidebar-link sidebar-link--active sidebar-settings-trigger"
+              : "sidebar-link sidebar-settings-trigger"
+          }
+          onClick={() => {
+            setNavigationTarget({ view: "settings" });
+            onNavigate();
+          }}
+          aria-current={activeView === "settings" ? "page" : undefined}
+          aria-label="Open settings"
+          title="Settings"
+        >
+          <span className="sidebar-link__icon">
+            <NavIcon id="settings" />
           </span>
-        </div>
-      )}
+          {!sidebarCollapsed && (
+            <div className="sidebar-link__body">
+              <strong>Settings</strong>
+            </div>
+          )}
+        </button>
+
+        {!sidebarCollapsed && (
+          <>
+            <div className="sidebar-settings-divider" />
+            <div className="app-sidebar__session">
+              <p className="eyebrow">Session</p>
+              <strong>{sourceLabel}</strong>
+              <span>
+                {analysis
+                  ? `${analysis.summary.total_nodes} executions analyzed`
+                  : WAITING_FOR_ARTIFACTS}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
     </aside>
   );
 }
