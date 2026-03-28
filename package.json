@@ -8,7 +8,7 @@
   "author": "yu-iskw",
   "main": "index.js",
   "scripts": {
-    "build": "pnpm --recursive build",
+    "build": "pnpm --recursive --sequential run build",
     "codeql": "pnpm codeql:db && pnpm codeql:analyze",
     "codeql:analyze": "node scripts/codeql-check.mjs codeql/javascript-queries && codeql database analyze ./codeql-db codeql/javascript-queries --format=sarif-latest --output=codeql-results.sarif",
     "codeql:analyze:download": "node scripts/codeql-check.mjs && codeql database analyze ./codeql-db codeql/javascript-queries --download --format=sarif-latest --output=codeql-results.sarif",
