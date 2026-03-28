@@ -12,6 +12,10 @@ This skill detects those gaps and amends the affected ADRs **in-place** with an
 `## Amendment` section — preserving the original decision as historical record while
 bringing the document in sync with the codebase.
 
+This skill complements (does not replace) `manage-adr`:
+- `manage-adr` = create/supersede/link ADRs
+- `mend-adr` = audit and amend drift in existing ADRs
+
 ## When to Use
 
 - After any significant refactor or feature sprint
