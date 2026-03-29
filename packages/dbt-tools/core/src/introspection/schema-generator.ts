@@ -21,9 +21,11 @@ export interface CommandSchema {
 }
 
 const ARG_MANIFEST_PATH = "manifest-path";
+const ARG_RUN_RESULTS_PATH = "run-results-path";
 const OPT_TARGET_DIR = "--target-dir";
 const OPT_JSON = "--json";
 const OPT_NO_JSON = "--no-json";
+const OPT_FIELDS = "--fields";
 const TYPE_STRING = "string";
 const TYPE_BOOLEAN = "boolean";
 const OUTPUT_JSON_OR_HUMAN = "json or human-readable";
@@ -57,7 +59,7 @@ function getSummarySchema(): CommandSchema {
         description: DESC_TARGET_DIR,
       },
       {
-        name: "--fields",
+        name: OPT_FIELDS,
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
@@ -107,7 +109,7 @@ function getGraphSchema(): CommandSchema {
         description: DESC_TARGET_DIR,
       },
       {
-        name: "--fields",
+        name: OPT_FIELDS,
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
@@ -133,7 +135,7 @@ function getRunReportSchema(): CommandSchema {
     description: "Generate execution report from run_results.json",
     arguments: [
       {
-        name: "run-results-path",
+        name: ARG_RUN_RESULTS_PATH,
         required: false,
         description: DESC_RUN_RESULTS_PATH,
       },
@@ -150,7 +152,7 @@ function getRunReportSchema(): CommandSchema {
         description: DESC_TARGET_DIR,
       },
       {
-        name: "--fields",
+        name: OPT_FIELDS,
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
@@ -215,7 +217,7 @@ function getDepsSchemaOptions(): SchemaOption[] {
       description: DESC_TARGET_DIR,
     },
     {
-      name: "--fields",
+      name: OPT_FIELDS,
       type: TYPE_STRING,
       description: DESC_FIELDS,
     },
@@ -294,6 +296,101 @@ function getSchemaCommandSchema(): CommandSchema {
   };
 }
 
+function getAnalyzeBottlenecksSchema(): CommandSchema {
+  return {
+    command: "analyze bottlenecks",
+    description: "Detect runtime bottlenecks from run_results + manifest",
+    arguments: [
+      {
+        name: ARG_RUN_RESULTS_PATH,
+        required: false,
+        description: DESC_RUN_RESULTS_PATH,
+      },
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_PATH,
+      },
+    ],
+    options: [
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      {
+        name: "--top",
+        type: "number",
+        default: "10",
+        description: "Top N bottlenecks (default: 10)",
+      },
+      {
+        name: "--threshold",
+        type: "number",
+        description: "Only include nodes >= N seconds",
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools analyze bottlenecks --top 15",
+  };
+}
+
+function getAnalyzeCriticalPathSchema(): CommandSchema {
+  return {
+    command: "analyze critical-path",
+    description: "Show weighted critical execution path",
+    arguments: [
+      {
+        name: ARG_RUN_RESULTS_PATH,
+        required: false,
+        description: DESC_RUN_RESULTS_PATH,
+      },
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_PATH,
+      },
+    ],
+    options: [
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools analyze critical-path",
+  };
+}
+
+function getAnalyzeOptimizeSchema(): CommandSchema {
+  return {
+    command: "analyze optimize",
+    description: "Rank optimization opportunities with graph-aware scoring",
+    arguments: [
+      {
+        name: ARG_RUN_RESULTS_PATH,
+        required: false,
+        description: DESC_RUN_RESULTS_PATH,
+      },
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_PATH,
+      },
+    ],
+    options: [
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      {
+        name: "--top",
+        type: "number",
+        default: "10",
+        description: "Top N optimization candidates (default: 10)",
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools analyze optimize --top 10",
+  };
+}
+
 /**
  * Get schema for a specific command
  */
@@ -312,5 +409,8 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     "run-report": getRunReportSchema(),
     deps: getDepsSchema(),
     schema: getSchemaCommandSchema(),
+    "analyze bottlenecks": getAnalyzeBottlenecksSchema(),
+    "analyze critical-path": getAnalyzeCriticalPathSchema(),
+    "analyze optimize": getAnalyzeOptimizeSchema(),
   };
 }

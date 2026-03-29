@@ -37,6 +37,9 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("graph");
       expect(schemas).toHaveProperty("run-report");
       expect(schemas).toHaveProperty("schema");
+      expect(schemas).toHaveProperty("analyze bottlenecks");
+      expect(schemas).toHaveProperty("analyze critical-path");
+      expect(schemas).toHaveProperty("analyze optimize");
     });
 
     it("should have correct deps command schema", () => {
@@ -102,6 +105,16 @@ describe("CLI Integration", () => {
       );
       expect(thresholdOpt).toBeDefined();
       expect(thresholdOpt?.type).toBe("number");
+    });
+
+    it("should have analyze optimize schema with top option", () => {
+      const schema = getCommandSchema("analyze optimize");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("analyze optimize");
+
+      const topOpt = schema?.options?.find((o) => o.name === "--top");
+      expect(topOpt).toBeDefined();
+      expect(topOpt?.type).toBe("number");
     });
   });
 

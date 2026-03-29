@@ -19,12 +19,19 @@ import {
   exportGraphToFormat,
   writeGraphOutput,
 } from "@dbt-tools/core";
-import { runReportAction, depsAction } from "./cli-actions";
+import {
+  runReportAction,
+  depsAction,
+  analyzeBottlenecksAction,
+  analyzeCriticalPathAction,
+  analyzeOptimizeAction,
+} from "./cli-actions";
 
 const program = new Command();
 
 /** CLI option/argument description constants (avoid no-duplicate-string) */
 const ARG_MANIFEST_PATH = "[manifest-path]";
+const ARG_RUN_RESULTS_PATH = "[run-results-path]";
 const DESC_MANIFEST =
   "Path to manifest.json file (defaults to ./target/manifest.json)";
 const OPT_TARGET_DIR = "--target-dir <dir>";
@@ -37,6 +44,8 @@ const DESC_GRAPH_FORMAT = "Export format: json, dot, gexf";
 const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
+const DESC_RUN_RESULTS =
+  "Path to run_results.json file (defaults to ./target/run_results.json)";
 
 program
   .name("dbt-tools")
@@ -211,10 +220,7 @@ program
 program
   .command("run-report")
   .description("Generate execution report from run_results.json")
-  .argument(
-    "[run-results-path]",
-    "Path to run_results.json file (defaults to ./target/run_results.json)",
-  )
+  .argument(ARG_RUN_RESULTS_PATH, DESC_RUN_RESULTS)
   .argument(
     ARG_MANIFEST_PATH,
     "Path to manifest.json file (optional, for critical path)",
@@ -249,6 +255,97 @@ program
       },
     ) =>
       runReportAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      ),
+  );
+
+const analyze = program
+  .command("analyze")
+  .description("Advanced execution analysis commands");
+
+analyze
+  .command("bottlenecks")
+  .description("Detect runtime bottlenecks from run_results + manifest")
+  .argument(ARG_RUN_RESULTS_PATH, DESC_RUN_RESULTS)
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--top <n>", "Top N bottlenecks (default: 10)", parseInt)
+  .option("--threshold <s>", "Only include nodes >= s seconds", parseFloat)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      runResultsPath: string | undefined,
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        top?: number;
+        threshold?: number;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      analyzeBottlenecksAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      ),
+  );
+
+analyze
+  .command("critical-path")
+  .description("Show weighted critical execution path")
+  .argument(ARG_RUN_RESULTS_PATH, DESC_RUN_RESULTS)
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      runResultsPath: string | undefined,
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      analyzeCriticalPathAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      ),
+  );
+
+analyze
+  .command("optimize")
+  .description("Rank optimization opportunities with graph-aware scoring")
+  .argument(ARG_RUN_RESULTS_PATH, DESC_RUN_RESULTS)
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--top <n>", "Top N optimization candidates (default: 10)", parseInt)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      runResultsPath: string | undefined,
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        top?: number;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      analyzeOptimizeAction(
         runResultsPath,
         manifestPath,
         options,

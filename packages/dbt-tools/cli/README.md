@@ -10,12 +10,14 @@ graph TD
   CLI --> summary["summary\nmanifest statistics"]
   CLI --> graph["graph\nexport dependency graph"]
   CLI --> rr["run-report\nexecution report"]
+  CLI --> analyze["analyze\nadvanced execution diagnostics"]
   CLI --> deps["deps\nupstream / downstream deps"]
   CLI --> schema["schema\nruntime introspection"]
 
   summary -->|manifest.json| MG[ManifestGraph]
   graph -->|manifest.json| MG
   rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
+  analyze -->|run_results.json\n+ manifest.json| EA
   deps -->|manifest.json| DS[DependencyService]
   schema -.->|describes| CLI
 ```
@@ -38,6 +40,7 @@ pnpm add -g @dbt-tools/cli
 - **Field filtering**: Reduce context window usage with `--fields` option
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
+- **Optimization analysis**: Graph-aware bottlenecks, critical path, and improvement ranking via `analyze` subcommands
 
 ---
 
@@ -166,6 +169,39 @@ dbt-tools deps model.my_project.customers --fields "unique_id,name"
 # Custom manifest path
 dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
 ```
+
+### analyze
+
+Advanced execution diagnostics with graph-aware subcommands.
+
+```bash
+# Detect top 10 bottlenecks
+dbt-tools analyze bottlenecks
+
+# Threshold-based bottlenecks
+dbt-tools analyze bottlenecks --threshold 15
+
+# Show weighted critical path
+dbt-tools analyze critical-path
+
+# Rank optimization candidates
+dbt-tools analyze optimize --top 12
+```
+
+**Subcommands & options:**
+
+- `analyze bottlenecks [run-results-path] [manifest-path]`
+  - `--target-dir <dir>`
+  - `--top <n>` (default: 10)
+  - `--threshold <s>` (cannot be used with `--top`)
+  - `--json` / `--no-json`
+- `analyze critical-path [run-results-path] [manifest-path]`
+  - `--target-dir <dir>`
+  - `--json` / `--no-json`
+- `analyze optimize [run-results-path] [manifest-path]`
+  - `--target-dir <dir>`
+  - `--top <n>` (default: 10)
+  - `--json` / `--no-json`
 
 **Options:**
 
