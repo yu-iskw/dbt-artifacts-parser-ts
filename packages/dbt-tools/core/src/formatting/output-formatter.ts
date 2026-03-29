@@ -256,6 +256,190 @@ export function formatRunReport(
 }
 
 /**
+ * Format enriched bottleneck analysis for human-readable output
+ */
+export function formatBottleneckAnalysis(result: {
+  top_bottlenecks: Array<{
+    rank: number;
+    unique_id: string;
+    name?: string;
+    execution_time: number;
+    pct_of_total: number;
+    downstream_count: number;
+    structural_impact_score: number;
+    is_on_critical_path: boolean;
+    status: string;
+  }>;
+  total_execution_time: number;
+  criteria_used: string;
+  adapter_type: string | null;
+  total_nodes_analyzed: number;
+}): string {
+  const lines: string[] = [];
+  lines.push("dbt Bottleneck Analysis");
+  lines.push("=======================");
+  lines.push(`Total Nodes Analyzed: ${result.total_nodes_analyzed}`);
+  lines.push(
+    `Total Execution Time: ${result.total_execution_time.toFixed(2)}s`,
+  );
+  if (result.adapter_type) {
+    lines.push(`Adapter: ${result.adapter_type}`);
+  }
+  lines.push(`Criteria: ${result.criteria_used}`);
+
+  if (result.top_bottlenecks.length === 0) {
+    lines.push("\nNo bottlenecks found.");
+    return lines.join("\n");
+  }
+
+  lines.push(
+    "\n  Rank  Node                              Impact Score  Time (s)  Downstream  On CP?",
+  );
+
+  const maxLabelLen = 34;
+  for (const node of result.top_bottlenecks) {
+    const label = node.name ?? node.unique_id;
+    const labelDisplay =
+      label.length > maxLabelLen
+        ? label.slice(0, maxLabelLen - 3) + "..."
+        : label;
+    const padded = labelDisplay.padEnd(maxLabelLen);
+    const impactStr = node.structural_impact_score.toFixed(1).padStart(12);
+    const timeStr = node.execution_time.toFixed(2).padStart(8);
+    const downstreamStr = String(node.downstream_count).padStart(10);
+    const cpStr = (node.is_on_critical_path ? "yes" : "no").padStart(6);
+    lines.push(
+      `  ${String(node.rank).padStart(2)}     ${padded}  ${impactStr}  ${timeStr}  ${downstreamStr}  ${cpStr}`,
+    );
+  }
+
+  lines.push(
+    "\nImpact Score = execution_time × (1 + downstream_node_count). Higher = fix first.",
+  );
+  return lines.join("\n");
+}
+
+/**
+ * Format critical path analysis for human-readable output
+ */
+export function formatCriticalPathAnalysis(result: {
+  path: Array<{
+    unique_id: string;
+    name: string;
+    resource_type: string;
+    execution_time: number;
+    cumulative_time: number;
+    concurrent_nodes: number;
+  }>;
+  total_time: number;
+  total_nodes: number;
+  adapter_type: string | null;
+}): string {
+  const lines: string[] = [];
+  lines.push("dbt Critical Path Analysis");
+  lines.push("==========================");
+  lines.push(`Total Nodes: ${result.total_nodes}`);
+  lines.push(`Critical Path Total Time: ${result.total_time.toFixed(2)}s`);
+  lines.push(`Critical Path Length: ${result.path.length} nodes`);
+  if (result.adapter_type) {
+    lines.push(`Adapter: ${result.adapter_type}`);
+  }
+
+  if (result.path.length === 0) {
+    lines.push("\nNo critical path found.");
+    return lines.join("\n");
+  }
+
+  lines.push(
+    "\n  Step  Node                              Type        Time (s)  Cumulative  Concurrent",
+  );
+
+  const maxLabelLen = 34;
+  for (let i = 0; i < result.path.length; i++) {
+    const node = result.path[i];
+    const labelDisplay =
+      node.name.length > maxLabelLen
+        ? node.name.slice(0, maxLabelLen - 3) + "..."
+        : node.name;
+    const padded = labelDisplay.padEnd(maxLabelLen);
+    const typeStr = String(node.resource_type).padEnd(10).slice(0, 10);
+    const timeStr = node.execution_time.toFixed(2).padStart(8);
+    const cumStr = node.cumulative_time.toFixed(2).padStart(10);
+    const concStr = String(node.concurrent_nodes).padStart(10);
+    lines.push(
+      `  ${String(i + 1).padStart(2)}    ${padded}  ${typeStr}  ${timeStr}  ${cumStr}  ${concStr}`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Format parallelism analysis for human-readable output
+ */
+export function formatParallelismAnalysis(result: {
+  waves: Array<{
+    wave_number: number;
+    node_ids: string[];
+    width: number;
+    estimated_time_s?: number;
+  }>;
+  total_waves: number;
+  max_parallelism: number;
+  avg_wave_width: number;
+  serialization_bottlenecks: Array<{
+    wave_number: number;
+    node_id: string;
+    description: string;
+  }>;
+  recommended_threads: number;
+  has_cycles: boolean;
+}): string {
+  const lines: string[] = [];
+  lines.push("dbt Parallelism Analysis");
+  lines.push("========================");
+
+  if (result.has_cycles) {
+    lines.push("Warning: Graph contains cycles. Parallelism analysis skipped.");
+    return lines.join("\n");
+  }
+
+  lines.push(`Total Waves: ${result.total_waves}`);
+  lines.push(`Max Parallelism: ${result.max_parallelism} nodes`);
+  lines.push(`Avg Wave Width: ${result.avg_wave_width}`);
+  lines.push(`Recommended Threads: ${result.recommended_threads}`);
+
+  if (result.waves.length > 0) {
+    lines.push("\n  Wave  Width  Est. Time (s)  Nodes (first 5)");
+    for (const wave of result.waves) {
+      const preview = wave.node_ids
+        .slice(0, 5)
+        .map((id) => id.split(".").pop() ?? id)
+        .join(", ");
+      const ellipsis = wave.node_ids.length > 5 ? ", …" : "";
+      const timeStr =
+        wave.estimated_time_s !== undefined
+          ? wave.estimated_time_s.toFixed(2).padStart(13)
+          : "           n/a";
+      lines.push(
+        `  ${String(wave.wave_number).padStart(2)}    ${String(wave.width).padStart(3)}  ${timeStr}  ${preview}${ellipsis}`,
+      );
+    }
+  }
+
+  if (result.serialization_bottlenecks.length > 0) {
+    lines.push("\nSerialization Bottlenecks:");
+    for (const b of result.serialization_bottlenecks) {
+      lines.push(`  Wave ${b.wave_number}: ${b.description}`);
+    }
+  } else {
+    lines.push("\nNo serialization bottlenecks detected.");
+  }
+
+  return lines.join("\n");
+}
+
+/**
  * Format human-readable output for a specific command type
  */
 export function formatHumanReadable(

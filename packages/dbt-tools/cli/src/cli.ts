@@ -19,7 +19,13 @@ import {
   exportGraphToFormat,
   writeGraphOutput,
 } from "@dbt-tools/core";
-import { runReportAction, depsAction } from "./cli-actions";
+import {
+  runReportAction,
+  depsAction,
+  analyzeBottlenecksAction,
+  analyzeCriticalPathAction,
+  analyzeParallelismAction,
+} from "./cli-actions";
 
 const program = new Command();
 
@@ -27,6 +33,9 @@ const program = new Command();
 const ARG_MANIFEST_PATH = "[manifest-path]";
 const DESC_MANIFEST =
   "Path to manifest.json file (defaults to ./target/manifest.json)";
+const ARG_RUN_RESULTS_PATH = "[run-results-path]";
+const DESC_RUN_RESULTS =
+  "Path to run_results.json (defaults to ./target/run_results.json)";
 const OPT_TARGET_DIR = "--target-dir <dir>";
 const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
 const OPT_JSON = "--json";
@@ -37,6 +46,7 @@ const DESC_GRAPH_FORMAT = "Export format: json, dot, gexf";
 const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
+const DESC_MANIFEST_ANALYZE = "Path to manifest.json (defaults to ./target/manifest.json)";
 
 program
   .name("dbt-tools")
@@ -212,7 +222,7 @@ program
   .command("run-report")
   .description("Generate execution report from run_results.json")
   .argument(
-    "[run-results-path]",
+    ARG_RUN_RESULTS_PATH,
     "Path to run_results.json file (defaults to ./target/run_results.json)",
   )
   .argument(
@@ -343,6 +353,118 @@ program
       handleError(error, isTTY());
     }
   });
+
+/**
+ * Analyze command group: graph-algorithm-driven performance analysis
+ */
+const analyze = program
+  .command("analyze")
+  .description("Graph-algorithm-driven performance analysis of dbt projects");
+
+analyze
+  .command("bottlenecks")
+  .description(
+    "Identify execution bottlenecks ranked by structural impact (execution time × downstream reach)",
+  )
+  .argument(ARG_RUN_RESULTS_PATH, DESC_RUN_RESULTS)
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST_ANALYZE)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(
+    "--top <n>",
+    "Top N bottlenecks by structural impact (default: 10)",
+    parseInt,
+  )
+  .option(
+    "--threshold <s>",
+    "Include nodes exceeding s seconds (alternative to --top)",
+    parseFloat,
+  )
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      runResultsPath: string | undefined,
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        top?: number;
+        threshold?: number;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      analyzeBottlenecksAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      ),
+  );
+
+analyze
+  .command("critical-path")
+  .description(
+    "Identify the longest execution path through the dependency graph with per-node timing",
+  )
+  .argument(ARG_RUN_RESULTS_PATH, DESC_RUN_RESULTS)
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST_ANALYZE)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      runResultsPath: string | undefined,
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      analyzeCriticalPathAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      ),
+  );
+
+analyze
+  .command("parallelism")
+  .description(
+    "Decompose the dependency graph into topological waves and detect serialization bottlenecks",
+  )
+  .argument(
+    ARG_MANIFEST_PATH,
+    DESC_MANIFEST_ANALYZE,
+  )
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(
+    "--run-results-path <path>",
+    "Path to run_results.json for execution time estimates (optional)",
+  )
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        runResultsPath?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      analyzeParallelismAction(manifestPath, options, handleError, isTTY),
+  );
 
 // Parse command line arguments
 program.parse();
