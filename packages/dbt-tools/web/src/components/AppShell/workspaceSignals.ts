@@ -59,7 +59,7 @@ export function buildWorkspaceSignals(
       value: analysisSource === "preload" ? "Live target" : "Artifact upload",
       detail:
         analysisSource === "preload"
-          ? `Synced from DBT_TARGET with ${analysis.graphSummary.totalEdges} dependency edges ready for investigation.`
+          ? `Synced from DBT_TOOLS_TARGET_DIR with ${analysis.graphSummary.totalEdges} dependency edges ready for investigation.`
           : `${analysis.summary.total_nodes} executions loaded from local artifacts${totalTests > 0 ? `, including ${totalTests} tests` : ""}.`,
       tone: "neutral",
     },

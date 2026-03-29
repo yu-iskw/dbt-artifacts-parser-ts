@@ -5,7 +5,7 @@ import {
 
 /**
  * Fetches manifest.json and run_results.json from /api/ and returns AnalysisState.
- * Used by preload and reload when DBT_TARGET is set.
+ * Used by preload and reload when DBT_TOOLS_TARGET_DIR (dev middleware) is set.
  */
 export async function refetchFromApi(): Promise<AnalysisLoadResult | null> {
   const [manifestRes, runResultsRes] = await Promise.all([

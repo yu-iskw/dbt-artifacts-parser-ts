@@ -113,7 +113,7 @@ function buildOverviewBannerModel(
     summary,
     sourceLabel:
       analysisSource === "preload"
-        ? "DBT_TARGET"
+        ? "DBT_TOOLS_TARGET_DIR"
         : analysisSource === "upload"
           ? "UPLOADED"
           : "ARTIFACTS",

@@ -1,6 +1,6 @@
 /**
  * Debug logging for the web app. Use `?debug=1` in the URL to enable.
- * For server logs (dbt-target plugin), use `DBT_DEBUG=1` when starting dev.
+ * For server logs (dbt-target plugin), use `DBT_TOOLS_DEBUG=1` when starting dev.
  */
 const DEBUG =
   typeof window !== "undefined"

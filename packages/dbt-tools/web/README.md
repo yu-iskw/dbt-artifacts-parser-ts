@@ -40,7 +40,7 @@ React web application for visual dbt artifact analysis. Provides interactive dep
 ```mermaid
 graph TD
   FS["./target/\nmanifest.json\nrun_results.json"]
-  VDS[Vite Dev Server\nDBT_TARGET middleware]
+  VDS[Vite Dev Server\nDBT_TOOLS_TARGET_DIR middleware]
   APP[React App]
   WW[Web Worker]
   CORE["@dbt-tools/core/browser\nManifestGraph · ExecutionAnalyzer"]
@@ -73,38 +73,42 @@ pnpm dev
 
 ### Preloading artifacts from a local dbt project
 
-Set `DBT_TARGET` to serve `manifest.json` and `run_results.json` from that directory:
+Set `DBT_TOOLS_TARGET_DIR` to serve `manifest.json` and `run_results.json` from that directory:
 
 ```bash
-DBT_TARGET=./target pnpm dev
+DBT_TOOLS_TARGET_DIR=./target pnpm dev
 # or use the dev:target convenience script from the package directory:
-pnpm dev:target   # shorthand for DBT_TARGET=./target vite
+pnpm dev:target   # shorthand for DBT_TOOLS_TARGET_DIR=./target vite
 ```
+
+Legacy names (`DBT_TARGET`, `DBT_TARGET_DIR`) still work but log a one-time deprecation warning; prefer `DBT_TOOLS_TARGET_DIR`.
 
 Then open the URL Vite prints (e.g. `http://localhost:5173/`).
 
 ### Debug Logging
 
-- **Server-side** (Vite middleware): set `DBT_DEBUG=1` when starting dev
+- **Server-side** (Vite middleware): set `DBT_TOOLS_DEBUG=1` when starting dev (legacy: `DBT_DEBUG`)
 - **Client-side** (browser console): add `?debug=1` to the URL
 
 ```bash
-DBT_DEBUG=1 DBT_TARGET=~/path/to/target pnpm dev
+DBT_TOOLS_DEBUG=1 DBT_TOOLS_TARGET_DIR=~/path/to/target pnpm dev
 # then open: http://localhost:5173/?debug=1
 ```
 
 ### Auto-reload When Artifacts Change
 
-When `DBT_TARGET` is set, the app automatically reloads and re-analyzes when `manifest.json` or `run_results.json` change on disk (e.g. after `dbt run`):
+When `DBT_TOOLS_TARGET_DIR` is set, the app automatically reloads and re-analyzes when `manifest.json` or `run_results.json` change on disk (e.g. after `dbt run`):
 
-| Variable                 | Default | Description                                                 |
-| ------------------------ | ------- | ----------------------------------------------------------- |
-| `DBT_WATCH`              | `1`     | Enable (`1`) or disable (`0`) file watching and auto-reload |
-| `DBT_RELOAD_DEBOUNCE_MS` | `300`   | Debounce in ms for rapid file writes                        |
+| Variable                       | Default | Description                                         |
+| ------------------------------ | ------- | --------------------------------------------------- |
+| `DBT_TOOLS_WATCH`              | on      | Set to `0` to disable file watching and auto-reload |
+| `DBT_TOOLS_RELOAD_DEBOUNCE_MS` | `300`   | Debounce in ms for rapid file writes                |
+
+Legacy: `DBT_WATCH`, `DBT_RELOAD_DEBOUNCE_MS` (deprecated).
 
 ```bash
 # Disable auto-reload
-DBT_WATCH=0 DBT_TARGET=./target pnpm dev
+DBT_TOOLS_WATCH=0 DBT_TOOLS_TARGET_DIR=./target pnpm dev
 ```
 
 ---
@@ -113,12 +117,14 @@ DBT_WATCH=0 DBT_TARGET=./target pnpm dev
 
 All configuration is via environment variables passed to the Vite dev server or build:
 
-| Variable                 | Default | Description                                                                                        |
-| ------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
-| `DBT_TARGET`             | —       | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
-| `DBT_DEBUG`              | `0`     | Set to `1` to enable server-side debug logging in the Vite middleware                              |
-| `DBT_WATCH`              | `1`     | Enable (`1`) or disable (`0`) file watching and auto-reload when artifacts change                  |
-| `DBT_RELOAD_DEBOUNCE_MS` | `300`   | Debounce delay in ms before triggering a reload on rapid file writes                               |
+| Variable                       | Default | Description                                                                                        |
+| ------------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
+| `DBT_TOOLS_TARGET_DIR`         | —       | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
+| `DBT_TOOLS_DEBUG`              | unset   | Set to `1` to enable server-side debug logging in the Vite middleware                              |
+| `DBT_TOOLS_WATCH`              | on      | Set to `0` to disable file watching and auto-reload when artifacts change                          |
+| `DBT_TOOLS_RELOAD_DEBOUNCE_MS` | `300`   | Debounce delay in ms before triggering a reload on rapid file writes                               |
+
+**Deprecated (still read):** `DBT_TARGET`, `DBT_TARGET_DIR`, `DBT_DEBUG`, `DBT_WATCH`, `DBT_RELOAD_DEBOUNCE_MS`.
 
 Add `?debug=1` to the browser URL to enable client-side debug logging.
 
@@ -152,7 +158,7 @@ packages/dbt-tools/web/
 │   ├── App.tsx              # Root application component
 │   └── main.tsx             # Entry point
 ├── e2e/                     # Playwright end-to-end test specs
-├── vite.config.ts           # Vite + Vite middleware (DBT_TARGET proxy)
+├── vite.config.ts           # Vite + Vite middleware (DBT_TOOLS_TARGET_DIR proxy)
 └── package.json
 ```
 
@@ -174,11 +180,11 @@ See `e2e/` for test specs.
 
 | Symptom                              | Fix                                                                                                                                                                    |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Blank page / "No artifacts found"    | Ensure `DBT_TARGET` points to a directory that contains `manifest.json`                                                                                                |
-| Auto-reload not triggering           | Check `DBT_WATCH` is not set to `0`; verify the file watcher has read access to the target directory                                                                   |
+| Blank page / "No artifacts found"    | Ensure `DBT_TOOLS_TARGET_DIR` points to a directory that contains `manifest.json`                                                                                      |
+| Auto-reload not triggering           | Check `DBT_TOOLS_WATCH` is not set to `0`; verify the file watcher has read access to the target directory                                                             |
 | Slow UI with large manifests         | The web worker and virtualized lists should handle 100k+ nodes; if performance still degrades, open the browser profiler and check for main-thread analysis code paths |
-| `GET /api/manifest.json` returns 404 | `DBT_TARGET` is not set or the Vite dev server was started without it                                                                                                  |
-| Debug logs not appearing             | Server-side: restart dev with `DBT_DEBUG=1`; client-side: add `?debug=1` to the URL                                                                                    |
+| `GET /api/manifest.json` returns 404 | `DBT_TOOLS_TARGET_DIR` is not set or the Vite dev server was started without it                                                                                        |
+| Debug logs not appearing             | Server-side: restart dev with `DBT_TOOLS_DEBUG=1`; client-side: add `?debug=1` to the URL                                                                              |
 
 ---
 

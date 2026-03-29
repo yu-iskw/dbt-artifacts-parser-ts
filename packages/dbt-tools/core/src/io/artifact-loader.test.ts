@@ -7,29 +7,41 @@ import {
   loadManifest,
   loadRunResults,
 } from "./artifact-loader";
+import { resetDbtToolsEnvDeprecationWarningsForTests } from "../config/dbt-tools-env";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import {
   loadTestManifest,
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
 
+const TARGET_ENV_KEYS = [
+  "DBT_TOOLS_TARGET_DIR",
+  "DBT_TARGET_DIR",
+  "DBT_TARGET",
+] as const;
+
 describe("ArtifactLoader", () => {
   let tempDir: string;
-  const originalEnv = process.env.DBT_TARGET_DIR;
+  let savedTargetEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
+    resetDbtToolsEnvDeprecationWarningsForTests();
+    savedTargetEnv = {};
+    for (const k of TARGET_ENV_KEYS) {
+      savedTargetEnv[k] = process.env[k];
+      delete process.env[k];
+    }
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dbt-tools-test-"));
-    delete process.env.DBT_TARGET_DIR;
   });
 
   afterEach(() => {
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
-    if (originalEnv) {
-      process.env.DBT_TARGET_DIR = originalEnv;
-    } else {
-      delete process.env.DBT_TARGET_DIR;
+    for (const k of TARGET_ENV_KEYS) {
+      const v = savedTargetEnv[k];
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
     }
   });
 
@@ -48,8 +60,27 @@ describe("ArtifactLoader", () => {
       expect(result.runResults).toBe(path.join(tempDir, "run_results.json"));
     });
 
+    it("should use DBT_TOOLS_TARGET_DIR environment variable", () => {
+      process.env.DBT_TOOLS_TARGET_DIR = tempDir;
+      const result = resolveArtifactPaths();
+      expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
+    });
+
     it("should use DBT_TARGET_DIR environment variable", () => {
       process.env.DBT_TARGET_DIR = tempDir;
+      const result = resolveArtifactPaths();
+      expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
+    });
+
+    it("should use DBT_TARGET environment variable", () => {
+      process.env.DBT_TARGET = tempDir;
+      const result = resolveArtifactPaths();
+      expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
+    });
+
+    it("should prefer DBT_TOOLS_TARGET_DIR over DBT_TARGET_DIR", () => {
+      process.env.DBT_TOOLS_TARGET_DIR = tempDir;
+      process.env.DBT_TARGET_DIR = path.join(tempDir, "other");
       const result = resolveArtifactPaths();
       expect(result.manifest).toBe(path.join(tempDir, "manifest.json"));
     });

@@ -1,6 +1,12 @@
 import path from "node:path";
 import fs from "node:fs";
 import type { Plugin } from "vite";
+import {
+  getDbtToolsReloadDebounceMs,
+  getDbtToolsTargetDirFromEnv,
+  isDbtToolsDebugEnabled,
+  isDbtToolsWatchEnabled,
+} from "@dbt-tools/core";
 
 const MANIFEST_JSON = "manifest.json";
 const RUN_RESULTS_JSON = "run_results.json";
@@ -9,10 +15,7 @@ function setupArtifactWatch(
   resolved: string,
   server: { ws?: { send: (type: string, data?: object) => void } },
 ) {
-  const debounceMs = Math.max(
-    0,
-    parseInt(process.env.DBT_RELOAD_DEBOUNCE_MS ?? "300", 10),
-  );
+  const debounceMs = Math.max(0, getDbtToolsReloadDebounceMs());
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const notify = () => {
@@ -20,7 +23,7 @@ function setupArtifactWatch(
     debounceTimer = setTimeout(() => {
       debounceTimer = null;
       server.ws?.send("dbt-artifacts-changed", {});
-      if (process.env.DBT_DEBUG === "1") {
+      if (isDbtToolsDebugEnabled()) {
         console.log("[dbt-target] Artifacts changed, notified clients");
       }
     }, debounceMs);
@@ -31,21 +34,22 @@ function setupArtifactWatch(
       notify();
     }
   });
-  if (process.env.DBT_DEBUG === "1") {
+  if (isDbtToolsDebugEnabled()) {
     console.log("[dbt-target] Watching for artifact changes:", resolved);
   }
 }
 
 /**
- * Vite plugin that serves manifest.json and run_results.json from DBT_TARGET
- * during dev. Only active when DBT_TARGET is set and command is "serve".
+ * Vite plugin that serves manifest.json and run_results.json from
+ * `DBT_TOOLS_TARGET_DIR` (or legacy `DBT_TARGET`) during dev.
+ * Only active when that directory is configured and command is "serve".
  */
 export function dbtTargetPlugin(): Plugin {
   return {
     name: "dbt-target",
     enforce: "pre",
     configureServer(server) {
-      const raw = process.env.DBT_TARGET ?? "";
+      const raw = getDbtToolsTargetDirFromEnv() ?? "";
       const targetDir = raw
         .replace(/^~($|\/)/, `${process.env.HOME ?? ""}$1`)
         .trim();
@@ -58,7 +62,7 @@ export function dbtTargetPlugin(): Plugin {
         const relative = path.relative(cwd, resolved);
         if (relative.startsWith("..") || path.isAbsolute(relative)) {
           console.warn(
-            "[dbt-target] DBT_TARGET resolved outside cwd, skipping:",
+            "[dbt-target] DBT_TOOLS_TARGET_DIR resolved outside cwd, skipping:",
             resolved,
           );
           return;
@@ -66,11 +70,14 @@ export function dbtTargetPlugin(): Plugin {
       }
 
       if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
-        console.warn("[dbt-target] DBT_TARGET is not a directory:", resolved);
+        console.warn(
+          "[dbt-target] DBT_TOOLS_TARGET_DIR is not a directory:",
+          resolved,
+        );
         return;
       }
 
-      if (process.env.DBT_DEBUG === "1") {
+      if (isDbtToolsDebugEnabled()) {
         console.log("[dbt-target] Serving artifacts from:", resolved);
       }
 
@@ -98,16 +105,16 @@ export function dbtTargetPlugin(): Plugin {
           res.statusCode = 404;
           res.end();
         }
-        if (process.env.DBT_DEBUG === "1") {
+        if (isDbtToolsDebugEnabled()) {
           console.log("[dbt-target] GET", pathname, "->", status, filePath);
         }
       });
 
-      if (process.env.DBT_WATCH !== "0" && server.ws) {
+      if (isDbtToolsWatchEnabled() && server.ws) {
         try {
           setupArtifactWatch(resolved, server);
         } catch (watchErr) {
-          if (process.env.DBT_DEBUG === "1") {
+          if (isDbtToolsDebugEnabled()) {
             console.warn("[dbt-target] Watch failed:", watchErr);
           }
         }

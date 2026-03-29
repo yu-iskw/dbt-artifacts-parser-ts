@@ -10,6 +10,8 @@ Depends-on [12. Optional default dbt target directory for web dev server](0012-o
 
 Uses reload subscription [15. MVC-style layering for web app](0015-mvc-style-layering-for-web-app.md)
 
+Amended-by [28. DBT_TOOLS\_ prefix for dbt-tools environment variables](0028-dbt-tools-prefix-for-dbt-tools-environment-variables.md)
+
 ## Context
 
 When DBT_TARGET preloads artifacts successfully, users run `dbt run` repeatedly during local development. The app displayed stale analysis until the user manually refreshed the page or clicked "Load different artifacts". This added friction to the dev loop.

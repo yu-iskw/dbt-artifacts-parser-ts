@@ -10,6 +10,8 @@ Depends-on [11. Web workspace MVP for visual dbt analysis](0011-web-workspace-mv
 
 Depends-on [11. Web workspace MVP for visual dbt analysis](0011-web-workspace-mvp-for-visual-dbt-analysis.md)
 
+Amended-by [28. DBT_TOOLS\_ prefix for dbt-tools environment variables](0028-dbt-tools-prefix-for-dbt-tools-environment-variables.md)
+
 ## Context
 
 ADR-0011 established client-side artifact loading via file upload for the web app. For local development, users often run dbt in a project with `target/manifest.json` and `target/run_results.json` already present. Requiring manual upload every dev session adds friction. We want the option to preload from a configurable target directory at dev-server launch while retaining upload as the primary and only production flow.
