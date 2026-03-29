@@ -120,6 +120,10 @@ export interface DependencyPreview {
   depth: number;
 }
 
+/**
+ * Direct (1-hop) dependency edges only. `upstream` / `downstream` preview at
+ * most 8 neighbors; counts are total direct neighbors, not transitive closure.
+ */
 export interface ResourceConnectionSummary {
   upstreamCount: number;
   downstreamCount: number;
@@ -164,8 +168,14 @@ interface GraphLike {
     getNodeAttributes: (id: string) => Record<string, unknown> | undefined;
     hasNode: (id: string) => boolean;
   };
-  getUpstream: (id: string) => Array<{ nodeId: string; depth: number }>;
-  getDownstream: (id: string) => Array<{ nodeId: string; depth: number }>;
+  getUpstream: (
+    id: string,
+    maxDepth?: number,
+  ) => Array<{ nodeId: string; depth: number }>;
+  getDownstream: (
+    id: string,
+    maxDepth?: number,
+  ) => Array<{ nodeId: string; depth: number }>;
 }
 
 type GraphologyAttrsGraph = {
@@ -400,12 +410,8 @@ function buildResourcesAndDependencyIndex(
           typeof attributes.description === "string"
             ? attributes.description
             : null,
-        compiledCode:
-          typeof attributes.compiled_code === "string"
-            ? attributes.compiled_code
-            : null,
-        rawCode:
-          typeof attributes.raw_code === "string" ? attributes.raw_code : null,
+        compiledCode: null,
+        rawCode: null,
         definition: buildResourceDefinition(
           String(attributes.resource_type || "unknown"),
           attributes,
@@ -420,8 +426,8 @@ function buildResourcesAndDependencyIndex(
           typeof execution?.thread_id === "string" ? execution.thread_id : null,
       });
 
-      const upstream = graph.getUpstream(uniqueId);
-      const downstream = graph.getDownstream(uniqueId);
+      const upstream = graph.getUpstream(uniqueId, 1);
+      const downstream = graph.getDownstream(uniqueId, 1);
       dependencyIndex[uniqueId] = {
         upstreamCount: upstream.length,
         downstreamCount: downstream.length,
@@ -867,6 +873,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
 ): {
   analysis: AnalysisSnapshot;
   timings: AnalysisSnapshotBuildTimings;
+  graph: ManifestGraph;
 } {
   const graphStart = now();
   const graph = new ManifestGraph(manifest);
@@ -994,6 +1001,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
       graphBuildMs,
       snapshotBuildMs: now() - snapshotStart,
     },
+    graph,
   };
 }
 

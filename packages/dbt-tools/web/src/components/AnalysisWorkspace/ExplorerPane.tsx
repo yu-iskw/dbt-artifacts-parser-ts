@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef, useState } from "react";
 import { EmptyState } from "../EmptyState";
 import type { ResourceNode } from "@web/types";
 import {
@@ -139,30 +140,140 @@ function ExplorerTreeList({
   selectedResourceId: string | null;
   setSelectedResourceId: (id: string | null) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
+  const virtualizer = useVirtualizer({
+    count: treeRows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 36,
+    overscan: 16,
+  });
+
+  if (treeRows.length === 0) {
+    return (
+      <div ref={scrollRef} className="explorer-tree">
+        <EmptyState
+          icon="🔍"
+          headline="No resources found"
+          subtext="Adjust the search query to find matching branches or assets."
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="explorer-tree">
-      {treeRows.length > 0 ? (
-        treeRows.map(({ node, depth }) => {
+    <div ref={scrollRef} className="explorer-tree">
+      <div
+        className="explorer-tree__virtual-spacer"
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const row = treeRows[virtualRow.index];
+          if (!row) return null;
+          const { node, depth } = row;
+
           if (node.kind === "branch") {
             const isExpanded = expandedNodeIds.has(node.id);
             return (
-              <button
-                key={node.id}
-                type="button"
-                className="explorer-tree__row explorer-tree__row--branch"
-                style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
-                onClick={() => toggleExpandedNode(node.id)}
+              <div
+                key={virtualRow.key}
+                className="explorer-tree__virtual-row"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
               >
-                <span
-                  className={`explorer-tree__chevron${isExpanded ? " explorer-tree__chevron--expanded" : ""}`}
-                  aria-hidden="true"
+                <button
+                  type="button"
+                  className="explorer-tree__row explorer-tree__row--branch"
+                  style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
+                  onClick={() => toggleExpandedNode(node.id)}
                 >
-                  ▸
+                  <span
+                    className={`explorer-tree__chevron${isExpanded ? " explorer-tree__chevron--expanded" : ""}`}
+                    aria-hidden="true"
+                  >
+                    ▸
+                  </span>
+                  <span className="explorer-tree__folder" aria-hidden="true">
+                    <ExplorerBranchIcon mode={explorerMode} depth={depth} />
+                  </span>
+                  <span className="explorer-tree__label">{node.label}</span>
+                  {node.testStats &&
+                    node.testStats.pass +
+                      node.testStats.fail +
+                      node.testStats.error >
+                      0 && (
+                      <span className="explorer-tree__test-stats">
+                        {node.testStats.pass > 0 && (
+                          <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
+                            ✓{node.testStats.pass}
+                          </span>
+                        )}
+                        {(node.testStats.fail > 0 ||
+                          node.testStats.error > 0) && (
+                          <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
+                            ✗{node.testStats.fail + node.testStats.error}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  <span className="explorer-tree__count">{node.count}</span>
+                </button>
+              </div>
+            );
+          }
+
+          const resource = node.resource!;
+          return (
+            <div
+              key={virtualRow.key}
+              className="explorer-tree__virtual-row"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <button
+                type="button"
+                className={
+                  resource.uniqueId === selectedResourceId
+                    ? "explorer-tree__row explorer-tree__row--leaf explorer-tree__row--active"
+                    : "explorer-tree__row explorer-tree__row--leaf"
+                }
+                style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
+                onClick={() => setSelectedResourceId(resource.uniqueId)}
+                title={resource.uniqueId}
+              >
+                <span className="explorer-tree__leaf-icon" aria-hidden="true">
+                  <ResourceTypeIcon resourceType={resource.resourceType} />
                 </span>
-                <span className="explorer-tree__folder" aria-hidden="true">
-                  <ExplorerBranchIcon mode={explorerMode} depth={depth} />
+                <span className="explorer-tree__resource-body">
+                  <span className="explorer-tree__resource-text">
+                    <span className="explorer-tree__label">
+                      {resource.name}
+                    </span>
+                    {node.originLabel && (
+                      <span className="explorer-tree__origin">
+                        {node.originLabel}
+                      </span>
+                    )}
+                  </span>
+                  <span className="explorer-tree__resource-type">
+                    {formatResourceTypeLabel(resource.resourceType)}
+                  </span>
                 </span>
-                <span className="explorer-tree__label">{node.label}</span>
                 {node.testStats &&
                   node.testStats.pass +
                     node.testStats.fail +
@@ -182,69 +293,11 @@ function ExplorerTreeList({
                       )}
                     </span>
                   )}
-                <span className="explorer-tree__count">{node.count}</span>
               </button>
-            );
-          }
-
-          const resource = node.resource!;
-          return (
-            <button
-              key={node.id}
-              type="button"
-              className={
-                resource.uniqueId === selectedResourceId
-                  ? "explorer-tree__row explorer-tree__row--leaf explorer-tree__row--active"
-                  : "explorer-tree__row explorer-tree__row--leaf"
-              }
-              style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
-              onClick={() => setSelectedResourceId(resource.uniqueId)}
-              title={resource.uniqueId}
-            >
-              <span className="explorer-tree__leaf-icon" aria-hidden="true">
-                <ResourceTypeIcon resourceType={resource.resourceType} />
-              </span>
-              <span className="explorer-tree__resource-body">
-                <span className="explorer-tree__resource-text">
-                  <span className="explorer-tree__label">{resource.name}</span>
-                  {node.originLabel && (
-                    <span className="explorer-tree__origin">
-                      {node.originLabel}
-                    </span>
-                  )}
-                </span>
-                <span className="explorer-tree__resource-type">
-                  {formatResourceTypeLabel(resource.resourceType)}
-                </span>
-              </span>
-              {node.testStats &&
-                node.testStats.pass +
-                  node.testStats.fail +
-                  node.testStats.error >
-                  0 && (
-                  <span className="explorer-tree__test-stats">
-                    {node.testStats.pass > 0 && (
-                      <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
-                        ✓{node.testStats.pass}
-                      </span>
-                    )}
-                    {(node.testStats.fail > 0 || node.testStats.error > 0) && (
-                      <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
-                        ✗{node.testStats.fail + node.testStats.error}
-                      </span>
-                    )}
-                  </span>
-                )}
-            </button>
+            </div>
           );
-        })
-      ) : (
-        <EmptyState
-          icon="🔍"
-          headline="No resources found"
-          subtext="Adjust the search query to find matching branches or assets."
-        />
-      )}
+        })}
+      </div>
     </div>
   );
 }

@@ -2,22 +2,32 @@
 
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
+import { matchesResource } from "../lib/analysis-workspace/utils";
 import {
   buildAnalysisSnapshotFromParsedArtifacts,
   type AnalysisSnapshot,
+  type ManifestGraph,
 } from "@dbt-tools/core/browser";
 import {
   ANALYSIS_WORKER_PROTOCOL_VERSION,
   type AnalysisWorkerRequest,
   type AnalysisWorkerResponse,
   type AnalysisWorkerTimings,
+  type GetResourceCodeMessage,
+  type LoadAnalysisMessage,
+  type SearchResourcesMessage,
 } from "./analysisProtocol";
 
 function now() {
   return performance.now();
 }
 
-function buildErrorResponse(
+let cachedGraph: ManifestGraph | null = null;
+let cachedResources: AnalysisSnapshot["resources"] | null = null;
+
+const OMNIBOX_LIMIT = 8;
+
+function buildLoadErrorResponse(
   requestId: number,
   message: string,
 ): AnalysisWorkerResponse {
@@ -29,22 +39,122 @@ function buildErrorResponse(
   };
 }
 
+function buildResourceCodeErrorResponse(
+  requestId: number,
+  message: string,
+): AnalysisWorkerResponse {
+  return {
+    type: "resource-code-error",
+    protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+    requestId,
+    message,
+  };
+}
+
+function buildSearchResourcesErrorResponse(
+  requestId: number,
+  message: string,
+): AnalysisWorkerResponse {
+  return {
+    type: "search-resources-error",
+    protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+    requestId,
+    message,
+  };
+}
+
 function decodeJsonBytes(bytes: ArrayBuffer): Record<string, unknown> {
   const text = new TextDecoder().decode(bytes);
   return JSON.parse(text) as Record<string, unknown>;
 }
 
-export async function handleAnalysisWorkerRequest(
-  payload: AnalysisWorkerRequest,
+function readCodeFromGraph(
+  graph: ManifestGraph,
+  uniqueId: string,
+): { compiledCode: string | null; rawCode: string | null } {
+  const g = graph.getGraph();
+  if (!g.hasNode(uniqueId)) {
+    return { compiledCode: null, rawCode: null };
+  }
+  const attrs = g.getNodeAttributes(uniqueId) as Record<string, unknown>;
+  const compiledCode =
+    typeof attrs.compiled_code === "string" ? attrs.compiled_code : null;
+  const rawCode =
+    typeof attrs.raw_code === "string"
+      ? attrs.raw_code
+      : typeof attrs.raw_sql === "string"
+        ? attrs.raw_sql
+        : null;
+  return { compiledCode, rawCode };
+}
+
+export function handleSearchResourcesMessage(
+  payload: SearchResourcesMessage,
+): AnalysisWorkerResponse {
+  if (payload.protocolVersion !== ANALYSIS_WORKER_PROTOCOL_VERSION) {
+    return buildSearchResourcesErrorResponse(
+      payload.requestId,
+      `Unsupported protocol version: ${payload.protocolVersion}`,
+    );
+  }
+  if (!cachedResources) {
+    return buildSearchResourcesErrorResponse(
+      payload.requestId,
+      "No analysis loaded",
+    );
+  }
+  const matches = cachedResources
+    .filter((resource) => matchesResource(resource, payload.query))
+    .slice(0, OMNIBOX_LIMIT);
+  return {
+    type: "search-resources-ready",
+    protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+    requestId: payload.requestId,
+    resources: matches,
+  };
+}
+
+export function handleGetResourceCodeMessage(
+  payload: GetResourceCodeMessage,
+): AnalysisWorkerResponse {
+  if (payload.protocolVersion !== ANALYSIS_WORKER_PROTOCOL_VERSION) {
+    return buildResourceCodeErrorResponse(
+      payload.requestId,
+      `Unsupported protocol version: ${payload.protocolVersion}`,
+    );
+  }
+  if (!cachedGraph) {
+    return buildResourceCodeErrorResponse(
+      payload.requestId,
+      "No analysis loaded",
+    );
+  }
+  const { compiledCode, rawCode } = readCodeFromGraph(
+    cachedGraph,
+    payload.uniqueId,
+  );
+  return {
+    type: "resource-code-ready",
+    protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+    requestId: payload.requestId,
+    compiledCode,
+    rawCode,
+  };
+}
+
+export async function handleLoadAnalysisMessage(
+  payload: LoadAnalysisMessage,
 ): Promise<AnalysisWorkerResponse> {
   if (payload.protocolVersion !== ANALYSIS_WORKER_PROTOCOL_VERSION) {
-    return buildErrorResponse(
+    return buildLoadErrorResponse(
       payload.requestId,
       `Unsupported protocol version: ${payload.protocolVersion}`,
     );
   }
 
   try {
+    cachedGraph = null;
+    cachedResources = null;
     const totalStart = now();
     const decodeStart = now();
     const manifestJson = decodeJsonBytes(payload.manifestBytes);
@@ -59,15 +169,20 @@ export async function handleAnalysisWorkerRequest(
     const {
       analysis,
       timings: snapshotTimings,
+      graph,
     }: {
       analysis: AnalysisSnapshot;
       timings: { graphBuildMs: number; snapshotBuildMs: number };
+      graph: ManifestGraph;
     } = buildAnalysisSnapshotFromParsedArtifacts(
       manifestJson,
       runResultsJson,
       manifest,
       runResults,
     );
+
+    cachedGraph = graph;
+    cachedResources = analysis.resources;
 
     const timings: AnalysisWorkerTimings = {
       decodeMs,
@@ -85,11 +200,24 @@ export async function handleAnalysisWorkerRequest(
       timings,
     };
   } catch (error) {
-    return buildErrorResponse(
+    return buildLoadErrorResponse(
       payload.requestId,
       error instanceof Error ? error.message : "Failed to analyze artifacts",
     );
   }
+}
+
+/** Dispatches load and resource-code requests (used by tests and `onmessage`). */
+export function handleAnalysisWorkerRequest(
+  payload: AnalysisWorkerRequest,
+): Promise<AnalysisWorkerResponse> {
+  if (payload.type === "get-resource-code") {
+    return Promise.resolve(handleGetResourceCodeMessage(payload));
+  }
+  if (payload.type === "search-resources") {
+    return Promise.resolve(handleSearchResourcesMessage(payload));
+  }
+  return handleLoadAnalysisMessage(payload);
 }
 
 if (typeof self !== "undefined") {

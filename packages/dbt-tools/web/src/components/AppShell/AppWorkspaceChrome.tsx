@@ -214,6 +214,8 @@ function HeaderSearch({
   omniboxResults: ReturnType<typeof useOmniboxResults>;
   handleNavigateTo: UseWorkspaceUrlStateResult["handleNavigateTo"];
 }) {
+  const showsQueryResults = searchState.query.trim().length > 0;
+
   return (
     <div className="app-header__omnibox">
       <label className="app-header__search-control">
@@ -258,8 +260,10 @@ function HeaderSearch({
       </label>
       {searchState.isOpen && analysis && (
         <div className="omnibox-results">
-          {omniboxResults.length > 0 ? (
-            omniboxResults.map((resource) => (
+          {omniboxResults.loading && showsQueryResults ? (
+            <div className="omnibox-results__empty">Searching…</div>
+          ) : omniboxResults.results.length > 0 ? (
+            omniboxResults.results.map((resource) => (
               <button
                 key={resource.uniqueId}
                 type="button"
@@ -287,7 +291,7 @@ function HeaderSearch({
             ))
           ) : (
             <div className="omnibox-results__empty">
-              {searchState.query.trim()
+              {showsQueryResults
                 ? "No matching resources"
                 : "Recent items will appear here"}
             </div>

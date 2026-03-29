@@ -27,6 +27,16 @@ pnpm codeql
 
 Install: [CodeQL CLI](https://github.com/github/codeql-cli-binaries/releases) (e.g. `brew install codeql`).
 
+## Optional: code scanning config
+
+For local `codeql database create --codescanning-config=<file>` (custom `paths-ignore`, query suites, etc.), render a YAML file from this skill’s template:
+
+```bash
+.claude/skills/codeql-fix/scripts/render-code-scanning-config.sh "$(git rev-parse --show-toplevel)" /tmp/codeql-config.yml
+```
+
+See [references/code-scanning-config.md](references/code-scanning-config.md) and the official [code scanning configuration](https://aka.ms/code-scanning-docs/config-file) reference.
+
 ## Fixer loop
 
 If SARIF findings remain:

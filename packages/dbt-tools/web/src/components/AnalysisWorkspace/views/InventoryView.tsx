@@ -1,14 +1,17 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
   LineageViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
+import { searchResourcesFromWorker } from "@web/services/analysisLoader";
 import { AssetsView } from "./AssetsView";
 import { EmptyState } from "../../EmptyState";
 import { WorkspaceScaffold } from "../shared";
+
+const LINEAGE_SEARCH_DEBOUNCE_MS = 200;
 
 export function InventoryView({
   analysis,
@@ -45,11 +48,47 @@ export function InventoryView({
     },
   ) => void;
 }) {
-  const sortedResources = useMemo(
-    () => [...analysis.resources].sort((a, b) => a.name.localeCompare(b.name)),
-    [analysis.resources],
+  const [lineageSearchQuery, setLineageSearchQuery] = useState("");
+  const [lineageSuggestions, setLineageSuggestions] = useState<ResourceNode[]>(
+    [],
   );
+  const [lineageSearchLoading, setLineageSearchLoading] = useState(false);
   const [quickResourceId, setQuickResourceId] = useState("");
+  const searchRequestSequence = useRef(0);
+
+  useEffect(() => {
+    const q = lineageSearchQuery.trim();
+    const delayMs = q ? LINEAGE_SEARCH_DEBOUNCE_MS : 0;
+    const handle = window.setTimeout(() => {
+      if (!q) {
+        searchRequestSequence.current += 1;
+        setLineageSuggestions([]);
+        setLineageSearchLoading(false);
+        return;
+      }
+
+      searchRequestSequence.current += 1;
+      const requestId = searchRequestSequence.current;
+      setLineageSearchLoading(true);
+      void searchResourcesFromWorker(q)
+        .then((rows) => {
+          if (searchRequestSequence.current === requestId) {
+            setLineageSuggestions(rows);
+          }
+        })
+        .catch(() => {
+          if (searchRequestSequence.current === requestId) {
+            setLineageSuggestions([]);
+          }
+        })
+        .finally(() => {
+          if (searchRequestSequence.current === requestId) {
+            setLineageSearchLoading(false);
+          }
+        });
+    }, delayMs);
+    return () => window.clearTimeout(handle);
+  }, [lineageSearchQuery]);
 
   const openLineageForResource = (id: string) => {
     if (!id) return;
@@ -110,23 +149,70 @@ export function InventoryView({
             >
               <label
                 className="inventory-empty-state__lineage-label"
-                htmlFor="inventory-lineage-root"
+                htmlFor="inventory-lineage-search"
               >
-                Or open the lineage graph for an asset
+                Or search for an asset to open its lineage graph
               </label>
-              <select
-                id="inventory-lineage-root"
-                className="inventory-empty-state__lineage-select"
-                value={quickResourceId}
-                onChange={(e) => setQuickResourceId(e.target.value)}
-              >
-                <option value="">Choose an asset…</option>
-                {sortedResources.map((entry) => (
-                  <option key={entry.uniqueId} value={entry.uniqueId}>
-                    {entry.name} ({entry.resourceType})
-                  </option>
-                ))}
-              </select>
+              <input
+                id="inventory-lineage-search"
+                type="search"
+                className="inventory-empty-state__lineage-search"
+                value={lineageSearchQuery}
+                onChange={(e) => {
+                  setLineageSearchQuery(e.target.value);
+                  setQuickResourceId("");
+                }}
+                placeholder="Name, type, package, or unique id…"
+                autoComplete="off"
+                enterKeyHint="search"
+              />
+              {lineageSearchLoading && (
+                <p
+                  className="inventory-empty-state__lineage-hint"
+                  aria-live="polite"
+                >
+                  Searching…
+                </p>
+              )}
+              {lineageSuggestions.length > 0 && (
+                <ul
+                  className="inventory-empty-state__lineage-suggestions"
+                  role="listbox"
+                  aria-label="Matching assets"
+                >
+                  {lineageSuggestions.map((entry) => (
+                    <li key={entry.uniqueId} role="none">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={quickResourceId === entry.uniqueId}
+                        className={
+                          quickResourceId === entry.uniqueId
+                            ? "inventory-lineage-suggestion inventory-lineage-suggestion--active"
+                            : "inventory-lineage-suggestion"
+                        }
+                        onClick={() => {
+                          searchRequestSequence.current += 1;
+                          setQuickResourceId(entry.uniqueId);
+                          setLineageSearchQuery(
+                            `${entry.name} (${entry.resourceType})`,
+                          );
+                          setLineageSuggestions([]);
+                          setLineageSearchLoading(false);
+                        }}
+                      >
+                        <span className="inventory-lineage-suggestion__name">
+                          {entry.name}
+                        </span>
+                        <span className="inventory-lineage-suggestion__meta">
+                          {entry.resourceType}
+                          {entry.packageName ? ` · ${entry.packageName}` : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <button
                 type="button"
                 className="workspace-pill"

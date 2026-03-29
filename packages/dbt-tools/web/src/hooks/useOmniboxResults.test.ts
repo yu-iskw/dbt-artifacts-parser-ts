@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisState, ResourceNode } from "@web/types";
-import { computeOmniboxResults } from "./useOmniboxResults";
+import { matchesResource } from "@web/lib/analysis-workspace/utils";
+import { computeOmniboxRecentResults } from "./useOmniboxResults";
 
 function analysisWithResources(resources: ResourceNode[]): AnalysisState {
   return {
     resources,
     summary: {
+      total_execution_time: 0,
       total_nodes: 0,
       total_edges: 0,
-      status_counts: {},
+      nodes_by_status: {},
       type_counts: {},
     },
     bundles: [],
@@ -16,7 +18,7 @@ function analysisWithResources(resources: ResourceNode[]): AnalysisState {
   } as unknown as AnalysisState;
 }
 
-describe("computeOmniboxResults", () => {
+describe("computeOmniboxRecentResults", () => {
   it("returns recent resources when query is empty", () => {
     const resources = [
       {
@@ -28,7 +30,7 @@ describe("computeOmniboxResults", () => {
       },
     ] as ResourceNode[];
     const analysis = analysisWithResources(resources);
-    const out = computeOmniboxResults(analysis, {
+    const out = computeOmniboxRecentResults(analysis, {
       query: "",
       recentResourceIds: ["m.a"],
       isOpen: true,
@@ -37,7 +39,39 @@ describe("computeOmniboxResults", () => {
     expect(out[0]?.uniqueId).toBe("m.a");
   });
 
-  it("filters by query when non-empty", () => {
+  it("returns empty when query is non-empty (search is async in useOmniboxResults)", () => {
+    const resources = [
+      {
+        uniqueId: "m.x",
+        name: "alpha",
+        resourceType: "model",
+        packageName: "pkg",
+        path: "models/x.sql",
+      },
+    ] as ResourceNode[];
+    const analysis = analysisWithResources(resources);
+    expect(
+      computeOmniboxRecentResults(analysis, {
+        query: "alpha",
+        recentResourceIds: [],
+        isOpen: true,
+      }),
+    ).toEqual([]);
+  });
+
+  it("returns empty when analysis is null", () => {
+    expect(
+      computeOmniboxRecentResults(null, {
+        query: "",
+        recentResourceIds: [],
+        isOpen: false,
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe("matchesResource (omnibox filter parity with worker)", () => {
+  it("filters by query substring", () => {
     const resources = [
       {
         uniqueId: "m.x",
@@ -54,22 +88,9 @@ describe("computeOmniboxResults", () => {
         path: "tests/y.sql",
       },
     ] as ResourceNode[];
-    const analysis = analysisWithResources(resources);
-    const out = computeOmniboxResults(analysis, {
-      query: "beta",
-      recentResourceIds: [],
-      isOpen: true,
-    });
-    expect(out.map((r) => r.uniqueId)).toEqual(["m.y"]);
-  });
-
-  it("returns empty when analysis is null", () => {
-    expect(
-      computeOmniboxResults(null, {
-        query: "",
-        recentResourceIds: [],
-        isOpen: false,
-      }),
-    ).toEqual([]);
+    expect(resources.filter((r) => matchesResource(r, "beta"))).toHaveLength(1);
+    expect(resources.find((r) => matchesResource(r, "beta"))?.uniqueId).toBe(
+      "m.y",
+    );
   });
 });

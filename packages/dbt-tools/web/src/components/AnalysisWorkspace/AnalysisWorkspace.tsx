@@ -78,11 +78,20 @@ export function AnalysisWorkspace({
     [scopedExplorerResources],
   );
 
-  const explorerResources = scopedExplorerResources.filter(
-    (resource) =>
-      matchesAssetStatus(resource, assetViewState.status) &&
-      matchesAssetResourceType(resource, assetViewState.resourceTypes) &&
-      matchesResource(resource, assetViewState.resourceQuery),
+  const explorerResources = useMemo(
+    () =>
+      scopedExplorerResources.filter(
+        (resource) =>
+          matchesAssetStatus(resource, assetViewState.status) &&
+          matchesAssetResourceType(resource, assetViewState.resourceTypes) &&
+          matchesResource(resource, assetViewState.resourceQuery),
+      ),
+    [
+      scopedExplorerResources,
+      assetViewState.resourceQuery,
+      assetViewState.resourceTypes,
+      assetViewState.status,
+    ],
   );
 
   const explorerTree = useMemo(

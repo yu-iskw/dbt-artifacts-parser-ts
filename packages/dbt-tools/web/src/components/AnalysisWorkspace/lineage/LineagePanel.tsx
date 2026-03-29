@@ -250,11 +250,11 @@ export function LineagePanel({
               <strong>{formatResourceTypeLabel(resource.resourceType)}</strong>
             </div>
             <div className="lineage-summary__stat">
-              <span>Upstream</span>
+              <span>Direct upstream</span>
               <strong>{dependencySummary?.upstreamCount ?? 0}</strong>
             </div>
             <div className="lineage-summary__stat">
-              <span>Downstream</span>
+              <span>Direct downstream</span>
               <strong>{dependencySummary?.downstreamCount ?? 0}</strong>
             </div>
           </div>
