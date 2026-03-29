@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { loadWorkspace } from "./helpers/preload";
 
+const OPEN_IN_TIMELINE_LABEL = "Open in Timeline";
+const OPEN_IN_INVENTORY_LABEL = "Open in Inventory";
+const RESULTS_TABLE_ROW = ".results-table__row";
+
 test.describe("runs workspace", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
@@ -43,10 +47,90 @@ test.describe("runs workspace", () => {
   });
 
   test("selecting a row shows inline selection actions", async ({ page }) => {
-    await expect(page.locator(".results-table__row").first()).toBeVisible();
-    await page.locator(".results-table__row").first().click();
+    await expect(page.locator(RESULTS_TABLE_ROW).first()).toBeVisible();
+    await page.locator(RESULTS_TABLE_ROW).first().click();
     await expect(page.getByText("Selected run item")).toBeVisible();
-    await expect(page.getByText("Open in Timeline")).toBeVisible();
-    await expect(page.getByText("Open in Inventory")).toBeVisible();
+    await expect(page.getByText(OPEN_IN_TIMELINE_LABEL)).toBeVisible();
+    await expect(page.getByText(OPEN_IN_INVENTORY_LABEL)).toBeVisible();
+  });
+});
+
+test.describe("runs quick jump navigation", () => {
+  const MODEL_UNIQUE_ID = "model.jaffle_shop.stg_orders";
+
+  test.beforeEach(async ({ page }) => {
+    await loadWorkspace(page);
+    await page.getByRole("button", { name: "Runs", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Runs" }).first(),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /^Models \(\d+\)$/ }).click();
+    await page
+      .getByPlaceholder("Filter by name, type, status, thread…")
+      .fill("stg_orders");
+    const modelRow = page
+      .locator(RESULTS_TABLE_ROW)
+      .filter({ hasText: /stg_orders/i })
+      .first();
+    await expect(modelRow).toBeVisible({ timeout: 15_000 });
+    await modelRow.click();
+    await expect(page.getByText("Selected run item")).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: OPEN_IN_INVENTORY_LABEL,
+        exact: true,
+      }),
+    ).toBeEnabled();
+  });
+
+  test("Open in Timeline navigates to timeline with selected execution", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("button", { name: OPEN_IN_TIMELINE_LABEL, exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Timeline" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]view=timeline/);
+    await expect(page).toHaveURL(
+      new RegExp(`[?&]selected=${MODEL_UNIQUE_ID.replace(/\./g, "\\.")}`),
+    );
+  });
+
+  test("Open in Inventory navigates to inventory summary for resource", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("button", { name: OPEN_IN_INVENTORY_LABEL, exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Inventory" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]view=inventory/);
+    await expect(page).toHaveURL(
+      new RegExp(`[?&]resource=${MODEL_UNIQUE_ID.replace(/\./g, "\\.")}(&|$)`),
+    );
+    await expect(page).toHaveURL(/[?&]assetTab=summary/);
+    await expect(page.getByText("Asset summary")).toBeVisible();
+  });
+
+  test("Open in Lineage navigates to inventory lineage tab", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("button", { name: "Open in Lineage", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Inventory" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]view=inventory/);
+    await expect(page).toHaveURL(/[?&]assetTab=lineage/);
+    await expect(page).toHaveURL(
+      new RegExp(`[?&]resource=${MODEL_UNIQUE_ID.replace(/\./g, "\\.")}(&|$)`),
+    );
+    await expect(
+      page.getByRole("heading", { name: "Lineage graph" }).first(),
+    ).toBeVisible();
   });
 });

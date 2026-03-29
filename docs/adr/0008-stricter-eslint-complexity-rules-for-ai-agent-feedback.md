@@ -84,3 +84,28 @@ added. The `complexity` (core ESLint) rule was removed entirely as it duplicates
 The intent of blocking AI agents on complexity violations is preserved. The thresholds
 were relaxed to accommodate larger generated parser files and complex Gantt rendering
 components that could not be trivially decomposed below the originally targeted values.
+
+## Amendment (2026-03-29)
+
+Additional ESLint configuration was added after 2026-03-28 for **module size** and
+**import boundaries** on `@dbt-tools/web`, plus targeted **Vitest test relaxations**.
+
+### `max-lines` (non-test, web)
+
+| File glob                                                                       | Max lines (skip blank + comments) |
+| ------------------------------------------------------------------------------- | --------------------------------- |
+| `packages/dbt-tools/web/**/*.tsx`                                               | 1200                              |
+| `packages/dbt-tools/web/src/**/*.ts`                                            | 1200                              |
+| `packages/dbt-tools/web/src/components/**/*.{ts,tsx}` and `hooks/**/*.{ts,tsx}` | 900                               |
+
+### `no-restricted-imports` (layering)
+
+- **Components/hooks** (`components`, `hooks`): forbid default import of `@dbt-tools/core`; forbid importing `ManifestGraph`, `ExecutionAnalyzer`, `detectBottlenecks`, `buildAnalysisSnapshotFromArtifacts`, `buildAnalysisSnapshotFromParsedArtifacts` from `@dbt-tools/core/browser` (worker-backed analysis path only).
+- **`src/lib/**/_.ts`**: forbid `@web/components/_`and`@web/workers/\*` pattern imports.
+- **`src/workers/**/\*.ts`**: forbid `react`, `react-dom`, `react/jsx-runtime`.
+
+### Vitest test files
+
+For `packages/**/*.test.ts` and `*.test.tsx`: `vitest/no-conditional-expect` is **off**;
+`sonarjs/no-duplicate-string` is **off** (in addition to the shared complexity thresholds
+in the 2026-03-28 table).

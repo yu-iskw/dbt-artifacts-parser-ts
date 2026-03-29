@@ -84,3 +84,12 @@ flowchart TB
 
 - [ADR-0006](0006-artifact-first-agent-first-positioning-of-dbt-tools.md) — agent-first positioning
 - [ADR-0008](0008-stricter-eslint-complexity-rules-for-ai-agent-feedback.md) — stricter complexity rules
+
+## Amendment (2026-03-29)
+
+The Decision diagram lists TypeScript-ESLint, SonarJS, core `no-unreachable`, and
+`@vitest/eslint-plugin`. The live stack also applies **React** linting to
+`packages/dbt-tools/web/**/*.tsx` via **eslint-plugin-react** (recommended + JSX runtime,
+`react/prop-types` off), **eslint-plugin-react-hooks** (`react-hooks/exhaustive-deps` as
+error), and **eslint-plugin-jsx-a11y** (flat recommended). Complexity and SonarJS limits
+for those files remain as documented in ADR-0008 (including amendments).

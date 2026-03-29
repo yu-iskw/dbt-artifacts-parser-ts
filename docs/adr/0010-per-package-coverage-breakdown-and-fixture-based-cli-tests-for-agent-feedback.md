@@ -72,3 +72,12 @@ flowchart TB
 
 - [ADR-0006](0006-artifact-first-agent-first-positioning-of-dbt-tools.md) — agent-first positioning
 - [ADR-0008](0008-stricter-eslint-complexity-rules-for-ai-agent-feedback.md) — AI agent feedback rules
+
+## Amendment (2026-03-29)
+
+`scripts/coverage-score.mjs` builds `byPackage` only from source paths matching
+`packages/dbt-artifacts-parser/`, `packages/dbt-tools/core/`, or
+`packages/dbt-tools/cli/`. Other packages (including `packages/dbt-tools/web/`) still
+contribute to aggregate coverage and threshold pass/fail but **do not** appear as keys
+under `byPackage` in `coverage-report.json`. This matches the three-way breakdown named
+in the Decision section.
