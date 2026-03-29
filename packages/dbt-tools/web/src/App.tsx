@@ -18,9 +18,12 @@ function AppContent() {
     analysisSource,
     error,
     preloadLoading,
+    pendingRemoteRun,
+    acceptingRemoteRun,
     onLoadDifferent,
     onAnalysis,
     onError,
+    onAcceptPendingRemoteRun,
   } = useAnalysisPage();
   const { themePreference, setThemePreference } = useTheme();
 
@@ -38,8 +41,28 @@ function AppContent() {
         "positive",
       );
     }
+    if (analysis && !prevAnalysisRef.current && analysisSource === "remote") {
+      toast(
+        `Remote workspace loaded — ${analysis.summary.total_nodes} executions`,
+        "positive",
+      );
+    }
     prevAnalysisRef.current = analysis;
   }, [analysis, analysisSource, toast]);
+
+  const lastPendingRunIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (pendingRemoteRun == null) {
+      lastPendingRunIdRef.current = null;
+      return;
+    }
+    if (lastPendingRunIdRef.current === pendingRemoteRun.runId) return;
+    lastPendingRunIdRef.current = pendingRemoteRun.runId;
+    toast(
+      `A newer remote run is available: ${pendingRemoteRun.label}`,
+      "warning",
+    );
+  }, [pendingRemoteRun, toast]);
 
   const workspaceSignals: WorkspaceSignal[] = analysis
     ? (buildWorkspaceSignals(
@@ -55,9 +78,12 @@ function AppContent() {
       analysisSource={analysisSource}
       error={error}
       preloadLoading={preloadLoading}
+      pendingRemoteRun={pendingRemoteRun}
+      acceptingRemoteRun={acceptingRemoteRun}
       onLoadDifferent={onLoadDifferent}
       onAnalysis={onAnalysis}
       onError={onError}
+      onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
       themePreference={themePreference}
       setPreferences={setPreferences}
       preferences={preferences}

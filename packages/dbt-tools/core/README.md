@@ -99,6 +99,14 @@ import {
 
 ---
 
+## Environment helpers (Node)
+
+The Node entry re-exports configuration readers from [`src/config/dbt-tools-env.ts`](./src/config/dbt-tools-env.ts), including `getDbtToolsTargetDirFromEnv`, `getDbtToolsReloadDebounceMs`, `isDbtToolsWatchEnabled`, and **`getDbtToolsRemoteSourceConfigFromEnv`** with types **`DbtToolsRemoteSourceConfig`** / **`DbtToolsRemoteSourceProvider`**.
+
+`DBT_TOOLS_REMOTE_SOURCE` is consumed by the **`@dbt-tools/web`** Vite middleware (not the browser). For operators, see [`packages/dbt-tools/web/README.md`](../web/README.md) and [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md).
+
+---
+
 ## API
 
 ### ManifestGraph

@@ -15,6 +15,8 @@ import {
   formatSeconds,
   isMainProjectResource,
 } from "@web/lib/analysis-workspace/utils";
+import { sourceBadgeLabel } from "@web/lib/artifactSource";
+import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 
 interface OverviewSummaryChip {
   label: string;
@@ -46,7 +48,7 @@ function buildResourceSummaryChip(
 function buildOverviewBannerModel(
   analysis: AnalysisState,
   projectName: string | null,
-  analysisSource: "preload" | "upload" | null,
+  analysisSource: WorkspaceArtifactSource | null,
   derived: OverviewDerivedState,
   filtered: boolean,
 ) {
@@ -111,12 +113,7 @@ function buildOverviewBannerModel(
     tone,
     title,
     summary,
-    sourceLabel:
-      analysisSource === "preload"
-        ? "DBT_TOOLS_TARGET_DIR"
-        : analysisSource === "upload"
-          ? "UPLOADED"
-          : "ARTIFACTS",
+    sourceLabel: sourceBadgeLabel(analysisSource),
     summaryBits: [
       projectName ?? "Workspace",
       `${analysis.graphSummary.totalNodes} graph nodes`,
@@ -142,7 +139,7 @@ export function OverviewStatusBanner({
 }: {
   analysis: AnalysisState;
   projectName: string | null;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   derived: OverviewDerivedState;
   filtered: boolean;
   embedded?: boolean;

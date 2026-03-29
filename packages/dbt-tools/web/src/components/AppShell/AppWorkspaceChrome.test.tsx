@@ -109,9 +109,12 @@ function renderChrome(analysis: AnalysisState | null) {
         analysisSource="preload"
         error={null}
         preloadLoading={false}
+        pendingRemoteRun={null}
+        acceptingRemoteRun={false}
         onLoadDifferent={vi.fn()}
         onAnalysis={vi.fn()}
         onError={vi.fn()}
+        onAcceptPendingRemoteRun={vi.fn(async () => {})}
         themePreference="light"
         setThemePreference={vi.fn()}
         preferences={{
@@ -251,9 +254,12 @@ describe("AppWorkspaceChrome header", () => {
           analysisSource={null}
           error={null}
           preloadLoading={false}
+          pendingRemoteRun={null}
+          acceptingRemoteRun={false}
           onLoadDifferent={vi.fn()}
           onAnalysis={vi.fn()}
           onError={vi.fn()}
+          onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="system"
           setThemePreference={vi.fn()}
           preferences={{
@@ -303,9 +309,12 @@ describe("AppWorkspaceChrome header", () => {
           analysisSource="preload"
           error={null}
           preloadLoading={false}
+          pendingRemoteRun={null}
+          acceptingRemoteRun={false}
           onLoadDifferent={vi.fn()}
           onAnalysis={vi.fn()}
           onError={vi.fn()}
+          onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="light"
           setThemePreference={vi.fn()}
           preferences={{
@@ -354,9 +363,12 @@ describe("AppWorkspaceChrome header", () => {
           analysisSource="preload"
           error={null}
           preloadLoading={false}
+          pendingRemoteRun={null}
+          acceptingRemoteRun={false}
           onLoadDifferent={vi.fn()}
           onAnalysis={vi.fn()}
           onError={vi.fn()}
+          onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="light"
           setThemePreference={vi.fn()}
           preferences={{
@@ -383,6 +395,61 @@ describe("AppWorkspaceChrome header", () => {
     });
 
     expect(container.textContent).toContain("No matching resources");
+
+    cleanupRoot(root, container);
+  });
+
+  it("renders a remote update banner when a newer managed run is pending", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <AppWorkspaceChrome
+          workspace={makeWorkspace() as never}
+          analysis={{ resources: [], summary: { total_nodes: 0 } } as never}
+          analysisSource="remote"
+          error={null}
+          preloadLoading={false}
+          pendingRemoteRun={{
+            runId: "2026-03-29T13-00-00Z",
+            label: "S3 2026-03-29T13-00-00Z",
+            updatedAtMs: 1,
+            versionToken: "v1",
+          }}
+          acceptingRemoteRun={false}
+          onLoadDifferent={vi.fn()}
+          onAnalysis={vi.fn()}
+          onError={vi.fn()}
+          onAcceptPendingRemoteRun={vi.fn(async () => {})}
+          themePreference="light"
+          setThemePreference={vi.fn()}
+          preferences={{
+            theme: "light",
+            sidebarCollapsedDefault: true,
+            timelineDefaults: {
+              showTests: false,
+              failuresOnly: false,
+              dependencyDirection: "both",
+              dependencyDepthHops: 2,
+            },
+            inventoryDefaults: {
+              explorerMode: "project",
+              lineageLensMode: "type",
+              lineageUpstreamDepth: 2,
+              lineageDownstreamDepth: 2,
+              allDepsMode: false,
+            },
+          }}
+          setPreferences={vi.fn()}
+          workspaceSignals={[]}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Remote update available");
+    expect(container.textContent).toContain("Load latest remote run");
 
     cleanupRoot(root, container);
   });

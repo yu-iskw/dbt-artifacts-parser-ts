@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useDeferredValue, useMemo } from "react";
 import type { AnalysisState } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
+import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type {
   AssetTab,
   OverviewFilterState,
@@ -44,7 +45,7 @@ export function HealthView({
 }: {
   analysis: AnalysisState;
   projectName: string | null;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   filters: OverviewFilterState;
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   workspaceSignals: WorkspaceSignal[];

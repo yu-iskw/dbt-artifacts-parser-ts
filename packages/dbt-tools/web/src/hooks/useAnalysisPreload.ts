@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
-import { refetchFromApi } from "../services/artifactApi";
+import {
+  loadCurrentManagedArtifacts,
+  type WorkspaceArtifactSource,
+} from "../services/artifactApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
 import type { AnalysisLoadResult } from "../services/analysisLoader";
@@ -7,7 +10,13 @@ import type { AnalysisLoadResult } from "../services/analysisLoader";
 interface UseAnalysisPreloadParams {
   setPreloadLoading: (loading: boolean) => void;
   setAnalysis: (a: AnalysisState | null) => void;
-  setAnalysisSource: (s: "preload" | "upload" | null) => void;
+  setAnalysisSource: (s: WorkspaceArtifactSource | null) => void;
+  setPendingRemoteRun: (
+    run: Awaited<
+      ReturnType<typeof loadCurrentManagedArtifacts>
+    >["status"]["pendingRun"],
+  ) => void;
+  setRemotePollIntervalMs: (pollIntervalMs: number | null) => void;
   setError: (e: string | null) => void;
   pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null };
 }
@@ -19,6 +28,8 @@ export function useAnalysisPreload({
   setPreloadLoading,
   setAnalysis,
   setAnalysisSource,
+  setPendingRemoteRun,
+  setRemotePollIntervalMs,
   setError,
   pendingMetricsRef,
 }: UseAnalysisPreloadParams) {
@@ -28,17 +39,21 @@ export function useAnalysisPreload({
     if (attempted.current) return;
     attempted.current = true;
 
-    debug("Preload: fetching /api/manifest.json and /api/run_results.json");
+    debug("Preload: fetching current managed artifacts");
 
-    refetchFromApi()
-      .then((result) => {
+    loadCurrentManagedArtifacts()
+      .then(({ result, status }) => {
         setPreloadLoading(false);
+        setPendingRemoteRun(status.pendingRun);
+        setRemotePollIntervalMs(status.pollIntervalMs);
         if (result) {
           debug("Preload: success, analysis loaded");
           pendingMetricsRef.current = result.metrics;
           setAnalysis(result.analysis);
-          setAnalysisSource("preload");
+          setAnalysisSource(status.currentSource);
           setError(null);
+        } else {
+          setAnalysisSource(status.currentSource);
         }
       })
       .catch((err) => {
@@ -55,6 +70,8 @@ export function useAnalysisPreload({
     setPreloadLoading,
     setAnalysis,
     setAnalysisSource,
+    setPendingRemoteRun,
+    setRemotePollIntervalMs,
     setError,
   ]);
 }

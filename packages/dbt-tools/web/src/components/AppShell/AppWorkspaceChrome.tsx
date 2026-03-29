@@ -7,24 +7,33 @@ import {
   formatRunStartedAt,
   getInvocationTimestamp,
 } from "@web/lib/analysis-workspace/utils";
+import { sourceLabel } from "@web/lib/artifactSource";
 import type { ThemePreference } from "@web/lib/analysis-workspace/types";
 import type { UseWorkspaceUrlStateResult } from "@web/hooks/useWorkspaceUrlState";
 import { useOmniboxResults } from "@web/hooks/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";
+import type {
+  RemoteArtifactRun,
+  WorkspaceArtifactSource,
+} from "@web/services/artifactSourceApi";
 import type { AnalysisState } from "@web/types";
 import { AppSidebar } from "./AppSidebar";
 import { LoadingCard } from "./LoadingCard";
+import { RemoteUpdateBanner } from "./RemoteUpdateBanner";
 import { SettingsView } from "./SettingsView";
 
 export interface AppWorkspaceChromeProps {
   workspace: UseWorkspaceUrlStateResult;
   analysis: AnalysisState | null;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   error: string | null;
   preloadLoading: boolean;
+  pendingRemoteRun: RemoteArtifactRun | null;
+  acceptingRemoteRun: boolean;
   onLoadDifferent: () => void;
   onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
+  onAcceptPendingRemoteRun: () => Promise<void>;
   themePreference: ThemePreference;
   setThemePreference: Dispatch<SetStateAction<ThemePreference>>;
   preferences: WorkspacePreferences;
@@ -45,12 +54,6 @@ interface HeaderModel {
   label: string;
   subtitle: string | null;
   summaryItems: HeaderSummaryItemModel[];
-}
-
-function sourceLabel(source: "preload" | "upload" | null) {
-  if (source === "preload") return "Live target";
-  if (source === "upload") return "Local upload";
-  return "Waiting for artifacts";
 }
 
 function HeaderMetricIcon({ kind }: { kind: HeaderMetricIconKind }) {
@@ -108,7 +111,7 @@ function HeaderMetricIcon({ kind }: { kind: HeaderMetricIconKind }) {
 
 function buildHeaderModel(
   analysis: AnalysisState | null,
-  analysisSource: "preload" | "upload" | null,
+  analysisSource: WorkspaceArtifactSource | null,
 ): HeaderModel {
   const projectName = analysis?.projectName ?? null;
   const invocationId = analysis?.invocationId ?? null;
@@ -307,6 +310,8 @@ function WorkspaceContent({
   analysis,
   analysisSource,
   preloadLoading,
+  pendingRemoteRun,
+  acceptingRemoteRun,
   preferences,
   setPreferences,
   themePreference,
@@ -314,6 +319,7 @@ function WorkspaceContent({
   onLoadDifferent,
   onAnalysis,
   onError,
+  onAcceptPendingRemoteRun,
   workspaceSignals,
   overviewFilters,
   setOverviewFilters,
@@ -331,8 +337,10 @@ function WorkspaceContent({
 }: {
   activeView: UseWorkspaceUrlStateResult["activeView"];
   analysis: AnalysisState | null;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   preloadLoading: boolean;
+  pendingRemoteRun: RemoteArtifactRun | null;
+  acceptingRemoteRun: boolean;
   preferences: WorkspacePreferences;
   setPreferences: Dispatch<SetStateAction<WorkspacePreferences>>;
   themePreference: ThemePreference;
@@ -340,6 +348,7 @@ function WorkspaceContent({
   onLoadDifferent: () => void;
   onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
+  onAcceptPendingRemoteRun: () => Promise<void>;
   workspaceSignals: WorkspaceSignal[];
   overviewFilters: UseWorkspaceUrlStateResult["overviewFilters"];
   setOverviewFilters: UseWorkspaceUrlStateResult["setOverviewFilters"];
@@ -365,6 +374,9 @@ function WorkspaceContent({
         analysisSource={analysisSource}
         executionCount={analysis?.summary.total_nodes ?? null}
         onLoadDifferent={onLoadDifferent}
+        pendingRemoteRun={pendingRemoteRun}
+        acceptingRemoteRun={acceptingRemoteRun}
+        onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
       />
     );
   }
@@ -406,9 +418,12 @@ export function AppWorkspaceChrome({
   analysisSource,
   error,
   preloadLoading,
+  pendingRemoteRun,
+  acceptingRemoteRun,
   onLoadDifferent,
   onAnalysis,
   onError,
+  onAcceptPendingRemoteRun,
   themePreference,
   setThemePreference,
   preferences,
@@ -488,12 +503,19 @@ export function AppWorkspaceChrome({
         </header>
 
         {error && <ErrorBanner message={error} />}
+        <RemoteUpdateBanner
+          pendingRemoteRun={pendingRemoteRun}
+          acceptingRemoteRun={acceptingRemoteRun}
+          onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
+        />
 
         <WorkspaceContent
           activeView={activeView}
           analysis={analysis}
           analysisSource={analysisSource}
           preloadLoading={preloadLoading}
+          pendingRemoteRun={pendingRemoteRun}
+          acceptingRemoteRun={acceptingRemoteRun}
           preferences={preferences}
           setPreferences={setPreferences}
           themePreference={themePreference}
@@ -501,6 +523,7 @@ export function AppWorkspaceChrome({
           onLoadDifferent={onLoadDifferent}
           onAnalysis={onAnalysis}
           onError={onError}
+          onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
           workspaceSignals={workspaceSignals}
           overviewFilters={overviewFilters}
           setOverviewFilters={setOverviewFilters}

@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AnalysisState, StatusTone } from "@web/types";
+import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 
 /**
  * New top-level workspace views.
@@ -145,7 +146,7 @@ export interface WorkspaceSignal {
 export interface AnalysisWorkspaceProps {
   analysis: AnalysisState;
   activeView: WorkspaceView;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   /** Signals built from workspace data — passed down to HealthView hero strip. */
   workspaceSignals: WorkspaceSignal[];
   overviewFilters: OverviewFilterState;
