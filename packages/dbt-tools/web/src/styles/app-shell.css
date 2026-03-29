@@ -589,6 +589,7 @@
 }
 
 .error-banner,
+.remote-update-banner,
 .loading-card,
 .upload-hero,
 .workspace-card,
@@ -606,6 +607,30 @@
   background: var(--bg-danger-soft);
   border: 1px solid var(--border-danger);
   color: var(--text-danger);
+}
+
+.remote-update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-soft) 68%, white 32%);
+}
+
+.remote-update-banner__copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.remote-update-banner__copy strong {
+  color: var(--text-primary);
+}
+
+.remote-update-banner__copy span {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 .loading-card,

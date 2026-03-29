@@ -30,7 +30,8 @@ React web application for visual dbt artifact analysis. Provides interactive dep
 
 - **Dependency graph visualization** — explore model relationships as an interactive graph
 - **Execution timeline** — Gantt-style view of `run_results.json` with critical path highlighting
-- **Auto-reload** — automatically re-analyzes artifacts when `dbt run` completes
+- **Auto-reload (local target)** — with `DBT_TOOLS_TARGET_DIR`, re-analyzes when `manifest.json` / `run_results.json` change on disk (e.g. after `dbt run`)
+- **Remote artifact sources (S3 / GCS)** — optional `DBT_TOOLS_REMOTE_SOURCE`; the dev server resolves the latest complete pair under a bucket prefix, polls for newer runs, and prompts before switching the workspace (see [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md))
 - **Large project support** — virtualized lists and web workers keep the UI responsive at 100k+ nodes
 
 ---
@@ -120,6 +121,7 @@ All configuration is via environment variables passed to the Vite dev server or 
 | Variable                       | Default | Description                                                                                        |
 | ------------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
 | `DBT_TOOLS_TARGET_DIR`         | —       | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
+| `DBT_TOOLS_REMOTE_SOURCE`      | —       | JSON config for S3 or GCS bucket + prefix discovery (server-side access only); see ADR-0029        |
 | `DBT_TOOLS_DEBUG`              | unset   | Set to `1` to enable server-side debug logging in the Vite middleware                              |
 | `DBT_TOOLS_WATCH`              | on      | Set to `0` to disable file watching and auto-reload when artifacts change                          |
 | `DBT_TOOLS_RELOAD_DEBOUNCE_MS` | `300`   | Debounce delay in ms before triggering a reload on rapid file writes                               |

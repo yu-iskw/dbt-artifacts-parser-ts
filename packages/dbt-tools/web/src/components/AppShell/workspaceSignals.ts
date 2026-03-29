@@ -1,8 +1,34 @@
 import type { AnalysisState } from "@web/types";
+import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
+
+function workspaceModeSignal(
+  analysis: AnalysisState,
+  analysisSource: WorkspaceArtifactSource | null,
+  totalTests: number,
+) {
+  if (analysisSource === "preload") {
+    return {
+      value: "Live target",
+      detail: `Synced from DBT_TOOLS_TARGET_DIR with ${analysis.graphSummary.totalEdges} dependency edges ready for investigation.`,
+    };
+  }
+
+  if (analysisSource === "remote") {
+    return {
+      value: "Remote source",
+      detail: `Managed from remote object storage with ${analysis.graphSummary.totalEdges} dependency edges ready for investigation.`,
+    };
+  }
+
+  return {
+    value: "Artifact upload",
+    detail: `${analysis.summary.total_nodes} executions loaded from local artifacts${totalTests > 0 ? `, including ${totalTests} tests` : ""}.`,
+  };
+}
 
 export function buildWorkspaceSignals(
   analysis: AnalysisState,
-  analysisSource: "preload" | "upload" | null,
+  analysisSource: WorkspaceArtifactSource | null,
 ) {
   const attentionCount = analysis.executions.filter(
     (row) => row.statusTone === "danger",
@@ -20,6 +46,7 @@ export function buildWorkspaceSignals(
     analysis.resources.length > 0
       ? Math.round((documentedResources / analysis.resources.length) * 100)
       : 0;
+  const modeSignal = workspaceModeSignal(analysis, analysisSource, totalTests);
 
   return [
     {
@@ -56,11 +83,8 @@ export function buildWorkspaceSignals(
     },
     {
       label: "Workspace mode",
-      value: analysisSource === "preload" ? "Live target" : "Artifact upload",
-      detail:
-        analysisSource === "preload"
-          ? `Synced from DBT_TOOLS_TARGET_DIR with ${analysis.graphSummary.totalEdges} dependency edges ready for investigation.`
-          : `${analysis.summary.total_nodes} executions loaded from local artifacts${totalTests > 0 ? `, including ${totalTests} tests` : ""}.`,
+      value: modeSignal.value,
+      detail: modeSignal.detail,
       tone: "neutral",
     },
   ] as const;

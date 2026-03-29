@@ -10,8 +10,13 @@ export * from "./analysis/analysis-snapshot";
 export {
   getDbtToolsTargetDirFromEnv,
   getDbtToolsReloadDebounceMs,
+  getDbtToolsRemoteSourceConfigFromEnv,
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
+} from "./config/dbt-tools-env";
+export type {
+  DbtToolsRemoteSourceConfig,
+  DbtToolsRemoteSourceProvider,
 } from "./config/dbt-tools-env";
 
 // I/O exports

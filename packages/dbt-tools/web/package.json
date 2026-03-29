@@ -28,7 +28,9 @@
     "format:stylelint": "stylelint -c ../../../stylelint.config.mjs **/*.css --fix"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1019.0",
     "@dbt-tools/core": "workspace:*",
+    "@google-cloud/storage": "^7.19.0",
     "@tanstack/react-virtual": "^3.13.23",
     "dbt-artifacts-parser": "workspace:*",
     "react": "^19.2.4",

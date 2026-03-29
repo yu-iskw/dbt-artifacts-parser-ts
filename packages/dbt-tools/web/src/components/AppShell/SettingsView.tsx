@@ -1,16 +1,15 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { ThemePreference } from "@web/lib/analysis-workspace/types";
+import { sourceLabel } from "@web/lib/artifactSource";
+import type {
+  RemoteArtifactRun,
+  WorkspaceArtifactSource,
+} from "@web/services/artifactSourceApi";
 import { SectionCard, WorkspaceScaffold } from "../AnalysisWorkspace/shared";
 import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
 
 const ACTIVE_PILL_CLASS = "workspace-pill workspace-pill--active";
 const INACTIVE_PILL_CLASS = "workspace-pill";
-
-function sourceLabel(source: "preload" | "upload" | null) {
-  if (source === "preload") return "Live target";
-  if (source === "upload") return "Local upload";
-  return "Waiting for artifacts";
-}
 
 function pillClass(active: boolean) {
   return active ? ACTIVE_PILL_CLASS : INACTIVE_PILL_CLASS;
@@ -20,7 +19,7 @@ function SettingsHero({
   analysisSource,
   executionCount,
 }: {
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   executionCount: number | null;
 }) {
   return (
@@ -80,10 +79,16 @@ function SessionSettings({
   analysisSource,
   executionCount,
   onLoadDifferent,
+  pendingRemoteRun,
+  acceptingRemoteRun,
+  onAcceptPendingRemoteRun,
 }: {
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   executionCount: number | null;
   onLoadDifferent: () => void;
+  pendingRemoteRun: RemoteArtifactRun | null;
+  acceptingRemoteRun: boolean;
+  onAcceptPendingRemoteRun: () => Promise<void>;
 }) {
   return (
     <SectionCard
@@ -107,6 +112,18 @@ function SessionSettings({
         >
           Load different artifacts
         </button>
+        {pendingRemoteRun && (
+          <button
+            type="button"
+            className="workspace-pill"
+            onClick={() => void onAcceptPendingRemoteRun()}
+            disabled={acceptingRemoteRun}
+          >
+            {acceptingRemoteRun
+              ? "Switching…"
+              : `Load ${pendingRemoteRun.label}`}
+          </button>
+        )}
       </div>
     </SectionCard>
   );
@@ -379,14 +396,20 @@ export function SettingsView({
   analysisSource,
   executionCount,
   onLoadDifferent,
+  pendingRemoteRun,
+  acceptingRemoteRun,
+  onAcceptPendingRemoteRun,
 }: {
   preferences: WorkspacePreferences;
   setPreferences: Dispatch<SetStateAction<WorkspacePreferences>>;
   themePreference: ThemePreference;
   setThemePreference: Dispatch<SetStateAction<ThemePreference>>;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   executionCount: number | null;
   onLoadDifferent: () => void;
+  pendingRemoteRun: RemoteArtifactRun | null;
+  acceptingRemoteRun: boolean;
+  onAcceptPendingRemoteRun: () => Promise<void>;
 }) {
   const updateThemePreference = (value: ThemePreference) => {
     setThemePreference(value);
@@ -412,6 +435,9 @@ export function SettingsView({
           analysisSource={analysisSource}
           executionCount={executionCount}
           onLoadDifferent={onLoadDifferent}
+          pendingRemoteRun={pendingRemoteRun}
+          acceptingRemoteRun={acceptingRemoteRun}
+          onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
         />
         <ShellDefaultsSettings
           preferences={preferences}

@@ -3,13 +3,14 @@ import { refetchFromApi } from "../services/artifactApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
 import type { AnalysisLoadResult } from "../services/analysisLoader";
+import type { WorkspaceArtifactSource } from "../services/artifactSourceApi";
 
 /**
  * Subscribes to dbt-artifacts-changed (Vite HMR) when analysis came from preload.
  * Refetches from /api/* and updates state on file change.
  */
 export function useDbtArtifactsReload(
-  analysisSource: "preload" | "upload" | null,
+  analysisSource: WorkspaceArtifactSource | null,
   setAnalysis: (a: AnalysisState | null) => void,
   setError: (e: string | null) => void,
   pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null },

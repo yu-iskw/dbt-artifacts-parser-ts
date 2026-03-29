@@ -4,15 +4,25 @@ import { useDbtArtifactsReload } from "./useDbtArtifactsReload";
 import type { AnalysisState } from "@web/types";
 import type { AnalysisLoadResult } from "../services/analysisLoader";
 import { debug, markDebug, measureDebug } from "../debug";
+import {
+  fetchArtifactSourceStatus,
+  refetchFromApi,
+  switchToArtifactRun,
+  type RemoteArtifactRun,
+  type WorkspaceArtifactSource,
+} from "../services/artifactApi";
 
 export interface UseAnalysisPageResult {
   analysis: AnalysisState | null;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
   error: string | null;
   preloadLoading: boolean;
+  pendingRemoteRun: RemoteArtifactRun | null;
+  acceptingRemoteRun: boolean;
   onLoadDifferent: () => void;
   onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
+  onAcceptPendingRemoteRun: () => Promise<void>;
 }
 
 /**
@@ -21,16 +31,23 @@ export interface UseAnalysisPageResult {
 export function useAnalysisPage(): UseAnalysisPageResult {
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [analysisSource, setAnalysisSource] = useState<
-    "preload" | "upload" | null
-  >(null);
+  const [analysisSource, setAnalysisSource] =
+    useState<WorkspaceArtifactSource | null>(null);
   const [preloadLoading, setPreloadLoading] = useState(true);
+  const [pendingRemoteRun, setPendingRemoteRun] =
+    useState<RemoteArtifactRun | null>(null);
+  const [acceptingRemoteRun, setAcceptingRemoteRun] = useState(false);
+  const [remotePollIntervalMs, setRemotePollIntervalMs] = useState<
+    number | null
+  >(null);
   const pendingMetricsRef = useRef<AnalysisLoadResult["metrics"] | null>(null);
 
   useAnalysisPreload({
     setPreloadLoading,
     setAnalysis,
     setAnalysisSource,
+    setPendingRemoteRun,
+    setRemotePollIntervalMs,
     setError,
     pendingMetricsRef,
   });
@@ -41,6 +58,37 @@ export function useAnalysisPage(): UseAnalysisPageResult {
     setError,
     pendingMetricsRef,
   );
+
+  useEffect(() => {
+    if (analysisSource !== "remote") {
+      setPendingRemoteRun(null);
+      setRemotePollIntervalMs(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const status = await fetchArtifactSourceStatus();
+        if (!cancelled) {
+          setPendingRemoteRun(status.pendingRun);
+          setRemotePollIntervalMs(status.pollIntervalMs);
+        }
+      } catch (pollError) {
+        debug("Artifact source poll failed", pollError);
+      }
+    };
+
+    void poll();
+    const intervalId = window.setInterval(() => {
+      void poll();
+    }, remotePollIntervalMs ?? 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [analysisSource, remotePollIntervalMs]);
 
   useEffect(() => {
     if (analysis == null || pendingMetricsRef.current == null) return;
@@ -69,16 +117,46 @@ export function useAnalysisPage(): UseAnalysisPageResult {
     analysisSource,
     error,
     preloadLoading,
+    pendingRemoteRun,
+    acceptingRemoteRun,
     onLoadDifferent: () => {
       setAnalysis(null);
       setAnalysisSource(null);
+      setPendingRemoteRun(null);
+      setRemotePollIntervalMs(null);
       setError(null);
     },
     onAnalysis: (result) => {
       pendingMetricsRef.current = result.metrics;
       setAnalysisSource("upload");
+      setPendingRemoteRun(null);
       setAnalysis(result.analysis);
     },
     onError: setError,
+    onAcceptPendingRemoteRun: async () => {
+      if (pendingRemoteRun == null) return;
+
+      setAcceptingRemoteRun(true);
+      try {
+        const status = await switchToArtifactRun(pendingRemoteRun.runId);
+        const result = await refetchFromApi("remote");
+        if (result != null) {
+          pendingMetricsRef.current = result.metrics;
+          setAnalysis(result.analysis);
+          setAnalysisSource(status.currentSource);
+          setRemotePollIntervalMs(status.pollIntervalMs);
+          setError(null);
+        }
+        setPendingRemoteRun(status.pendingRun);
+      } catch (switchError) {
+        setError(
+          switchError instanceof Error
+            ? switchError.message
+            : "Failed to switch remote artifact run",
+        );
+      } finally {
+        setAcceptingRemoteRun(false);
+      }
+    },
   };
 }

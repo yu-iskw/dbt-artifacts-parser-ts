@@ -2,7 +2,7 @@ import type { AnalysisSnapshot } from "@dbt-tools/core/browser";
 
 export const ANALYSIS_WORKER_PROTOCOL_VERSION = 2;
 
-export type AnalysisLoadSource = "preload" | "upload";
+export type AnalysisLoadSource = "preload" | "remote" | "upload";
 
 export interface AnalysisWorkerTimings {
   decodeMs: number;

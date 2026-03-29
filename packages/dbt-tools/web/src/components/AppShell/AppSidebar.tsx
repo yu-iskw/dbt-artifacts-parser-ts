@@ -1,4 +1,6 @@
 import type { AnalysisState } from "@web/types";
+import { sourceLabel } from "@web/lib/artifactSource";
+import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type { WorkspaceView } from "../AnalysisWorkspace";
 import { AppLogo } from "./AppLogo";
 import {
@@ -9,8 +11,6 @@ import {
 import { NavIcon } from "./NavIcon";
 
 const WAITING_FOR_ARTIFACTS = "Waiting for artifacts";
-const LIVE_TARGET = "Live target";
-const LOCAL_UPLOAD = "Local upload";
 
 export function AppSidebar({
   activeView,
@@ -27,14 +27,9 @@ export function AppSidebar({
   setSidebarCollapsed: (fn: (c: boolean) => boolean) => void;
   onNavigate: () => void;
   analysis: AnalysisState | null;
-  analysisSource: "preload" | "upload" | null;
+  analysisSource: WorkspaceArtifactSource | null;
 }) {
-  const sourceLabel =
-    analysisSource === "preload"
-      ? LIVE_TARGET
-      : analysisSource === "upload"
-        ? LOCAL_UPLOAD
-        : WAITING_FOR_ARTIFACTS;
+  const sourceText = sourceLabel(analysisSource);
 
   return (
     <aside
@@ -131,7 +126,7 @@ export function AppSidebar({
             <div className="sidebar-settings-divider" />
             <div className="app-sidebar__session">
               <p className="eyebrow">Session</p>
-              <strong>{sourceLabel}</strong>
+              <strong>{sourceText}</strong>
               <span>
                 {analysis
                   ? `${analysis.summary.total_nodes} executions analyzed`

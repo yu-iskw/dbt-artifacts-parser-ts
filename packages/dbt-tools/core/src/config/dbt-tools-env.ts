@@ -76,6 +76,20 @@ export function isDbtToolsWatchEnabled(): boolean {
 }
 
 const DEFAULT_RELOAD_DEBOUNCE_MS = 300;
+const DEFAULT_REMOTE_POLL_INTERVAL_MS = 30_000;
+
+export type DbtToolsRemoteSourceProvider = "s3" | "gcs";
+
+export interface DbtToolsRemoteSourceConfig {
+  provider: DbtToolsRemoteSourceProvider;
+  bucket: string;
+  prefix: string;
+  pollIntervalMs: number;
+  region?: string;
+  endpoint?: string;
+  forcePathStyle?: boolean;
+  projectId?: string;
+}
 
 function parseNonNegativeInt(raw: string): number {
   const n = parseInt(raw, 10);
@@ -97,4 +111,59 @@ export function getDbtToolsReloadDebounceMs(): number {
     return parseNonNegativeInt(leg);
   }
   return DEFAULT_RELOAD_DEBOUNCE_MS;
+}
+
+/**
+ * Optional remote artifact source configuration for managed object storage.
+ * Expected format:
+ * {
+ *   "provider": "s3" | "gcs",
+ *   "bucket": "bucket-name",
+ *   "prefix": "path/to/runs",
+ *   "pollIntervalMs": 30000
+ * }
+ */
+export function getDbtToolsRemoteSourceConfigFromEnv():
+  | DbtToolsRemoteSourceConfig
+  | undefined {
+  const raw = trimEnv(process.env.DBT_TOOLS_REMOTE_SOURCE);
+  if (raw === undefined) return undefined;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<DbtToolsRemoteSourceConfig>;
+    if (parsed.provider !== "s3" && parsed.provider !== "gcs") {
+      console.warn(
+        "[dbt-tools] DBT_TOOLS_REMOTE_SOURCE provider must be 's3' or 'gcs'.",
+      );
+      return undefined;
+    }
+    const bucket = trimEnv(parsed.bucket);
+    const prefix = trimEnv(parsed.prefix);
+    if (bucket === undefined || prefix === undefined) {
+      console.warn(
+        "[dbt-tools] DBT_TOOLS_REMOTE_SOURCE must include non-empty bucket and prefix values.",
+      );
+      return undefined;
+    }
+
+    return {
+      provider: parsed.provider,
+      bucket,
+      prefix: prefix.replace(/^\/+|\/+$/g, ""),
+      pollIntervalMs:
+        typeof parsed.pollIntervalMs === "number" && parsed.pollIntervalMs > 0
+          ? Math.floor(parsed.pollIntervalMs)
+          : DEFAULT_REMOTE_POLL_INTERVAL_MS,
+      region: trimEnv(parsed.region),
+      endpoint: trimEnv(parsed.endpoint),
+      forcePathStyle: parsed.forcePathStyle === true,
+      projectId: trimEnv(parsed.projectId),
+    };
+  } catch (error) {
+    console.warn(
+      "[dbt-tools] Failed to parse DBT_TOOLS_REMOTE_SOURCE as JSON.",
+      error,
+    );
+    return undefined;
+  }
 }
