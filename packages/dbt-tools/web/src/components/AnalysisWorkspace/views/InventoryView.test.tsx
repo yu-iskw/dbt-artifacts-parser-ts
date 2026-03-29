@@ -57,13 +57,18 @@ function renderInventory() {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
+  const onSelectResource = vi.fn();
+  const onAssetViewStateChange = vi.fn();
+  const onLineageViewStateChange = vi.fn();
+  const onInvestigationSelectionChange = vi.fn();
+  const onNavigateTo = vi.fn();
 
   act(() => {
     root.render(
       <InventoryView
         analysis={makeAnalysis()}
         resource={null}
-        onSelectResource={vi.fn()}
+        onSelectResource={onSelectResource}
         assetViewState={{
           activeTab: "summary",
           selectedResourceId: null,
@@ -78,7 +83,7 @@ function renderInventory() {
           lensMode: "type",
           activeLegendKeys: new Set(),
         }}
-        onAssetViewStateChange={vi.fn()}
+        onAssetViewStateChange={onAssetViewStateChange}
         lineageViewState={{
           rootResourceId: null,
           selectedResourceId: null,
@@ -88,14 +93,22 @@ function renderInventory() {
           lensMode: "type",
           activeLegendKeys: new Set(),
         }}
-        onLineageViewStateChange={vi.fn()}
-        onInvestigationSelectionChange={vi.fn()}
-        onNavigateTo={vi.fn()}
+        onLineageViewStateChange={onLineageViewStateChange}
+        onInvestigationSelectionChange={onInvestigationSelectionChange}
+        onNavigateTo={onNavigateTo}
       />,
     );
   });
 
-  return { container, root };
+  return {
+    container,
+    root,
+    onSelectResource,
+    onAssetViewStateChange,
+    onLineageViewStateChange,
+    onInvestigationSelectionChange,
+    onNavigateTo,
+  };
 }
 
 function cleanupRoot(root: Root, container: HTMLElement) {
@@ -212,6 +225,156 @@ describe("InventoryView lineage search", () => {
 
     expect(container.textContent).not.toContain("orders");
     expect(container.textContent).not.toContain("Searching…");
+
+    cleanupRoot(root, container);
+  });
+
+  it("disables open lineage after editing the search field following a suggestion pick", async () => {
+    const pending = deferred<ResourceNode[]>();
+    searchResourcesFromWorker.mockReturnValueOnce(pending.promise);
+
+    const { container, root } = renderInventory();
+    const input = container.querySelector(
+      "#inventory-lineage-search",
+    ) as HTMLInputElement;
+
+    act(() => {
+      changeInput(input, "orders");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(200);
+    });
+
+    await act(async () => {
+      pending.resolve([makeResource("model.pkg.orders", "orders")]);
+      await pending.promise;
+    });
+
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain("orders");
+    });
+
+    const suggestion = container.querySelector(
+      ".inventory-lineage-suggestion",
+    ) as HTMLButtonElement;
+    expect(suggestion).toBeTruthy();
+
+    act(() => {
+      suggestion.click();
+    });
+
+    const openLineage = [...container.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Open lineage graph"),
+    ) as HTMLButtonElement;
+    expect(openLineage).toBeTruthy();
+    expect(openLineage.disabled).toBe(false);
+
+    act(() => {
+      changeInput(input, "orders (model)x");
+    });
+
+    expect(openLineage.disabled).toBe(true);
+
+    cleanupRoot(root, container);
+  });
+
+  it("invokes workspace callbacks when opening lineage from a suggestion pick", async () => {
+    const pending = deferred<ResourceNode[]>();
+    searchResourcesFromWorker.mockReturnValueOnce(pending.promise);
+
+    const {
+      container,
+      root,
+      onAssetViewStateChange,
+      onLineageViewStateChange,
+      onInvestigationSelectionChange,
+    } = renderInventory();
+    const input = container.querySelector(
+      "#inventory-lineage-search",
+    ) as HTMLInputElement;
+
+    act(() => {
+      changeInput(input, "orders");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(200);
+    });
+
+    await act(async () => {
+      pending.resolve([makeResource("model.pkg.orders", "orders")]);
+      await pending.promise;
+    });
+
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain("orders");
+    });
+
+    const suggestion = container.querySelector(
+      ".inventory-lineage-suggestion",
+    ) as HTMLButtonElement;
+    act(() => {
+      suggestion.click();
+    });
+
+    const openLineage = [...container.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Open lineage graph"),
+    ) as HTMLButtonElement;
+
+    act(() => {
+      openLineage.click();
+    });
+
+    expect(onAssetViewStateChange).toHaveBeenCalled();
+    const assetUpdater = onAssetViewStateChange.mock.calls[0][0];
+    const assetNext =
+      typeof assetUpdater === "function"
+        ? assetUpdater({
+            activeTab: "summary",
+            selectedResourceId: null,
+            expandedNodeIds: new Set(),
+            explorerMode: "project",
+            status: "all",
+            resourceTypes: new Set(),
+            resourceQuery: "",
+            upstreamDepth: 2,
+            downstreamDepth: 2,
+            allDepsMode: false,
+            lensMode: "type",
+            activeLegendKeys: new Set(),
+          })
+        : assetUpdater;
+    expect(assetNext.selectedResourceId).toBe("model.pkg.orders");
+    expect(assetNext.activeTab).toBe("lineage");
+
+    expect(onLineageViewStateChange).toHaveBeenCalled();
+    const lineageUpdater = onLineageViewStateChange.mock.calls[0][0];
+    const lineageNext =
+      typeof lineageUpdater === "function"
+        ? lineageUpdater({
+            rootResourceId: null,
+            selectedResourceId: null,
+            upstreamDepth: 2,
+            downstreamDepth: 2,
+            allDepsMode: false,
+            lensMode: "type",
+            activeLegendKeys: new Set(),
+          })
+        : lineageUpdater;
+    expect(lineageNext.rootResourceId).toBe("model.pkg.orders");
+    expect(lineageNext.selectedResourceId).toBe("model.pkg.orders");
+
+    expect(onInvestigationSelectionChange).toHaveBeenCalled();
+    const invUpdater = onInvestigationSelectionChange.mock.calls[0][0];
+    const invNext =
+      typeof invUpdater === "function"
+        ? invUpdater({
+            selectedResourceId: null,
+            selectedExecutionId: null,
+            sourceLens: null,
+          })
+        : invUpdater;
+    expect(invNext.selectedResourceId).toBe("model.pkg.orders");
+    expect(invNext.sourceLens).toBe("inventory");
 
     cleanupRoot(root, container);
   });

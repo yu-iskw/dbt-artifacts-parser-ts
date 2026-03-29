@@ -158,7 +158,10 @@ export function InventoryView({
                 type="search"
                 className="inventory-empty-state__lineage-search"
                 value={lineageSearchQuery}
-                onChange={(e) => setLineageSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setLineageSearchQuery(e.target.value);
+                  setQuickResourceId("");
+                }}
                 placeholder="Name, type, package, or unique id…"
                 autoComplete="off"
                 enterKeyHint="search"

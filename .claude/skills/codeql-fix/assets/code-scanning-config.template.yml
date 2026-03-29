@@ -1,7 +1,7 @@
 # Code scanning configuration (template — do not pass this file directly to codeql).
 # Render a repo-specific file with: scripts/render-code-scanning-config.sh
 #
-# Skill reference: references/code-scanning-config.md (in this skill directory)
+# Skill reference: ../references/code-scanning-config.md (from this template file)
 # Official schema and fields: https://aka.ms/code-scanning-docs/config-file
 #
 # The renderer replaces the "name:" line and appends "paths-ignore" when needed.
