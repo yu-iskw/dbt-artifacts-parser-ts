@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/web",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Web application for visual dbt artifact analysis",
   "keywords": [
     "dbt",
@@ -18,8 +18,8 @@
     "prepack": "npm run build",
     "build": "pnpm --filter @dbt-tools/core build && tsc && vite build",
     "dev": "vite",
-    "dev:debug": "DBT_DEBUG=1 vite",
-    "dev:target": "DBT_TARGET=./target vite",
+    "dev:debug": "DBT_TOOLS_DEBUG=1 vite",
+    "dev:target": "DBT_TOOLS_TARGET_DIR=./target vite",
     "preview": "vite preview",
     "test:e2e": "pnpm build && playwright test",
     "lint": "pnpm lint:eslint && pnpm lint:stylelint",

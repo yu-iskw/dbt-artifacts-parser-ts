@@ -66,10 +66,10 @@ export const STATUS_HEX_DARK = {
 
 const HEX_SOURCE_LIGHT = "#059669";
 const HEX_SOURCE_DARK = "#45c49a";
-const SOFT_TEST_LIGHT = "rgba(100, 116, 139, 0.2)";
-const SOFT_TEST_DARK = "rgba(134, 144, 170, 0.28)";
-const SOFT_SOURCE_LIGHT = "rgba(5, 150, 105, 0.2)";
-const SOFT_SOURCE_DARK = "rgba(69, 196, 154, 0.26)";
+const SOFT_TEST_LIGHT = "rgba(100, 116, 139, 0.14)";
+const SOFT_TEST_DARK = "rgba(134, 144, 170, 0.2)";
+const SOFT_SOURCE_LIGHT = "rgba(5, 150, 105, 0.14)";
+const SOFT_SOURCE_DARK = "rgba(69, 196, 154, 0.2)";
 
 export const RESOURCE_TYPE_HEX_LIGHT: Record<string, string> = {
   model: "#1D4ED8",
@@ -104,29 +104,29 @@ export const RESOURCE_TYPE_HEX_DARK: Record<string, string> = {
  * Keep rgba values in sync when graph tokens change.
  */
 export const RESOURCE_TYPE_SOFT_FILL_LIGHT: Record<string, string> = {
-  model: "rgba(29, 78, 216, 0.2)",
+  model: "rgba(29, 78, 216, 0.14)",
   test: SOFT_TEST_LIGHT,
-  seed: "rgba(99, 91, 255, 0.2)",
-  snapshot: "rgba(217, 119, 6, 0.2)",
+  seed: "rgba(99, 91, 255, 0.14)",
+  snapshot: "rgba(217, 119, 6, 0.14)",
   source: SOFT_SOURCE_LIGHT,
   source_freshness: SOFT_SOURCE_LIGHT,
-  semantic_model: "rgba(8, 145, 178, 0.2)",
-  metric: "rgba(219, 39, 119, 0.2)",
-  exposure: "rgba(234, 88, 12, 0.2)",
+  semantic_model: "rgba(8, 145, 178, 0.14)",
+  metric: "rgba(219, 39, 119, 0.14)",
+  exposure: "rgba(234, 88, 12, 0.14)",
   analysis: SOFT_TEST_LIGHT,
   unit_test: SOFT_TEST_LIGHT,
 };
 
 export const RESOURCE_TYPE_SOFT_FILL_DARK: Record<string, string> = {
-  model: "rgba(92, 141, 235, 0.28)",
+  model: "rgba(92, 141, 235, 0.22)",
   test: SOFT_TEST_DARK,
-  seed: "rgba(149, 136, 232, 0.28)",
-  snapshot: "rgba(212, 162, 74, 0.28)",
+  seed: "rgba(149, 136, 232, 0.22)",
+  snapshot: "rgba(212, 162, 74, 0.22)",
   source: SOFT_SOURCE_DARK,
   source_freshness: SOFT_SOURCE_DARK,
-  semantic_model: "rgba(62, 176, 200, 0.28)",
-  metric: "rgba(209, 114, 174, 0.28)",
-  exposure: "rgba(217, 132, 92, 0.28)",
+  semantic_model: "rgba(62, 176, 200, 0.22)",
+  metric: "rgba(209, 114, 174, 0.22)",
+  exposure: "rgba(217, 132, 92, 0.22)",
   analysis: SOFT_TEST_DARK,
   unit_test: SOFT_TEST_DARK,
 };

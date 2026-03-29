@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/core",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Core library for dbt artifact graph management and analysis",
   "keywords": [
     "dbt",

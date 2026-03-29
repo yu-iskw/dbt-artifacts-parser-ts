@@ -30,6 +30,7 @@ import {
   TOOLTIP_NODE_PADDING,
   TOOLTIP_OVERLAY_SIZE,
 } from "./lineageOverlayConstants";
+import { getScrollToCenterSelectedNode } from "./lineageViewportScroll";
 
 // eslint-disable-next-line max-lines-per-function -- single SVG lineage surface
 export function LineageGraphSurface({
@@ -68,6 +69,8 @@ export function LineageGraphSurface({
   const [nodeOffsets, setNodeOffsets] = useState<
     Map<string, { dx: number; dy: number }>
   >(new Map());
+  /** Bumps after model-driven zoom/offset reset (microtask) so centering can run once zoom is 1. */
+  const [lineageLayoutEpoch, setLineageLayoutEpoch] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -94,6 +97,7 @@ export function LineageGraphSurface({
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef<{ x: number; y: number } | null>(null);
+  const zoomRef = useRef(zoom);
   const selectedResourceId = useMemo(
     () =>
       Array.from(nodeLayouts.values()).find(
@@ -118,22 +122,64 @@ export function LineageGraphSurface({
     queueMicrotask(() => {
       setZoom(1);
       setNodeOffsets(new Map());
-      const viewport = viewportRef.current;
-      if (viewport) {
-        viewport.scrollLeft = 0;
-        viewport.scrollTop = 0;
-      }
+      setLineageLayoutEpoch((e) => e + 1);
     });
   }, [model]);
 
   useLayoutEffect(() => {
+    zoomRef.current = zoom;
     const pending = pendingScrollRef.current;
-    if (pending && viewportRef.current) {
-      viewportRef.current.scrollLeft = pending.x;
-      viewportRef.current.scrollTop = pending.y;
+    const viewport = viewportRef.current;
+    if (pending && viewport) {
+      viewport.scrollLeft = pending.x;
+      viewport.scrollTop = pending.y;
       pendingScrollRef.current = null;
     }
   }, [zoom]);
+
+  /**
+   * Scroll to center the selected node when the graph baseline changes (model, selection, layout, dimensions,
+   * or cleared drag offsets). Intentionally omits `zoom` from deps so returning to 100% zoom after panning does
+   * not overwrite scrollLeft/scrollTop. Runs after the `[zoom]` layout effect so `zoomRef` matches `zoom` in
+   * the same commit.
+   */
+  useLayoutEffect(() => {
+    if (zoomRef.current !== 1 || nodeOffsets.size > 0) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    if (!selectedResourceId) {
+      viewport.scrollLeft = 0;
+      viewport.scrollTop = 0;
+      return;
+    }
+    const layout = visibleNodeLayouts.get(selectedResourceId);
+    if (!layout) {
+      viewport.scrollLeft = 0;
+      viewport.scrollTop = 0;
+      return;
+    }
+    const { scrollLeft, scrollTop } = getScrollToCenterSelectedNode({
+      layoutX: layout.x,
+      layoutY: layout.y,
+      nodeWidth,
+      nodeHeight,
+      zoom: 1,
+      viewportClientWidth: viewport.clientWidth,
+      viewportClientHeight: viewport.clientHeight,
+      scrollWidth: viewport.scrollWidth,
+      scrollHeight: viewport.scrollHeight,
+    });
+    viewport.scrollLeft = scrollLeft;
+    viewport.scrollTop = scrollTop;
+  }, [
+    lineageLayoutEpoch,
+    model,
+    nodeOffsets,
+    selectedResourceId,
+    visibleNodeLayouts,
+    nodeWidth,
+    nodeHeight,
+  ]);
 
   useEffect(() => {
     if (!contextMenu) return;

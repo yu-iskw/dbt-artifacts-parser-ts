@@ -123,10 +123,10 @@ pnpm --filter dbt-artifacts-parser gen:types
 pnpm dev:web
 
 # With local dbt artifacts preloaded
-DBT_TARGET=./target pnpm dev:web
+DBT_TOOLS_TARGET_DIR=./target pnpm dev:web
 
 # With debug logging
-DBT_DEBUG=1 DBT_TARGET=./target pnpm dev:web
+DBT_TOOLS_DEBUG=1 DBT_TOOLS_TARGET_DIR=./target pnpm dev:web
 ```
 
 See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for full environment variable reference.

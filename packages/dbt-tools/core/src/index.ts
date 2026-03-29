@@ -9,6 +9,14 @@ export * from "./analysis/bottleneck-analyzer";
 export * from "./analysis/critical-path-analyzer";
 export * from "./analysis/parallelism-analyzer";
 
+// Config exports (Node; not re-exported from browser entry)
+export {
+  getDbtToolsTargetDirFromEnv,
+  getDbtToolsReloadDebounceMs,
+  isDbtToolsDebugEnabled,
+  isDbtToolsWatchEnabled,
+} from "./config/dbt-tools-env";
+
 // I/O exports
 export * from "./io/artifact-loader";
 

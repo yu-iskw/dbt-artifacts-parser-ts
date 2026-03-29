@@ -204,7 +204,7 @@
 }
 
 .dependency-graph__node--dimmed {
-  opacity: 0.18;
+  opacity: 0.26;
 }
 
 /* Node title row */
@@ -243,9 +243,9 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.15;
   color: var(--graph-text);
 }
 
