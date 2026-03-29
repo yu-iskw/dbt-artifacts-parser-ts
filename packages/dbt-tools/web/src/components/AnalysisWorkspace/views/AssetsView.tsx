@@ -25,6 +25,8 @@ import {
   formatSeconds,
   displayResourcePath,
 } from "@web/lib/analysis-workspace/utils";
+import { useResourceCode } from "@web/hooks/useResourceCode";
+import { Spinner } from "../../ui/Spinner";
 
 /** Catalog copy when a field is missing from artifacts (sonarjs/no-duplicate-string). */
 const NOT_CAPTURED = "Not captured";
@@ -241,16 +243,69 @@ function renderSemanticModelDefinition(
   );
 }
 
-function AssetSqlOrDefinitionCard({
-  resource,
+function assetSqlOrDefinitionBody({
   showsDefinition,
   definition,
   sqlText,
+  codeLoading,
+  codeError,
 }: {
-  resource: ResourceNode;
   showsDefinition: boolean;
   definition: ResourceNode["definition"];
   sqlText: string | undefined;
+  codeLoading: boolean;
+  codeError: string | null;
+}): ReactNode {
+  if (showsDefinition && definition) {
+    return definition.kind === "metric"
+      ? renderMetricDefinition(definition)
+      : renderSemanticModelDefinition(definition);
+  }
+  if (codeLoading) {
+    return (
+      <div className="asset-sql-loading" aria-busy="true">
+        <Spinner size={28} label="Loading SQL" />
+        <span className="asset-sql-loading__label">Loading SQL…</span>
+      </div>
+    );
+  }
+  if (codeError) {
+    return (
+      <EmptyState icon="⚠" headline="Could not load SQL" subtext={codeError} />
+    );
+  }
+  if (sqlText) {
+    return <SqlPanel sql={sqlText} />;
+  }
+  return (
+    <EmptyState
+      icon="⌘"
+      headline={
+        showsDefinition ? "No definition available" : "No SQL available"
+      }
+      subtext={
+        showsDefinition
+          ? "This resource does not expose enough definition metadata in the current artifacts."
+          : "This resource does not expose compiled or raw SQL in the current artifacts."
+      }
+    />
+  );
+}
+
+function AssetSqlOrDefinitionCard({
+  showsDefinition,
+  definition,
+  sqlText,
+  codeLoading,
+  codeError,
+  hasCompiledSql,
+}: {
+  showsDefinition: boolean;
+  definition: ResourceNode["definition"];
+  sqlText: string | undefined;
+  codeLoading: boolean;
+  codeError: string | null;
+  hasCompiledSql: boolean;
 }) {
   return (
     <SectionCard
@@ -260,32 +315,18 @@ function AssetSqlOrDefinitionCard({
           ? definition?.kind === "metric"
             ? "Structured metric definition captured from the manifest."
             : "Structured semantic model definition captured from the manifest."
-          : resource.compiledCode
+          : hasCompiledSql
             ? "Compiled SQL for the selected resource."
             : "Raw SQL captured from the manifest."
       }
     >
-      {showsDefinition && definition ? (
-        definition.kind === "metric" ? (
-          renderMetricDefinition(definition)
-        ) : (
-          renderSemanticModelDefinition(definition)
-        )
-      ) : sqlText ? (
-        <SqlPanel sql={sqlText} />
-      ) : (
-        <EmptyState
-          icon="⌘"
-          headline={
-            showsDefinition ? "No definition available" : "No SQL available"
-          }
-          subtext={
-            showsDefinition
-              ? "This resource does not expose enough definition metadata in the current artifacts."
-              : "This resource does not expose compiled or raw SQL in the current artifacts."
-          }
-        />
-      )}
+      {assetSqlOrDefinitionBody({
+        showsDefinition,
+        definition,
+        sqlText,
+        codeLoading,
+        codeError,
+      })}
     </SectionCard>
   );
 }
@@ -320,12 +361,12 @@ function AssetSummarySection({
           <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
         </div>
         <div className="detail-stat">
-          <span>Upstream</span>
-          <strong>{dependencySummary?.upstream.length ?? 0}</strong>
+          <span>Direct upstream</span>
+          <strong>{dependencySummary?.upstreamCount ?? 0}</strong>
         </div>
         <div className="detail-stat">
-          <span>Downstream</span>
-          <strong>{dependencySummary?.downstream.length ?? 0}</strong>
+          <span>Direct downstream</span>
+          <strong>{dependencySummary?.downstreamCount ?? 0}</strong>
         </div>
       </div>
       {resource.description ? (
@@ -378,11 +419,11 @@ function AssetTestsSection({
     >
       <div className="detail-grid">
         <div className="detail-stat">
-          <span>Upstream dependencies</span>
+          <span>Direct upstream</span>
           <strong>{dependencySummary?.upstreamCount ?? 0}</strong>
         </div>
         <div className="detail-stat">
-          <span>Downstream dependencies</span>
+          <span>Direct downstream</span>
           <strong>{dependencySummary?.downstreamCount ?? 0}</strong>
         </div>
       </div>
@@ -482,6 +523,13 @@ export function AssetsView({
     });
   }, [activeTab, resource]);
 
+  const {
+    compiledCode: loadedCompiled,
+    rawCode: loadedRaw,
+    loading: codeLoading,
+    error: codeError,
+  } = useResourceCode(resource?.uniqueId ?? null);
+
   if (!resource) {
     return (
       <div className="workspace-card">
@@ -495,7 +543,8 @@ export function AssetsView({
   }
 
   const dependencySummary = analysis.dependencyIndex[resource.uniqueId];
-  const sqlText = resource.compiledCode ?? resource.rawCode ?? undefined;
+  const sqlText = loadedCompiled ?? loadedRaw ?? undefined;
+  const hasCompiledSql = loadedCompiled != null && loadedCompiled !== "";
   const definition = resource.definition ?? null;
   const showsDefinition =
     definition?.kind === "metric" || definition?.kind === "semantic_model";
@@ -597,10 +646,12 @@ export function AssetsView({
             className="asset-workspace__section"
           >
             <AssetSqlOrDefinitionCard
-              resource={resource}
               showsDefinition={showsDefinition}
               definition={definition}
               sqlText={sqlText}
+              codeLoading={codeLoading}
+              codeError={codeError}
+              hasCompiledSql={hasCompiledSql}
             />
           </section>
 

@@ -8,6 +8,15 @@ import {
 } from "../workers/analysisProtocol";
 import { debug, markDebug, measureDebug } from "../debug";
 
+const ERR_UNEXPECTED_ANALYSIS_RESPONSE = "Unexpected analysis worker response";
+const ERR_UNEXPECTED_RESOURCE_CODE_RESPONSE =
+  "Unexpected resource-code worker response";
+const ERR_UNEXPECTED_SEARCH_RESPONSE =
+  "Unexpected search-resources worker response";
+
+/** Matches {@link AnalysisWorkerRequest} `search-resources` and pending map kind. */
+const WORKER_MSG_SEARCH_RESOURCES = "search-resources" as const;
+
 export interface AnalysisLoadMetrics {
   requestId: number;
   source: AnalysisLoadSource;
@@ -22,11 +31,34 @@ export interface AnalysisLoadResult {
   metrics: AnalysisLoadMetrics;
 }
 
-type PendingRequest = {
+export interface ResourceCodePayload {
+  compiledCode: string | null;
+  rawCode: string | null;
+}
+
+type PendingLoad = {
+  kind: "load";
   resolve: (value: AnalysisLoadResult) => void;
   reject: (reason?: unknown) => void;
   source: AnalysisLoadSource;
 };
+
+type PendingResourceCode = {
+  kind: "resource-code";
+  resolve: (value: ResourceCodePayload) => void;
+  reject: (reason?: unknown) => void;
+};
+
+type PendingSearchResources = {
+  kind: typeof WORKER_MSG_SEARCH_RESOURCES;
+  resolve: (value: AnalysisState["resources"]) => void;
+  reject: (reason?: unknown) => void;
+};
+
+type PendingRequest =
+  | PendingLoad
+  | PendingResourceCode
+  | PendingSearchResources;
 
 class AnalysisWorkerClient {
   private worker: Worker;
@@ -74,7 +106,7 @@ class AnalysisWorkerClient {
     };
 
     const promise = new Promise<AnalysisLoadResult>((resolve, reject) => {
-      this.pending.set(requestId, { resolve, reject, source });
+      this.pending.set(requestId, { kind: "load", resolve, reject, source });
     });
 
     this.worker.postMessage(request, [manifestBytes, runResultsBytes]);
@@ -99,6 +131,50 @@ class AnalysisWorkerClient {
     });
   }
 
+  async requestResourceCode(uniqueId: string): Promise<ResourceCodePayload> {
+    const requestId = this.requestId + 1;
+    this.requestId = requestId;
+
+    const request: AnalysisWorkerRequest = {
+      type: "get-resource-code",
+      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+      requestId,
+      uniqueId,
+    };
+
+    const promise = new Promise<ResourceCodePayload>((resolve, reject) => {
+      this.pending.set(requestId, { kind: "resource-code", resolve, reject });
+    });
+
+    this.worker.postMessage(request);
+    return promise;
+  }
+
+  async searchResources(query: string): Promise<AnalysisState["resources"]> {
+    const requestId = this.requestId + 1;
+    this.requestId = requestId;
+
+    const request: AnalysisWorkerRequest = {
+      type: WORKER_MSG_SEARCH_RESOURCES,
+      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+      requestId,
+      query,
+    };
+
+    const promise = new Promise<AnalysisState["resources"]>(
+      (resolve, reject) => {
+        this.pending.set(requestId, {
+          kind: WORKER_MSG_SEARCH_RESOURCES,
+          resolve,
+          reject,
+        });
+      },
+    );
+
+    this.worker.postMessage(request);
+    return promise;
+  }
+
   terminate() {
     this.worker.terminate();
     for (const pending of this.pending.values()) {
@@ -112,22 +188,56 @@ class AnalysisWorkerClient {
     if (!pending) return;
     this.pending.delete(payload.requestId);
 
-    if (payload.type === "analysis-error") {
-      pending.reject(new Error(payload.message));
+    if (pending.kind === "load") {
+      if (payload.type === "analysis-error") {
+        pending.reject(new Error(payload.message));
+        return;
+      }
+      if (payload.type === "analysis-ready") {
+        pending.resolve({
+          analysis: payload.analysis,
+          metrics: {
+            requestId: payload.requestId,
+            source: pending.source,
+            dispatchMarkName: "",
+            readyMarkName: "",
+            analysisReadyMeasureName: "",
+            timings: payload.timings,
+          },
+        });
+        return;
+      }
+      pending.reject(new Error(ERR_UNEXPECTED_ANALYSIS_RESPONSE));
       return;
     }
 
-    pending.resolve({
-      analysis: payload.analysis,
-      metrics: {
-        requestId: payload.requestId,
-        source: pending.source,
-        dispatchMarkName: "",
-        readyMarkName: "",
-        analysisReadyMeasureName: "",
-        timings: payload.timings,
-      },
-    });
+    if (pending.kind === "resource-code") {
+      if (payload.type === "resource-code-error") {
+        pending.reject(new Error(payload.message));
+        return;
+      }
+      if (payload.type === "resource-code-ready") {
+        pending.resolve({
+          compiledCode: payload.compiledCode,
+          rawCode: payload.rawCode,
+        });
+        return;
+      }
+      pending.reject(new Error(ERR_UNEXPECTED_RESOURCE_CODE_RESPONSE));
+      return;
+    }
+
+    if (pending.kind === WORKER_MSG_SEARCH_RESOURCES) {
+      if (payload.type === "search-resources-error") {
+        pending.reject(new Error(payload.message));
+        return;
+      }
+      if (payload.type === "search-resources-ready") {
+        pending.resolve(payload.resources);
+        return;
+      }
+      pending.reject(new Error(ERR_UNEXPECTED_SEARCH_RESPONSE));
+    }
   }
 }
 
@@ -144,6 +254,18 @@ export async function loadAnalysisFromBuffers(
   source: AnalysisLoadSource,
 ): Promise<AnalysisLoadResult> {
   return getWorkerClient().loadAnalysis(manifestBytes, runResultsBytes, source);
+}
+
+export async function requestResourceCodeFromWorker(
+  uniqueId: string,
+): Promise<ResourceCodePayload> {
+  return getWorkerClient().requestResourceCode(uniqueId);
+}
+
+export async function searchResourcesFromWorker(
+  query: string,
+): Promise<AnalysisState["resources"]> {
+  return getWorkerClient().searchResources(query);
 }
 
 export function resetAnalysisWorkerClientForTests() {

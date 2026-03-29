@@ -61,4 +61,36 @@ describe("analysis snapshot facade", () => {
     expect(timings.graphBuildMs).toBeGreaterThanOrEqual(0);
     expect(timings.snapshotBuildMs).toBeGreaterThanOrEqual(0);
   });
+
+  it("uses direct dependency edges in dependencyIndex and omits bulk SQL fields", () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.10.json",
+    ) as Record<string, unknown>;
+    const runResultsJson = loadTestRunResults(
+      "v6",
+      "run_results.json",
+    ) as Record<string, unknown>;
+
+    const manifest = parseManifest(manifestJson);
+    const runResults = parseRunResults(runResultsJson);
+    const { analysis } = buildAnalysisSnapshotFromParsedArtifacts(
+      manifestJson,
+      runResultsJson,
+      manifest,
+      runResults,
+    );
+
+    for (const summary of Object.values(analysis.dependencyIndex)) {
+      expect(summary.upstream.every((u) => u.depth === 1)).toBe(true);
+      expect(summary.downstream.every((d) => d.depth === 1)).toBe(true);
+      expect(summary.upstream.length).toBeLessThanOrEqual(8);
+      expect(summary.downstream.length).toBeLessThanOrEqual(8);
+    }
+
+    const model = analysis.resources.find((r) => r.resourceType === "model");
+    expect(model).toBeDefined();
+    expect(model?.compiledCode).toBeNull();
+    expect(model?.rawCode).toBeNull();
+  });
 });
