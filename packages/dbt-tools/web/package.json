@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/web",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Web application for visual dbt artifact analysis",
   "keywords": [
     "dbt",
