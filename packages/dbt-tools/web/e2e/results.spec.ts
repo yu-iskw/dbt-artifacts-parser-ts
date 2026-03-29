@@ -5,6 +5,10 @@ const OPEN_IN_TIMELINE_LABEL = "Open in Timeline";
 const OPEN_IN_INVENTORY_LABEL = "Open in Inventory";
 const RESULTS_TABLE_ROW = ".results-table__row";
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 test.describe("runs workspace", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
@@ -94,7 +98,7 @@ test.describe("runs quick jump navigation", () => {
     ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=timeline/);
     await expect(page).toHaveURL(
-      new RegExp(`[?&]selected=${MODEL_UNIQUE_ID.replace(/\./g, "\\.")}`),
+      new RegExp(`[?&]selected=${escapeRegExp(MODEL_UNIQUE_ID)}`),
     );
   });
 
@@ -109,7 +113,7 @@ test.describe("runs quick jump navigation", () => {
     ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=inventory/);
     await expect(page).toHaveURL(
-      new RegExp(`[?&]resource=${MODEL_UNIQUE_ID.replace(/\./g, "\\.")}(&|$)`),
+      new RegExp(`[?&]resource=${escapeRegExp(MODEL_UNIQUE_ID)}(&|$)`),
     );
     await expect(page).toHaveURL(/[?&]assetTab=summary/);
     await expect(page.getByText("Asset summary")).toBeVisible();
@@ -127,7 +131,7 @@ test.describe("runs quick jump navigation", () => {
     await expect(page).toHaveURL(/[?&]view=inventory/);
     await expect(page).toHaveURL(/[?&]assetTab=lineage/);
     await expect(page).toHaveURL(
-      new RegExp(`[?&]resource=${MODEL_UNIQUE_ID.replace(/\./g, "\\.")}(&|$)`),
+      new RegExp(`[?&]resource=${escapeRegExp(MODEL_UNIQUE_ID)}(&|$)`),
     );
     await expect(
       page.getByRole("heading", { name: "Lineage graph" }).first(),
