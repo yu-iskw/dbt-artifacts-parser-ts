@@ -12,12 +12,23 @@ import type {
   AssetExplorerMode,
   DashboardStatusFilter,
 } from "@web/lib/analysis-workspace/types";
-import type { ExplorerTreeRow } from "@web/lib/analysis-workspace/explorerTree";
+import {
+  getResourceOriginLabel,
+  type ExplorerTreeRow,
+} from "@web/lib/analysis-workspace/explorerTree";
 import {
   ExplorerBranchIcon,
   ResourceTypeIcon,
   formatResourceTypeLabel,
 } from "./shared";
+
+function explorerLeafAriaLabel(resource: ResourceNode): string {
+  const typeLabel = formatResourceTypeLabel(resource.resourceType);
+  const fileName = getResourceOriginLabel(resource);
+  return fileName
+    ? `${resource.name}, ${typeLabel}, file ${fileName}`
+    : `${resource.name}, ${typeLabel}`;
+}
 
 export interface ExplorerPaneProps {
   treeRows: ExplorerTreeRow[];
@@ -142,11 +153,14 @@ function ExplorerTreeList({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  /** Keep in sync with `.explorer-tree__row` min-height (branch + single-line leaf) in workspace.css */
+  const explorerTreeRowEstimatePx = 46;
+
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
   const virtualizer = useVirtualizer({
     count: treeRows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 36,
+    estimateSize: () => explorerTreeRowEstimatePx,
     overscan: 16,
   });
 
@@ -255,24 +269,13 @@ function ExplorerTreeList({
                 style={{ paddingLeft: `${0.9 + depth * 1.05}rem` }}
                 onClick={() => setSelectedResourceId(resource.uniqueId)}
                 title={resource.uniqueId}
+                aria-label={explorerLeafAriaLabel(resource)}
               >
                 <span className="explorer-tree__leaf-icon" aria-hidden="true">
                   <ResourceTypeIcon resourceType={resource.resourceType} />
                 </span>
                 <span className="explorer-tree__resource-body">
-                  <span className="explorer-tree__resource-text">
-                    <span className="explorer-tree__label">
-                      {resource.name}
-                    </span>
-                    {node.originLabel && (
-                      <span className="explorer-tree__origin">
-                        {node.originLabel}
-                      </span>
-                    )}
-                  </span>
-                  <span className="explorer-tree__resource-type">
-                    {formatResourceTypeLabel(resource.resourceType)}
-                  </span>
+                  <span className="explorer-tree__label">{resource.name}</span>
                 </span>
                 {node.testStats &&
                   node.testStats.pass +

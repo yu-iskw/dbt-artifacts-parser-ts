@@ -9,17 +9,17 @@
 .explorer-tree__row {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
   width: 100%;
-  padding: 0.38rem 0.9rem;
+  padding: 0.48rem 0.95rem;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   color: var(--text);
   transition: background 120ms ease;
   border-radius: 0;
-  min-height: 2.1rem;
+  min-height: 2.45rem;
 }
 
 .explorer-tree__row:hover {
@@ -45,10 +45,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--text-soft);
   transition: transform 180ms ease;
 }
@@ -62,19 +62,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--text-soft);
 }
 
 .explorer-tree__folder svg {
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  min-height: 16px;
-  max-width: 16px;
-  max-height: 16px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 18px;
 }
 
 /* Leaf resource-type icon — constrain SVG size */
@@ -82,19 +82,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--text-soft);
 }
 
 .explorer-tree__leaf-icon svg {
-  width: 14px;
-  height: 14px;
-  min-width: 14px;
-  min-height: 14px;
-  max-width: 14px;
-  max-height: 14px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 18px;
 }
 
 /* Row label */
@@ -103,37 +103,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   min-width: 0;
 }
 
-/* Resource body (two-line leaf layout) */
+/* Resource body (single-line leaf: icon + label + optional badges) */
 .explorer-tree__resource-body {
   display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
+  flex-direction: row;
+  align-items: center;
   flex: 1;
   min-width: 0;
   overflow: hidden;
-}
-
-.explorer-tree__resource-text {
-  display: flex;
-  align-items: baseline;
-  gap: 0.38rem;
-  min-width: 0;
-}
-
-.explorer-tree__origin {
-  font-size: 0.72rem;
-  color: var(--text-soft);
-  flex-shrink: 0;
-}
-
-.explorer-tree__resource-type {
-  font-size: 0.71rem;
-  color: var(--text-soft);
-  font-weight: 500;
 }
 
 /* Test stats badges */
@@ -145,9 +126,9 @@
 }
 
 .explorer-tree__test-stat {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.08rem 0.32rem;
+  padding: 0.1rem 0.38rem;
   border-radius: 999px;
 }
 
@@ -163,11 +144,11 @@
 
 /* Count badge on branch row */
 .explorer-tree__count {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-soft);
   background: var(--bg-surface-muted);
-  padding: 0.1rem 0.4rem;
+  padding: 0.12rem 0.45rem;
   border-radius: 999px;
   flex-shrink: 0;
 }

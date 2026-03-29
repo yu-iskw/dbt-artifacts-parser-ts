@@ -12,6 +12,7 @@ import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import {
   type LineageDisplayMode,
   type LineageGraphModel,
+  type LineageGraphNodeLayout,
   type LensLegendItem,
   collectHighlightedGraphIds,
   filterLineageGraphModel,
@@ -30,6 +31,7 @@ import {
   TOOLTIP_NODE_PADDING,
   TOOLTIP_OVERLAY_SIZE,
 } from "./lineageOverlayConstants";
+import { getScrollToCenterSelectedNode } from "./lineageViewportScroll";
 
 // eslint-disable-next-line max-lines-per-function -- single SVG lineage surface
 export function LineageGraphSurface({
@@ -94,6 +96,17 @@ export function LineageGraphSurface({
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef<{ x: number; y: number } | null>(null);
+  const lineageScrollCenterRef = useRef<{
+    selectedResourceId: string;
+    visibleNodeLayouts: Map<string, LineageGraphNodeLayout>;
+    nodeWidth: number;
+    nodeHeight: number;
+  }>({
+    selectedResourceId: "",
+    visibleNodeLayouts: new Map(),
+    nodeWidth: 0,
+    nodeHeight: 0,
+  });
   const selectedResourceId = useMemo(
     () =>
       Array.from(nodeLayouts.values()).find(
@@ -114,17 +127,65 @@ export function LineageGraphSurface({
   const visibleNodeLayouts = filteredGraph.nodeLayouts;
   const visibleEdges = filteredGraph.graphEdges;
 
+  useLayoutEffect(() => {
+    lineageScrollCenterRef.current = {
+      selectedResourceId,
+      visibleNodeLayouts,
+      nodeWidth,
+      nodeHeight,
+    };
+  }, [selectedResourceId, visibleNodeLayouts, nodeWidth, nodeHeight]);
+
   useEffect(() => {
     queueMicrotask(() => {
       setZoom(1);
       setNodeOffsets(new Map());
-      const viewport = viewportRef.current;
-      if (viewport) {
-        viewport.scrollLeft = 0;
-        viewport.scrollTop = 0;
-      }
     });
   }, [model]);
+
+  useLayoutEffect(() => {
+    if (zoom !== 1 || nodeOffsets.size > 0) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const {
+      selectedResourceId: sel,
+      visibleNodeLayouts: layouts,
+      nodeWidth: nw,
+      nodeHeight: nh,
+    } = lineageScrollCenterRef.current;
+    if (!sel) {
+      viewport.scrollLeft = 0;
+      viewport.scrollTop = 0;
+      return;
+    }
+    const layout = layouts.get(sel);
+    if (!layout) {
+      viewport.scrollLeft = 0;
+      viewport.scrollTop = 0;
+      return;
+    }
+    const { scrollLeft, scrollTop } = getScrollToCenterSelectedNode({
+      layoutX: layout.x,
+      layoutY: layout.y,
+      nodeWidth: nw,
+      nodeHeight: nh,
+      zoom: 1,
+      viewportClientWidth: viewport.clientWidth,
+      viewportClientHeight: viewport.clientHeight,
+      scrollWidth: viewport.scrollWidth,
+      scrollHeight: viewport.scrollHeight,
+    });
+    viewport.scrollLeft = scrollLeft;
+    viewport.scrollTop = scrollTop;
+  }, [
+    model,
+    zoom,
+    nodeOffsets,
+    selectedResourceId,
+    visibleNodeLayouts,
+    nodeWidth,
+    nodeHeight,
+  ]);
 
   useLayoutEffect(() => {
     const pending = pendingScrollRef.current;
