@@ -1,8 +1,9 @@
 import type { AnalysisSnapshot } from "@dbt-tools/core/browser";
+import type { WorkspaceArtifactSource } from "../lib/artifactSourceKind";
 
 export const ANALYSIS_WORKER_PROTOCOL_VERSION = 2;
 
-export type AnalysisLoadSource = "preload" | "remote" | "upload";
+export type AnalysisLoadSource = WorkspaceArtifactSource;
 
 export interface AnalysisWorkerTimings {
   decodeMs: number;

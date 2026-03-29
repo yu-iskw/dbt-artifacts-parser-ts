@@ -12,6 +12,8 @@ Uses reload subscription [15. MVC-style layering for web app](0015-mvc-style-lay
 
 Amended-by [28. DBT_TOOLS\_ prefix for dbt-tools environment variables](0028-dbt-tools-prefix-for-dbt-tools-environment-variables.md)
 
+Related [29. Remote object storage artifact sources and auto-reload](0029-remote-object-storage-artifact-sources-and-auto-reload.md)
+
 ## Context
 
 When DBT_TARGET preloads artifacts successfully, users run `dbt run` repeatedly during local development. The app displayed stale analysis until the user manually refreshed the page or clicked "Load different artifacts". This added friction to the dev loop.

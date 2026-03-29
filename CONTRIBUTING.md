@@ -127,9 +127,17 @@ DBT_TOOLS_TARGET_DIR=./target pnpm dev:web
 
 # With debug logging
 DBT_TOOLS_DEBUG=1 DBT_TOOLS_TARGET_DIR=./target pnpm dev:web
+
+# Optional: load the latest complete manifest/run_results pair from S3 or GCS
+# (server-side only; JSON shape matches @dbt-tools/core getDbtToolsRemoteSourceConfigFromEnv)
+DBT_TOOLS_REMOTE_SOURCE='{"provider":"s3","bucket":"my-bucket","prefix":"dbt/runs","pollIntervalMs":30000}' pnpm dev:web
 ```
 
-See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for full environment variable reference.
+Remote semantics: the dev server **polls** object storage and **detects** when a newer complete artifact pair exists; the open workspace **switches only after the user confirms** in the UI (see [ADR-0029](./docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)).
+
+Use your cloud provider’s normal application credentials (for example the AWS SDK default credential chain, or Application Default Credentials / `GOOGLE_APPLICATION_CREDENTIALS` for GCS). Credentials stay in the **Node/Vite middleware process**, not in the browser.
+
+See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for the full environment variable reference and [`docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md`](./docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) for architecture.
 
 ---
 

@@ -56,6 +56,7 @@
   },
   "pnpm": {
     "overrides": {
+      "@tootallnate/once": "^3.0.1",
       "esbuild": "^0.27.2",
       "flatted": ">=3.4.2",
       "lodash": "^4.17.23",

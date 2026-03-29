@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useAnalysisPreload } from "./useAnalysisPreload";
 import { useDbtArtifactsReload } from "./useDbtArtifactsReload";
+import { useRemoteArtifactPoll } from "./useRemoteArtifactPoll";
 import type { AnalysisState } from "@web/types";
 import type { AnalysisLoadResult } from "../services/analysisLoader";
 import { debug, markDebug, measureDebug } from "../debug";
 import {
-  fetchArtifactSourceStatus,
   refetchFromApi,
   switchToArtifactRun,
   type RemoteArtifactRun,
@@ -59,36 +59,12 @@ export function useAnalysisPage(): UseAnalysisPageResult {
     pendingMetricsRef,
   );
 
-  useEffect(() => {
-    if (analysisSource !== "remote") {
-      setPendingRemoteRun(null);
-      setRemotePollIntervalMs(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    const poll = async () => {
-      try {
-        const status = await fetchArtifactSourceStatus();
-        if (!cancelled) {
-          setPendingRemoteRun(status.pendingRun);
-          setRemotePollIntervalMs(status.pollIntervalMs);
-        }
-      } catch (pollError) {
-        debug("Artifact source poll failed", pollError);
-      }
-    };
-
-    void poll();
-    const intervalId = window.setInterval(() => {
-      void poll();
-    }, remotePollIntervalMs ?? 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [analysisSource, remotePollIntervalMs]);
+  useRemoteArtifactPoll(
+    analysisSource,
+    setPendingRemoteRun,
+    setRemotePollIntervalMs,
+    remotePollIntervalMs,
+  );
 
   useEffect(() => {
     if (analysis == null || pendingMetricsRef.current == null) return;

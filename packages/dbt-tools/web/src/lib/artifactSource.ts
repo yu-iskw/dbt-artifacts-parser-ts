@@ -1,4 +1,4 @@
-import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
+import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
 
 export function sourceLabel(source: WorkspaceArtifactSource | null): string {
   if (source === "preload") return "Live target";

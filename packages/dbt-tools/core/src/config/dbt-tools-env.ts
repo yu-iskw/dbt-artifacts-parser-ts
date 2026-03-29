@@ -114,23 +114,14 @@ export function getDbtToolsReloadDebounceMs(): number {
 }
 
 /**
- * Optional remote artifact source configuration for managed object storage.
- * Expected format:
- * {
- *   "provider": "s3" | "gcs",
- *   "bucket": "bucket-name",
- *   "prefix": "path/to/runs",
- *   "pollIntervalMs": 30000
- * }
+ * Parse `DBT_TOOLS_REMOTE_SOURCE` JSON (without reading `process.env`).
+ * Returns `undefined` when JSON is invalid or required fields are missing.
  */
-export function getDbtToolsRemoteSourceConfigFromEnv():
-  | DbtToolsRemoteSourceConfig
-  | undefined {
-  const raw = trimEnv(process.env.DBT_TOOLS_REMOTE_SOURCE);
-  if (raw === undefined) return undefined;
-
+export function parseDbtToolsRemoteSourceConfigJson(
+  rawJson: string,
+): DbtToolsRemoteSourceConfig | undefined {
   try {
-    const parsed = JSON.parse(raw) as Partial<DbtToolsRemoteSourceConfig>;
+    const parsed = JSON.parse(rawJson) as Partial<DbtToolsRemoteSourceConfig>;
     if (parsed.provider !== "s3" && parsed.provider !== "gcs") {
       console.warn(
         "[dbt-tools] DBT_TOOLS_REMOTE_SOURCE provider must be 's3' or 'gcs'.",
@@ -166,4 +157,22 @@ export function getDbtToolsRemoteSourceConfigFromEnv():
     );
     return undefined;
   }
+}
+
+/**
+ * Optional remote artifact source configuration for managed object storage.
+ * Expected format:
+ * {
+ *   "provider": "s3" | "gcs",
+ *   "bucket": "bucket-name",
+ *   "prefix": "path/to/runs",
+ *   "pollIntervalMs": 30000
+ * }
+ */
+export function getDbtToolsRemoteSourceConfigFromEnv():
+  | DbtToolsRemoteSourceConfig
+  | undefined {
+  const raw = trimEnv(process.env.DBT_TOOLS_REMOTE_SOURCE);
+  if (raw === undefined) return undefined;
+  return parseDbtToolsRemoteSourceConfigJson(raw);
 }

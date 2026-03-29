@@ -5,6 +5,7 @@ import {
   getDbtToolsTargetDirFromEnv,
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
+  parseDbtToolsRemoteSourceConfigJson,
   resetDbtToolsEnvDeprecationWarningsForTests,
 } from "./dbt-tools-env";
 
@@ -184,6 +185,35 @@ describe("dbt-tools-env", () => {
     it("uses 300 for invalid canonical", () => {
       process.env.DBT_TOOLS_RELOAD_DEBOUNCE_MS = "nope";
       expect(getDbtToolsReloadDebounceMs()).toBe(300);
+    });
+  });
+
+  describe("parseDbtToolsRemoteSourceConfigJson", () => {
+    it("parses the same shape as env-backed happy path", () => {
+      const json = JSON.stringify({
+        provider: "s3",
+        bucket: "dbt-artifacts",
+        prefix: "/prod/runs/",
+        pollIntervalMs: 15000,
+        region: "ap-northeast-1",
+      });
+      expect(parseDbtToolsRemoteSourceConfigJson(json)).toEqual({
+        provider: "s3",
+        bucket: "dbt-artifacts",
+        prefix: "prod/runs",
+        pollIntervalMs: 15000,
+        region: "ap-northeast-1",
+        endpoint: undefined,
+        forcePathStyle: false,
+        projectId: undefined,
+      });
+    });
+
+    it("returns undefined for invalid JSON without reading env", () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      expect(parseDbtToolsRemoteSourceConfigJson("{nope")).toBeUndefined();
+      expect(warn).toHaveBeenCalled();
+      warn.mockRestore();
     });
   });
 

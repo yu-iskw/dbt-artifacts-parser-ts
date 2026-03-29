@@ -3,6 +3,7 @@ import type {
   RemoteArtifactProvider,
   RemoteArtifactRun,
 } from "../services/artifactSourceApi";
+import { normalizeArtifactPrefix } from "./prefix";
 
 export const MANIFEST_JSON = "manifest.json";
 export const RUN_RESULTS_JSON = "run_results.json";
@@ -22,13 +23,9 @@ export interface ResolvedArtifactRun {
   versionToken: string;
 }
 
-function normalizePrefix(prefix: string): string {
-  return prefix.replace(/^\/+|\/+$/g, "");
-}
-
 function toRelativeKey(key: string, prefix: string): string | null {
   const normalizedKey = key.replace(/^\/+/, "");
-  const normalizedPrefix = normalizePrefix(prefix);
+  const normalizedPrefix = normalizeArtifactPrefix(prefix);
   if (normalizedPrefix === "") return normalizedKey;
   if (normalizedKey === normalizedPrefix) return "";
   if (normalizedKey.startsWith(`${normalizedPrefix}/`)) {

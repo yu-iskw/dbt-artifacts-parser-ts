@@ -2,8 +2,9 @@ import {
   loadAnalysisFromBuffers,
   type AnalysisLoadResult,
 } from "./analysisLoader";
+import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
 
-export type WorkspaceArtifactSource = "preload" | "remote" | "upload";
+export type { WorkspaceArtifactSource };
 export type ManagedArtifactSourceMode = "none" | "preload" | "remote";
 export type RemoteArtifactProvider = "s3" | "gcs";
 
@@ -25,6 +26,56 @@ export interface ArtifactSourceStatus {
   currentRun: RemoteArtifactRun | null;
   pendingRun: RemoteArtifactRun | null;
   supportsSwitch: boolean;
+}
+
+const LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS: readonly [string, string] = [
+  "/api/manifest.json",
+  "/api/run_results.json",
+];
+
+/** Precedence: current managed paths, then legacy single-target paths. */
+const ARTIFACT_MANIFEST_RUN_RESULTS_URLS: ReadonlyArray<
+  readonly [manifestPath: string, runResultsPath: string]
+> = [
+  [
+    "/api/artifacts/current/manifest.json",
+    "/api/artifacts/current/run_results.json",
+  ],
+  LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS,
+];
+
+function emptyManagedArtifactStatusFields(): Pick<
+  ArtifactSourceStatus,
+  | "checkedAtMs"
+  | "remoteProvider"
+  | "remoteLocation"
+  | "pollIntervalMs"
+  | "currentRun"
+  | "pendingRun"
+  | "supportsSwitch"
+> {
+  return {
+    checkedAtMs: Date.now(),
+    remoteProvider: null,
+    remoteLocation: null,
+    pollIntervalMs: null,
+    currentRun: null,
+    pendingRun: null,
+    supportsSwitch: false,
+  };
+}
+
+function buildManagedArtifactStatus(
+  mode: ManagedArtifactSourceMode,
+  currentSource: Exclude<WorkspaceArtifactSource, "upload"> | null,
+  label: string,
+): ArtifactSourceStatus {
+  return {
+    mode,
+    currentSource,
+    label,
+    ...emptyManagedArtifactStatusFields(),
+  };
 }
 
 async function fetchArrayBufferOrNull(
@@ -51,11 +102,25 @@ async function fetchArtifactPair(
   return { manifestBytes, runResultsBytes };
 }
 
+async function fetchFirstArtifactPair(
+  attempts: ReadonlyArray<
+    readonly [string, string]
+  > = ARTIFACT_MANIFEST_RUN_RESULTS_URLS,
+): Promise<{
+  manifestBytes: ArrayBuffer;
+  runResultsBytes: ArrayBuffer;
+} | null> {
+  for (const [manifestPath, runResultsPath] of attempts) {
+    const pair = await fetchArtifactPair(manifestPath, runResultsPath);
+    if (pair != null) return pair;
+  }
+  return null;
+}
+
 async function loadFromLegacyApi(): Promise<AnalysisLoadResult | null> {
-  const legacyPair = await fetchArtifactPair(
-    "/api/manifest.json",
-    "/api/run_results.json",
-  );
+  const legacyPair = await fetchFirstArtifactPair([
+    LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS,
+  ]);
   if (legacyPair == null) return null;
   return loadAnalysisFromBuffers(
     legacyPair.manifestBytes,
@@ -75,12 +140,7 @@ export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus>
 export async function refetchFromApi(
   source: Exclude<WorkspaceArtifactSource, "upload"> = "preload",
 ): Promise<AnalysisLoadResult | null> {
-  const currentPair =
-    (await fetchArtifactPair(
-      "/api/artifacts/current/manifest.json",
-      "/api/artifacts/current/run_results.json",
-    )) ??
-    (await fetchArtifactPair("/api/manifest.json", "/api/run_results.json"));
+  const currentPair = await fetchFirstArtifactPair();
 
   if (currentPair == null) return null;
   return loadAnalysisFromBuffers(
@@ -100,18 +160,11 @@ export async function loadCurrentManagedArtifacts(): Promise<{
   } catch {
     const fallbackResult = await loadFromLegacyApi();
     return {
-      status: {
-        mode: fallbackResult == null ? "none" : "preload",
-        currentSource: fallbackResult == null ? null : "preload",
-        label: fallbackResult == null ? "Waiting for artifacts" : "Live target",
-        checkedAtMs: Date.now(),
-        remoteProvider: null,
-        remoteLocation: null,
-        pollIntervalMs: null,
-        currentRun: null,
-        pendingRun: null,
-        supportsSwitch: false,
-      },
+      status: buildManagedArtifactStatus(
+        fallbackResult == null ? "none" : "preload",
+        fallbackResult == null ? null : "preload",
+        fallbackResult == null ? "Waiting for artifacts" : "Live target",
+      ),
       result: fallbackResult,
     };
   }

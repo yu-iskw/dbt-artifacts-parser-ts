@@ -19,6 +19,7 @@ import type {
 import type { AnalysisState } from "@web/types";
 import { AppSidebar } from "./AppSidebar";
 import { LoadingCard } from "./LoadingCard";
+import { RemoteUpdateBanner } from "./RemoteUpdateBanner";
 import { SettingsView } from "./SettingsView";
 
 export interface AppWorkspaceChromeProps {
@@ -502,29 +503,11 @@ export function AppWorkspaceChrome({
         </header>
 
         {error && <ErrorBanner message={error} />}
-        {pendingRemoteRun && (
-          <section
-            className="remote-update-banner"
-            aria-label="Remote update available"
-          >
-            <div className="remote-update-banner__copy">
-              <p className="eyebrow">Remote update available</p>
-              <strong>{pendingRemoteRun.label}</strong>
-              <span>
-                A newer complete remote artifact pair is ready. Keep the current
-                investigation until you decide to switch.
-              </span>
-            </div>
-            <button
-              type="button"
-              className="primary-action"
-              onClick={() => void onAcceptPendingRemoteRun()}
-              disabled={acceptingRemoteRun}
-            >
-              {acceptingRemoteRun ? "Switching…" : "Load latest remote run"}
-            </button>
-          </section>
-        )}
+        <RemoteUpdateBanner
+          pendingRemoteRun={pendingRemoteRun}
+          acceptingRemoteRun={acceptingRemoteRun}
+          onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
+        />
 
         <WorkspaceContent
           activeView={activeView}
