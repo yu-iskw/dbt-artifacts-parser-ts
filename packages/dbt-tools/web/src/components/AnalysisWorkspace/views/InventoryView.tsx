@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
@@ -54,23 +54,37 @@ export function InventoryView({
   );
   const [lineageSearchLoading, setLineageSearchLoading] = useState(false);
   const [quickResourceId, setQuickResourceId] = useState("");
+  const searchRequestSequence = useRef(0);
 
   useEffect(() => {
     const q = lineageSearchQuery.trim();
     const delayMs = q ? LINEAGE_SEARCH_DEBOUNCE_MS : 0;
     const handle = window.setTimeout(() => {
       if (!q) {
+        searchRequestSequence.current += 1;
         setLineageSuggestions([]);
         setLineageSearchLoading(false);
         return;
       }
+
+      searchRequestSequence.current += 1;
+      const requestId = searchRequestSequence.current;
       setLineageSearchLoading(true);
-      void searchResourcesFromWorker(lineageSearchQuery)
+      void searchResourcesFromWorker(q)
         .then((rows) => {
-          setLineageSuggestions(rows);
+          if (searchRequestSequence.current === requestId) {
+            setLineageSuggestions(rows);
+          }
+        })
+        .catch(() => {
+          if (searchRequestSequence.current === requestId) {
+            setLineageSuggestions([]);
+          }
         })
         .finally(() => {
-          setLineageSearchLoading(false);
+          if (searchRequestSequence.current === requestId) {
+            setLineageSearchLoading(false);
+          }
         });
     }, delayMs);
     return () => window.clearTimeout(handle);
@@ -175,11 +189,13 @@ export function InventoryView({
                             : "inventory-lineage-suggestion"
                         }
                         onClick={() => {
+                          searchRequestSequence.current += 1;
                           setQuickResourceId(entry.uniqueId);
                           setLineageSearchQuery(
                             `${entry.name} (${entry.resourceType})`,
                           );
                           setLineageSuggestions([]);
+                          setLineageSearchLoading(false);
                         }}
                       >
                         <span className="inventory-lineage-suggestion__name">

@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AnalysisState } from "@web/types";
 import { AppWorkspaceChrome } from "./AppWorkspaceChrome";
 
+const mockOmniboxResults = vi.fn(() => ({ results: [], loading: false }));
+
 vi.mock("../AnalysisWorkspace", () => ({
   AnalysisWorkspace: () => <div data-testid="analysis-workspace" />,
 }));
@@ -15,7 +17,7 @@ vi.mock("./AppSidebar", () => ({
 }));
 
 vi.mock("@web/hooks/useOmniboxResults", () => ({
-  useOmniboxResults: () => [],
+  useOmniboxResults: () => mockOmniboxResults(),
 }));
 
 const actEnvironment = globalThis as typeof globalThis & {
@@ -152,6 +154,8 @@ beforeEach(() => {
 afterEach(() => {
   delete actEnvironment.IS_REACT_ACT_ENVIRONMENT;
   document.body.innerHTML = "";
+  mockOmniboxResults.mockReset();
+  mockOmniboxResults.mockReturnValue({ results: [], loading: false });
 });
 
 describe("AppWorkspaceChrome header", () => {
@@ -277,6 +281,108 @@ describe("AppWorkspaceChrome header", () => {
 
     expect(container.querySelector(".app-header")).not.toBeNull();
     expect(container.textContent).toContain("Settings");
+
+    cleanupRoot(root, container);
+  });
+
+  it("shows searching copy while async omnibox results are pending", () => {
+    mockOmniboxResults.mockReturnValue({ results: [], loading: true });
+    const workspace = {
+      ...makeWorkspace(),
+      searchState: { query: "orders", recentResourceIds: [], isOpen: true },
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <AppWorkspaceChrome
+          workspace={workspace as never}
+          analysis={{ resources: [], summary: { total_nodes: 0 } } as never}
+          analysisSource="preload"
+          error={null}
+          preloadLoading={false}
+          onLoadDifferent={vi.fn()}
+          onAnalysis={vi.fn()}
+          onError={vi.fn()}
+          themePreference="light"
+          setThemePreference={vi.fn()}
+          preferences={{
+            theme: "light",
+            sidebarCollapsedDefault: true,
+            timelineDefaults: {
+              showTests: false,
+              failuresOnly: false,
+              dependencyDirection: "both",
+              dependencyDepthHops: 2,
+            },
+            inventoryDefaults: {
+              explorerMode: "project",
+              lineageLensMode: "type",
+              lineageUpstreamDepth: 2,
+              lineageDownstreamDepth: 2,
+              allDepsMode: false,
+            },
+          }}
+          setPreferences={vi.fn()}
+          workspaceSignals={[]}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Searching…");
+
+    cleanupRoot(root, container);
+  });
+
+  it("shows no-match copy after async omnibox search completes empty", () => {
+    mockOmniboxResults.mockReturnValue({ results: [], loading: false });
+    const workspace = {
+      ...makeWorkspace(),
+      searchState: { query: "orders", recentResourceIds: [], isOpen: true },
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <AppWorkspaceChrome
+          workspace={workspace as never}
+          analysis={{ resources: [], summary: { total_nodes: 0 } } as never}
+          analysisSource="preload"
+          error={null}
+          preloadLoading={false}
+          onLoadDifferent={vi.fn()}
+          onAnalysis={vi.fn()}
+          onError={vi.fn()}
+          themePreference="light"
+          setThemePreference={vi.fn()}
+          preferences={{
+            theme: "light",
+            sidebarCollapsedDefault: true,
+            timelineDefaults: {
+              showTests: false,
+              failuresOnly: false,
+              dependencyDirection: "both",
+              dependencyDepthHops: 2,
+            },
+            inventoryDefaults: {
+              explorerMode: "project",
+              lineageLensMode: "type",
+              lineageUpstreamDepth: 2,
+              lineageDownstreamDepth: 2,
+              allDepsMode: false,
+            },
+          }}
+          setPreferences={vi.fn()}
+          workspaceSignals={[]}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("No matching resources");
 
     cleanupRoot(root, container);
   });

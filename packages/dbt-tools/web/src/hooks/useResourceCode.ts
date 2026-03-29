@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { requestResourceCodeFromWorker } from "@web/services/analysisLoader";
+import type { AnalysisState } from "@web/types";
 
 export interface UseResourceCodeResult {
   compiledCode: string | null;
@@ -14,13 +15,18 @@ export interface UseResourceCodeResult {
  */
 export function useResourceCode(
   uniqueId: string | null,
+  analysis: AnalysisState | null,
 ): UseResourceCodeResult {
   const [compiledCode, setCompiledCode] = useState<string | null>(null);
   const [rawCode, setRawCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
   useEffect(() => {
+    requestSequence.current += 1;
+    const requestId = requestSequence.current;
+
     if (!uniqueId) {
       setCompiledCode(null);
       setRawCode(null);
@@ -30,29 +36,33 @@ export function useResourceCode(
     }
 
     let cancelled = false;
+    setCompiledCode(null);
+    setRawCode(null);
     setLoading(true);
     setError(null);
 
     void requestResourceCodeFromWorker(uniqueId)
       .then((payload) => {
-        if (cancelled) return;
+        if (cancelled || requestSequence.current !== requestId) return;
         setCompiledCode(payload.compiledCode);
         setRawCode(payload.rawCode);
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        if (cancelled || requestSequence.current !== requestId) return;
         setCompiledCode(null);
         setRawCode(null);
         setError(err instanceof Error ? err.message : "Failed to load SQL");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && requestSequence.current === requestId) {
+          setLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [uniqueId]);
+  }, [analysis, uniqueId]);
 
   return { compiledCode, rawCode, loading, error };
 }

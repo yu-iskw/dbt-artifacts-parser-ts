@@ -528,7 +528,7 @@ export function AssetsView({
     rawCode: loadedRaw,
     loading: codeLoading,
     error: codeError,
-  } = useResourceCode(resource?.uniqueId ?? null);
+  } = useResourceCode(resource?.uniqueId ?? null, analysis);
 
   if (!resource) {
     return (
