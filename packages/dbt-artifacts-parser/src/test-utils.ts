@@ -73,8 +73,7 @@ export function getTestResourcePath(
     validatePathComponent(normalizedVersion);
     validatePathComponent(project);
     validatePathComponent(filename);
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-    // All segments validated by validatePathComponent; containment check below.
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — segments validated by validatePathComponent; containment check below.
     const full = path.join(
       resourcesDir,
       type,
@@ -84,6 +83,7 @@ export function getTestResourcePath(
     );
     // Defense in depth: ensure resolved path stays under resourcesDir
     const baseAbs = path.resolve(resourcesDir);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — full built only from validated components under resourcesDir.
     const resolved = path.resolve(full);
     if (!resolved.startsWith(baseAbs + path.sep) && resolved !== baseAbs) {
       throw new Error(`Path escape detected: ${full}`);
@@ -110,9 +110,9 @@ function findArtifactFiles(
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const sanitizedName = sanitizePathComponent(entry.name);
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal
-    // sanitizedName strips .. and path separators; containment check on next line.
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — sanitizedName strips traversal; containment check on next line.
     const fullPath = path.resolve(dir, sanitizedName);
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — baseDir is fixture root from caller; containment uses resolved absolute base.
     if (!fullPath.startsWith(path.resolve(baseDir))) continue;
     if (entry.isDirectory()) {
       files.push(...findArtifactFiles(fullPath, baseDir, nameIncludes));

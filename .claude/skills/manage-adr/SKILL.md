@@ -31,6 +31,34 @@ A clear distinction must be maintained:
 
 When an ADR requires implementation, link to design docs or relevant code in the `References` section.
 
+## Content boundaries (required)
+
+### Include in the ADR
+
+- Context, **alternatives considered**, Decision, Consequences, **trade-offs**
+- **Stable invariants** (rules that should survive refactors)
+- Links to related ADRs
+
+### Keep out of the ADR
+
+Put these in code, package README, or config instead:
+
+- Long file path lists and “directory listing” decisions
+- Duplicated **threshold tables** from ESLint, Vitest, or coverage scripts
+- Exhaustive component or filename inventories
+- Copy-pasted **hex palettes** or token values that already live in `tokens.css` (or equivalent)
+
+### Pointers
+
+- At most **one coarse pointer per concern** (package or subsystem), e.g. “timeline
+  focus-edge behavior in `@dbt-tools/web` Gantt stack”—not five relative paths.
+
+## Anti-patterns (do not)
+
+- A Decision section that reads like a **folder tree** or file manifest
+- An Amendment whose only purpose is to **update paths** after a move (intent unchanged)
+- Mermaid diagrams that mirror **repository layout** instead of concepts, boundaries, or data flow—unless the ADR is literally about repository layout
+
 ## When to Use
 
 - When making a significant architectural change.
@@ -40,11 +68,14 @@ When an ADR requires implementation, link to design docs or relevant code in the
 
 ## Relationship to `mend-adr`
 
-`manage-adr` is for authoring and lifecycle management of ADRs (create, supersede,
-link, and organize). It is **not** a drift-audit workflow.
+`manage-adr` is for **authoring** and lifecycle (create, supersede, link, organize).
+`mend-adr` is the **drift** workflow.
 
-Use `mend-adr` when the codebase may have diverged from accepted ADR claims and you
-need to append dated amendment sections that document current reality.
+Run `mend-adr` when behavior may no longer match an Accepted ADR. It audits **intent and
+stable facts first**; volatile implementation detail belongs in **living sources**
+(config, code, READMEs). Amendments should be **short and decision-level**, not copies
+of eslint tables or file inventories. Optional `docs/design/` notes are fine for deep
+maps if the team maintains them; otherwise use coarse pointers only.
 
 ## Instructions
 
@@ -100,6 +131,8 @@ Use Mermaid diagrams to visualize architectural decisions, system designs, and r
 
 #### When to Add Diagrams
 
+- Prefer **conceptual** diagrams (data flow, trust boundaries, user-visible behavior)
+  over **file-tree** diagrams unless the decision is specifically about repository layout
 - **System Architecture**: Show component relationships, data flow, and system boundaries
 - **Software Architecture**: Illustrate module organization, package dependencies, and code structure
 - **Sequence Diagrams**: Document interaction flows, API call sequences, or decision processes
@@ -158,5 +191,5 @@ Common diagram types for ADRs:
 - **Use Mermaid diagrams** to visualize complex decisions, architectures, and relationships. See section 7 above for guidance.
 - Refer to `references/adr-granularity.md` for guidance on ADR granularity.
 - Refer to `references/mermaid-diagrams.md` for diagram examples and patterns.
-- Refer to `references/adr-concepts.md` for more details on the ADR philosophy (if available).
-- Use the template in `docs/adr/template.md` as a guide.
+- Refer to `references/adr-concepts.md` for ADR philosophy and external links.
+- Use [`docs/adr/template.md`](../../../docs/adr/template.md) as a structural guide for new records.

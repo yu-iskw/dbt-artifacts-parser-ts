@@ -22,19 +22,28 @@ Drawing unbounded transitive edges would clutter the canvas and risk performance
    Behavior matches ADR 0023 for the drawn set: one-hop upstream (ranked/capped) and optional one-hop downstream with the same caps and toggles (no hop ≥ 2 segments).
 
 2. **Extended mode (default on)**  
-   Filter `showTimelineExtendedDeps` defaults **true** in [`App.tsx`](../../packages/dbt-tools/web/src/App.tsx) and when clearing timeline filters in [`ResultsView.tsx`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/views/ResultsView.tsx). Users may turn it **off** in the legend for a sparser chart. When **true**, `getFocusTimelineEdges` merges **extra** directed edges for **hop ≥ 2** only, discovered by BFS over [`timelineAdjacency`](../../packages/dbt-tools/web/src/services/analyze.ts) (inbound / outbound neighbor lists), restricted to ids present in the current filtered bundle index. Extended **downstream** segments are collected only when **Dependents** is on (`includeDownstream`), same as one-hop outbound. Duplicate `(fromId, toId)` keys dedupe with **one-hop winning**.
+   **Multi-hop** segments are **on by default** via filter **depth** (not a separate
+   boolean wired only from root app components): clearing timeline filters restores the
+   same default. When extended mode is active, the focus-edge builder merges **extra**
+   directed edges for **hop ≥ 2** via BFS over **timeline adjacency** from the core
+   snapshot, restricted to ids in the current filtered bundle. Extended **downstream**
+   segments follow the same **dependents** inclusion rules as one-hop outbound. Duplicate
+   edge keys **dedupe with one-hop winning**.
 
-3. **Caps** (see [`constants.ts`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/constants.ts))
+3. **Caps** (normative numbers; implementation in `@dbt-tools/web` Gantt constants)
    - `TIMELINE_EXTENDED_MAX_HOPS` = **3** (maximum hop index for extended segments).
    - `TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION` = **12** (separate budget for extended upstream vs extended downstream).
 
-   One-hop edges continue to use `TIMELINE_MAX_UPSTREAM_EDGES` / `TIMELINE_MAX_DOWNSTREAM_EDGES` and **All upstream** / **All downstream** as today. Extended edges do **not** consume those caps.
+   One-hop edges keep their own caps and do not share the extended budgets.
 
 4. **Styling**  
-   In [`GanttEdgeLayer.tsx`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/GanttEdgeLayer.tsx), `focusEdgeVisualProps` keys off `hop` and `leg` on [`FocusTimelineEdge`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/edgeGeometry.ts): hop ≥ 2 uses thinner stroke, lower opacity, tighter dash patterns than one-hop, with upstream extended strokes using the slate marker and downstream extended using the accent marker (parallel to secondary vs downstream one-hop).
+   Extended segments use distinct stroke weight, opacity, and dash patterns from
+   one-hop; upstream vs downstream extended styling parallels the one-hop palette story.
 
 5. **Hints**  
-   [`buildDependencyContextHint`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/edgeGeometry.ts) (via [`useGanttFocusEdges.ts`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/useGanttFocusEdges.ts)) builds focus-hover **Dependency context** in [`GanttTooltip.tsx`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/GanttTooltip.tsx): one-hop caps, neighbors absent from the timeline (filters/scope), reminder when **Extended deps** is off, and when extended caps truncate (including counts of transitive-on-timeline lines where applicable).
+   Tooltip **Dependency context** covers one-hop caps, off-timeline neighbors, when
+   extended mode is off, and extended truncation—implemented in the same Gantt stack as
+   ADR 0023.
 
 6. **Relationship to ADR 0023**  
    **Extended deps** defaults **on** for richer focus context; users who want one-hop-only on the chart disable it in the legend. ADR 0023 remains the contract for one-hop ranking and caps; multi-hop caps and semantics live here.
@@ -42,13 +51,12 @@ Drawing unbounded transitive edges would clutter the canvas and risk performance
 ```mermaid
 flowchart TB
   subgraph filters [Timeline filters]
-    ext[showTimelineExtendedDeps]
-    dep[showTimelineDependents]
-    other[All upstream / downstream etc.]
+    depth[Dependency depth]
+    direction[Dependency direction]
   end
-  geo[getFocusTimelineEdges]
-  adj[timelineAdjacency]
-  svg[GanttEdgeLayer]
+  geo[Focus edge builder]
+  adj[Timeline adjacency]
+  svg[Edge layer]
   filters --> geo
   adj --> geo
   geo --> svg
@@ -60,3 +68,10 @@ flowchart TB
 - **Tradeoff:** Default-on extended adds more SVG edges on large graphs; caps and opt-out mitigate clutter.
 - **Tradeoff:** `FocusTimelineEdge` carries `hop` and `leg` on every edge; render and tests must stay aligned.
 - **Non-goals:** Full project transitive closure, unbounded hops, or pixel-level E2E for edge appearance.
+
+## Amendment (2026-03-30)
+
+**Editorial (decision-first):** Trimmed path-heavy Decision bullets and the prior
+amendment. Extended mode is driven by **depth** and **clamping** in the web Gantt control
+mapping; adjacency is built in the **core analysis snapshot**. Caps **3** and **12** in
+Decision §3 remain the documented limits.

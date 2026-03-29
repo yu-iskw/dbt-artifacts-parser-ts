@@ -30,11 +30,13 @@ function resolveManifestPath(
     if (manifestPath.endsWith(".json")) {
       return resolveSafePath(manifestPath);
     }
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates manifestPath before join.
     return path.join(resolveSafePath(manifestPath), MANIFEST_FILE);
   }
 
   const effectiveTargetDir =
     targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
   return path.join(resolveSafePath(effectiveTargetDir), MANIFEST_FILE);
 }
 
@@ -46,11 +48,13 @@ function resolveRunResultsPath(
     if (runResultsPath.endsWith(".json")) {
       return resolveSafePath(runResultsPath);
     }
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates runResultsPath before join.
     return path.join(resolveSafePath(runResultsPath), RUN_RESULTS_FILE);
   }
 
   const effectiveTargetDir =
     targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
   return path.join(resolveSafePath(effectiveTargetDir), RUN_RESULTS_FILE);
 }
 
@@ -59,11 +63,13 @@ function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
     if (catalogPath.endsWith(".json")) {
       return resolveSafePath(catalogPath);
     }
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates catalogPath before join.
     return path.join(resolveSafePath(catalogPath), CATALOG_FILE);
   }
 
   const effectiveTargetDir =
     targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
   return path.join(resolveSafePath(effectiveTargetDir), CATALOG_FILE);
 }
 

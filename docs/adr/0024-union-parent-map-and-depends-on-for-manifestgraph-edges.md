@@ -43,3 +43,11 @@ flowchart LR
 - **Tradeoff:** Slightly more edges when both structures overlap; duplicates are suppressed by `hasEdge`.
 - **Non-goals:** This does **not** add **multi-hop** dependency bands on the timeline; ADR 0023 still governs UI scope. Users needing transitive views should use **Lineage** or a future ADR.
 - **Mitigation if needed:** If any edge from `depends_on` is ever deemed invalid for a non-test node, narrow the merge (e.g. tests only) and document here—in the common case, `depends_on` is the authoritative direct ref list.
+
+## Amendment (2026-03-29)
+
+`timelineAdjacency` is derived from the Graphology graph during snapshot construction in
+`packages/dbt-tools/core/src/analysis/analysis-snapshot.ts` (`buildTimelineAdjacency`),
+not in `packages/dbt-tools/web/src/services/analyze.ts`. The Context section’s reference
+to adjacency from `analyze.ts` described an older wiring; the merge order in
+`ManifestGraph.addEdges` (parent_map then depends_on) is unchanged.

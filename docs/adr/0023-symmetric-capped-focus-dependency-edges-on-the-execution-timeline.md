@@ -27,20 +27,32 @@ That asymmetry was easy to read as broken graph data: focusing a **producer** hi
 
 ## Decision
 
-1. **Default dependents on**  
-   New sessions and “clear timeline filters” reset `showTimelineDependents` to **true** so producer focus shows direct dependents without extra legend hunting (`App.tsx`, `ResultsView.tsx`).
+1. **Default dependents on**
+   New sessions and “clear timeline filters” restore defaults so **both** directions of
+   direct dependency context are available without extra hunting (see workspace
+   preferences / timeline filter reset behavior in `@dbt-tools/web`).
 
-2. **Downstream parity with upstream**  
-   When dependents are enabled, outbound neighbors on the visible timeline are **ranked** and **capped** using the same structural idea as inbound edges (`TIMELINE_MAX_DOWNSTREAM_EDGES`, aligned with the upstream cap constant). A legend toggle **`showAllTimelineDownstreamEdges`** mirrors **All upstream** (`TimelineFilterState`, `GanttLegend.tsx`, `GanttChart.tsx`).
+2. **Downstream parity with upstream**
+   When dependents are included, outbound neighbors on the visible timeline are **ranked**
+   and **capped** using the same structural idea as inbound edges (shared cap constants in
+   the timeline Gantt stack). Optional “show all” behavior may exist at the **geometry**
+   layer without forcing clutter in the default UI.
 
-3. **Geometry and options**  
-   `getFocusTimelineEdges` in `edgeGeometry.ts` returns `{ edges, extendedTruncated }` and takes options including `showAllDownstream`, `maxDownstreamEdges`, and `extendedDeps` (see [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md)). Each `FocusTimelineEdge` carries `hop` (1 for direct neighbors) and `leg` (`upstream` | `downstream`). Shared capping uses `applyNeighborCap`. Outbound order uses `rankOutboundNeighborIds` (sibling-test grouping where applicable, resource-type rank, temporal proximity to the focus end, then id). `countOutboundOnTimeline` supports hints and tests.
+3. **Geometry**
+   Focus-edge geometry produces ranked, capped edges with per-edge `hop` and `leg`
+   metadata; it composes with **extended** (multi-hop) mode in
+   [ADR 0025](0025-optional-multi-hop-capped-focus-edges-on-the-execution-timeline.md).
+   Implementation: `@dbt-tools/web` timeline Gantt modules (geometry, constants, edge
+   layer).
 
-4. **Tooltip hints**  
-   When the user hovers the focused row, **Dependency context** in the tooltip is built by [`buildDependencyContextHint`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/edgeGeometry.ts) (wired through [`useGanttFocusEdges.ts`](../../packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/gantt/useGanttFocusEdges.ts)): direct-neighbor caps, neighbors not on the timeline, extended-mode reminders, and extended truncation (see ADR 0025).
+4. **Tooltip hints**
+   Focus-hover **Dependency context** explains caps, neighbors missing from the visible
+   bundle, extended-mode state, and truncation—implemented alongside the same Gantt stack.
 
-5. **Data contract unchanged**  
-   Edges are only drawn between ids present in the **current filtered** timeline bundle index. Adjacency remains `timelineAdjacency` from `services/analyze.ts`.
+5. **Data contract**
+   Edges connect only resources present in the **current filtered** timeline bundle.
+   **Adjacency** is derived from the manifest graph via the **core analysis snapshot**
+   (not ad hoc in the web artifact loader).
 
 ### Non-decisions
 
@@ -51,22 +63,22 @@ That asymmetry was easy to read as broken graph data: focusing a **producer** hi
 
 ```mermaid
 flowchart TB
-  subgraph filters [TimelineFilterState]
-    dep[showTimelineDependents]
-    allUp[showAllTimelineUpstreamEdges]
-    allDown[showAllTimelineDownstreamEdges]
-    ext[showTimelineExtendedDeps default on]
+  subgraph filters [Timeline filters and prefs]
+    dir[Direction and depth]
   end
-  subgraph chart [GanttChart]
-    gc[Chart and bundle index]
+  subgraph chart [Gantt chart]
+    bundle[Filtered bundle index]
   end
   subgraph derive [Geometry]
-    geo[getFocusTimelineEdges]
+    geo[Focus edge builder]
+  end
+  subgraph data [Core snapshot]
+    adj[Timeline adjacency from graph]
   end
   filters --> chart
   chart --> geo
-  adj[timelineAdjacency from analyze] --> geo
-  geo --> svg[GanttEdgeLayer SVG paths]
+  adj --> geo
+  geo --> svg[Edge layer]
 ```
 
 ## Consequences
@@ -74,4 +86,13 @@ flowchart TB
 - **Easier mental model**: Focusing either end of a direct manifest edge tends to reveal that edge when both rows are visible, reducing false “missing edge” reports.
 - **Bounded clutter**: High fan-out nodes stay usable in the default compact mode; power users can expand via **All upstream** / **All downstream**.
 - **More legend surface**: Users who want a minimal canvas can still turn **Dependents** off.
-- **Maintenance**: Changes to cap sizes, rank keys, or filter defaults should stay aligned with tests in `edgeGeometry.test.ts`, tooltip copy in `useGanttFocusEdges.ts`, and focus-edge rendering in `GanttEdgeLayer.tsx`.
+- **Maintenance**: Keep caps, ranking keys, filter defaults, geometry, tooltips, and
+  edge rendering in `@dbt-tools/web` aligned; colocated tests in the timeline Gantt stack.
+
+## Amendment (2026-03-30)
+
+**Editorial (decision-first):** Replaced path-heavy Decision text and the prior amendment
+with the version above. Filter state is expressed as **direction** and **depth** (not the
+older boolean flag names); defaults and reset behavior live in workspace preferences and
+timeline controls. **Numeric caps** remain in the Gantt constants module. Geometry may
+still support “show all neighbors” options that the default UI does not surface.

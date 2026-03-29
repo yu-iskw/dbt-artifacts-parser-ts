@@ -29,42 +29,24 @@ A scored analysis across five candidate schemas was conducted, evaluating WCAG c
 
 Replace the foundation surface tokens and graph canvas tokens with a neutral cool-gray palette. The four-layer architecture from ADR 0019 is preserved; only palette values change.
 
-### Foundation surface tokens
+### Palette and tokens (living source)
 
-| Token            | Old value                | New value             | Notes                    |
-| ---------------- | ------------------------ | --------------------- | ------------------------ |
-| `--bg`           | `#edf1f5`                | `#f6f8fa`             | Cooler, lighter gray     |
-| `--bg-soft`      | `#f7f8fb`                | `#ffffff`             | Pure white soft surface  |
-| `--panel`        | `rgba(255,255,255,0.94)` | `#ffffff`             | Opaque white panel       |
-| `--panel-border` | `rgba(29,39,51,0.12)`    | `rgba(31,45,61,0.14)` | Slightly stronger border |
+**Normative hex values, semantic roles, and legacy aliases** are maintained in
+`packages/dbt-tools/web/src/styles/tokens.css` and mirrored for TypeScript consumers in
+`packages/dbt-tools/web/src/constants/themeColors.ts`. This ADR records the **design
+decision**, not a copy of that table.
 
-### Text hierarchy tokens
+At a high level: adopt a **neutral cool-gray** foundation and **stronger text contrast**
+on panels (addressing WCAG failures called out in Context), shift **accent** toward a
+lighter GitHub-style blue, and keep **semantic status** and **dbt resource-type** layers
+stable from ADR 0019.
 
-| Token          | Old value | New value | Contrast on white |
-| -------------- | --------- | --------- | ----------------- |
-| `--text`       | `#17212b` | `#0d1117` | 19.5:1 (AAA)      |
-| `--text-muted` | `#536273` | `#424a53` | 8.1:1 (AAA)       |
-| `--text-soft`  | `#708091` | `#626c77` | 4.9:1 (AA)        |
+### Graph canvas and graph-local behavior
 
-### Brand + accent tokens
-
-| Token           | Old value              | New value              |
-| --------------- | ---------------------- | ---------------------- |
-| `--accent`      | `#1747b3`              | `#0969da`              |
-| `--accent-soft` | `rgba(37,88,217,0.12)` | `rgba(9,105,218,0.12)` |
-
-### Graph canvas and graph-local tokens
-
-The dark-mode lineage graph is a deliberate exception to the surrounding dark app shell. Instead of a dark graph canvas, it uses a light-gray analytical surface inside dark mode.
-
-| Token / role                       | Direction                | Notes                                                                                   |
-| ---------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
-| `--graph-bg-top`                   | light gray               | Graph-local top canvas tone                                                             |
-| `--graph-bg-bottom`                | light gray               | Slightly darker than top for depth without restoring a dark canvas                      |
-| `--graph-bg-accent`                | light neutral accent     | Keeps subtle spotlighting without re-darkening the canvas                               |
-| `--graph-panel*`                   | light neutral surfaces   | Legend, controls, menus, and overlays are visually matched to the lighter graph surface |
-| `--graph-text*`                    | dark-on-light text roles | Graph-local text hierarchy is tuned for readability on the lighter canvas and panels    |
-| `--graph-edge` / `--graph-border*` | medium neutral contrast  | Edges and borders remain visible without dominating node fills                          |
+The dark-mode lineage graph remains a **light analytical island**: graph-local tokens
+(`--graph-*`) and behavior-level rules in `lineage-graph.css` tune canvas, panels, text,
+edges, and badges for **dark-on-light** reading inside dark app chrome—without duplicating
+the full token matrix here.
 
 ### Unchanged layers
 
@@ -114,7 +96,7 @@ The neutral foundation still improves app-wide contrast, but the lineage graph n
 ### Mitigations
 
 - All semantic and resource-type token values are preserved, so node meaning remains consistent even as graph-local surfaces change.
-- The graph-specific exception is isolated to graph-local aliases in `tokens.css` and graph UI rules in `lineage-graph.css`, limiting the impact on the rest of dark mode.
+- The graph-specific exception is isolated to graph-local aliases and graph UI rules (see References), limiting the impact on the rest of dark mode.
 - The lighter canvas is paired with graph-local rebalancing of text, panels, edges, test badges, and node metadata so readability does not regress.
 
 ## References
