@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { EmptyState } from "../EmptyState";
 import type { ResourceNode } from "@web/types";
 import {
@@ -60,6 +60,33 @@ function getInitialFiltersExpanded(): boolean {
     // ignore localStorage failures
   }
   return false;
+}
+
+function VirtualExplorerRow({
+  virtualRow,
+  measureRow,
+  children,
+}: {
+  virtualRow: { index: number; start: number };
+  measureRow: (el: HTMLDivElement | null) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      data-index={virtualRow.index}
+      ref={measureRow}
+      className="explorer-tree__virtual-row"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        transform: `translateY(${virtualRow.start}px)`,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function ExplorerModeIcon({ mode }: { mode: AssetExplorerMode }) {
@@ -153,7 +180,7 @@ function ExplorerTreeList({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  /** Keep in sync with `.explorer-tree__row` min-height (branch + single-line leaf) in workspace.css */
+  /** Initial row height guess before `measureElement` runs (see `.explorer-tree__row` in workspace.css). */
   const explorerTreeRowEstimatePx = 46;
 
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
@@ -163,6 +190,7 @@ function ExplorerTreeList({
     estimateSize: () => explorerTreeRowEstimatePx,
     overscan: 16,
   });
+  const measureRow = virtualizer.measureElement;
 
   if (treeRows.length === 0) {
     return (
@@ -194,16 +222,10 @@ function ExplorerTreeList({
           if (node.kind === "branch") {
             const isExpanded = expandedNodeIds.has(node.id);
             return (
-              <div
+              <VirtualExplorerRow
                 key={virtualRow.key}
-                className="explorer-tree__virtual-row"
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
+                virtualRow={virtualRow}
+                measureRow={measureRow}
               >
                 <button
                   type="button"
@@ -242,22 +264,16 @@ function ExplorerTreeList({
                     )}
                   <span className="explorer-tree__count">{node.count}</span>
                 </button>
-              </div>
+              </VirtualExplorerRow>
             );
           }
 
           const resource = node.resource!;
           return (
-            <div
+            <VirtualExplorerRow
               key={virtualRow.key}
-              className="explorer-tree__virtual-row"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
+              virtualRow={virtualRow}
+              measureRow={measureRow}
             >
               <button
                 type="button"
@@ -297,7 +313,7 @@ function ExplorerTreeList({
                     </span>
                   )}
               </button>
-            </div>
+            </VirtualExplorerRow>
           );
         })}
       </div>

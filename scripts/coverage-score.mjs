@@ -21,12 +21,26 @@ const THRESHOLDS = {
   statements: 60,
 };
 
+/** Larger heap for Vitest + v8 coverage; default Node heap can OOM during compilation. */
+const VITEST_NODE_OPTIONS_HEAP = "--max-old-space-size=8192";
+
+function vitestChildEnv() {
+  const existing = process.env.NODE_OPTIONS?.trim() ?? "";
+  return {
+    ...process.env,
+    NODE_OPTIONS: existing
+      ? `${existing} ${VITEST_NODE_OPTIONS_HEAP}`
+      : VITEST_NODE_OPTIONS_HEAP,
+  };
+}
+
 function run() {
   // 1. Run vitest with coverage
   const r = spawnSync("pnpm", ["exec", "vitest", "run", "--coverage"], {
     cwd: projectRoot,
     encoding: "utf8",
     stdio: "inherit",
+    env: vitestChildEnv(),
   });
 
   if (r.status !== 0) {

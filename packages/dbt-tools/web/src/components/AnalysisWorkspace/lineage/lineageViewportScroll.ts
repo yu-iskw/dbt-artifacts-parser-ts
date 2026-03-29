@@ -1,6 +1,10 @@
 /**
- * Scroll coordinates for the lineage viewport (canvas uses scale(zoom) from top-left).
- * Node center in scroll space: ((layoutX + dx) + nodeWidth/2) * zoom
+ * Scroll coordinates for the lineage viewport. The canvas applies `scale(zoom)` from the top-left;
+ * scrollLeft/scrollTop are in the same coordinate space as that scaled canvas.
+ *
+ * Uses **base layout coordinates** (`layoutX` / `layoutY`) only. Per-node drag offsets (`dx`/`dy` from
+ * `nodeOffsets`) are intentionally **not** passed here: callers skip auto-centering while any drag
+ * offset is active (`LineageGraphSurface` when `nodeOffsets.size > 0`).
  */
 export interface ScrollToCenterSelectedNodeParams {
   layoutX: number;
@@ -33,7 +37,10 @@ export function getScrollToCenterSelectedNode(
     viewportClientWidth <= 0 ||
     viewportClientHeight <= 0 ||
     !Number.isFinite(layoutX) ||
-    !Number.isFinite(layoutY)
+    !Number.isFinite(layoutY) ||
+    !Number.isFinite(nodeWidth) ||
+    !Number.isFinite(nodeHeight) ||
+    !Number.isFinite(zoom)
   ) {
     return { scrollLeft: 0, scrollTop: 0 };
   }

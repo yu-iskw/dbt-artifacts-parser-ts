@@ -83,4 +83,68 @@ describe("getScrollToCenterSelectedNode", () => {
       }),
     ).toEqual({ scrollLeft: 0, scrollTop: 0 });
   });
+
+  it("returns zeros when both viewport client dimensions are zero", () => {
+    expect(
+      getScrollToCenterSelectedNode({
+        layoutX: 50,
+        layoutY: 50,
+        nodeWidth: 20,
+        nodeHeight: 20,
+        zoom: 1,
+        viewportClientWidth: 0,
+        viewportClientHeight: 0,
+        scrollWidth: 500,
+        scrollHeight: 500,
+      }),
+    ).toEqual({ scrollLeft: 0, scrollTop: 0 });
+  });
+
+  it("returns zeros when scroll extent is smaller than the viewport", () => {
+    expect(
+      getScrollToCenterSelectedNode({
+        layoutX: 100,
+        layoutY: 100,
+        nodeWidth: 40,
+        nodeHeight: 40,
+        zoom: 1,
+        viewportClientWidth: 400,
+        viewportClientHeight: 300,
+        scrollWidth: 200,
+        scrollHeight: 150,
+      }),
+    ).toEqual({ scrollLeft: 0, scrollTop: 0 });
+  });
+
+  it("returns zeros when node dimensions are not finite", () => {
+    expect(
+      getScrollToCenterSelectedNode({
+        layoutX: 0,
+        layoutY: 0,
+        nodeWidth: Number.NaN,
+        nodeHeight: 10,
+        zoom: 1,
+        viewportClientWidth: 200,
+        viewportClientHeight: 200,
+        scrollWidth: 500,
+        scrollHeight: 500,
+      }),
+    ).toEqual({ scrollLeft: 0, scrollTop: 0 });
+  });
+
+  it("returns zeros when zoom is not finite", () => {
+    expect(
+      getScrollToCenterSelectedNode({
+        layoutX: 0,
+        layoutY: 0,
+        nodeWidth: 10,
+        nodeHeight: 10,
+        zoom: Number.NaN,
+        viewportClientWidth: 200,
+        viewportClientHeight: 200,
+        scrollWidth: 500,
+        scrollHeight: 500,
+      }),
+    ).toEqual({ scrollLeft: 0, scrollTop: 0 });
+  });
 });

@@ -12,7 +12,6 @@ import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import {
   type LineageDisplayMode,
   type LineageGraphModel,
-  type LineageGraphNodeLayout,
   type LensLegendItem,
   collectHighlightedGraphIds,
   filterLineageGraphModel,
@@ -70,6 +69,8 @@ export function LineageGraphSurface({
   const [nodeOffsets, setNodeOffsets] = useState<
     Map<string, { dx: number; dy: number }>
   >(new Map());
+  /** Bumps after model-driven zoom/offset reset (microtask) so centering can run once zoom is 1. */
+  const [lineageLayoutEpoch, setLineageLayoutEpoch] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -96,17 +97,7 @@ export function LineageGraphSurface({
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef<{ x: number; y: number } | null>(null);
-  const lineageScrollCenterRef = useRef<{
-    selectedResourceId: string;
-    visibleNodeLayouts: Map<string, LineageGraphNodeLayout>;
-    nodeWidth: number;
-    nodeHeight: number;
-  }>({
-    selectedResourceId: "",
-    visibleNodeLayouts: new Map(),
-    nodeWidth: 0,
-    nodeHeight: 0,
-  });
+  const zoomRef = useRef(zoom);
   const selectedResourceId = useMemo(
     () =>
       Array.from(nodeLayouts.values()).find(
@@ -127,38 +118,41 @@ export function LineageGraphSurface({
   const visibleNodeLayouts = filteredGraph.nodeLayouts;
   const visibleEdges = filteredGraph.graphEdges;
 
-  useLayoutEffect(() => {
-    lineageScrollCenterRef.current = {
-      selectedResourceId,
-      visibleNodeLayouts,
-      nodeWidth,
-      nodeHeight,
-    };
-  }, [selectedResourceId, visibleNodeLayouts, nodeWidth, nodeHeight]);
-
   useEffect(() => {
     queueMicrotask(() => {
       setZoom(1);
       setNodeOffsets(new Map());
+      setLineageLayoutEpoch((e) => e + 1);
     });
   }, [model]);
 
   useLayoutEffect(() => {
-    if (zoom !== 1 || nodeOffsets.size > 0) return;
+    zoomRef.current = zoom;
+    const pending = pendingScrollRef.current;
+    const viewport = viewportRef.current;
+    if (pending && viewport) {
+      viewport.scrollLeft = pending.x;
+      viewport.scrollTop = pending.y;
+      pendingScrollRef.current = null;
+    }
+  }, [zoom]);
+
+  /**
+   * Scroll to center the selected node when the graph baseline changes (model, selection, layout, dimensions,
+   * or cleared drag offsets). Intentionally omits `zoom` from deps so returning to 100% zoom after panning does
+   * not overwrite scrollLeft/scrollTop. Runs after the `[zoom]` layout effect so `zoomRef` matches `zoom` in
+   * the same commit.
+   */
+  useLayoutEffect(() => {
+    if (zoomRef.current !== 1 || nodeOffsets.size > 0) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const {
-      selectedResourceId: sel,
-      visibleNodeLayouts: layouts,
-      nodeWidth: nw,
-      nodeHeight: nh,
-    } = lineageScrollCenterRef.current;
-    if (!sel) {
+    if (!selectedResourceId) {
       viewport.scrollLeft = 0;
       viewport.scrollTop = 0;
       return;
     }
-    const layout = layouts.get(sel);
+    const layout = visibleNodeLayouts.get(selectedResourceId);
     if (!layout) {
       viewport.scrollLeft = 0;
       viewport.scrollTop = 0;
@@ -167,8 +161,8 @@ export function LineageGraphSurface({
     const { scrollLeft, scrollTop } = getScrollToCenterSelectedNode({
       layoutX: layout.x,
       layoutY: layout.y,
-      nodeWidth: nw,
-      nodeHeight: nh,
+      nodeWidth,
+      nodeHeight,
       zoom: 1,
       viewportClientWidth: viewport.clientWidth,
       viewportClientHeight: viewport.clientHeight,
@@ -178,23 +172,14 @@ export function LineageGraphSurface({
     viewport.scrollLeft = scrollLeft;
     viewport.scrollTop = scrollTop;
   }, [
+    lineageLayoutEpoch,
     model,
-    zoom,
     nodeOffsets,
     selectedResourceId,
     visibleNodeLayouts,
     nodeWidth,
     nodeHeight,
   ]);
-
-  useLayoutEffect(() => {
-    const pending = pendingScrollRef.current;
-    if (pending && viewportRef.current) {
-      viewportRef.current.scrollLeft = pending.x;
-      viewportRef.current.scrollTop = pending.y;
-      pendingScrollRef.current = null;
-    }
-  }, [zoom]);
 
   useEffect(() => {
     if (!contextMenu) return;
