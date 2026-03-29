@@ -59,28 +59,15 @@ flowchart TD
 - Fix violations incrementally per file.
 - If thresholds prove too strict, relax to 15/50/10/15 as fallback.
 
-## Amendment (2026-03-28)
+## Amendment (2026-03-30)
 
-The thresholds in the Decision table above were not achieved in practice. The "fallback"
-values noted in Mitigations were applied instead, and additional structural rules were
-added. The `complexity` (core ESLint) rule was removed entirely as it duplicates
-`sonarjs/cyclomatic-complexity` (see comment in `eslint.config.mjs`).
+**Editorial (decision-first policy):** Prior amendments duplicated ESLint thresholds,
+glob-specific `max-lines`, and `no-restricted-imports` matrices. The **intent** is
+unchanged from Context and Decision above: promote complexity and SonarJS rules to
+blocking errors; relax practical limits for generated/parser code, large UI modules,
+tests, and Playwright specs; drop redundant core `complexity` in favor of SonarJS;
+add structural caps and **web layering** so React code does not bypass the worker-backed
+analysis boundary and workers stay free of React.
 
-**Actual thresholds in `eslint.config.mjs` (as of 2026-03-28):**
-
-| Rule                            | Decision target | Actual (prod) | Actual (test) | Actual (E2E spec) |
-| ------------------------------- | --------------- | ------------- | ------------- | ----------------- |
-| `complexity` (core)             | error @ 12      | **Removed**   | Removed       | Removed           |
-| `max-lines-per-function`        | error @ 40      | error @ 280   | error @ 700   | error @ 400       |
-| `sonarjs/cyclomatic-complexity` | error @ 8       | error @ 20    | error @ 20    | error @ 30        |
-| `sonarjs/cognitive-complexity`  | error @ 12      | error @ 20    | error @ 20    | error @ 35        |
-
-**Additional rules added (not in original decision):**
-
-- `max-depth`: error @ 6 (prod/test), error @ 10 (E2E spec)
-- `max-params`: error @ 8
-- `max-nested-callbacks`: error @ 4 (prod/test), error @ 8 (E2E spec)
-
-The intent of blocking AI agents on complexity violations is preserved. The thresholds
-were relaxed to accommodate larger generated parser files and complex Gantt rendering
-components that could not be trivially decomposed below the originally targeted values.
+**Normative numbers and glob overrides** live only in `eslint.config.mjs` at the
+repository root. Agent quality gates: `AGENTS.md`.

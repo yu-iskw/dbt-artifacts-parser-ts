@@ -72,3 +72,9 @@ flowchart TB
 
 - [ADR-0006](0006-artifact-first-agent-first-positioning-of-dbt-tools.md) — agent-first positioning
 - [ADR-0008](0008-stricter-eslint-complexity-rules-for-ai-agent-feedback.md) — AI agent feedback rules
+
+## Amendment (2026-03-30)
+
+**Editorial (decision-first):** `byPackage` includes only the three workspace products
+named in the Decision; other packages still affect aggregate totals and thresholds.
+Details: `scripts/coverage-score.mjs`.

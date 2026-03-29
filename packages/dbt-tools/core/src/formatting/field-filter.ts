@@ -94,8 +94,7 @@ export class FieldFilter {
       if (!Object.prototype.hasOwnProperty.call(current as object, part)) {
         return undefined;
       }
-      // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop
-      // Part is validated by isUnsafeKey above; hasOwnProperty ensures we don't read proto chain.
+      // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop.prototype-pollution-loop — part blocked by isUnsafeKey; hasOwnProperty guards proto chain.
       current = (current as Record<string, unknown>)[part];
     }
 
@@ -129,8 +128,7 @@ export class FieldFilter {
       ) {
         current[part] = Object.create(null);
       }
-      // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop
-      // Part is validated by isUnsafeKey check above; assignment creates own property only.
+      // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop.prototype-pollution-loop — part blocked by isUnsafeKey; assignment is own property only.
       current = current[part] as Record<string, unknown>;
     }
 

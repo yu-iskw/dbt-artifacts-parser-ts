@@ -66,3 +66,13 @@ graph LR
 - Benchmark graph loading with large manifests (10^5+ nodes) during implementation
 - Create wrapper classes to abstract Graphology API for dbt-specific operations
 - Document performance characteristics and optimization strategies
+
+## Amendment (2026-03-29)
+
+`packages/dbt-tools/core/src/analysis/manifest-graph.ts` uses **graphology** (`DirectedGraph`)
+and **graphology-dag** (`hasCycle`, `topologicalSort`). The Decision text emphasizes
+Graphology; production code relies on both packages.
+
+The “~50KB minified” footprint for Graphology alone is **not** recorded or enforced in
+this repository; refresh it from an explicit bundle or size analysis if that number
+must remain a falsifiable claim.

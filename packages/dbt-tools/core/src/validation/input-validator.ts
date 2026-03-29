@@ -30,6 +30,7 @@ export function validateSafePath(pathInput: string): void {
  */
 export function resolveSafePath(pathInput: string): string {
   validateSafePath(pathInput);
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — validateSafePath rejects traversal before resolve.
   return path.resolve(pathInput);
 }
 
@@ -42,7 +43,10 @@ export function assertPathUnderBase(
   baseDir: string,
 ): void {
   validateSafePath(resolvedPath);
+  validateSafePath(baseDir);
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — validateSafePath on both args before resolve.
   const absPath = path.resolve(resolvedPath);
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — validateSafePath on both args before resolve.
   const baseAbs = path.resolve(baseDir);
   const relative = path.relative(baseAbs, absPath);
   if (relative.startsWith("..") || path.isAbsolute(relative)) {

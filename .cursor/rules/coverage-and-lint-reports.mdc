@@ -13,3 +13,9 @@ Before considering a task complete, run both report scripts from the repository 
 If `coverage-report.json` shows `belowThreshold: true`, add or improve unit tests until coverage meets thresholds (lines 60%, branches 50%, functions 60%, statements 60%).
 
 Both scripts exit with code 1 on failure; the agent must fix violations before proceeding.
+
+## Fix violations; avoid inline ignores
+
+- **Default:** Address the root cause of linter and static-analysis findings (refactor, types, tests, safer patterns). Do not add `eslint-disable`, `nosemgrep`, blanket `@ts-ignore`, or similar line-level suppressions just to pass checks.
+- **Last resort only:** Use the narrowest inline or config-level suppression when a violation is **effectively unavoidable** (tool limitation, third-party code, documented false positive). Include a brief justification and what would remove the suppression.
+- **Prefer targeted config** over many scattered inline disables when a rule is systematically wrong for a bounded area; document why. Full policy: [AGENTS.md](mdc:AGENTS.md) (section **Linter and static-analysis violations (agent default)** under Quality gates).
