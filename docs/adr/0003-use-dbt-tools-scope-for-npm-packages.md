@@ -10,10 +10,10 @@ Accepted
 
 We are building a suite of tools for analyzing dbt artifacts. The project structure includes:
 
-- `@packages/dbt-artifacts-parser` - existing parser library
-- `@packages/dbt-tools/core` - core graph and analysis library (new)
-- `@packages/dbt-tools/cli` - command-line interface (new)
-- `@packages/dbt-tools/analyzer` - future web UI (not in MVP)
+- `dbt-artifacts-parser` - existing parser library
+- `@dbt-tools/core` - core graph and analysis library (new)
+- `@dbt-tools/cli` - command-line interface (new)
+- `@dbt-tools/web` - web UI (not in MVP)
 
 We need a consistent naming convention for npm packages that:
 
@@ -30,7 +30,7 @@ Package structure:
 
 - `@dbt-tools/core` - Core library for graph management and execution analysis
 - `@dbt-tools/cli` - Command-line interface
-- `@dbt-tools/analyzer` - Web UI (future)
+- `@dbt-tools/web` - Web UI
 
 The existing `dbt-artifacts-parser` package will remain unscoped as it is a foundational library used by other projects.
 
@@ -38,7 +38,7 @@ The existing `dbt-artifacts-parser` package will remain unscoped as it is a foun
 graph TD
     A["dbt-artifacts-parser<br/>(unscoped)"] --> B["@dbt-tools/core"]
     B --> C["@dbt-tools/cli"]
-    B --> D["@dbt-tools/analyzer<br/>(future)"]
+    B --> D["@dbt-tools/web"]
 ```
 
 ## Consequences
