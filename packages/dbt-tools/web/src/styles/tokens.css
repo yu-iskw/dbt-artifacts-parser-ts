@@ -102,21 +102,29 @@
 
   /* dbt resource types (mapped to semantic status/accent where possible, or kept for uniqueness) */
   --dbt-type-source: var(--chart-4);
-  --dbt-type-source-soft: rgb(5 150 105 / 20%);
+  --dbt-type-source-soft: rgb(5 150 105 / 14%);
   --dbt-type-seed: var(--chart-1);
-  --dbt-type-seed-soft: rgb(99 91 255 / 20%);
+  --dbt-type-seed-soft: rgb(99 91 255 / 14%);
   --dbt-type-snapshot: var(--chart-5);
-  --dbt-type-snapshot-soft: rgb(217 119 6 / 20%);
+  --dbt-type-snapshot-soft: rgb(217 119 6 / 14%);
   --dbt-type-model: var(--chart-2);
-  --dbt-type-model-soft: rgb(29 78 216 / 20%);
+  --dbt-type-model-soft: rgb(29 78 216 / 14%);
   --dbt-type-semantic-model: var(--chart-3);
-  --dbt-type-semantic-model-soft: rgb(8 145 178 / 20%);
+  --dbt-type-semantic-model-soft: rgb(8 145 178 / 14%);
   --dbt-type-metric: var(--chart-7);
-  --dbt-type-metric-soft: rgb(219 39 119 / 20%);
+  --dbt-type-metric-soft: rgb(219 39 119 / 14%);
   --dbt-type-exposure: var(--chart-6);
-  --dbt-type-exposure-soft: rgb(234 88 12 / 20%);
+  --dbt-type-exposure-soft: rgb(234 88 12 / 14%);
   --dbt-type-test: var(--chart-8);
-  --dbt-type-test-soft: rgb(100 116 139 / 20%);
+  --dbt-type-test-soft: rgb(100 116 139 / 14%);
+
+  /* Fallbacks for lineage type lens (unknown types, macro, operation) — must exist or SVG fill can fall back to black */
+  --dbt-type-generic: var(--chart-8);
+  --dbt-type-generic-soft: rgb(100 116 139 / 14%);
+  --dbt-type-macro: var(--chart-8);
+  --dbt-type-macro-soft: rgb(100 116 139 / 16%);
+  --dbt-type-operation: var(--chart-3);
+  --dbt-type-operation-soft: rgb(8 145 178 / 14%);
 
   /* Graph surface aliases */
   --graph-bg-top: var(--bg-canvas);
@@ -216,14 +224,17 @@
   --panel-shadow: 0 4px 24px rgb(0 0 0 / 50%);
 
   /* dbt resource type soft fills — rgba matches dark chart hues */
-  --dbt-type-source-soft: rgb(69 196 154 / 26%);
-  --dbt-type-seed-soft: rgb(149 136 232 / 28%);
-  --dbt-type-snapshot-soft: rgb(212 162 74 / 28%);
-  --dbt-type-model-soft: rgb(92 141 235 / 28%);
-  --dbt-type-semantic-model-soft: rgb(62 176 200 / 28%);
-  --dbt-type-metric-soft: rgb(209 114 174 / 28%);
-  --dbt-type-exposure-soft: rgb(217 132 92 / 28%);
-  --dbt-type-test-soft: rgb(134 144 170 / 28%);
+  --dbt-type-source-soft: rgb(69 196 154 / 20%);
+  --dbt-type-seed-soft: rgb(149 136 232 / 22%);
+  --dbt-type-snapshot-soft: rgb(212 162 74 / 22%);
+  --dbt-type-model-soft: rgb(92 141 235 / 22%);
+  --dbt-type-semantic-model-soft: rgb(62 176 200 / 22%);
+  --dbt-type-metric-soft: rgb(209 114 174 / 22%);
+  --dbt-type-exposure-soft: rgb(217 132 92 / 22%);
+  --dbt-type-test-soft: rgb(134 144 170 / 20%);
+  --dbt-type-generic-soft: rgb(134 144 170 / 18%);
+  --dbt-type-macro-soft: rgb(134 144 170 / 20%);
+  --dbt-type-operation-soft: rgb(62 176 200 / 18%);
 
   /* Graph surface aliases (Dark) */
   --graph-bg-top: #dde2ea;

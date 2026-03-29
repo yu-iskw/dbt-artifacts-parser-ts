@@ -49,7 +49,6 @@ export interface ExplorerTreeNode {
   kind: "branch" | "resource";
   children: ExplorerTreeNode[];
   resource?: ResourceNode;
-  originLabel?: string | null;
   count: number;
   parentIds: string[];
   testStats?: TestStats;
@@ -79,7 +78,6 @@ export function createResourceNode(
   id: string,
   resource: ResourceNode,
   parentIds: string[],
-  originLabel: string | null = null,
 ): ExplorerTreeNode {
   return {
     id,
@@ -87,7 +85,6 @@ export function createResourceNode(
     kind: "resource",
     children: [],
     resource,
-    originLabel,
     count: 1,
     parentIds,
   };
@@ -256,7 +253,6 @@ export function buildExplorerTree(
     for (const resource of nonTestResources) {
       if (!getProjectFilePath(resource)) continue;
       const directories = getProjectDirectorySegments(resource);
-      const originLabel = getResourceOriginLabel(resource);
       const parentIds: string[] = [root.id];
       let siblings = root.children;
 
@@ -274,7 +270,6 @@ export function buildExplorerTree(
         `${mode}:resource:${resource.uniqueId}`,
         resource,
         parentIds,
-        originLabel,
       );
       const stats = resourceTestStats.get(resource.uniqueId);
       if (stats && stats.pass + stats.fail + stats.error > 0) {
