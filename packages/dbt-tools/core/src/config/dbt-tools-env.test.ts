@@ -209,6 +209,15 @@ describe("dbt-tools-env", () => {
       });
     });
 
+    it("normalizes many leading and trailing slashes without regex backtracking risk", () => {
+      const json = JSON.stringify({
+        provider: "gcs",
+        bucket: "b",
+        prefix: `${"/".repeat(200)}runs${"/".repeat(200)}`,
+      });
+      expect(parseDbtToolsRemoteSourceConfigJson(json)?.prefix).toBe("runs");
+    });
+
     it("returns undefined for invalid JSON without reading env", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       expect(parseDbtToolsRemoteSourceConfigJson("{nope")).toBeUndefined();

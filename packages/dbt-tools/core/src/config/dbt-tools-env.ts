@@ -23,6 +23,24 @@ function trimEnv(value: string | undefined): string | undefined {
   return t === "" ? undefined : t;
 }
 
+const SLASH = 47;
+
+/**
+ * Removes leading and trailing `/` in linear time. Used for object-storage
+ * prefix normalization; avoids polynomial-time regex on untrusted JSON/env input.
+ */
+function trimAffixSlashes(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value.charCodeAt(start) === SLASH) {
+    start += 1;
+  }
+  while (end > start && value.charCodeAt(end - 1) === SLASH) {
+    end -= 1;
+  }
+  return value.slice(start, end);
+}
+
 /**
  * Directory containing dbt artifacts (typically the dbt `target/` folder).
  * Precedence: `DBT_TOOLS_TARGET_DIR`, then `DBT_TARGET_DIR`, then `DBT_TARGET`.
@@ -140,7 +158,7 @@ export function parseDbtToolsRemoteSourceConfigJson(
     return {
       provider: parsed.provider,
       bucket,
-      prefix: prefix.replace(/^\/+|\/+$/g, ""),
+      prefix: trimAffixSlashes(prefix),
       pollIntervalMs:
         typeof parsed.pollIntervalMs === "number" && parsed.pollIntervalMs > 0
           ? Math.floor(parsed.pollIntervalMs)
