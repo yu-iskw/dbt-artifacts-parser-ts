@@ -6,6 +6,14 @@ export * from "./analysis/sql-analyzer";
 export * from "./analysis/run-results-search";
 export * from "./analysis/analysis-snapshot";
 
+// Config exports (Node; not re-exported from browser entry)
+export {
+  getDbtToolsTargetDirFromEnv,
+  getDbtToolsReloadDebounceMs,
+  isDbtToolsDebugEnabled,
+  isDbtToolsWatchEnabled,
+} from "./config/dbt-tools-env";
+
 // I/O exports
 export * from "./io/artifact-loader";
 

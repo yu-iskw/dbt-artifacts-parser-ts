@@ -163,7 +163,7 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
             </span>
           </div>
           <div>
-            <strong>Use local outputs or DBT_TARGET.</strong>
+            <strong>Use local outputs or DBT_TOOLS_TARGET_DIR.</strong>
             <span>
               The app supports both uploaded artifacts and auto-loaded local
               targets for faster iteration.

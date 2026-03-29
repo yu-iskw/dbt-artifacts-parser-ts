@@ -233,7 +233,7 @@ All commands default to the `./target` directory where dbt stores artifacts:
 Override with:
 
 - `--target-dir <directory>` flag
-- `DBT_TARGET_DIR` environment variable
+- `DBT_TOOLS_TARGET_DIR` environment variable (legacy: `DBT_TARGET_DIR`)
 
 ---
 
@@ -341,7 +341,7 @@ dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 
 ## Environment Variables
 
-- `DBT_TARGET_DIR` - Override default target directory (defaults to `./target`)
+- `DBT_TOOLS_TARGET_DIR` - Override default target directory (defaults to `./target`; legacy: `DBT_TARGET_DIR`, `DBT_TARGET`)
 
 ---
 

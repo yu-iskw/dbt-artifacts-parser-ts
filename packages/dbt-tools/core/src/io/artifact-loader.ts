@@ -7,6 +7,7 @@ import { parseCatalog } from "dbt-artifacts-parser/catalog";
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
+import { getDbtToolsTargetDirFromEnv } from "../config/dbt-tools-env";
 
 /**
  * Resolved artifact file paths
@@ -35,7 +36,7 @@ function resolveManifestPath(
   }
 
   const effectiveTargetDir =
-    targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
   return path.join(resolveSafePath(effectiveTargetDir), MANIFEST_FILE);
 }
@@ -53,7 +54,7 @@ function resolveRunResultsPath(
   }
 
   const effectiveTargetDir =
-    targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
   return path.join(resolveSafePath(effectiveTargetDir), RUN_RESULTS_FILE);
 }
@@ -68,7 +69,7 @@ function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
   }
 
   const effectiveTargetDir =
-    targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
   return path.join(resolveSafePath(effectiveTargetDir), CATALOG_FILE);
 }
@@ -83,7 +84,7 @@ export function resolveArtifactPaths(
   catalogPath?: string,
 ): ArtifactPaths {
   const effectiveTargetDir =
-    targetDir || process.env.DBT_TARGET_DIR || DEFAULT_TARGET_DIR;
+    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
 
   const resolved: ArtifactPaths = {
     manifest: resolveManifestPath(manifestPath, effectiveTargetDir),
