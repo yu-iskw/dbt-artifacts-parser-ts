@@ -207,4 +207,55 @@ describe("analyzeBottlenecks", () => {
       expect(node.structural_impact_score).toBeCloseTo(expected, 1);
     }
   });
+
+  it("top_n should select by structural impact score, not raw execution time", () => {
+    // Node A (isolated): high raw execution_time (50s), 0 downstream
+    //   → structural_impact_score = 50 × (1 + 0) = 50
+    // Node B (high-downstream): lower raw execution_time (10s), 10+ downstream
+    //   → structural_impact_score = 10 × (1 + 10+) = 110+
+    //
+    // A naive raw-time sort would pick A. Structural-impact sort must pick B.
+    const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+    const manifest = parseManifest(manifestJson as Record<string, unknown>);
+    const graph = new ManifestGraph(manifest);
+    const g = graph.getGraph();
+
+    // Find two nodes: one with many transitive downstream nodes and one isolated
+    let highDownstreamId: string | null = null;
+    let highDownstreamCount = 0;
+    let isolatedId: string | null = null;
+
+    g.forEachNode((nodeId) => {
+      const downstream = graph.getDownstream(nodeId);
+      if (downstream.length > highDownstreamCount) {
+        highDownstreamCount = downstream.length;
+        highDownstreamId = nodeId;
+      }
+    });
+
+    g.forEachNode((nodeId) => {
+      if (nodeId === highDownstreamId) return;
+      const downstream = graph.getDownstream(nodeId);
+      if (downstream.length === 0 && isolatedId === null) {
+        isolatedId = nodeId;
+      }
+    });
+
+    if (highDownstreamId === null || isolatedId === null || highDownstreamCount < 5) {
+      // Skip if the test manifest doesn't have suitable nodes
+      return;
+    }
+
+    // isolated gets high raw execution time → wins on raw time alone
+    // highDownstream gets lower raw time but compensates via downstream reach
+    const highTimeIsolated = { unique_id: isolatedId, execution_time: 50 };
+    const lowTimeHighImpact = { unique_id: highDownstreamId, execution_time: 10 };
+
+    const runResults = makeRunResults([highTimeIsolated, lowTimeHighImpact]);
+    const result = analyzeBottlenecks(runResults, graph, { mode: "top_n", top: 1 });
+
+    // structural_impact for highDownstream = 10 × (1 + highDownstreamCount) >> 50
+    expect(result.top_bottlenecks).toHaveLength(1);
+    expect(result.top_bottlenecks[0].unique_id).toBe(highDownstreamId);
+  });
 });

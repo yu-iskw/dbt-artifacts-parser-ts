@@ -2,8 +2,13 @@ import { topologicalSort, hasCycle } from "graphology-dag";
 import type { ManifestGraph } from "./manifest-graph";
 import type { NodeExecution } from "./execution-analyzer";
 
-/** Resource types excluded from parallelism analysis (non-executable). */
-const EXCLUDED_RESOURCE_TYPES = new Set(["field", "macro", "function"]);
+/**
+ * Resource types that consume dbt threads during `dbt build`/`dbt run`.
+ * Sources, exposures, metrics, semantic models, macros, and fields are
+ * present in the manifest DAG but are not scheduled as tasks, so they
+ * must not inflate wave widths or thread recommendations.
+ */
+const RUNNABLE_RESOURCE_TYPES = new Set(["model", "seed", "snapshot", "test"]);
 
 /**
  * A single topological execution wave.
@@ -103,13 +108,13 @@ function buildExecTimeMap(
   return map;
 }
 
-/** Collect analyzable node IDs (excludes field, macro, function). */
+/** Collect node IDs for resource types that actually consume dbt threads. */
 function collectAnalyzableNodes(
   g: ReturnType<ManifestGraph["getGraph"]>,
 ): Set<string> {
   const nodes = new Set<string>();
   g.forEachNode((nodeId, attrs) => {
-    if (!EXCLUDED_RESOURCE_TYPES.has(attrs.resource_type as string)) {
+    if (RUNNABLE_RESOURCE_TYPES.has(attrs.resource_type as string)) {
       nodes.add(nodeId);
     }
   });

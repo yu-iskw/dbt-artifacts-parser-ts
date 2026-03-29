@@ -45,17 +45,15 @@ export function analyzeParallelismAction(
     const manifest = loadManifest(paths.manifest);
     const graph = new ManifestGraph(manifest);
 
-    // Optionally load run_results for timing estimates
+    // Optionally load run_results for timing estimates.
+    // When --run-results-path is explicitly provided, errors are propagated
+    // to the outer handler so the user is informed of the invalid path/file.
     let nodeExecutions: NodeExecution[] | undefined;
     if (options.runResultsPath) {
-      try {
-        validateSafePath(paths.runResults);
-        const runResults = loadRunResults(paths.runResults);
-        const analyzer = new ExecutionAnalyzer(runResults, graph);
-        nodeExecutions = analyzer.getNodeExecutions();
-      } catch {
-        // run_results is optional; proceed without timing data
-      }
+      validateSafePath(paths.runResults);
+      const runResults = loadRunResults(paths.runResults);
+      const analyzer = new ExecutionAnalyzer(runResults, graph);
+      nodeExecutions = analyzer.getNodeExecutions();
     }
 
     let result = analyzeParallelism(graph, nodeExecutions);

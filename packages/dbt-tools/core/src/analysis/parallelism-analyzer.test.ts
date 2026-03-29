@@ -142,6 +142,24 @@ describe("analyzeParallelism", () => {
     }
   });
 
+  it("should not include non-runnable resource types (source, exposure, metric) in wave node_ids", () => {
+    const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+    const manifest = parseManifest(manifestJson as Record<string, unknown>);
+    const graph = new ManifestGraph(manifest);
+
+    const result = analyzeParallelism(graph);
+
+    const NON_RUNNABLE_PREFIXES = ["source.", "exposure.", "metric.", "semantic_model."];
+    for (const wave of result.waves) {
+      for (const nodeId of wave.node_ids) {
+        const isNonRunnable = NON_RUNNABLE_PREFIXES.some((prefix) =>
+          nodeId.startsWith(prefix),
+        );
+        expect(isNonRunnable).toBe(false);
+      }
+    }
+  });
+
   it("serialization bottlenecks should only appear at wave width 1 following wider waves", () => {
     const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
     const manifest = parseManifest(manifestJson as Record<string, unknown>);
