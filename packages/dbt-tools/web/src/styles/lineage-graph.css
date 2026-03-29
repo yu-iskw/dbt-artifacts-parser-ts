@@ -48,8 +48,8 @@
   background: var(--graph-panel);
   border: 1px solid var(--graph-border);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 10px 22px rgba(15, 23, 42, 0.08);
+    inset 0 1px 0 rgb(255 255 255 / 35%),
+    0 10px 22px rgb(15 23 42 / 8%);
 }
 
 .lineage-legend__mode-label {
@@ -80,7 +80,7 @@
 }
 
 .lineage-legend__item:hover {
-  background: rgba(70, 80, 102, 0.08);
+  background: rgb(70 80 102 / 8%);
 }
 
 .lineage-legend__item--active {
@@ -94,7 +94,7 @@
 .lineage-legend__clear {
   padding: 0.18rem 0.52rem;
   border-radius: 999px;
-  background: rgba(70, 80, 102, 0.08);
+  background: rgb(70 80 102 / 8%);
   color: var(--graph-text-muted);
   cursor: pointer;
   font-size: 0.78rem;
@@ -106,7 +106,7 @@
   height: 11px;
   border-radius: 3px;
   flex-shrink: 0;
-  border: 1px solid rgba(23, 28, 40, 0.16);
+  border: 1px solid rgb(23 28 40 / 16%);
 }
 
 /* Toolbar above graph */
@@ -147,8 +147,8 @@
     );
   border: 1px solid var(--graph-border);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 20px 40px rgba(15, 23, 42, 0.08);
+    inset 0 1px 0 rgb(255 255 255 / 32%),
+    0 20px 40px rgb(15 23 42 / 8%);
   cursor: grab;
   height: 440px;
   user-select: none;
@@ -195,7 +195,7 @@
     fill 220ms ease,
     opacity 200ms ease,
     stroke 160ms ease;
-  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.12));
+  filter: drop-shadow(0 10px 18px rgb(15 23 42 / 12%));
 }
 
 .dependency-graph__node--selected {
@@ -296,7 +296,7 @@
 }
 
 .dependency-graph__node-stat-pill--neutral {
-  fill: rgba(100, 112, 135, 0.28);
+  fill: rgb(100 112 135 / 28%);
 }
 
 .dependency-graph__node-stat--neutral {
@@ -350,7 +350,7 @@
   border-radius: 14px;
   background: var(--graph-panel);
   box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 20px 40px rgb(0 0 0 / 20%),
     inset 0 0 0 1px var(--graph-border);
   backdrop-filter: blur(16px);
 }
@@ -619,7 +619,7 @@
 .lineage-dialog__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.55);
+  background: rgb(17 24 39 / 55%);
   backdrop-filter: blur(4px);
   border: none;
   cursor: pointer;
@@ -636,9 +636,9 @@
   margin: auto;
   border-radius: 24px;
   background: color-mix(in srgb, var(--panel-strong) 92%, white 8%);
-  box-shadow: 0 48px 120px rgba(17, 24, 39, 0.3);
+  box-shadow: 0 48px 120px rgb(17 24 39 / 30%);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgb(255 255 255 / 35%);
 }
 
 .lineage-dialog--container .lineage-dialog__panel {
@@ -658,8 +658,8 @@
   flex-shrink: 0;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(248, 250, 252, 0.78)
+    rgb(255 255 255 / 90%),
+    rgb(248 250 252 / 78%)
   );
   backdrop-filter: blur(16px);
 }
@@ -699,7 +699,7 @@
   padding: 0;
   border-radius: 999px;
   border: 1px solid var(--border-default);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgb(255 255 255 / 82%);
   color: var(--text-primary);
   cursor: pointer;
   transition:
@@ -709,7 +709,7 @@
 }
 
 .lineage-dialog__close:hover {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgb(255 255 255 / 96%);
   border-color: var(--border-strong);
   transform: translateY(-1px);
 }
@@ -725,7 +725,7 @@
   line-height: 1;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .lineage-dialog {
     padding: 0.5rem;
   }
@@ -761,7 +761,7 @@
   border-radius: var(--radius-md);
   background: var(--bg-code);
   border: 1px solid var(--border-subtle);
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
   font-size: 0.83rem;
   line-height: 1.7;
   overflow-x: auto;
@@ -820,11 +820,12 @@
   border-radius: var(--radius-md);
   background: var(--bg-code);
   border: 1px solid var(--border-subtle);
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
   font-size: 0.83rem;
   line-height: 1.6;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
   color: var(--text);
 }
 

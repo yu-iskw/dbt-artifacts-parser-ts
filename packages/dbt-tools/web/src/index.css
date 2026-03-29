@@ -1,8 +1,8 @@
 /* Stylesheet barrel — @import order is cascade order. tokens.css MUST load first
    so every later file can safely use var(--*). See src/styles/README.md. */
-@import "./styles/tokens.css";
-@import "./styles/base.css";
-@import "./styles/app-shell.css";
-@import "./styles/ui-primitives.css";
-@import "./styles/lineage-graph.css";
-@import "./styles/workspace.css";
+@import url("./styles/tokens.css");
+@import url("./styles/base.css");
+@import url("./styles/app-shell.css");
+@import url("./styles/ui-primitives.css");
+@import url("./styles/lineage-graph.css");
+@import url("./styles/workspace.css");

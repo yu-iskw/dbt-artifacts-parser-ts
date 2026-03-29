@@ -1,8 +1,6 @@
 import { DirectedGraph } from "graphology";
 import { hasCycle, topologicalSort } from "graphology-dag";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import type {
   GraphNodeAttributes,
@@ -16,6 +14,31 @@ import {
   MIN_SUPPORTED_SCHEMA_VERSION,
 } from "../version";
 import type { ColumnDependencyMap } from "./sql-analyzer";
+
+type ManifestEntryMap = Record<string, unknown>;
+type OptionalManifestCollections = ParsedManifest & {
+  metrics?: ManifestEntryMap;
+  semantic_models?: ManifestEntryMap;
+  unit_tests?: ManifestEntryMap;
+};
+
+function getManifestMetrics(
+  manifest: ParsedManifest,
+): ManifestEntryMap | undefined {
+  return (manifest as OptionalManifestCollections).metrics;
+}
+
+function getManifestSemanticModels(
+  manifest: ParsedManifest,
+): ManifestEntryMap | undefined {
+  return (manifest as OptionalManifestCollections).semantic_models;
+}
+
+function getManifestUnitTests(
+  manifest: ParsedManifest,
+): ManifestEntryMap | undefined {
+  return (manifest as OptionalManifestCollections).unit_tests;
+}
 /**
  * ManifestGraph builds and manages a directed graph from a dbt manifest.
  *
@@ -65,9 +88,9 @@ export class ManifestGraph {
     this.addSourceEntries(manifest.sources);
     this.addMacroEntries(manifest.macros);
     this.addExposureEntries(manifest.exposures);
-    this.addMetricEntries(manifest.metrics);
-    this.addSemanticModelEntries(manifest.semantic_models);
-    this.addUnitTestEntries(manifest.unit_tests);
+    this.addMetricEntries(getManifestMetrics(manifest));
+    this.addSemanticModelEntries(getManifestSemanticModels(manifest));
+    this.addUnitTestEntries(getManifestUnitTests(manifest));
   }
 
   private addNodeEntries(nodes: ParsedManifest["nodes"] | undefined): void {
@@ -162,9 +185,7 @@ export class ManifestGraph {
     }
   }
 
-  private addMetricEntries(
-    metrics: ParsedManifest["metrics"] | undefined,
-  ): void {
+  private addMetricEntries(metrics: ManifestEntryMap | undefined): void {
     if (!metrics) return;
     for (const [uniqueId, metric] of Object.entries(metrics)) {
       const metricAny = metric as Record<string, unknown>;
@@ -239,7 +260,7 @@ export class ManifestGraph {
   }
 
   private addSemanticModelEntries(
-    semanticModels: ParsedManifest["semantic_models"] | undefined,
+    semanticModels: ManifestEntryMap | undefined,
   ): void {
     if (!semanticModels) return;
     for (const [uniqueId, semanticModel] of Object.entries(semanticModels)) {
@@ -276,9 +297,7 @@ export class ManifestGraph {
     }
   }
 
-  private addUnitTestEntries(
-    unitTests: ParsedManifest["unit_tests"] | undefined,
-  ): void {
+  private addUnitTestEntries(unitTests: ManifestEntryMap | undefined): void {
     if (!unitTests) return;
     for (const [uniqueId, unitTest] of Object.entries(unitTests)) {
       const ut = unitTest as Record<string, unknown>;
@@ -300,7 +319,7 @@ export class ManifestGraph {
     }
     this.addEdgesFromNodeDependsOn(manifest.nodes);
     this.addEdgesFromExposureDependsOn(manifest.exposures);
-    this.addEdgesFromMetricDependsOn(manifest.metrics);
+    this.addEdgesFromMetricDependsOn(getManifestMetrics(manifest));
   }
 
   private addEdgesFromParentMap(parentMap: Record<string, string[]>): void {
@@ -367,7 +386,7 @@ export class ManifestGraph {
   }
 
   private addEdgesFromMetricDependsOn(
-    metrics: ParsedManifest["metrics"] | undefined,
+    metrics: ManifestEntryMap | undefined,
   ): void {
     if (!metrics) return;
     for (const [uniqueId, metric] of Object.entries(metrics)) {
@@ -683,9 +702,8 @@ export class ManifestGraph {
     if (catalog.nodes) {
       for (const [uniqueId, node] of Object.entries(catalog.nodes)) {
         if (this.graph.hasNode(uniqueId)) {
-          const columns = (node as Record<string, unknown>).columns as
-            | Record<string, unknown>
-            | undefined;
+          const columns = (node as unknown as Record<string, unknown>)
+            .columns as Record<string, unknown> | undefined;
           this.processCatalogColumns(uniqueId, columns);
         }
       }
@@ -694,9 +712,8 @@ export class ManifestGraph {
     if (catalog.sources) {
       for (const [uniqueId, source] of Object.entries(catalog.sources)) {
         if (this.graph.hasNode(uniqueId)) {
-          const columns = (source as Record<string, unknown>).columns as
-            | Record<string, unknown>
-            | undefined;
+          const columns = (source as unknown as Record<string, unknown>)
+            .columns as Record<string, unknown> | undefined;
           this.processCatalogColumns(uniqueId, columns);
         }
       }

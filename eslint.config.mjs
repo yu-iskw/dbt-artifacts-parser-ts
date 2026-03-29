@@ -166,6 +166,30 @@ export default [
       ],
     },
   },
+  /** @dbt-tools/web: cap non-test .ts modules (services, lib, workers, etc.) */
+  {
+    files: ["packages/dbt-tools/web/src/**/*.ts"],
+    ignores: ["**/dist/**", "**/*.test.ts"],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 1200, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  /** Stricter than web TSX default — agent churn hotspots (must follow looser blocks above) */
+  {
+    files: [
+      "packages/dbt-tools/web/src/components/**/*.{ts,tsx}",
+      "packages/dbt-tools/web/src/hooks/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 900, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
   {
     files: [
       "packages/dbt-tools/web/src/components/**/*.ts",
@@ -194,6 +218,54 @@ export default [
               ],
               message:
                 "React hooks/components must not import graph/engine primitives directly. Go through the worker-backed analysis service.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  /** @dbt-tools/web: keep analysis-workspace lib free of UI and worker graphs */
+  {
+    files: ["packages/dbt-tools/web/src/lib/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@web/components/*", "@web/components/**/*"],
+              message:
+                "lib/analysis-workspace must not import UI components; keep domain logic UI-agnostic.",
+            },
+            {
+              group: ["@web/workers/*", "@web/workers/**/*"],
+              message: "lib must not import Vite worker entrypoints.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["packages/dbt-tools/web/src/workers/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react",
+              message: "Workers must not import React.",
+            },
+            {
+              name: "react-dom",
+              message: "Workers must not import react-dom.",
+            },
+            {
+              name: "react/jsx-runtime",
+              message: "Workers must not import the JSX runtime.",
             },
           ],
         },

@@ -1,6 +1,4 @@
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import { detectBottlenecks, type BottleneckResult } from "./run-results-search";
 import { ExecutionAnalyzer, type ExecutionSummary } from "./execution-analyzer";
@@ -137,6 +135,7 @@ export interface TimelineAdjacencyEntry {
 export interface AnalysisSnapshot {
   summary: ExecutionSummary;
   projectName: string | null;
+  warehouseType?: string | null;
   runStartedAt: number | null;
   ganttData: GanttItem[];
   bottlenecks: BottleneckResult | undefined;
@@ -844,6 +843,22 @@ function buildInvocationId(
     : null;
 }
 
+function buildWarehouseType(
+  manifestJson: Record<string, unknown>,
+): string | null {
+  const metaMaybe = manifestJson.metadata;
+  if (
+    metaMaybe !== null &&
+    typeof metaMaybe === "object" &&
+    "adapter_type" in (metaMaybe as object) &&
+    typeof (metaMaybe as Record<string, unknown>).adapter_type === "string" &&
+    (metaMaybe as Record<string, string>).adapter_type !== ""
+  ) {
+    return (metaMaybe as Record<string, string>).adapter_type;
+  }
+  return null;
+}
+
 export function buildAnalysisSnapshotFromParsedArtifacts(
   manifestJson: Record<string, unknown>,
   runResultsJson: Record<string, unknown>,
@@ -860,6 +875,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
 
   const snapshotStart = now();
   const projectName = buildProjectName(manifestJson);
+  const warehouseType = buildWarehouseType(manifestJson);
   const summary = analyzer.getSummary();
   const manifestEntryLookup = buildManifestEntryLookup(manifestJson);
   const ganttData = analyzer.getGanttData();
@@ -951,6 +967,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   const analysis: AnalysisSnapshot = {
     summary,
     projectName,
+    warehouseType,
     runStartedAt,
     ganttData: timelineGanttData,
     bottlenecks,
@@ -985,13 +1002,11 @@ export async function buildAnalysisSnapshotFromArtifacts(
   runResultsJson: Record<string, unknown>,
 ): Promise<AnalysisSnapshot> {
   const [{ parseManifest }, { parseRunResults }] = await Promise.all([
-    // @ts-expect-error - workspace subpath types are resolved by consumers/build tooling even though this package uses legacy moduleResolution
     import("dbt-artifacts-parser/manifest") as Promise<{
       parseManifest: (
         nextManifestJson: Record<string, unknown>,
       ) => ParsedManifest;
     }>,
-    // @ts-expect-error - workspace subpath types are resolved by consumers/build tooling even though this package uses legacy moduleResolution
     import("dbt-artifacts-parser/run_results") as Promise<{
       parseRunResults: (
         nextRunResultsJson: Record<string, unknown>,

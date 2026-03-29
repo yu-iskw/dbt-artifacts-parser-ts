@@ -4,10 +4,10 @@
   /* Background roles */
   --bg-canvas: #f6f7fb;
   --bg-sidebar: #f3f5fa;
-  --bg-surface: #ffffff;
+  --bg-surface: #fff;
   --bg-surface-muted: #f1f3f8;
-  --bg-elevated: #ffffff;
-  --bg-overlay: rgba(17, 24, 39, 0.4);
+  --bg-elevated: #fff;
+  --bg-overlay: rgb(17 24 39 / 40%);
   --bg-code: #f8f9fc;
   --bg-selection-soft: #eef0ff;
   --bg-accent-soft: #eef0ff;
@@ -80,8 +80,7 @@
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
-  --panel-shadow:
-    0 1px 3px rgba(15, 15, 35, 0.06), 0 4px 12px rgba(15, 15, 35, 0.04);
+  --panel-shadow: 0 1px 3px rgb(15 15 35 / 6%), 0 4px 12px rgb(15 15 35 / 4%);
 
   /* Legacy variable mapping (for gradual migration / safety) */
   --bg: var(--bg-canvas);
@@ -103,21 +102,21 @@
 
   /* dbt resource types (mapped to semantic status/accent where possible, or kept for uniqueness) */
   --dbt-type-source: var(--chart-4);
-  --dbt-type-source-soft: rgba(5, 150, 105, 0.2);
+  --dbt-type-source-soft: rgb(5 150 105 / 20%);
   --dbt-type-seed: var(--chart-1);
-  --dbt-type-seed-soft: rgba(99, 91, 255, 0.2);
+  --dbt-type-seed-soft: rgb(99 91 255 / 20%);
   --dbt-type-snapshot: var(--chart-5);
-  --dbt-type-snapshot-soft: rgba(217, 119, 6, 0.2);
+  --dbt-type-snapshot-soft: rgb(217 119 6 / 20%);
   --dbt-type-model: var(--chart-2);
-  --dbt-type-model-soft: rgba(29, 78, 216, 0.2);
+  --dbt-type-model-soft: rgb(29 78 216 / 20%);
   --dbt-type-semantic-model: var(--chart-3);
-  --dbt-type-semantic-model-soft: rgba(8, 145, 178, 0.2);
+  --dbt-type-semantic-model-soft: rgb(8 145 178 / 20%);
   --dbt-type-metric: var(--chart-7);
-  --dbt-type-metric-soft: rgba(219, 39, 119, 0.2);
+  --dbt-type-metric-soft: rgb(219 39 119 / 20%);
   --dbt-type-exposure: var(--chart-6);
-  --dbt-type-exposure-soft: rgba(234, 88, 12, 0.2);
+  --dbt-type-exposure-soft: rgb(234 88 12 / 20%);
   --dbt-type-test: var(--chart-8);
-  --dbt-type-test-soft: rgba(100, 116, 139, 0.2);
+  --dbt-type-test-soft: rgb(100 116 139 / 20%);
 
   /* Graph surface aliases */
   --graph-bg-top: var(--bg-canvas);
@@ -146,7 +145,7 @@
   --bg-surface: #151a2e;
   --bg-surface-muted: #101527;
   --bg-elevated: #1b223a;
-  --bg-overlay: rgba(2, 6, 23, 0.6);
+  --bg-overlay: rgb(2 6 23 / 60%);
   --bg-code: #11182b;
   --bg-selection-soft: #232845;
   --bg-accent-soft: #232845;
@@ -214,23 +213,22 @@
   --chart-6: #d9845c;
   --chart-7: #d172ae;
   --chart-8: #8690aa;
-
-  --panel-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --panel-shadow: 0 4px 24px rgb(0 0 0 / 50%);
 
   /* dbt resource type soft fills — rgba matches dark chart hues */
-  --dbt-type-source-soft: rgba(69, 196, 154, 0.26);
-  --dbt-type-seed-soft: rgba(149, 136, 232, 0.28);
-  --dbt-type-snapshot-soft: rgba(212, 162, 74, 0.28);
-  --dbt-type-model-soft: rgba(92, 141, 235, 0.28);
-  --dbt-type-semantic-model-soft: rgba(62, 176, 200, 0.28);
-  --dbt-type-metric-soft: rgba(209, 114, 174, 0.28);
-  --dbt-type-exposure-soft: rgba(217, 132, 92, 0.28);
-  --dbt-type-test-soft: rgba(134, 144, 170, 0.28);
+  --dbt-type-source-soft: rgb(69 196 154 / 26%);
+  --dbt-type-seed-soft: rgb(149 136 232 / 28%);
+  --dbt-type-snapshot-soft: rgb(212 162 74 / 28%);
+  --dbt-type-model-soft: rgb(92 141 235 / 28%);
+  --dbt-type-semantic-model-soft: rgb(62 176 200 / 28%);
+  --dbt-type-metric-soft: rgb(209 114 174 / 28%);
+  --dbt-type-exposure-soft: rgb(217 132 92 / 28%);
+  --dbt-type-test-soft: rgb(134 144 170 / 28%);
 
   /* Graph surface aliases (Dark) */
   --graph-bg-top: #dde2ea;
   --graph-bg-bottom: #cfd6e1;
-  --graph-bg-accent: rgba(175, 184, 205, 0.22);
+  --graph-bg-accent: rgb(175 184 205 / 22%);
   --graph-panel: #e7ebf3;
   --graph-panel-hover: #dfe5ef;
   --graph-panel-active: #d6deec;
@@ -240,7 +238,7 @@
   --graph-text-muted: #465066;
   --graph-text-soft: #647087;
   --graph-edge: #8794aa;
-  --graph-hotspot: rgba(99, 91, 255, 0.18);
+  --graph-hotspot: rgb(99 91 255 / 18%);
   --graph-node-stroke: #aab4c6;
   --graph-node-selected-stroke: var(--accent-primary);
 }

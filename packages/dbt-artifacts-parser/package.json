@@ -1,6 +1,6 @@
 {
   "name": "dbt-artifacts-parser",
-  "version": "0.2.0",
+  "version": "0.3.2",
   "description": "TypeScript library for parsing dbt artifacts",
   "keywords": [],
   "license": "ISC",
@@ -45,9 +45,9 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^15.3.1",
+    "@apidevtools/json-schema-ref-parser": "^15.3.4",
     "@types/node": "^25.5.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.2"
   },
   "publishConfig": {
     "access": "public"

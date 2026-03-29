@@ -30,6 +30,7 @@ const VALID_VIEWS = new Set<WorkspaceView>([
   "inventory",
   "runs",
   "timeline",
+  "settings",
   "overview",
   "catalog",
   "execution",
@@ -62,6 +63,7 @@ export function resolveView(raw: string): WorkspaceView {
     case "timeline":
     case "inventory":
     case "health":
+    case "settings":
       return raw;
     default:
       return "health";
@@ -194,14 +196,14 @@ export function buildInitialLineageViewState(search: string): LineageViewState {
 
 export const SIDEBAR_STORAGE_KEY = "dbt-tools.sidebarCollapsed";
 
-export function getInitialSidebarCollapsed(): boolean {
+export function getInitialSidebarCollapsed(fallback = true): boolean {
   try {
     const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
     if (stored !== null) return stored === "true";
   } catch {
     // ignore
   }
-  return true;
+  return fallback;
 }
 
 export function isNavigationTargetActive(

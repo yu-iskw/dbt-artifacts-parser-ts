@@ -1,9 +1,24 @@
 import { useEffect, useState } from "react";
+import type { ThemePreference } from "@web/lib/analysis-workspace/types";
 
 export type Theme = "light" | "dark";
 
 const DATA_THEME_ATTR = "data-theme";
 const THEME_DARK = "dark" as const;
+const THEME_LIGHT = "light" as const;
+const THEME_SYSTEM = "system" as const;
+
+function resolveThemePreference(preference: ThemePreference): Theme {
+  if (preference === THEME_DARK) return THEME_DARK;
+  if (preference === THEME_LIGHT) return THEME_LIGHT;
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? THEME_DARK
+      : THEME_LIGHT;
+  } catch {
+    return THEME_LIGHT;
+  }
+}
 
 /** Read the current app theme from the document root (for tests and non-React callers). */
 export function readDocumentTheme(): Theme {
@@ -42,29 +57,46 @@ export function useSyncedDocumentTheme(): Theme {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [themePreference, setThemePreference] = useState<ThemePreference>(
+    () => {
+      try {
+        const stored = window.localStorage.getItem("dbt-tools.theme");
+        if (
+          stored === THEME_LIGHT ||
+          stored === THEME_DARK ||
+          stored === THEME_SYSTEM
+        ) {
+          return stored as ThemePreference;
+        }
+      } catch {
+        // ignore
+      }
+      return THEME_SYSTEM;
+    },
+  );
+  const [theme, setTheme] = useState<Theme>(() =>
+    resolveThemePreference(themePreference),
+  );
+
+  useEffect(() => {
+    setTheme(resolveThemePreference(themePreference));
     try {
-      const stored = window.localStorage.getItem("dbt-tools.theme");
-      if (stored === "light" || stored === THEME_DARK) return stored as Theme;
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches)
-        return THEME_DARK;
+      window.localStorage.setItem("dbt-tools.theme", themePreference);
     } catch {
       // ignore
     }
-    return "light";
-  });
+  }, [themePreference]);
 
   useEffect(() => {
     document.documentElement.setAttribute(DATA_THEME_ATTR, theme);
-    try {
-      window.localStorage.setItem("dbt-tools.theme", theme);
-    } catch {
-      // ignore
-    }
   }, [theme]);
 
   const toggleTheme = () =>
-    setTheme((prev) => (prev === "light" ? THEME_DARK : "light"));
+    setThemePreference((prev) => {
+      if (prev === THEME_LIGHT) return THEME_DARK;
+      if (prev === THEME_DARK) return THEME_LIGHT;
+      return THEME_DARK;
+    });
 
-  return { theme, toggleTheme };
+  return { theme, themePreference, setThemePreference, toggleTheme };
 }

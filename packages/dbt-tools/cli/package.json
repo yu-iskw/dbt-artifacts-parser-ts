@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/cli",
-  "version": "0.1.0",
+  "version": "0.3.2",
   "description": "Command-line interface for dbt artifact analysis",
   "keywords": [
     "dbt",
@@ -19,8 +19,8 @@
   "scripts": {
     "build": "tsc",
     "prepack": "npm run build",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest"
+    "test": "vitest run packages/dbt-tools/cli/src",
+    "test:watch": "vitest packages/dbt-tools/cli/src"
   },
   "dependencies": {
     "@dbt-tools/core": "workspace:*",
@@ -30,8 +30,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   },
   "publishConfig": {
     "access": "public"

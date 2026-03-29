@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  root: __dirname,
   resolve: {
     alias: {
       "@web": path.resolve(__dirname, "packages/dbt-tools/web/src"),
@@ -29,6 +30,7 @@ export default defineConfig({
   test: {
     include: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
     exclude: [".trunk/**", "node_modules/**"],
+    pool: "threads",
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "json"],

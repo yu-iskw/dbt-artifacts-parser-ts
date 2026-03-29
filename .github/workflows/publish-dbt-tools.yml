@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Publish dbt-artifacts-parser
+name: Publish @dbt-tools
 
 on:
   release:
@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: publish-dbt-artifacts-parser
+  group: publish-dbt-tools
   cancel-in-progress: false
 
 permissions:
@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish to npm
+    name: Publish @dbt-tools to npm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,7 +48,7 @@ jobs:
         with:
           node-version-file: .node-version
           registry-url: https://registry.npmjs.org
-          # scope: "@yu-iskw"
+          scope: "@dbt-tools"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
         with:
@@ -56,14 +56,21 @@ jobs:
       - name: Install dependencies
         run: |
           pnpm install --frozen-lockfile
-      - name: Build package
+      - name: Build dbt-artifacts-parser (workspace dependency)
+        run: pnpm --filter ./packages/dbt-artifacts-parser build
+      - name: Build @dbt-tools packages
         run: |
-          pnpm --filter ./packages/dbt-artifacts-parser build
+          pnpm --filter @dbt-tools/core build
+          pnpm --filter @dbt-tools/cli build
+          pnpm --filter @dbt-tools/web build
       - name: Run tests
         run: |
-          pnpm --filter ./packages/dbt-artifacts-parser test
+          pnpm --filter @dbt-tools/core test
+          pnpm --filter @dbt-tools/cli test
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          pnpm publish --filter ./packages/dbt-artifacts-parser --no-git-checks --access public
+          pnpm publish --filter @dbt-tools/core --no-git-checks --access public
+          pnpm publish --filter @dbt-tools/cli --no-git-checks --access public
+          pnpm publish --filter @dbt-tools/web --no-git-checks --access public

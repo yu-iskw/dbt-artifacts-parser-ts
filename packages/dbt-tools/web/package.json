@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/web",
-  "version": "0.1.0",
+  "version": "0.3.2",
   "description": "Web application for visual dbt artifact analysis",
   "keywords": [
     "dbt",
@@ -10,29 +10,41 @@
   "license": "Apache-2.0",
   "author": "yu-iskw",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
+    "prepack": "npm run build",
     "build": "pnpm --filter @dbt-tools/core build && tsc && vite build",
     "dev": "vite",
     "dev:debug": "DBT_DEBUG=1 vite",
     "dev:target": "DBT_TARGET=./target vite",
     "preview": "vite preview",
-    "test:e2e": "pnpm build && playwright test"
+    "test:e2e": "pnpm build && playwright test",
+    "lint": "pnpm lint:eslint && pnpm lint:stylelint",
+    "lint:eslint": "eslint ../../../eslint.config.mjs",
+    "lint:stylelint": "stylelint -c ../../../stylelint.config.mjs **/*.css",
+    "format:stylelint": "stylelint -c ../../../stylelint.config.mjs **/*.css --fix"
   },
   "dependencies": {
     "@dbt-tools/core": "workspace:*",
-    "@tanstack/react-virtual": "^3.13.22",
+    "@tanstack/react-virtual": "^3.13.23",
     "dbt-artifacts-parser": "workspace:*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.15.0"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
-    "@types/node": "^22.19.15",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.9.3",
-    "vite": "^6.0.3"
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
