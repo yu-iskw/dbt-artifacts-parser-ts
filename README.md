@@ -17,9 +17,9 @@ This repo contains two distinct but related ecosystems:
 graph TD
   DAP[dbt-artifacts-parser\nmanifest · catalog · run_results · sources]
 
-  DAP --> CORE[@dbt-tools/core\ngraph · execution analysis]
-  DAP --> CLI[@dbt-tools/cli\ndbt-tools binary]
-  DAP --> WEB[@dbt-tools/web\nReact app]
+  DAP --> CORE["@dbt-tools/core\ngraph · execution analysis"]
+  DAP --> CLI["@dbt-tools/cli\ndbt-tools binary"]
+  DAP --> WEB["@dbt-tools/web\nReact app"]
   CORE --> CLI
   CORE --> WEB
 ```
