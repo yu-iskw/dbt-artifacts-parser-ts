@@ -17,11 +17,6 @@ Do not change `@import` order without checking for specificity/cascade regressio
 
 Canvas and chart code cannot read CSS variables directly in all paths. **`src/constants/themeColors.ts` mirrors** the chart-related custom properties in `tokens.css` (light and dark). When you change chart or graph palette tokens, update **both** places until a codegen pipeline (ADR 0022 Phase 2) exists.
 
-## Two different `STATUS_COLORS` names
+## Status colors in TypeScript
 
-The codebase uses the name `STATUS_COLORS` in more than one place:
-
-- **`src/constants/colors.ts`** — execution / run status colors for the app shell and general UI.
-- **`src/lib/analysis-workspace/constants.ts`** — **StatusTone** palettes for charts (Gantt, donut, etc.), aligned with analysis-workspace semantics.
-
-They are intentionally separate domains; renaming one to reduce confusion is a follow-up decision (would touch many imports).
+**`src/constants/colors.ts`** defines `STATUS_COLORS` and helpers (`getStatusColor`, `getResourceTypeColor`) for execution/run status and resource-type accents. Chart code uses **`getStatusTonePalette`** from `src/lib/analysis-workspace/constants.ts` for **StatusTone**-aligned palettes (Gantt legend, donuts, etc.).

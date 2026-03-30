@@ -1,6 +1,11 @@
 import type { ExecutionRow } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "./constants";
 import type { DashboardStatusFilter, RunsKind, RunsViewState } from "./types";
+import {
+  getRunsAdapterColumnKey,
+  getRunsAdapterField,
+  isRunsAdapterSortBy,
+} from "./runsAdapterColumns";
 
 export interface ResultsStatusCounts {
   all: number;
@@ -74,6 +79,18 @@ function createEmptyFacetCounts(): RunsFacetCounts {
 }
 
 function buildSearchText(row: ExecutionRow): string {
+  const adapterBits = [
+    ...(row.adapterResponseFields ?? []).flatMap((field) => [
+      field.key,
+      field.displayValue,
+    ]),
+    ...(row.adapterMetrics
+      ? [
+          row.adapterMetrics.adapterMessage ?? "",
+          row.adapterMetrics.rawKeys.join(" "),
+        ]
+      : []),
+  ];
   return [
     row.name,
     row.resourceType,
@@ -82,6 +99,7 @@ function buildSearchText(row: ExecutionRow): string {
     row.uniqueId,
     row.status,
     row.threadId ?? "",
+    ...adapterBits,
   ]
     .join(" ")
     .toLowerCase();
@@ -127,6 +145,24 @@ function isDurationBandMatch(
   return row.executionTime >= 5;
 }
 
+function compareAdapterValues(
+  left: number | string | undefined,
+  right: number | string | undefined,
+): number {
+  const leftMissing = left === undefined;
+  const rightMissing = right === undefined;
+  if (leftMissing && rightMissing) return 0;
+  if (leftMissing) return 1;
+  if (rightMissing) return -1;
+  if (typeof left === "number" && typeof right === "number") {
+    return right - left;
+  }
+  return String(left).localeCompare(String(right), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
 function compareRows(
   left: ExecutionRow,
   right: ExecutionRow,
@@ -141,8 +177,28 @@ function compareRows(
       return left.status.localeCompare(right.status);
     case "start":
       return (right.start ?? 0) - (left.start ?? 0);
-    case "attention":
-    default: {
+    default:
+      if (isRunsAdapterSortBy(sortBy)) {
+        const key = getRunsAdapterColumnKey(sortBy);
+        const leftField = getRunsAdapterField(left, key);
+        const rightField = getRunsAdapterField(right, key);
+        if (!leftField?.isScalar && !rightField?.isScalar) return 0;
+        if (!leftField?.isScalar) return 1;
+        if (!rightField?.isScalar) return -1;
+        return compareAdapterValues(leftField.sortValue, rightField.sortValue);
+      }
+      {
+        const rank = {
+          danger: 0,
+          warning: 1,
+          positive: 2,
+          neutral: 3,
+        } as const;
+        const toneCompare = rank[left.statusTone] - rank[right.statusTone];
+        if (toneCompare !== 0) return toneCompare;
+        return right.executionTime - left.executionTime;
+      }
+    case "attention": {
       const rank = { danger: 0, warning: 1, positive: 2, neutral: 3 } as const;
       const toneCompare = rank[left.statusTone] - rank[right.statusTone];
       if (toneCompare !== 0) return toneCompare;

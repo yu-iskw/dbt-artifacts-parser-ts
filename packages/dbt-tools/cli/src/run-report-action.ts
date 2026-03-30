@@ -10,9 +10,18 @@ import {
   validateSafePath,
   FieldFilter,
   detectBottlenecks,
+  buildAdapterTotals,
+  buildNodeExecutionsFromRunResults,
+  detectAdapterHeavyNodes,
+  searchRunResults,
   formatOutput,
   formatRunReport,
+  formatAdapterTotalsHuman,
+  formatAdapterHeavyHuman,
   shouldOutputJSON,
+  type ExecutionSummary,
+  type NodeExecution,
+  type AdapterHeavyMetric,
 } from "@dbt-tools/core";
 
 type RunReportOptions = {
@@ -23,18 +32,12 @@ type RunReportOptions = {
   bottlenecksThreshold?: number;
   json?: boolean;
   noJson?: boolean;
+  adapterSummary?: boolean;
+  adapterTopBy?: AdapterHeavyMetric;
+  adapterTopN?: number;
+  adapterMinBytes?: number;
+  adapterMinSlotMs?: number;
 };
-
-interface ExecutionSummary {
-  total_execution_time: number;
-  total_nodes: number;
-  nodes_by_status: Record<string, number>;
-  node_executions: Array<{
-    unique_id: string;
-    status: string;
-    execution_time: number;
-  }>;
-}
 
 /** Create a minimal summary when no analyzer is available */
 function createMinimalSummary(
@@ -110,6 +113,88 @@ function computeBottlenecksSection(
   return { bottlenecks, bottlenecksTopLabel: `top ${topN}` };
 }
 
+function filterExecutionsForAdapterTop(
+  executions: NodeExecution[],
+  options: RunReportOptions,
+): NodeExecution[] {
+  let filtered = executions;
+  if (options.adapterMinBytes !== undefined) {
+    filtered = searchRunResults(filtered, {
+      min_bytes_processed: options.adapterMinBytes,
+    });
+  }
+  if (options.adapterMinSlotMs !== undefined) {
+    filtered = searchRunResults(filtered, {
+      min_slot_ms: options.adapterMinSlotMs,
+    });
+  }
+  return filtered;
+}
+
+function buildAdapterSections(
+  adapterSource: NodeExecution[],
+  options: RunReportOptions,
+  graph: ManifestGraph | undefined,
+): {
+  jsonParts: Record<string, unknown>;
+  humanAppend: string;
+} {
+  const jsonParts: Record<string, unknown> = {};
+  const humanParts: string[] = [];
+
+  const adapterTotals = buildAdapterTotals(
+    adapterSource.map((e) => e.adapterMetrics),
+  );
+
+  if (options.adapterSummary && adapterTotals != null) {
+    jsonParts.adapter_totals = adapterTotals;
+    humanParts.push(formatAdapterTotalsHuman(adapterTotals));
+
+    if (!options.adapterTopBy && adapterTotals.nodesWithAdapterData > 0) {
+      const bySlot = detectAdapterHeavyNodes(adapterSource, {
+        metric: "slot_ms",
+        top: 5,
+        graph,
+      });
+      const byBytes = detectAdapterHeavyNodes(adapterSource, {
+        metric: "bytes_processed",
+        top: 5,
+        graph,
+      });
+      if (bySlot.total_metric > 0) {
+        humanParts.push(
+          formatAdapterHeavyHuman(bySlot, "Top 5 by slot_ms (summary)"),
+        );
+      }
+      if (byBytes.total_metric > 0) {
+        humanParts.push(
+          formatAdapterHeavyHuman(
+            byBytes,
+            "Top 5 by bytes_processed (summary)",
+          ),
+        );
+      }
+    }
+  }
+
+  if (options.adapterTopBy) {
+    const filtered = filterExecutionsForAdapterTop(adapterSource, options);
+    const topN = options.adapterTopN ?? 10;
+    const adapterTop = detectAdapterHeavyNodes(filtered, {
+      metric: options.adapterTopBy,
+      top: topN > 0 ? topN : 10,
+      graph,
+    });
+    jsonParts.adapter_top = adapterTop;
+    humanParts.push(formatAdapterHeavyHuman(adapterTop));
+  }
+
+  return {
+    jsonParts,
+    humanAppend: humanParts.join(""),
+  };
+}
+
 /**
  * Run report action handler
  */
@@ -142,9 +227,14 @@ export function runReportAction(
       analyzer = new ExecutionAnalyzer(runResults, graph);
     }
 
-    let summary: ExecutionSummary = analyzer
+    const summary: ExecutionSummary = analyzer
       ? analyzer.getSummary()
-      : createMinimalSummary(runResults);
+      : {
+          ...createMinimalSummary(runResults),
+          node_executions: buildNodeExecutionsFromRunResults(runResults),
+        };
+
+    const adapterSource = summary.node_executions as NodeExecution[];
 
     const { bottlenecks, bottlenecksTopLabel } = computeBottlenecksSection(
       summary,
@@ -152,8 +242,16 @@ export function runReportAction(
       graph,
     );
 
+    const wantsAdapter =
+      options.adapterSummary === true || options.adapterTopBy != null;
+    const { jsonParts: adapterJson, humanAppend: adapterHumanAppend } =
+      wantsAdapter
+        ? buildAdapterSections(adapterSource, options, graph)
+        : { jsonParts: {}, humanAppend: "" };
+
+    let filteredSummary: ExecutionSummary = summary;
     if (options.fields) {
-      summary = FieldFilter.filterFields(
+      filteredSummary = FieldFilter.filterFields(
         summary,
         options.fields,
       ) as ExecutionSummary;
@@ -162,13 +260,21 @@ export function runReportAction(
     const useJson = shouldOutputJSON(options.json, options.noJson);
 
     if (useJson) {
-      const report: Record<string, unknown> = { ...summary };
+      const report: Record<string, unknown> = { ...filteredSummary };
       if (bottlenecks) {
         report.bottlenecks = bottlenecks;
       }
+      Object.assign(report, adapterJson);
       console.log(formatOutput(report, true));
     } else {
-      console.log(formatRunReport(summary, bottlenecks, bottlenecksTopLabel));
+      console.log(
+        formatRunReport(
+          filteredSummary,
+          bottlenecks,
+          bottlenecksTopLabel,
+          adapterHumanAppend || undefined,
+        ),
+      );
     }
   } catch (error) {
     handleError(error, isTTY());

@@ -1,3 +1,6 @@
+import type { AdapterTotalsSnapshot } from "../analysis/adapter-response-metrics";
+import type { AdapterHeavyResult } from "../analysis/run-results-search";
+
 type DepNode = {
   unique_id: string;
   resource_type: string;
@@ -210,6 +213,70 @@ export function formatBottlenecks(
   return lines.join("\n") + "\n";
 }
 
+export function formatAdapterTotalsHuman(
+  totals: AdapterTotalsSnapshot,
+): string {
+  const lines: string[] = [];
+  lines.push("\nAdapter metrics (from run_results adapter_response):");
+  lines.push(`  Nodes with adapter data: ${totals.nodesWithAdapterData}`);
+  if (totals.totalBytesProcessed !== undefined) {
+    lines.push(
+      `  Total bytes processed: ${totals.totalBytesProcessed.toLocaleString("en-US")}`,
+    );
+  }
+  if (totals.totalBytesBilled !== undefined) {
+    lines.push(
+      `  Total bytes billed: ${totals.totalBytesBilled.toLocaleString("en-US")}`,
+    );
+  }
+  if (totals.totalSlotMs !== undefined) {
+    lines.push(
+      `  Total slot-ms: ${totals.totalSlotMs.toLocaleString("en-US")}`,
+    );
+  }
+  if (totals.totalRowsAffected !== undefined) {
+    lines.push(
+      `  Total rows affected: ${totals.totalRowsAffected.toLocaleString("en-US")}`,
+    );
+  }
+  return lines.join("\n") + "\n";
+}
+
+export function formatAdapterHeavyHuman(
+  result: AdapterHeavyResult,
+  title?: string,
+): string {
+  if (result.nodes.length === 0) {
+    return `\n${title ?? `Adapter top by ${result.metric}`}: (none)\n`;
+  }
+
+  const label = title ?? `Top nodes by ${result.metric}`;
+  const lines: string[] = [];
+  lines.push(
+    `\n${label} (total ${result.metric}: ${result.total_metric.toLocaleString("en-US")}):`,
+  );
+  lines.push(
+    "  Rank  Node                              Metric value    % of total  Time (s)",
+  );
+
+  const maxIdLen = 34;
+  for (const node of result.nodes) {
+    const nameLabel = node.name ?? node.unique_id;
+    const idDisplay =
+      nameLabel.length > maxIdLen
+        ? nameLabel.slice(0, maxIdLen - 3) + "..."
+        : nameLabel;
+    const padded = idDisplay.padEnd(maxIdLen);
+    const metricStr = node.metric_value.toLocaleString("en-US").padStart(12);
+    const timeStr = node.execution_time.toFixed(2).padStart(8);
+    lines.push(
+      `  ${String(node.rank).padStart(2)}     ${padded}  ${metricStr}    ${node.pct_of_total.toFixed(1)}%      ${timeStr}`,
+    );
+  }
+
+  return lines.join("\n") + "\n";
+}
+
 /**
  * Format run-report command output
  */
@@ -229,6 +296,7 @@ export function formatRunReport(
     criteria_used: "top_n" | "threshold";
   },
   bottlenecksTopLabel?: string,
+  adapterAppend?: string,
 ): string {
   const lines: string[] = [];
   lines.push("dbt Execution Report");
@@ -250,6 +318,10 @@ export function formatRunReport(
 
   if (bottlenecks) {
     lines.push(formatBottlenecks(bottlenecks, bottlenecksTopLabel));
+  }
+
+  if (adapterAppend) {
+    lines.push(adapterAppend);
   }
 
   return lines.join("\n");

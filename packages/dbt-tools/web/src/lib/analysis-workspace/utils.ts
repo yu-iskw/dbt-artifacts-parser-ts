@@ -28,6 +28,13 @@ export function formatSeconds(value: number | null | undefined): string {
   return `${value.toFixed(2)}s`;
 }
 
+export function formatResourceTypeLabel(resourceType: string): string {
+  return resourceType
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function formatRunStartedAt(epochMs: number): string {
   return new Date(epochMs).toLocaleString("en-US", {
     dateStyle: "medium",
@@ -199,24 +206,6 @@ export function isDefaultTimelineResource(
     !PRIMARY_TIMELINE_TYPES.has(item.resourceType) ||
     TEST_RESOURCE_TYPES.has(item.resourceType) ||
     isInternalArtifactResource(item)
-  ) {
-    return false;
-  }
-  if (projectName == null) return true;
-  return item.packageName === projectName;
-}
-
-export function isDefaultTimelineExecution(
-  item: Pick<ExecutionRow, "resourceType" | "packageName" | "name" | "path">,
-  projectName: string | null,
-): boolean {
-  if (
-    !PRIMARY_TIMELINE_TYPES.has(item.resourceType) ||
-    isInternalArtifactResource({
-      name: item.name,
-      packageName: item.packageName,
-      path: item.path,
-    })
   ) {
     return false;
   }

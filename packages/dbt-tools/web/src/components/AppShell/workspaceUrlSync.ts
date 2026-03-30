@@ -17,6 +17,7 @@ import {
   parseRunsKind,
   parseSelectedExecutionId,
   parseSelectedResourceId,
+  parseShowAdapterMetrics,
   parseViewFromSearch,
 } from "./appNavigation";
 
@@ -72,6 +73,8 @@ const defaultRunsViewState = (search: string): RunsViewState => {
     groupBy: "none",
     selectedExecutionId:
       view === "runs" ? parseSelectedExecutionId(search) : null,
+    showAdapterMetrics:
+      view === "runs" ? parseShowAdapterMetrics(search) : false,
   };
 };
 
@@ -175,6 +178,10 @@ export function applySearchToWorkspaceState(search: string): {
       ...current,
       kind: parseRunsKind(search) ?? current.kind,
       selectedExecutionId: view === "runs" ? selectedParam : null,
+      showAdapterMetrics:
+        view === "runs"
+          ? parseShowAdapterMetrics(search)
+          : current.showAdapterMetrics,
     }),
     timelineFilters: (current) => ({
       ...current,
@@ -206,6 +213,7 @@ const NAV_SEARCH_KEYS = [
   "assetTab",
   "selected",
   "kind",
+  "adapter",
   "up",
   "down",
   "allDeps",
@@ -253,7 +261,12 @@ function applyRunsUrl(url: URL, runsViewState: RunsViewState) {
   } else {
     url.searchParams.delete("selected");
   }
-  deleteNavSearchKeys(url, new Set(["kind", "selected"]));
+  if (runsViewState.showAdapterMetrics) {
+    url.searchParams.delete("adapter");
+  } else {
+    url.searchParams.set("adapter", "0");
+  }
+  deleteNavSearchKeys(url, new Set(["kind", "selected", "adapter"]));
 }
 
 function applyTimelineUrl(

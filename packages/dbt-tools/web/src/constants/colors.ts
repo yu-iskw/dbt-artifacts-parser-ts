@@ -19,11 +19,6 @@ export function getStatusColor(
   return fromMap ?? getThemeHex(theme).textSoft;
 }
 
-/** dbt resource type → left-border accent color (light). */
-export const RESOURCE_TYPE_COLORS: Record<string, string> = {
-  ...getResourceTypeHexMap("light"),
-};
-
 export function getResourceTypeColor(
   resourceType: string | undefined,
   theme: ThemeMode = "light",

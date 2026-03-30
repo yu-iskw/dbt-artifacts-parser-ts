@@ -1,11 +1,22 @@
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ManifestGraph } from "./manifest-graph";
+import type {
+  AdapterResponseField,
+  AdapterResponseMetrics,
+} from "./adapter-response-metrics";
+import {
+  adapterMetricsHasData,
+  extractAdapterResponseFields,
+  isAdapterResponseObject,
+  normalizeAdapterResponse,
+} from "./adapter-response-metrics";
 
 type RunResultLike = {
   unique_id: string;
   status: string;
   execution_time: number;
   thread_id?: string | null;
+  adapter_response?: unknown;
   timing: Array<{
     name: string;
     started_at?: string | null;
@@ -22,6 +33,10 @@ export interface NodeExecution {
   started_at?: string;
   completed_at?: string;
   thread_id?: string;
+  /** Present when run_results included a non-empty adapter_response. */
+  adapterMetrics?: AdapterResponseMetrics;
+  /** Present when adapter_response was an object, even if it was empty. */
+  adapterResponseFields?: AdapterResponseField[];
 }
 
 /**
@@ -47,6 +62,49 @@ export interface ExecutionSummary {
  * ExecutionAnalyzer processes run_results.json to extract timing information
  * and correlate it with the dependency graph.
  */
+/**
+ * Build node execution rows from parsed run_results (no manifest required).
+ * Used by the CLI when only run_results.json is provided.
+ */
+export function buildNodeExecutionsFromRunResults(
+  runResults: ParsedRunResults,
+): NodeExecution[] {
+  if (!runResults.results || !Array.isArray(runResults.results)) {
+    return [];
+  }
+
+  const results = runResults.results as unknown as RunResultLike[];
+
+  return results.map((result) => {
+    const timingArray = result.timing || [];
+    const executeTiming = timingArray.find((t) => t.name === "execute");
+    const compileTiming = timingArray.find((t) => t.name === "compile");
+    const timing = executeTiming || compileTiming || timingArray[0];
+
+    const adapterMetrics = normalizeAdapterResponse(result.adapter_response);
+    const adapterResponseFields = extractAdapterResponseFields(
+      result.adapter_response,
+    );
+    const includeAdapter =
+      adapterMetrics.rawKeys.length > 0 ||
+      adapterMetricsHasData(adapterMetrics);
+    const includeAdapterFields = isAdapterResponseObject(
+      result.adapter_response,
+    );
+
+    return {
+      unique_id: result.unique_id || "",
+      status: result.status || "unknown",
+      execution_time: result.execution_time || 0,
+      started_at: timing?.started_at ?? undefined,
+      completed_at: timing?.completed_at ?? undefined,
+      thread_id: result.thread_id ?? undefined,
+      ...(includeAdapter ? { adapterMetrics } : {}),
+      ...(includeAdapterFields ? { adapterResponseFields } : {}),
+    };
+  });
+}
+
 export class ExecutionAnalyzer {
   private runResults: ParsedRunResults;
   private graph: ManifestGraph;
@@ -89,30 +147,7 @@ export class ExecutionAnalyzer {
    * Extract execution information for each node
    */
   getNodeExecutions(): NodeExecution[] {
-    if (!this.runResults.results || !Array.isArray(this.runResults.results)) {
-      return [];
-    }
-
-    const results = this.runResults.results as unknown as RunResultLike[];
-
-    return results.map((result) => {
-      // Find execute timing (most relevant for execution time)
-      const timingArray = result.timing || [];
-      const executeTiming = timingArray.find((t) => t.name === "execute");
-      const compileTiming = timingArray.find((t) => t.name === "compile");
-
-      // Use execute timing if available, otherwise fall back to compile
-      const timing = executeTiming || compileTiming || timingArray[0];
-
-      return {
-        unique_id: result.unique_id || "",
-        status: result.status || "unknown",
-        execution_time: result.execution_time || 0,
-        started_at: timing?.started_at ?? undefined,
-        completed_at: timing?.completed_at ?? undefined,
-        thread_id: result.thread_id ?? undefined,
-      };
-    });
+    return buildNodeExecutionsFromRunResults(this.runResults);
   }
 
   /**

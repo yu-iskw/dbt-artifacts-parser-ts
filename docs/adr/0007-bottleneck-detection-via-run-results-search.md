@@ -6,6 +6,8 @@ Date: 2026-03-13
 
 Accepted
 
+Extends [30. Adapter response metrics in analysis snapshot and run-report](0030-adapter-response-metrics-in-analysis-snapshot-and-run-report.md)
+
 ## Context
 
 Users need to identify performance bottlenecks in dbt run results. The existing `ExecutionAnalyzer` provides critical path and Gantt data, but lacks a generalized way to search and filter run results, or to surface the slowest models. A reusable search abstraction would support bottleneck detection today and future analyses (failed nodes, slow-model dashboards, etc.) without duplicating logic.

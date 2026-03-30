@@ -334,3 +334,35 @@ export class SQLAnalyzer {
     });
   }
 }
+
+/**
+ * Map dbt manifest `metadata.adapter_type` to node-sql-parser `database` names
+ * passed to `SQLAnalyzer.analyze`. Unknown adapters fall back to `mysql`
+ * (historical CLI default).
+ */
+export function sqlDialectFromDbtAdapterType(
+  adapterType: string | null | undefined,
+): string {
+  if (adapterType == null || typeof adapterType !== "string") return "mysql";
+  const n = adapterType.trim().toLowerCase();
+  switch (n) {
+    case "snowflake":
+      return "snowflake";
+    case "bigquery":
+      return "bigquery";
+    case "postgres":
+    case "postgresql":
+      return "postgresql";
+    case "redshift":
+      return "redshift";
+    case "sqlite":
+      return "sqlite";
+    case "databricks":
+    case "spark":
+    case "trino":
+    case "athena":
+      return "postgresql";
+    default:
+      return "mysql";
+  }
+}

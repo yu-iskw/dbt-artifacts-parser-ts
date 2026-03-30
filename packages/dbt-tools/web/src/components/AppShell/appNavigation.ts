@@ -136,6 +136,18 @@ export function parseRunsKind(search: string): RunsViewState["kind"] | null {
   return null;
 }
 
+/**
+ * Runs lens: omit `adapter` → show columns when data exists (default on).
+ * `adapter=0` / `false` / `no` hides; `adapter=1` / `true` / `yes` is explicit show.
+ */
+export function parseShowAdapterMetrics(search: string): boolean {
+  const raw = new URLSearchParams(search).get("adapter");
+  if (raw == null || raw === "") return true;
+  const v = raw.trim().toLowerCase();
+  if (v === "0" || v === "false" || v === "no") return false;
+  return true;
+}
+
 export function parseLineageLensMode(
   search: string,
 ): LineageViewState["lensMode"] | null {

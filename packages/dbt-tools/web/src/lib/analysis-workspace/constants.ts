@@ -1,6 +1,6 @@
 import { type ThemeMode, getThemeHex } from "@web/constants/themeColors";
 import type { StatusTone } from "@web/types";
-import type { WorkspaceView, AssetExplorerMode } from "./types";
+import type { AssetExplorerMode } from "./types";
 
 export function getStatusTonePalette(
   theme: ThemeMode,
@@ -13,10 +13,6 @@ export function getStatusTonePalette(
     neutral: t.slate,
   };
 }
-
-/** Light-theme defaults; use {@link getStatusTonePalette} with {@link useTheme} in themed charts. */
-export const STATUS_COLORS: Record<StatusTone, string> =
-  getStatusTonePalette("light");
 
 export const PILL_ACTIVE = "workspace-pill workspace-pill--active";
 export const PILL_BASE = "workspace-pill";
@@ -51,22 +47,6 @@ export const SUPPORT_TESTS_RESOURCE_TYPES = new Set([
   "snapshot",
   "source",
 ]);
-
-export const VIEW_TITLES: Record<WorkspaceView, string> = {
-  // Canonical views
-  health: "Health",
-  inventory: "Inventory",
-  runs: "Runs",
-  settings: "Settings",
-  timeline: "Timeline",
-  // Legacy views (backward compat)
-  execution: "Execution",
-  quality: "Quality",
-  dependencies: "Dependencies",
-  search: "Search",
-  overview: "Run overview",
-  catalog: "Catalog workspace",
-};
 
 export const EXPLORER_MODE_LABELS: Record<AssetExplorerMode, string> = {
   project: "Project",

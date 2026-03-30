@@ -1,12 +1,10 @@
 import path from "node:path";
+import { DBT_MANIFEST_JSON, DBT_RUN_RESULTS_JSON } from "@dbt-tools/core";
 import type {
   RemoteArtifactProvider,
   RemoteArtifactRun,
 } from "../services/artifactSourceApi";
 import { normalizeArtifactPrefix } from "./prefix";
-
-export const MANIFEST_JSON = "manifest.json";
-export const RUN_RESULTS_JSON = "run_results.json";
 
 export interface RemoteObjectMetadata {
   key: string;
@@ -63,13 +61,14 @@ export function discoverLatestArtifactRuns(
     if (relativeKey == null) continue;
 
     const fileName = path.posix.basename(relativeKey);
-    if (fileName !== MANIFEST_JSON && fileName !== RUN_RESULTS_JSON) continue;
+    if (fileName !== DBT_MANIFEST_JSON && fileName !== DBT_RUN_RESULTS_JSON)
+      continue;
 
     const runId = runIdForKey(relativeKey);
     const current = grouped.get(runId) ?? {};
 
-    if (fileName === MANIFEST_JSON) current.manifest = object;
-    if (fileName === RUN_RESULTS_JSON) current.runResults = object;
+    if (fileName === DBT_MANIFEST_JSON) current.manifest = object;
+    if (fileName === DBT_RUN_RESULTS_JSON) current.runResults = object;
 
     grouped.set(runId, current);
   }

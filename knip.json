@@ -1,0 +1,37 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["codeql", "prettier", "trunk", "semgrep"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    "packages/dbt-artifacts-parser/**/*.ts": ["types"]
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.mjs"],
+      "project": ["scripts/**/*.mjs"],
+      "vitest": {
+        "config": ["vitest.config.mjs"],
+        "entry": ["packages/**/*.test.ts", "packages/**/*.test.tsx"]
+      }
+    },
+    "packages/dbt-artifacts-parser": {
+      "project": ["src/**/*.ts", "scripts/**/*.js"],
+      "ignoreFiles": ["scripts/preprocess-refs.js"],
+      "ignoreDependencies": ["@apidevtools/json-schema-ref-parser"]
+    },
+    "packages/dbt-tools/core": {
+      "entry": ["src/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/dbt-tools/cli": {
+      "entry": ["src/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/dbt-tools/web": {
+      "entry": ["e2e/**/*.ts", "src/**/*.test.ts", "src/**/*.test.tsx"],
+      "project": ["src/**/*.ts", "src/**/*.tsx"],
+      "vite": true,
+      "playwright": true
+    }
+  }
+}

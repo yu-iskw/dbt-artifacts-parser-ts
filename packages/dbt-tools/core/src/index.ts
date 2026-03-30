@@ -1,4 +1,5 @@
 // Analysis exports
+export * from "./analysis/adapter-response-metrics";
 export * from "./analysis/manifest-graph";
 export * from "./analysis/execution-analyzer";
 export * from "./analysis/dependency-service";
@@ -21,6 +22,7 @@ export type {
 } from "./config/dbt-tools-env";
 
 // I/O exports
+export * from "./io/artifact-filenames";
 export * from "./io/artifact-loader";
 
 // Validation exports

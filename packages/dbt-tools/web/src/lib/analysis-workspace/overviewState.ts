@@ -32,12 +32,6 @@ export interface TypeStatusBreakdown {
   statusBreakdown: StatusBreakdownItem[];
 }
 
-export interface TestStats {
-  pass: number;
-  fail: number;
-  error: number;
-}
-
 export function buildStatusBreakdownForRows(
   executions: ExecutionRow[],
 ): StatusBreakdownItem[] {

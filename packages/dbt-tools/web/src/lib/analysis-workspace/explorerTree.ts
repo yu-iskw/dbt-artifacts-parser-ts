@@ -9,6 +9,13 @@ export interface TestStats {
   error: number;
 }
 
+export interface SelectedAssetTestEvidence {
+  total: number;
+  passing: number;
+  attention: number;
+  tests: ResourceNode[];
+}
+
 export function buildResourceTestStats(
   resources: ResourceNode[],
   dependencyIndex?: AnalysisState["dependencyIndex"],
@@ -41,6 +48,49 @@ export function buildResourceTestStats(
   }
 
   return resourceTestStats;
+}
+
+export function buildSelectedAssetTestEvidence(
+  resourceId: string,
+  resources: ResourceNode[],
+  dependencyIndex?: AnalysisState["dependencyIndex"],
+): SelectedAssetTestEvidence {
+  const resolvedDependencyIndex = dependencyIndex ?? {};
+  const attachedTests = resources
+    .filter((resource) => TEST_RESOURCE_TYPES.has(resource.resourceType))
+    .filter((test) =>
+      (
+        resolvedDependencyIndex[test.uniqueId]?.upstream?.map(
+          (dependency) => dependency.uniqueId,
+        ) ?? []
+      ).includes(resourceId),
+    )
+    .sort((left, right) => {
+      const toneRank = { danger: 0, warning: 1, positive: 2, neutral: 3 };
+      const toneOrder =
+        toneRank[left.statusTone ?? "neutral"] -
+        toneRank[right.statusTone ?? "neutral"];
+      if (toneOrder !== 0) return toneOrder;
+      const durationOrder =
+        (right.executionTime ?? Number.NEGATIVE_INFINITY) -
+        (left.executionTime ?? Number.NEGATIVE_INFINITY);
+      if (durationOrder !== 0) return durationOrder;
+      return left.name.localeCompare(right.name);
+    });
+
+  const passing = attachedTests.filter(
+    (test) => test.statusTone === "positive",
+  ).length;
+  const attention = attachedTests.filter(
+    (test) => test.statusTone === "warning" || test.statusTone === "danger",
+  ).length;
+
+  return {
+    total: attachedTests.length,
+    passing,
+    attention,
+    tests: attachedTests,
+  };
 }
 
 export interface ExplorerTreeNode {

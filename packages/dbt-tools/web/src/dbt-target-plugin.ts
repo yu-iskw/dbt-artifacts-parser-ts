@@ -1,12 +1,13 @@
 import fs from "node:fs";
 import type { Plugin } from "vite";
 import {
+  DBT_MANIFEST_JSON,
+  DBT_RUN_RESULTS_JSON,
   getDbtToolsReloadDebounceMs,
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
 } from "@dbt-tools/core";
 import { ArtifactSourceService } from "./artifact-source/sourceService";
-import { MANIFEST_JSON, RUN_RESULTS_JSON } from "./artifact-source/discovery";
 import { resolveWatchableLocalTargetDir } from "./artifact-source/resolveLocalTargetDir";
 import { tryHandleArtifactSourceViteRequest } from "./artifact-source/viteArtifactRoutes";
 
@@ -33,7 +34,7 @@ function setupArtifactWatch(
   };
 
   fs.watch(resolved, (_eventType, filename) => {
-    if (filename === MANIFEST_JSON || filename === RUN_RESULTS_JSON) {
+    if (filename === DBT_MANIFEST_JSON || filename === DBT_RUN_RESULTS_JSON) {
       notify();
     }
   });

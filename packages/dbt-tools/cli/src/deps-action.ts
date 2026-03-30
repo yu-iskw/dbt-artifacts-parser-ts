@@ -11,6 +11,7 @@ import {
   validateDepth,
   DependencyService,
   SQLAnalyzer,
+  sqlDialectFromDbtAdapterType,
   formatOutput,
   formatDeps,
   shouldOutputJSON,
@@ -52,14 +53,17 @@ function addFieldLevelLineage(
     graph.addFieldNodes(catalog);
 
     const analyzer = new SQLAnalyzer();
-    const adapterType = manifest.metadata?.adapter_type || "mysql";
+    const adapterType = (
+      manifest.metadata as { adapter_type?: string } | undefined
+    )?.adapter_type;
+    const sqlDialect = sqlDialectFromDbtAdapterType(adapterType);
 
     const nodes = manifest.nodes;
     if (nodes) {
       for (const [uniqueId, node] of Object.entries(nodes)) {
         const compiledCode = node.compiled_code;
         if (typeof compiledCode === "string") {
-          const fieldDeps = analyzer.analyze(compiledCode, adapterType);
+          const fieldDeps = analyzer.analyze(compiledCode, sqlDialect);
           graph.addFieldEdges(uniqueId, fieldDeps);
         }
       }

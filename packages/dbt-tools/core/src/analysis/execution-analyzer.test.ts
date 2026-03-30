@@ -9,7 +9,10 @@ import {
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
 import { ManifestGraph } from "./manifest-graph";
-import { ExecutionAnalyzer } from "./execution-analyzer";
+import {
+  buildNodeExecutionsFromRunResults,
+  ExecutionAnalyzer,
+} from "./execution-analyzer";
 
 describe("ExecutionAnalyzer", () => {
   describe("constructor", () => {
@@ -73,6 +76,43 @@ describe("ExecutionAnalyzer", () => {
       const executions = analyzer.getNodeExecutions();
 
       expect(executions).toEqual([]);
+    });
+
+    it("preserves raw adapter_response fields for arbitrary and empty payloads", () => {
+      const runResults = parseRunResults({
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "model.pkg.custom",
+            status: "success",
+            execution_time: 1,
+            thread_id: "Thread-1",
+            adapter_response: {
+              custom_metric: 7,
+              nested: { phase: "scan" },
+            },
+            timing: [],
+          },
+          {
+            unique_id: "model.pkg.empty",
+            status: "success",
+            execution_time: 1,
+            thread_id: "Thread-1",
+            adapter_response: {},
+            timing: [],
+          },
+        ],
+      } as Record<string, unknown>);
+
+      const executions = buildNodeExecutionsFromRunResults(runResults);
+
+      expect(
+        executions[0]?.adapterResponseFields?.map((field) => field.key),
+      ).toEqual(["custom_metric", "nested.phase"]);
+      expect(executions[1]?.adapterResponseFields).toEqual([]);
     });
   });
 

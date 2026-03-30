@@ -8,7 +8,7 @@ import {
 import {
   buildAnalysisSnapshotFromArtifacts,
   buildAnalysisSnapshotFromParsedArtifacts,
-} from "./analysis-snapshot";
+} from "../analysis-snapshot";
 
 describe("analysis snapshot facade", () => {
   it("builds a serializable snapshot from raw artifacts", async () => {
@@ -92,5 +92,44 @@ describe("analysis snapshot facade", () => {
     expect(model).toBeDefined();
     expect(model?.compiledCode).toBeNull();
     expect(model?.rawCode).toBeNull();
+  });
+
+  it("preserves raw adapter_response fields in execution rows", () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.10.json",
+    ) as Record<string, unknown>;
+    const runResultsJson = loadTestRunResults(
+      "v6",
+      "run_results.json",
+    ) as Record<string, unknown>;
+    const results =
+      (runResultsJson.results as Array<Record<string, unknown>>) ?? [];
+    const first = results[0];
+    if (!first) {
+      throw new Error(
+        "Expected fixture run_results to contain at least one result",
+      );
+    }
+    first.adapter_response = {
+      custom_metric: 7,
+      nested: { phase: "scan" },
+    };
+
+    const manifest = parseManifest(manifestJson);
+    const runResults = parseRunResults(runResultsJson);
+    const { analysis } = buildAnalysisSnapshotFromParsedArtifacts(
+      manifestJson,
+      runResultsJson,
+      manifest,
+      runResults,
+    );
+
+    const execution = analysis.executions.find(
+      (item) => item.uniqueId === String(first.unique_id),
+    );
+    expect(execution?.adapterResponseFields?.map((field) => field.key)).toEqual(
+      ["custom_metric", "nested.phase"],
+    );
   });
 });

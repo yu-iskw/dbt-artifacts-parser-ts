@@ -15,8 +15,22 @@ export interface RunResultsSearchCriteria {
   unique_id_pattern?: string | RegExp;
   /** Limit number of results (for top-N queries) */
   limit?: number;
-  /** Sort by: execution_time_asc | execution_time_desc | unique_id */
-  sort?: "execution_time_asc" | "execution_time_desc" | "unique_id";
+  /** Sort key */
+  sort?:
+    | "execution_time_asc"
+    | "execution_time_desc"
+    | "unique_id"
+    | "bytes_processed_desc"
+    | "slot_ms_desc"
+    | "rows_affected_desc";
+  /** Minimum bytes_processed from adapter_response (when present) */
+  min_bytes_processed?: number;
+  /** Minimum slot_ms from adapter_response (when present) */
+  min_slot_ms?: number;
+  /** Minimum rows_affected from adapter_response (when present) */
+  min_rows_affected?: number;
+  /** Require adapter_response to contain this top-level key */
+  has_adapter_key?: string;
 }
 
 /**
@@ -69,6 +83,18 @@ function matchesUniqueId(uniqueId: string, pattern: string | RegExp): boolean {
   return matchesGlob(uniqueId, pattern);
 }
 
+function bytesProcessedOf(e: NodeExecution): number {
+  return e.adapterMetrics?.bytesProcessed ?? 0;
+}
+
+function slotMsOf(e: NodeExecution): number {
+  return e.adapterMetrics?.slotMs ?? 0;
+}
+
+function rowsAffectedOf(e: NodeExecution): number {
+  return e.adapterMetrics?.rowsAffected ?? 0;
+}
+
 /**
  * Search and filter NodeExecution array by criteria.
  * Pure function: returns new array, no side effects.
@@ -108,6 +134,26 @@ export function searchRunResults(
     );
   }
 
+  if (criteria.min_bytes_processed !== undefined) {
+    result = result.filter(
+      (e) => bytesProcessedOf(e) >= criteria.min_bytes_processed!,
+    );
+  }
+  if (criteria.min_slot_ms !== undefined) {
+    result = result.filter((e) => slotMsOf(e) >= criteria.min_slot_ms!);
+  }
+  if (criteria.min_rows_affected !== undefined) {
+    result = result.filter(
+      (e) => rowsAffectedOf(e) >= criteria.min_rows_affected!,
+    );
+  }
+  if (criteria.has_adapter_key !== undefined) {
+    const key = criteria.has_adapter_key;
+    result = result.filter(
+      (e) => e.adapterMetrics?.rawKeys.includes(key) === true,
+    );
+  }
+
   // Sort
   if (criteria.sort) {
     result = [...result].sort((a, b) => {
@@ -118,6 +164,12 @@ export function searchRunResults(
           return (b.execution_time ?? 0) - (a.execution_time ?? 0);
         case "unique_id":
           return a.unique_id.localeCompare(b.unique_id);
+        case "bytes_processed_desc":
+          return bytesProcessedOf(b) - bytesProcessedOf(a);
+        case "slot_ms_desc":
+          return slotMsOf(b) - slotMsOf(a);
+        case "rows_affected_desc":
+          return rowsAffectedOf(b) - rowsAffectedOf(a);
         default:
           return 0;
       }
@@ -200,5 +252,86 @@ export function detectBottlenecks(
     nodes,
     total_execution_time: totalExecutionTime,
     criteria_used: options.mode === "top_n" ? "top_n" : "threshold",
+  };
+}
+
+export type AdapterHeavyMetric =
+  | "bytes_processed"
+  | "slot_ms"
+  | "rows_affected";
+
+export interface AdapterHeavyNode {
+  unique_id: string;
+  name?: string;
+  metric_value: number;
+  rank: number;
+  pct_of_total: number;
+  status: string;
+  execution_time: number;
+}
+
+export interface AdapterHeavyResult {
+  metric: AdapterHeavyMetric;
+  nodes: AdapterHeavyNode[];
+  total_metric: number;
+  criteria_used: "top_n";
+}
+
+function metricValue(e: NodeExecution, metric: AdapterHeavyMetric): number {
+  switch (metric) {
+    case "bytes_processed":
+      return bytesProcessedOf(e);
+    case "slot_ms":
+      return slotMsOf(e);
+    case "rows_affected":
+      return rowsAffectedOf(e);
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Top-N nodes by an adapter-reported metric (bytes, slot ms, or rows affected).
+ * Percentages use the sum of that metric across nodes with value &gt; 0.
+ */
+export function detectAdapterHeavyNodes(
+  executions: NodeExecution[],
+  options: {
+    metric: AdapterHeavyMetric;
+    top: number;
+    graph?: ManifestGraph;
+  },
+): AdapterHeavyResult {
+  const totalMetric = executions.reduce(
+    (sum, e) => sum + Math.max(0, metricValue(e, options.metric)),
+    0,
+  );
+
+  const topN = options.top > 0 ? options.top : 10;
+  const positive = executions.filter((e) => metricValue(e, options.metric) > 0);
+  const sorted = [...positive].sort(
+    (a, b) => metricValue(b, options.metric) - metricValue(a, options.metric),
+  );
+  const filtered = sorted.slice(0, topN);
+
+  const nodes: AdapterHeavyNode[] = filtered.map((e, i) => {
+    const value = metricValue(e, options.metric);
+    const pct = totalMetric > 0 ? (value / totalMetric) * 100 : 0;
+    return {
+      unique_id: e.unique_id,
+      name: getNodeName(e.unique_id, options.graph),
+      metric_value: value,
+      rank: i + 1,
+      pct_of_total: Math.round(pct * 10) / 10,
+      status: e.status || "unknown",
+      execution_time: e.execution_time ?? 0,
+    };
+  });
+
+  return {
+    metric: options.metric,
+    nodes,
+    total_metric: totalMetric,
+    criteria_used: "top_n",
   };
 }
