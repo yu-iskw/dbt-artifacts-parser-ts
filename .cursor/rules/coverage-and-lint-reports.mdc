@@ -9,6 +9,7 @@ Before considering a task complete, run both report scripts from the repository 
 
 - **Lint report:** `pnpm lint:report` — produces `lint-report.json`; must exit 0
 - **Coverage report:** `pnpm coverage:report` — produces `coverage-report.json`; must exit 0
+- **Knip:** `pnpm knip` — unused exports, files, and dependencies; must exit 0 (see [`knip.json`](mdc:knip.json))
 
 If `coverage-report.json` shows `belowThreshold: true`, add or improve unit tests until coverage meets thresholds (lines 60%, branches 50%, functions 60%, statements 60%).
 

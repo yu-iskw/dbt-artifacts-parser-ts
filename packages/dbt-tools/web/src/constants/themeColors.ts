@@ -34,9 +34,6 @@ export const THEME_HEX_DARK = {
   amber: "#F5B95C",
 } as const;
 
-/** @deprecated Prefer {@link getThemeHex} with {@link ThemeMode} for theme-aware UI. */
-export const THEME_HEX = THEME_HEX_LIGHT;
-
 export function getThemeHex(theme: ThemeMode) {
   return theme === "dark" ? THEME_HEX_DARK : THEME_HEX_LIGHT;
 }
@@ -191,6 +188,3 @@ export const CANVAS_DARK = {
 export function getCanvasColors(theme: ThemeMode) {
   return theme === "dark" ? CANVAS_DARK : CANVAS_LIGHT;
 }
-
-/** @deprecated Use {@link getCanvasColors} with {@link ThemeMode}. */
-export const CANVAS = CANVAS_LIGHT;

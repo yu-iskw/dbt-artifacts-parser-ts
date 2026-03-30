@@ -51,11 +51,6 @@ export interface OverviewFilterState {
   query: string;
 }
 
-export interface ResultsFilterState {
-  status: DashboardStatusFilter;
-  query: string;
-}
-
 /**
  * A selected time window used to zoom the timeline X-axis.
  * Both `start` and `end` are milliseconds relative to the run's earliest node

@@ -7,10 +7,6 @@ const DEBUG =
     ? new URLSearchParams(window.location.search).get("debug") === "1"
     : false;
 
-export function isDebugEnabled() {
-  return DEBUG;
-}
-
 export function debug(...args: unknown[]) {
   if (DEBUG) console.log("[dbt-tools]", ...args);
 }

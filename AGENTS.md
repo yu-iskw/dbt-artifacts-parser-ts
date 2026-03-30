@@ -16,7 +16,7 @@
   - [`lib/analysis-workspace/`](packages/dbt-tools/web/src/lib/analysis-workspace/) — pure TypeScript (tree, lineage, overview helpers) and colocated `*.test.ts`; use `@web/types` for shared app types.
   - [`components/AnalysisWorkspace/`](packages/dbt-tools/web/src/components/AnalysisWorkspace/) — analyzer UI: [`views/`](packages/dbt-tools/web/src/components/AnalysisWorkspace/views/), [`timeline/`](packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/) (Gantt), explorer, lineage graph (Inventory **Lineage** tab + `assetTab=lineage`; legacy `?view=lineage` / `?view=dependencies` redirect there), [`shared.tsx`](packages/dbt-tools/web/src/components/AnalysisWorkspace/shared.tsx).
   - [`components/AnalysisWorkspace.tsx`](packages/dbt-tools/web/src/components/AnalysisWorkspace.tsx) — thin re-export shim so `import … from "./components/AnalysisWorkspace"` resolves (file wins over directory).
-  - [`components/ui/`](packages/dbt-tools/web/src/components/ui/) — generic primitives (e.g. Spinner, Toast, Skeleton, Tooltip, SubtitleWithAction).
+  - [`components/ui/`](packages/dbt-tools/web/src/components/ui/) — generic primitives (e.g. Spinner, Toast, Skeleton).
   - **Remote artifact sources (S3 / GCS):** [`packages/dbt-tools/web/src/artifact-source/`](packages/dbt-tools/web/src/artifact-source/) — Vite middleware resolves runs from `DBT_TOOLS_REMOTE_SOURCE` (JSON parsed via `@dbt-tools/core` [`getDbtToolsRemoteSourceConfigFromEnv`](packages/dbt-tools/core/src/config/dbt-tools-env.ts)); browser client [`artifactSourceApi.ts`](packages/dbt-tools/web/src/services/artifactSourceApi.ts); decision [ADR-0029](docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md).
 - **Path alias `@web`:** maps to `src/` for this package ([`tsconfig.json`](packages/dbt-tools/web/tsconfig.json), [`vite.config.ts`](packages/dbt-tools/web/vite.config.ts)). Root [`vitest.config.mjs`](vitest.config.mjs) defines the same alias so monorepo `pnpm test` resolves `@web/...` — keep these in sync if the alias changes.
 - **`@dbt-tools/core` vs `core/browser`:** Use `@dbt-tools/core/browser` in workers and anywhere that must stay free of Node built-ins. The full `@dbt-tools/core` entry is for Vite/Node-only code (`artifact-source/`, `dbt-target-plugin.ts`). ESLint encodes this for workers, hooks, and components ([`eslint.config.mjs`](eslint.config.mjs)).
@@ -27,6 +27,7 @@ From the repository root:
 
 - `pnpm lint:report` — writes `lint-report.json`; must exit 0
 - `pnpm coverage:report` — writes `coverage-report.json`; must exit 0. If coverage is below thresholds, add or improve unit tests (lines 60%, branches 50%, functions 60%, statements 60%)
+- `pnpm knip` — unused exports/files/deps (monorepo); must exit 0. Configuration: [`knip.json`](knip.json). `ignoreExportsUsedInFile` is enabled; parser package ignores noisy `types` issues; `scripts/preprocess-refs.js` and the `@apidevtools/json-schema-ref-parser` devDependency are scoped to generation scripts (see `ignoreFiles` / `ignoreDependencies`).
 - **ESLint vs TypeScript 6:** `@typescript-eslint/*` 8.57.x still declares a peer range that excludes TypeScript 6 while this repo uses TypeScript 6, so `pnpm lint:eslint` may log a “not officially supported” warning. That is informational until [typescript-eslint#12123](https://github.com/typescript-eslint/typescript-eslint/issues/12123) ships; when a release widens the peer range, bump `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` to the **same** new version and refresh the lockfile.
 
 ### Linter and static-analysis violations (agent default)
@@ -96,6 +97,7 @@ If IT must enforce non-overridable rules (permissions, domains, MCP, marketplace
 ## Commands
 
 - **Codex CLI:** Project defaults live in [`.codex/config.toml`](.codex/config.toml). Codex loads that file only when the project is **trusted**; otherwise it uses your user config ([Config basics](https://developers.openai.com/codex/config-basic)).
+- **Dead code (Knip):** `pnpm knip` (optional fix: `pnpm knip:fix`, review diffs). Uses workspace entry points in [`knip.json`](knip.json).
 - **Web dev server:** `pnpm dev:web` (runs `pnpm --filter @dbt-tools/web dev`)
 - **E2E tests:** `pnpm test:e2e` (runs `pnpm --filter @dbt-tools/web test:e2e`). Run after meaningful UI or user-flow changes
 - **Build web:** `pnpm --filter @dbt-tools/web build`
