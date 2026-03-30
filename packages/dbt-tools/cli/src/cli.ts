@@ -14,12 +14,14 @@ import {
   FieldFilter,
   ErrorHandler,
   SQLAnalyzer,
+  sqlDialectFromDbtAdapterType,
   getCommandSchema,
   getAllSchemas,
   exportGraphToFormat,
   writeGraphOutput,
 } from "@dbt-tools/core";
 import { runReportAction, depsAction } from "./cli-actions";
+import { CLI_PACKAGE_VERSION } from "./version";
 
 const program = new Command();
 
@@ -41,7 +43,7 @@ const DESC_FIELDS = "Comma-separated list of fields to include";
 program
   .name("dbt-tools")
   .description("Command-line interface for dbt artifact analysis")
-  .version("0.1.0");
+  .version(CLI_PACKAGE_VERSION);
 
 /**
  * Handle errors with proper formatting
@@ -58,6 +60,46 @@ function handleError(error: unknown, isTTY: boolean): void {
     console.error(JSON.stringify(formatted, null, 2));
   }
   process.exit(1);
+}
+
+function tryApplyFieldLevelLineageToGraph(
+  graph: ManifestGraph,
+  manifest: ReturnType<typeof loadManifest>,
+  catalogPath: string,
+): void {
+  validateSafePath(catalogPath);
+  let catalog: ReturnType<typeof loadCatalog> | undefined;
+  try {
+    catalog = loadCatalog(catalogPath);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "";
+    if (msg.startsWith("Catalog file not found:")) {
+      console.warn(
+        "Warning: --field-level requires catalog.json, but it was not found. Falling back to resource-level lineage.",
+      );
+      return;
+    }
+    throw error;
+  }
+  graph.addFieldNodes(catalog);
+
+  const analyzer = new SQLAnalyzer();
+  const adapterType = (
+    manifest.metadata as { adapter_type?: string } | undefined
+  )?.adapter_type;
+  const sqlDialect = sqlDialectFromDbtAdapterType(adapterType);
+
+  if (manifest.nodes) {
+    for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
+      const compiledCode = (node as Record<string, unknown>).compiled_code as
+        | string
+        | undefined;
+      if (compiledCode) {
+        const fieldDeps = analyzer.analyze(compiledCode, sqlDialect);
+        graph.addFieldEdges(uniqueId, fieldDeps);
+      }
+    }
+  }
 }
 
 /**
@@ -164,33 +206,7 @@ program
 
         // Enhance with field-level lineage if requested
         if (options.fieldLevel && paths.catalog) {
-          try {
-            validateSafePath(paths.catalog);
-            const catalog = loadCatalog(paths.catalog);
-            graph.addFieldNodes(catalog);
-
-            // Analyze SQL for each node
-            const analyzer = new SQLAnalyzer();
-            // TODO: Determine dialect from manifest adapter type
-            const adapterType =
-              (manifest.metadata as { adapter_type?: string })?.adapter_type ??
-              "mysql";
-
-            if (manifest.nodes) {
-              for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
-                const compiledCode = (node as Record<string, unknown>)
-                  .compiled_code as string | undefined;
-                if (compiledCode) {
-                  const fieldDeps = analyzer.analyze(compiledCode, adapterType);
-                  graph.addFieldEdges(uniqueId, fieldDeps);
-                }
-              }
-            }
-          } catch {
-            console.warn(
-              "Warning: --field-level requires catalog.json, but it was not found. Falling back to resource-level lineage.",
-            );
-          }
+          tryApplyFieldLevelLineageToGraph(graph, manifest, paths.catalog);
         }
 
         const output = exportGraphToFormat(graph.getGraph(), {

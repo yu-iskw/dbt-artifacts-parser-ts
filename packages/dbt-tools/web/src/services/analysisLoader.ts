@@ -1,3 +1,4 @@
+/** Posts to the analysis Web Worker and normalizes load / search / code responses. */
 import type { AnalysisState } from "@web/types";
 import {
   ANALYSIS_WORKER_PROTOCOL_VERSION,

@@ -267,6 +267,11 @@ export default [
               name: "react/jsx-runtime",
               message: "Workers must not import the JSX runtime.",
             },
+            {
+              name: "@dbt-tools/core",
+              message:
+                "Workers must import @dbt-tools/core/browser only (Node/fs APIs must not enter the worker bundle).",
+            },
           ],
         },
       ],

@@ -1,3 +1,7 @@
+/**
+ * Browser `fetch` calls to `/api/artifact-source/*` and artifact JSON routes.
+ * Does not run in Node; pairing server logic is under `artifact-source/`.
+ */
 import {
   loadAnalysisFromBuffers,
   type AnalysisLoadResult,
@@ -129,6 +133,21 @@ async function loadFromLegacyApi(): Promise<AnalysisLoadResult | null> {
   );
 }
 
+async function loadManagedArtifactsFallback(): Promise<{
+  status: ArtifactSourceStatus;
+  result: AnalysisLoadResult | null;
+}> {
+  const fallbackResult = await loadFromLegacyApi();
+  return {
+    status: buildManagedArtifactStatus(
+      fallbackResult == null ? "none" : "preload",
+      fallbackResult == null ? null : "preload",
+      fallbackResult == null ? "Waiting for artifacts" : "Live target",
+    ),
+    result: fallbackResult,
+  };
+}
+
 export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus> {
   const response = await fetch("/api/artifact-source");
   if (!response.ok) {
@@ -154,19 +173,27 @@ export async function loadCurrentManagedArtifacts(): Promise<{
   status: ArtifactSourceStatus;
   result: AnalysisLoadResult | null;
 }> {
+  let response: Response;
+  try {
+    response = await fetch("/api/artifact-source");
+  } catch {
+    return loadManagedArtifactsFallback();
+  }
+
+  if (response.status === 404) {
+    return loadManagedArtifactsFallback();
+  }
+
+  if (!response.ok) {
+    return loadManagedArtifactsFallback();
+  }
+
   let status: ArtifactSourceStatus;
   try {
-    status = await fetchArtifactSourceStatus();
+    status = (await response.json()) as ArtifactSourceStatus;
   } catch {
-    const fallbackResult = await loadFromLegacyApi();
-    return {
-      status: buildManagedArtifactStatus(
-        fallbackResult == null ? "none" : "preload",
-        fallbackResult == null ? null : "preload",
-        fallbackResult == null ? "Waiting for artifacts" : "Live target",
-      ),
-      result: fallbackResult,
-    };
+    // Preview/static hosts often return 200 + index.html for unknown /api/* paths.
+    return loadManagedArtifactsFallback();
   }
   if (status.currentSource == null) {
     return { status, result: null };

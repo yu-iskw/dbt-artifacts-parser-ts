@@ -8,7 +8,7 @@ import {
 import {
   buildAnalysisSnapshotFromArtifacts,
   buildAnalysisSnapshotFromParsedArtifacts,
-} from "./analysis-snapshot";
+} from "../analysis-snapshot";
 
 describe("analysis snapshot facade", () => {
   it("builds a serializable snapshot from raw artifacts", async () => {

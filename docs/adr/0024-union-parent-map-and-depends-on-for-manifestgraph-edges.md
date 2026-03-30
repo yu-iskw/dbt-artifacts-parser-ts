@@ -47,7 +47,8 @@ flowchart LR
 ## Amendment (2026-03-29)
 
 `timelineAdjacency` is derived from the Graphology graph during snapshot construction in
-`packages/dbt-tools/core/src/analysis/analysis-snapshot.ts` (`buildTimelineAdjacency`),
+`packages/dbt-tools/core/src/analysis/analysis-snapshot.ts` (`buildTimelineAdjacency`;
+snapshot implementation modules live under `analysis/snapshot/`),
 not in `packages/dbt-tools/web/src/services/analyze.ts`. The Context section’s reference
 to adjacency from `analyze.ts` described an older wiring; the merge order in
 `ManifestGraph.addEdges` (parent_map then depends_on) is unchanged.
