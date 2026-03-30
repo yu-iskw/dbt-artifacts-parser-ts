@@ -213,24 +213,6 @@ export function isDefaultTimelineResource(
   return item.packageName === projectName;
 }
 
-export function isDefaultTimelineExecution(
-  item: Pick<ExecutionRow, "resourceType" | "packageName" | "name" | "path">,
-  projectName: string | null,
-): boolean {
-  if (
-    !PRIMARY_TIMELINE_TYPES.has(item.resourceType) ||
-    isInternalArtifactResource({
-      name: item.name,
-      packageName: item.packageName,
-      path: item.path,
-    })
-  ) {
-    return false;
-  }
-  if (projectName == null) return true;
-  return item.packageName === projectName;
-}
-
 export function hasOverviewFilters(filters: OverviewFilterState): boolean {
   return (
     filters.status !== "all" ||

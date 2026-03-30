@@ -4,7 +4,6 @@ export type {
   AssetExplorerMode,
   AssetTab,
   OverviewFilterState,
-  ResultsFilterState,
   TimelineFilterState,
   AssetViewState,
   RunsKind,

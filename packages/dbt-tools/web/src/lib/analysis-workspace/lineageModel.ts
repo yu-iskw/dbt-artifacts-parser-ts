@@ -89,35 +89,6 @@ export function getGraphStage(resourceType: string): number {
   }
 }
 
-export function getDependencyGraphNodeTypeClass(resourceType: string): string {
-  switch (resourceType) {
-    case "source":
-      return "dependency-graph__node--type-source";
-    case "seed":
-      return "dependency-graph__node--type-seed";
-    case "snapshot":
-      return "dependency-graph__node--type-snapshot";
-    case "model":
-      return "dependency-graph__node--type-model";
-    case "semantic_model":
-      return "dependency-graph__node--type-semantic-model";
-    case "metric":
-      return "dependency-graph__node--type-metric";
-    case "exposure":
-      return "dependency-graph__node--type-exposure";
-    case "test":
-    case "unit_test":
-      return "dependency-graph__node--type-test";
-    case "macro":
-      return "dependency-graph__node--type-macro";
-    case "operation":
-    case "sql_operation":
-      return "dependency-graph__node--type-operation";
-    default:
-      return "dependency-graph__node--type-generic";
-  }
-}
-
 export function resolveLineageSide(
   resourceId: string,
   selectedId: string,

@@ -15,6 +15,7 @@ From the repository root:
 
 1. **`pnpm lint:report`** — must exit 0 (writes `lint-report.json`).
 2. **`pnpm coverage:report`** — must exit 0 (writes `coverage-report.json`). If coverage is below thresholds, add or improve unit tests until it passes.
+3. **`pnpm knip`** — must exit 0 (dead code / unused deps; see `knip.json`).
 
 Thresholds: lines 60%, branches 50%, functions 60%, statements 60%.
 

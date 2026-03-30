@@ -86,7 +86,10 @@ export default [
       "@typescript-eslint": tseslint,
       sonarjs,
     },
-    rules: sharedTsRules,
+    rules: {
+      ...sharedTsRules,
+      "@typescript-eslint/no-unused-private-class-members": "error",
+    },
   },
   {
     files: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
