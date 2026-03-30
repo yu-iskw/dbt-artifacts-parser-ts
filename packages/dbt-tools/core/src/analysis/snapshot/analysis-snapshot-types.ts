@@ -1,5 +1,10 @@
 import type { BottleneckResult } from "../run-results-search";
 import type { ExecutionSummary } from "../execution-analyzer";
+import type {
+  AdapterResponseField,
+  AdapterResponseMetrics,
+  AdapterTotalsSnapshot,
+} from "../adapter-response-metrics";
 
 export interface GanttItem {
   unique_id: string;
@@ -94,6 +99,8 @@ export interface ExecutionRow {
   threadId: string | null;
   start: number | null;
   end: number | null;
+  adapterMetrics?: AdapterResponseMetrics;
+  adapterResponseFields?: AdapterResponseField[];
 }
 
 export interface StatusBreakdownItem {
@@ -150,6 +157,8 @@ export interface AnalysisSnapshot {
   timelineAdjacency: Record<string, TimelineAdjacencyEntry>;
   selectedResourceId: string | null;
   invocationId?: string | null;
+  /** Aggregated adapter_response metrics when any node reported data */
+  adapterTotals?: AdapterTotalsSnapshot;
 }
 
 export interface AnalysisSnapshotBuildTimings {

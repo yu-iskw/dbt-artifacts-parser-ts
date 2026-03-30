@@ -1,21 +1,38 @@
-import { type Dispatch, type SetStateAction, useEffect, useRef } from "react";
+import {
+  type CSSProperties,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { AnalysisState } from "@web/types";
+import type { AnalysisState, ExecutionRow } from "@web/types";
 import type {
   InvestigationSelectionState,
-  RunsKind,
   RunsViewState,
-  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { useRunsResultsSource } from "@web/hooks/useRunsResultsSource";
 import {
   badgeClassName,
   formatSeconds,
 } from "@web/lib/analysis-workspace/utils";
-import { QuickJumpActions, WorkspaceScaffold } from "../shared";
+import {
+  getRunsAdapterColumnLayout,
+  getRunsAdapterField,
+  isRunsAdapterSortBy,
+  type RunsAdapterColumn,
+  type RunsAdapterColumnLayout,
+} from "@web/lib/analysis-workspace/runsAdapterColumns";
+import {
+  EntityInspector,
+  formatResourceTypeLabel,
+  WorkspaceScaffold,
+} from "../shared";
 
 const FACETS: {
-  kind?: RunsKind;
+  kind?: RunsViewState["kind"];
   status?: RunsViewState["status"];
   label: string;
   countKey: keyof ReturnType<typeof facetKeyMap>;
@@ -31,38 +48,68 @@ const FACETS: {
   { status: "danger", label: "Errors", countKey: "errors" },
 ];
 
-function facetKeyMap(
-  summary: ReturnType<typeof useRunsResultsSource>["summary"],
-) {
+type RunsResultsState = ReturnType<typeof useRunsResultsSource>;
+
+function facetKeyMap(summary: RunsResultsState["summary"]) {
   return summary.facets;
 }
 
-type NavigateToHandler = (
-  view: WorkspaceView,
-  options?: {
-    resourceId?: string;
-    executionId?: string;
-    assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
-    rootResourceId?: string;
-  },
-) => void;
+function getRunsTableTemplate(adapterColumns: RunsAdapterColumn[]): string {
+  const baseColumns = [
+    "minmax(280px, 2.5fr)",
+    "minmax(108px, 0.85fr)",
+    "minmax(132px, 0.95fr)",
+    "minmax(96px, 0.72fr)",
+  ];
+  const adapterColumnTemplate = adapterColumns.map((column) =>
+    column.align === "end" ? "minmax(120px, 0.95fr)" : "minmax(148px, 1.1fr)",
+  );
+  return [...baseColumns, ...adapterColumnTemplate, "minmax(160px, 1fr)"].join(
+    " ",
+  );
+}
 
-type RunsRow = AnalysisState["executions"][number];
-type RunsResultsState = ReturnType<typeof useRunsResultsSource>;
+function getAdapterCellValue(
+  row: ExecutionRow,
+  column: RunsAdapterColumn,
+): string {
+  return getRunsAdapterField(row, column.key)?.displayValue ?? "—";
+}
+
+function formatInspectorFields(
+  row: ExecutionRow,
+  columns: RunsAdapterColumn[],
+): string {
+  const lines = columns.map((column) => {
+    const field = getRunsAdapterField(row, column.key);
+    return `${column.label}: ${field?.displayValue ?? "—"}`;
+  });
+  return lines.join("\n");
+}
 
 function RunsToolbar({
   runsViewState,
   runsResults,
+  adapterColumnLayout,
+  adapterMetricsAvailable,
   onRunsViewStateChange,
 }: {
   runsViewState: RunsViewState;
   runsResults: RunsResultsState;
+  adapterColumnLayout: RunsAdapterColumnLayout;
+  adapterMetricsAvailable: boolean;
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
 }) {
+  const visibleSortableColumns = adapterColumnLayout.visibleColumns.filter(
+    (column) => column.isScalar,
+  );
+  const showAdapterSortOptions =
+    runsViewState.showAdapterMetrics && visibleSortableColumns.length > 0;
+
   return (
     <div className="runs-toolbar runs-toolbar--stacked">
-      <div className="runs-toolbar__row">
-        <label className="workspace-search workspace-search--compact">
+      <div className="runs-toolbar__controls">
+        <label className="workspace-search workspace-search--compact runs-toolbar__search">
           <span>Search</span>
           <input
             value={runsViewState.query}
@@ -75,7 +122,7 @@ function RunsToolbar({
             placeholder="Filter by name, type, status, thread…"
           />
         </label>
-        <label className="workspace-search workspace-search--compact">
+        <label className="workspace-search workspace-search--compact runs-toolbar__sort">
           <span>Sort</span>
           <select
             value={runsViewState.sortBy}
@@ -91,10 +138,51 @@ function RunsToolbar({
             <option value="name">Name</option>
             <option value="status">Status</option>
             <option value="start">Start</option>
+            {showAdapterSortOptions
+              ? visibleSortableColumns.map((column) => (
+                  <option key={column.id} value={column.id}>
+                    {column.label}
+                  </option>
+                ))
+              : null}
           </select>
         </label>
+        <label
+          className="runs-toolbar__toggle"
+          title={
+            adapterMetricsAvailable
+              ? "Show raw adapter_response columns derived from the current run"
+              : "No adapter_response fields are available in this run"
+          }
+        >
+          <input
+            type="checkbox"
+            checked={runsViewState.showAdapterMetrics}
+            disabled={!adapterMetricsAvailable}
+            onChange={(e) => {
+              const showAdapterMetrics = e.target.checked;
+              onRunsViewStateChange((current) => ({
+                ...current,
+                showAdapterMetrics,
+                sortBy:
+                  !showAdapterMetrics && isRunsAdapterSortBy(current.sortBy)
+                    ? "attention"
+                    : current.sortBy,
+              }));
+            }}
+          />
+          <span>Warehouse response</span>
+        </label>
       </div>
-      <div className="runs-toolbar__row runs-toolbar__row--facets">
+      {runsViewState.showAdapterMetrics &&
+      adapterColumnLayout.overflowColumns.length > 0 ? (
+        <p className="runs-toolbar__meta">
+          Showing {adapterColumnLayout.visibleColumns.length} of{" "}
+          {adapterColumnLayout.allColumns.length} adapter fields. Select a row
+          to inspect the remaining {adapterColumnLayout.overflowColumns.length}.
+        </p>
+      ) : null}
+      <div className="runs-toolbar__facets">
         {FACETS.map((facet) => {
           const counts = facetKeyMap(runsResults.summary);
           const active =
@@ -130,116 +218,52 @@ function RunsToolbar({
   );
 }
 
-function RunsSelectionSummary({
-  selectedRow,
-  relatedResource,
-  onNavigateTo,
-}: {
-  selectedRow: RunsRow | null;
-  relatedResource: AnalysisState["resources"][number] | null;
-  onNavigateTo: NavigateToHandler;
-}) {
-  if (!selectedRow) {
-    return null;
-  }
-
-  return (
-    <section className="workspace-card results-selection-summary">
-      <div className="results-selection-summary__header">
-        <div>
-          <p className="eyebrow">Selected run item</p>
-          <h3>{selectedRow.name}</h3>
-        </div>
-        <div className="results-selection-summary__badges">
-          <span className="entity-inspector__type-badge">
-            {selectedRow.resourceType}
-          </span>
-          <span className={badgeClassName(selectedRow.statusTone)}>
-            {selectedRow.status}
-          </span>
-        </div>
-      </div>
-      <dl className="results-selection-summary__stats">
-        <div>
-          <dt>Duration</dt>
-          <dd>{formatSeconds(selectedRow.executionTime)}</dd>
-        </div>
-        <div>
-          <dt>Thread</dt>
-          <dd>{selectedRow.threadId ?? "n/a"}</dd>
-        </div>
-        <div>
-          <dt>Path</dt>
-          <dd>{selectedRow.path ?? "n/a"}</dd>
-        </div>
-        <div>
-          <dt>Unique ID</dt>
-          <dd>{selectedRow.uniqueId}</dd>
-        </div>
-      </dl>
-      <QuickJumpActions
-        actions={[
-          {
-            label: "Open in Inventory",
-            onClick: () =>
-              onNavigateTo("inventory", {
-                resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                assetTab: "summary",
-              }),
-            disabled: !relatedResource,
-          },
-          {
-            label: "Open in Timeline",
-            onClick: () =>
-              onNavigateTo("timeline", {
-                resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                executionId: selectedRow.uniqueId,
-              }),
-          },
-          {
-            label: "Open in Lineage",
-            onClick: () =>
-              onNavigateTo("inventory", {
-                resourceId: relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                rootResourceId:
-                  relatedResource?.uniqueId ?? selectedRow.uniqueId,
-                assetTab: "lineage",
-              }),
-            disabled: !relatedResource,
-          },
-        ]}
-      />
-    </section>
-  );
-}
-
 function RunsResultsTable({
   analysis,
   runsResults,
   runsViewState,
   resultsBodyRef,
   virtualizer,
+  adapterColumns,
   onRunsViewStateChange,
   onInvestigationSelectionChange,
 }: {
   analysis: AnalysisState;
   runsResults: RunsResultsState;
   runsViewState: RunsViewState;
-  resultsBodyRef: React.RefObject<HTMLDivElement | null>;
+  resultsBodyRef: RefObject<HTMLDivElement | null>;
   virtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>;
+  adapterColumns: RunsAdapterColumn[];
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
 }) {
+  const tableStyle = {
+    "--results-table-columns": getRunsTableTemplate(adapterColumns),
+  } as CSSProperties;
+
   return (
-    <div className="results-table">
+    <div className="results-table" style={tableStyle}>
       <div className="results-table__header">
-        <span>Item</span>
-        <span>Type</span>
-        <span>Status</span>
-        <span>Duration</span>
-        <span>Thread</span>
+        <div className="results-table__cell results-table__cell--item">
+          Item
+        </div>
+        <div className="results-table__cell">Type</div>
+        <div className="results-table__cell">Status</div>
+        <div className="results-table__cell results-table__cell--align-end">
+          Duration
+        </div>
+        {adapterColumns.map((column) => (
+          <div
+            key={column.id}
+            className={`results-table__cell${column.align === "end" ? " results-table__cell--align-end" : ""}`}
+            title={column.label}
+          >
+            {column.label}
+          </div>
+        ))}
+        <div className="results-table__cell">Thread</div>
       </div>
       <div
         ref={resultsBodyRef}
@@ -286,23 +310,157 @@ function RunsResultsTable({
                   }));
                 }}
               >
-                <span>
+                <div
+                  className="results-table__cell results-table__cell--item"
+                  data-label="Item"
+                  title={row.name}
+                >
                   <strong>{row.name}</strong>
-                </span>
-                <span>{row.resourceType}</span>
-                <span>
+                </div>
+                <div
+                  className="results-table__cell"
+                  data-label="Type"
+                  title={row.resourceType}
+                >
+                  {row.resourceType}
+                </div>
+                <div className="results-table__cell" data-label="Status">
                   <span className={badgeClassName(row.statusTone)}>
                     {row.status}
                   </span>
-                </span>
-                <span>{formatSeconds(row.executionTime)}</span>
-                <span>{row.threadId ?? "n/a"}</span>
+                </div>
+                <div
+                  className="results-table__cell results-table__cell--align-end"
+                  data-label="Duration"
+                >
+                  {formatSeconds(row.executionTime)}
+                </div>
+                {adapterColumns.map((column) => {
+                  const value = getAdapterCellValue(row, column);
+                  return (
+                    <div
+                      key={column.id}
+                      className={`results-table__cell${column.align === "end" ? " results-table__cell--align-end" : ""}`}
+                      data-label={column.label}
+                      title={value}
+                    >
+                      {value}
+                    </div>
+                  );
+                })}
+                <div
+                  className="results-table__cell"
+                  data-label="Thread"
+                  title={row.threadId ?? "n/a"}
+                >
+                  {row.threadId ?? "n/a"}
+                </div>
               </button>
             );
           })}
         </div>
       </div>
     </div>
+  );
+}
+
+function RunsAdapterInspector({
+  row,
+  visibleColumns,
+  overflowColumns,
+  onNavigateTo,
+}: {
+  row: ExecutionRow | null;
+  visibleColumns: RunsAdapterColumn[];
+  overflowColumns: RunsAdapterColumn[];
+  onNavigateTo: (
+    view: "inventory" | "timeline",
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: "summary" | "lineage";
+      rootResourceId?: string;
+    },
+  ) => void;
+}) {
+  if (!row) return null;
+
+  const adapterFieldCount = row.adapterResponseFields?.length ?? 0;
+  const sections =
+    adapterFieldCount > 0
+      ? [
+          ...(visibleColumns.length > 0
+            ? [
+                {
+                  label: "Visible adapter fields",
+                  value: formatInspectorFields(row, visibleColumns),
+                },
+              ]
+            : []),
+          ...(overflowColumns.length > 0
+            ? [
+                {
+                  label: "Overflow adapter fields",
+                  value: formatInspectorFields(row, overflowColumns),
+                },
+              ]
+            : []),
+          ...(visibleColumns.length === 0 && overflowColumns.length === 0
+            ? [
+                {
+                  label: "Adapter response",
+                  value: "This row has no adapter_response fields.",
+                },
+              ]
+            : []),
+        ]
+      : [
+          {
+            label: "Adapter response",
+            value: "This row has no adapter_response fields.",
+          },
+        ];
+
+  return (
+    <EntityInspector
+      eyebrow="Selected run item"
+      title={row.name}
+      typeLabel={formatResourceTypeLabel(row.resourceType)}
+      stats={[
+        { label: "Status", value: row.status },
+        { label: "Duration", value: formatSeconds(row.executionTime) },
+        { label: "Thread", value: row.threadId ?? "n/a" },
+        { label: "Adapter fields", value: String(adapterFieldCount) },
+      ]}
+      sections={sections}
+      actions={[
+        {
+          label: "Open in Timeline",
+          onClick: () =>
+            onNavigateTo("timeline", {
+              resourceId: row.uniqueId,
+              executionId: row.uniqueId,
+            }),
+        },
+        {
+          label: "Open in Inventory",
+          onClick: () =>
+            onNavigateTo("inventory", {
+              resourceId: row.uniqueId,
+              assetTab: "summary",
+            }),
+        },
+        {
+          label: "Open in Lineage",
+          onClick: () =>
+            onNavigateTo("inventory", {
+              resourceId: row.uniqueId,
+              assetTab: "lineage",
+              rootResourceId: row.uniqueId,
+            }),
+        },
+      ]}
+    />
   );
 }
 
@@ -319,29 +477,66 @@ export function RunsView({
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
-  onNavigateTo: NavigateToHandler;
+  onNavigateTo: (
+    view: "inventory" | "timeline",
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: "summary" | "lineage";
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const resultsBodyRef = useRef<HTMLDivElement>(null);
+  const adapterColumnLayout = useMemo(
+    () => getRunsAdapterColumnLayout(analysis.executions),
+    [analysis.executions],
+  );
+  const adapterMetricsAvailable = adapterColumnLayout.allColumns.length > 0;
+  const visibleAdapterColumns = useMemo(
+    () =>
+      runsViewState.showAdapterMetrics && adapterMetricsAvailable
+        ? adapterColumnLayout.visibleColumns
+        : [],
+    [
+      adapterColumnLayout.visibleColumns,
+      adapterMetricsAvailable,
+      runsViewState.showAdapterMetrics,
+    ],
+  );
+  const overflowAdapterColumns = useMemo(
+    () =>
+      runsViewState.showAdapterMetrics && adapterMetricsAvailable
+        ? adapterColumnLayout.overflowColumns
+        : [],
+    [
+      adapterColumnLayout.overflowColumns,
+      adapterMetricsAvailable,
+      runsViewState.showAdapterMetrics,
+    ],
+  );
+
+  useEffect(() => {
+    const sortBy = runsViewState.sortBy;
+    if (
+      isRunsAdapterSortBy(sortBy) &&
+      !visibleAdapterColumns.some(
+        (column) => column.id === sortBy && column.isScalar,
+      )
+    ) {
+      onRunsViewStateChange((current) => ({ ...current, sortBy: "attention" }));
+    }
+  }, [onRunsViewStateChange, runsViewState.sortBy, visibleAdapterColumns]);
+
   const runsResults = useRunsResultsSource(
     analysis.executions,
     runsViewState,
     true,
   );
   const selectedRow =
-    runsResults.rows.find(
-      (row) => row.uniqueId === runsViewState.selectedExecutionId,
-    ) ??
     analysis.executions.find(
       (row) => row.uniqueId === runsViewState.selectedExecutionId,
-    ) ??
-    null;
-
-  const relatedResource =
-    selectedRow != null
-      ? (analysis.resources.find(
-          (resource) => resource.uniqueId === selectedRow.uniqueId,
-        ) ?? null)
-      : null;
+    ) ?? null;
 
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
   const virtualizer = useVirtualizer({
@@ -381,22 +576,30 @@ export function RunsView({
         <RunsToolbar
           runsViewState={runsViewState}
           runsResults={runsResults}
+          adapterColumnLayout={adapterColumnLayout}
+          adapterMetricsAvailable={adapterMetricsAvailable}
           onRunsViewStateChange={onRunsViewStateChange}
         />
       }
+      inspector={
+        selectedRow ? (
+          <RunsAdapterInspector
+            row={selectedRow}
+            visibleColumns={visibleAdapterColumns}
+            overflowColumns={overflowAdapterColumns}
+            onNavigateTo={onNavigateTo}
+          />
+        ) : null
+      }
       className="runs-view"
     >
-      <RunsSelectionSummary
-        selectedRow={selectedRow}
-        relatedResource={relatedResource}
-        onNavigateTo={onNavigateTo}
-      />
       <RunsResultsTable
         analysis={analysis}
         runsResults={runsResults}
         runsViewState={runsViewState}
         resultsBodyRef={resultsBodyRef}
         virtualizer={virtualizer}
+        adapterColumns={visibleAdapterColumns}
         onRunsViewStateChange={onRunsViewStateChange}
         onInvestigationSelectionChange={onInvestigationSelectionChange}
       />

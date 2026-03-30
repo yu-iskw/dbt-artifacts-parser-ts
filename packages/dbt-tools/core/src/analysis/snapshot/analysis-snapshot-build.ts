@@ -1,5 +1,6 @@
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
+import { buildAdapterTotals } from "../adapter-response-metrics";
 import { detectBottlenecks } from "../run-results-search";
 import { ExecutionAnalyzer } from "../execution-analyzer";
 import { ManifestGraph } from "../manifest-graph";
@@ -130,9 +131,19 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
           typeof execution.thread_id === "string" ? execution.thread_id : null,
         start: gantt?.start ?? null,
         end: gantt?.end ?? null,
+        ...(execution.adapterMetrics != null
+          ? { adapterMetrics: execution.adapterMetrics }
+          : {}),
+        ...(execution.adapterResponseFields != null
+          ? { adapterResponseFields: execution.adapterResponseFields }
+          : {}),
       };
     })
     .sort((a, b) => b.executionTime - a.executionTime);
+
+  const adapterTotals = buildAdapterTotals(
+    nodeExecutions.map((e) => e.adapterMetrics),
+  );
 
   const resourceGroups = buildResourceGroups(resources);
   const statusBreakdown = buildStatusBreakdown(summary, nodeExecutions);
@@ -164,6 +175,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
     timelineAdjacency,
     selectedResourceId,
     invocationId: buildInvocationId(runResultsJson),
+    ...(adapterTotals != null ? { adapterTotals } : {}),
   };
 
   return {

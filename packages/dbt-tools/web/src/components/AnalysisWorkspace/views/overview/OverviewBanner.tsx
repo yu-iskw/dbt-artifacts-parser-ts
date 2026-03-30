@@ -45,6 +45,104 @@ function buildResourceSummaryChip(
   };
 }
 
+function groupKeyForResourceType(resourceType: string): string {
+  return TEST_RESOURCE_TYPES.has(resourceType) ? "tests" : resourceType;
+}
+
+function groupResourcesByType(
+  resources: ResourceNode[],
+): Map<string, ResourceNode[]> {
+  const grouped = new Map<string, ResourceNode[]>();
+  for (const resource of resources) {
+    const groupKey = groupKeyForResourceType(resource.resourceType);
+    const current = grouped.get(groupKey) ?? [];
+    current.push(resource);
+    grouped.set(groupKey, current);
+  }
+  return grouped;
+}
+
+function groupExecutionsByType(
+  executions: ExecutionRow[],
+): Map<string, ExecutionRow[]> {
+  const grouped = new Map<string, ExecutionRow[]>();
+  for (const row of executions) {
+    const groupKey = groupKeyForResourceType(row.resourceType);
+    const current = grouped.get(groupKey) ?? [];
+    current.push(row);
+    grouped.set(groupKey, current);
+  }
+  return grouped;
+}
+
+function buildAdapterSummaryChip(
+  adapterTotals: NonNullable<AnalysisState["adapterTotals"]>,
+): OverviewSummaryChip {
+  return {
+    label: "Warehouse metrics",
+    value: `${adapterTotals.nodesWithAdapterData} nodes`,
+    detail: [
+      adapterTotals.totalBytesProcessed != null
+        ? `${adapterTotals.totalBytesProcessed.toLocaleString()} bytes processed`
+        : null,
+      adapterTotals.totalSlotMs != null
+        ? `${adapterTotals.totalSlotMs.toLocaleString()} slot-ms`
+        : null,
+      adapterTotals.totalRowsAffected != null
+        ? `${adapterTotals.totalRowsAffected.toLocaleString()} rows affected`
+        : null,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .join(" · "),
+  };
+}
+
+function overviewBannerHeadline(
+  derived: OverviewDerivedState,
+  filtered: boolean,
+): { tone: StatusTone; title: string; summary: string } {
+  if (derived.failingNodes > 0) {
+    return {
+      tone: "danger",
+      title: `${derived.failingNodes} failing node${derived.failingNodes === 1 ? "" : "s"} require attention`,
+      summary: "Prioritize failing nodes before reviewing downstream impact.",
+    };
+  }
+  if (derived.warningNodes > 0) {
+    return {
+      tone: "warning",
+      title: `${derived.warningNodes} warning node${derived.warningNodes === 1 ? "" : "s"} need review`,
+      summary:
+        "Warnings surfaced in this run. Review tests and runtime hotspots next.",
+    };
+  }
+  return {
+    tone: "positive",
+    title: "Healthy run",
+    summary: filtered
+      ? "No failing nodes match the current dashboard filters."
+      : "No failing nodes surfaced in the latest run.",
+  };
+}
+
+function buildOverviewSummaryBits(
+  analysis: AnalysisState,
+  projectName: string | null,
+): string[] {
+  const startedAt = getInvocationTimestamp(analysis);
+  return [
+    projectName ?? "Workspace",
+    `${analysis.graphSummary.totalNodes} graph nodes`,
+    `${analysis.summary.total_nodes} executions`,
+    analysis.invocationId != null
+      ? `invocation ${analysis.invocationId}`
+      : null,
+    startedAt != null
+      ? `invocation started ${formatRunStartedAt(startedAt)}`
+      : null,
+  ].filter((value): value is string => Boolean(value));
+}
+
 function buildOverviewBannerModel(
   analysis: AnalysisState,
   projectName: string | null,
@@ -58,26 +156,8 @@ function buildOverviewBannerModel(
   const mainProjectExecutions = analysis.executions.filter((row) =>
     isMainProjectResource(row, projectName),
   );
-  const groupedResources = new Map<string, ResourceNode[]>();
-  const groupedExecutions = new Map<string, ExecutionRow[]>();
-
-  for (const resource of mainProjectResources) {
-    const groupKey = TEST_RESOURCE_TYPES.has(resource.resourceType)
-      ? "tests"
-      : resource.resourceType;
-    const current = groupedResources.get(groupKey) ?? [];
-    current.push(resource);
-    groupedResources.set(groupKey, current);
-  }
-
-  for (const row of mainProjectExecutions) {
-    const groupKey = TEST_RESOURCE_TYPES.has(row.resourceType)
-      ? "tests"
-      : row.resourceType;
-    const current = groupedExecutions.get(groupKey) ?? [];
-    current.push(row);
-    groupedExecutions.set(groupKey, current);
-  }
+  const groupedResources = groupResourcesByType(mainProjectResources);
+  const groupedExecutions = groupExecutionsByType(mainProjectExecutions);
 
   const runtimeChip: OverviewSummaryChip = {
     label: "Run time",
@@ -85,6 +165,11 @@ function buildOverviewBannerModel(
       ? formatSeconds(derived.filteredExecutionTime)
       : formatSeconds(analysis.summary.total_execution_time),
   };
+
+  const adapterTotals = analysis.adapterTotals;
+  const adapterChip: OverviewSummaryChip | null =
+    adapterTotals != null ? buildAdapterSummaryChip(adapterTotals) : null;
+
   const resourceChips = PRIMARY_PROJECT_SUMMARY_GROUPS.map(({ key, label }) => {
     return buildResourceSummaryChip(
       label,
@@ -93,39 +178,19 @@ function buildOverviewBannerModel(
     );
   }).filter((value): value is OverviewSummaryChip => value != null);
 
-  let tone: StatusTone = "positive";
-  let title = "Healthy run";
-  let summary = filtered
-    ? "No failing nodes match the current dashboard filters."
-    : "No failing nodes surfaced in the latest run.";
-  if (derived.failingNodes > 0) {
-    tone = "danger";
-    title = `${derived.failingNodes} failing node${derived.failingNodes === 1 ? "" : "s"} require attention`;
-    summary = "Prioritize failing nodes before reviewing downstream impact.";
-  } else if (derived.warningNodes > 0) {
-    tone = "warning";
-    title = `${derived.warningNodes} warning node${derived.warningNodes === 1 ? "" : "s"} need review`;
-    summary =
-      "Warnings surfaced in this run. Review tests and runtime hotspots next.";
-  }
+  const { tone, title, summary } = overviewBannerHeadline(derived, filtered);
 
   return {
     tone,
     title,
     summary,
     sourceLabel: sourceBadgeLabel(analysisSource),
-    summaryBits: [
-      projectName ?? "Workspace",
-      `${analysis.graphSummary.totalNodes} graph nodes`,
-      `${analysis.summary.total_nodes} executions`,
-      analysis.invocationId != null
-        ? `invocation ${analysis.invocationId}`
-        : null,
-      getInvocationTimestamp(analysis) != null
-        ? `invocation started ${formatRunStartedAt(getInvocationTimestamp(analysis)!)}`
-        : null,
-    ].filter((value): value is string => Boolean(value)),
-    chips: [runtimeChip, ...resourceChips],
+    summaryBits: buildOverviewSummaryBits(analysis, projectName),
+    chips: [
+      runtimeChip,
+      ...(adapterChip != null ? [adapterChip] : []),
+      ...resourceChips,
+    ],
   };
 }
 

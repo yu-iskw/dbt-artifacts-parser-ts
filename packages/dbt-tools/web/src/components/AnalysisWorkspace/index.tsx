@@ -8,6 +8,7 @@ export type {
   TimelineFilterState,
   AssetViewState,
   RunsKind,
+  RunsAdapterColumnId,
   RunsSortBy,
   RunsGroupBy,
   RunsViewState,

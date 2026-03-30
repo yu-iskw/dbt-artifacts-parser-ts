@@ -1,12 +1,8 @@
 import { type ReactNode } from "react";
 import type { AssetExplorerMode } from "@web/lib/analysis-workspace/types";
+import { formatResourceTypeLabel } from "@web/lib/analysis-workspace/utils";
 
-export function formatResourceTypeLabel(resourceType: string): string {
-  return resourceType
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
+export { formatResourceTypeLabel };
 
 export function SectionCard({
   title,
@@ -202,6 +198,7 @@ export function QuickJumpActions({
 }
 
 export function EntityInspector({
+  eyebrow,
   title,
   typeLabel,
   status,
@@ -210,6 +207,7 @@ export function EntityInspector({
   actions,
   emptyMessage,
 }: {
+  eyebrow?: string;
   title: string | null;
   typeLabel?: string | null;
   status?: ReactNode;
@@ -230,6 +228,7 @@ export function EntityInspector({
 
   return (
     <aside className="entity-inspector">
+      {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
       <div className="entity-inspector__header">
         {typeLabel ? (
           <span className="entity-inspector__type-badge">{typeLabel}</span>

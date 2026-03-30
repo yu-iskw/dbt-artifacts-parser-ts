@@ -13,6 +13,7 @@ import {
   parseLineageLensMode,
   parseLineageUpstreamDepth,
   parseRunsKind,
+  parseShowAdapterMetrics,
   parseSelectedExecutionId,
   parseSelectedResourceId,
   parseViewFromSearch,
@@ -120,6 +121,28 @@ describe("parseRunsKind", () => {
 
   it("returns null for unknown", () => {
     expect(parseRunsKind("?kind=widgets")).toBeNull();
+  });
+});
+
+describe("parseShowAdapterMetrics", () => {
+  it("defaults true when adapter is absent or empty", () => {
+    expect(parseShowAdapterMetrics("")).toBe(true);
+    expect(parseShowAdapterMetrics("?view=runs")).toBe(true);
+    expect(parseShowAdapterMetrics("?adapter=")).toBe(true);
+  });
+
+  it("is false for 0, false, and no", () => {
+    expect(parseShowAdapterMetrics("?adapter=0")).toBe(false);
+    expect(parseShowAdapterMetrics("?adapter=false")).toBe(false);
+    expect(parseShowAdapterMetrics("?adapter=no")).toBe(false);
+    expect(parseShowAdapterMetrics("?adapter=FALSE")).toBe(false);
+  });
+
+  it("is true for explicit show tokens and other values", () => {
+    expect(parseShowAdapterMetrics("?adapter=1")).toBe(true);
+    expect(parseShowAdapterMetrics("?adapter=true")).toBe(true);
+    expect(parseShowAdapterMetrics("?adapter=yes")).toBe(true);
+    expect(parseShowAdapterMetrics("?adapter=anything")).toBe(true);
   });
 });
 

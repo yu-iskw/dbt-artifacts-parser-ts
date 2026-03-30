@@ -171,6 +171,34 @@ function getRunReportSchema(): CommandSchema {
         description: "Nodes exceeding N seconds (alternative to top-N)",
       },
       {
+        name: "--adapter-summary",
+        type: TYPE_BOOLEAN,
+        description:
+          "Include adapter_response aggregates (human default top-5 slot/bytes)",
+      },
+      {
+        name: "--adapter-top-by",
+        type: TYPE_STRING,
+        values: ["bytes_processed", "slot_ms", "rows_affected"],
+        description: "Rank nodes by adapter metric",
+      },
+      {
+        name: "--adapter-top-n",
+        type: "number",
+        default: "10",
+        description: "Top N for --adapter-top-by",
+      },
+      {
+        name: "--adapter-min-bytes",
+        type: "number",
+        description: "With --adapter-top-by, require bytes_processed >= n",
+      },
+      {
+        name: "--adapter-min-slot-ms",
+        type: "number",
+        description: "With --adapter-top-by, require slot_ms >= n",
+      },
+      {
         name: OPT_JSON,
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,

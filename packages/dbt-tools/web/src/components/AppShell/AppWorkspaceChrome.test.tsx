@@ -70,6 +70,7 @@ function makeWorkspace() {
       sortBy: "name",
       groupBy: "none",
       selectedExecutionId: null,
+      showAdapterMetrics: true,
     },
     setRunsViewState: vi.fn(),
     lineageViewState: {

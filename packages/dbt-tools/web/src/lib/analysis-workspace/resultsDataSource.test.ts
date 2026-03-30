@@ -21,6 +21,7 @@ function makeExecution(
     threadId: overrides.threadId ?? "Thread-1",
     start: null,
     end: null,
+    ...overrides,
   };
 }
 
@@ -89,5 +90,139 @@ describe("queryRunsResultsIndex", () => {
     expect(result.rows).toHaveLength(100);
     expect(result.rows[0]?.uniqueId).toBe("model_0");
     expect(result.rows[99]?.uniqueId).toBe("model_99");
+  });
+
+  it("sorts adapter-backed numeric columns descending with missing values last", () => {
+    const index = createRunsResultsIndex([
+      makeExecution({
+        uniqueId: "model_a",
+        adapterResponseFields: [
+          {
+            key: "warehouse.bytes_processed",
+            label: "warehouse.bytes_processed",
+            kind: "number",
+            displayValue: "20",
+            isScalar: true,
+            sortValue: 20,
+          },
+        ],
+      }),
+      makeExecution({
+        uniqueId: "model_b",
+        adapterResponseFields: [
+          {
+            key: "warehouse.bytes_processed",
+            label: "warehouse.bytes_processed",
+            kind: "number",
+            displayValue: "200",
+            isScalar: true,
+            sortValue: 200,
+          },
+        ],
+      }),
+      makeExecution({
+        uniqueId: "model_c",
+        adapterResponseFields: [],
+      }),
+    ]);
+
+    const result = queryRunsResultsIndex(index, {
+      kind: "all",
+      status: "all",
+      query: "",
+      resourceTypes: [],
+      threadIds: [],
+      durationBand: "all",
+      sortBy: "adapter:warehouse.bytes_processed",
+      limit: 20,
+    });
+
+    expect(result.rows.map((row) => row.uniqueId)).toEqual([
+      "model_b",
+      "model_a",
+      "model_c",
+    ]);
+  });
+
+  it("sorts adapter-backed text columns ascending with missing values last", () => {
+    const index = createRunsResultsIndex([
+      makeExecution({
+        uniqueId: "model_a",
+        adapterResponseFields: [
+          {
+            key: "warehouse.job_id",
+            label: "warehouse.job_id",
+            kind: "string",
+            displayValue: "job-20",
+            isScalar: true,
+            sortValue: "job-20",
+          },
+        ],
+      }),
+      makeExecution({
+        uniqueId: "model_b",
+        adapterResponseFields: [
+          {
+            key: "warehouse.job_id",
+            label: "warehouse.job_id",
+            kind: "string",
+            displayValue: "job-3",
+            isScalar: true,
+            sortValue: "job-3",
+          },
+        ],
+      }),
+      makeExecution({
+        uniqueId: "model_c",
+        adapterResponseFields: [],
+      }),
+    ]);
+
+    const result = queryRunsResultsIndex(index, {
+      kind: "all",
+      status: "all",
+      query: "",
+      resourceTypes: [],
+      threadIds: [],
+      durationBand: "all",
+      sortBy: "adapter:warehouse.job_id",
+      limit: 20,
+    });
+
+    expect(result.rows.map((row) => row.uniqueId)).toEqual([
+      "model_b",
+      "model_a",
+      "model_c",
+    ]);
+  });
+
+  it("indexes adapter field keys and values in search text", () => {
+    const index = createRunsResultsIndex([
+      makeExecution({
+        uniqueId: "duck_model",
+        adapterResponseFields: [
+          {
+            key: "profiling.stage",
+            label: "profiling.stage",
+            kind: "string",
+            displayValue: "scan",
+            isScalar: true,
+            sortValue: "scan",
+          },
+        ],
+      }),
+    ]);
+
+    const matches = filterRunsResultsIndex(index, {
+      kind: "all",
+      status: "all",
+      query: "profiling.stage scan",
+      resourceTypes: [],
+      threadIds: [],
+      durationBand: "all",
+    });
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0]?.row.uniqueId).toBe("duck_model");
   });
 });

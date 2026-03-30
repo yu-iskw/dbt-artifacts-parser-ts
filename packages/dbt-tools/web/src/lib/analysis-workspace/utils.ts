@@ -28,6 +28,13 @@ export function formatSeconds(value: number | null | undefined): string {
   return `${value.toFixed(2)}s`;
 }
 
+export function formatResourceTypeLabel(resourceType: string): string {
+  return resourceType
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function formatRunStartedAt(epochMs: number): string {
   return new Date(epochMs).toLocaleString("en-US", {
     dateStyle: "medium",
