@@ -133,6 +133,21 @@ async function loadFromLegacyApi(): Promise<AnalysisLoadResult | null> {
   );
 }
 
+async function loadManagedArtifactsFallback(): Promise<{
+  status: ArtifactSourceStatus;
+  result: AnalysisLoadResult | null;
+}> {
+  const fallbackResult = await loadFromLegacyApi();
+  return {
+    status: buildManagedArtifactStatus(
+      fallbackResult == null ? "none" : "preload",
+      fallbackResult == null ? null : "preload",
+      fallbackResult == null ? "Waiting for artifacts" : "Live target",
+    ),
+    result: fallbackResult,
+  };
+}
+
 export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus> {
   const response = await fetch("/api/artifact-source");
   if (!response.ok) {
@@ -162,25 +177,15 @@ export async function loadCurrentManagedArtifacts(): Promise<{
   try {
     response = await fetch("/api/artifact-source");
   } catch {
-    throw new Error("Failed to load artifact source status (network error)");
+    return loadManagedArtifactsFallback();
   }
 
   if (response.status === 404) {
-    const fallbackResult = await loadFromLegacyApi();
-    return {
-      status: buildManagedArtifactStatus(
-        fallbackResult == null ? "none" : "preload",
-        fallbackResult == null ? null : "preload",
-        fallbackResult == null ? "Waiting for artifacts" : "Live target",
-      ),
-      result: fallbackResult,
-    };
+    return loadManagedArtifactsFallback();
   }
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to load artifact source status (${response.status})`,
-    );
+    return loadManagedArtifactsFallback();
   }
 
   const status = (await response.json()) as ArtifactSourceStatus;
