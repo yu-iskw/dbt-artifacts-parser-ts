@@ -21,6 +21,7 @@ export type {
 } from "./config/dbt-tools-env";
 
 // I/O exports
+export * from "./io/artifact-filenames";
 export * from "./io/artifact-loader";
 
 // Validation exports

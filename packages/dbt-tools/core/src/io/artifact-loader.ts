@@ -8,6 +8,11 @@ import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import { getDbtToolsTargetDirFromEnv } from "../config/dbt-tools-env";
+import {
+  DBT_CATALOG_JSON,
+  DBT_MANIFEST_JSON,
+  DBT_RUN_RESULTS_JSON,
+} from "./artifact-filenames";
 
 /**
  * Resolved artifact file paths
@@ -19,9 +24,6 @@ export interface ArtifactPaths {
 }
 
 const DEFAULT_TARGET_DIR = "./target";
-const MANIFEST_FILE = "manifest.json";
-const RUN_RESULTS_FILE = "run_results.json";
-const CATALOG_FILE = "catalog.json";
 
 function resolveManifestPath(
   manifestPath?: string,
@@ -32,13 +34,13 @@ function resolveManifestPath(
       return resolveSafePath(manifestPath);
     }
     // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates manifestPath before join.
-    return path.join(resolveSafePath(manifestPath), MANIFEST_FILE);
+    return path.join(resolveSafePath(manifestPath), DBT_MANIFEST_JSON);
   }
 
   const effectiveTargetDir =
     targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), MANIFEST_FILE);
+  return path.join(resolveSafePath(effectiveTargetDir), DBT_MANIFEST_JSON);
 }
 
 function resolveRunResultsPath(
@@ -50,13 +52,13 @@ function resolveRunResultsPath(
       return resolveSafePath(runResultsPath);
     }
     // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates runResultsPath before join.
-    return path.join(resolveSafePath(runResultsPath), RUN_RESULTS_FILE);
+    return path.join(resolveSafePath(runResultsPath), DBT_RUN_RESULTS_JSON);
   }
 
   const effectiveTargetDir =
     targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), RUN_RESULTS_FILE);
+  return path.join(resolveSafePath(effectiveTargetDir), DBT_RUN_RESULTS_JSON);
 }
 
 function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
@@ -65,13 +67,13 @@ function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
       return resolveSafePath(catalogPath);
     }
     // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates catalogPath before join.
-    return path.join(resolveSafePath(catalogPath), CATALOG_FILE);
+    return path.join(resolveSafePath(catalogPath), DBT_CATALOG_JSON);
   }
 
   const effectiveTargetDir =
     targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), CATALOG_FILE);
+  return path.join(resolveSafePath(effectiveTargetDir), DBT_CATALOG_JSON);
 }
 
 /**

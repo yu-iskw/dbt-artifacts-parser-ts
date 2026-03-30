@@ -1,6 +1,9 @@
+/** Node (Vite dev) service: local target dir vs remote S3/GCS; drives middleware routes. */
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  DBT_MANIFEST_JSON,
+  DBT_RUN_RESULTS_JSON,
   getDbtToolsRemoteSourceConfigFromEnv,
   getDbtToolsTargetDirFromEnv,
   isDbtToolsDebugEnabled,
@@ -8,8 +11,6 @@ import {
 } from "@dbt-tools/core";
 import {
   discoverLatestArtifactRuns,
-  MANIFEST_JSON,
-  RUN_RESULTS_JSON,
   toRemoteArtifactRun,
   type ResolvedArtifactRun,
 } from "./discovery";
@@ -89,8 +90,8 @@ class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
   async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
     try {
       const [manifestBytes, runResultsBytes] = await Promise.all([
-        fs.readFile(path.join(this.targetDir, MANIFEST_JSON)),
-        fs.readFile(path.join(this.targetDir, RUN_RESULTS_JSON)),
+        fs.readFile(path.join(this.targetDir, DBT_MANIFEST_JSON)),
+        fs.readFile(path.join(this.targetDir, DBT_RUN_RESULTS_JSON)),
       ]);
 
       return {

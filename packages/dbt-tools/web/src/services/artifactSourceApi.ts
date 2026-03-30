@@ -1,3 +1,7 @@
+/**
+ * Browser `fetch` calls to `/api/artifact-source/*` and artifact JSON routes.
+ * Does not run in Node; pairing server logic is under `artifact-source/`.
+ */
 import {
   loadAnalysisFromBuffers,
   type AnalysisLoadResult,
@@ -154,10 +158,14 @@ export async function loadCurrentManagedArtifacts(): Promise<{
   status: ArtifactSourceStatus;
   result: AnalysisLoadResult | null;
 }> {
-  let status: ArtifactSourceStatus;
+  let response: Response;
   try {
-    status = await fetchArtifactSourceStatus();
+    response = await fetch("/api/artifact-source");
   } catch {
+    throw new Error("Failed to load artifact source status (network error)");
+  }
+
+  if (response.status === 404) {
     const fallbackResult = await loadFromLegacyApi();
     return {
       status: buildManagedArtifactStatus(
@@ -168,6 +176,14 @@ export async function loadCurrentManagedArtifacts(): Promise<{
       result: fallbackResult,
     };
   }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load artifact source status (${response.status})`,
+    );
+  }
+
+  const status = (await response.json()) as ArtifactSourceStatus;
   if (status.currentSource == null) {
     return { status, result: null };
   }

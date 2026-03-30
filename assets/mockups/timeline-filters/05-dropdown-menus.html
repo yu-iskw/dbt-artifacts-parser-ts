@@ -1,0 +1,444 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f5f5;
+        padding: 40px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      .header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e5e5e5;
+      }
+      .header h2 {
+        font-size: 16px;
+        color: #333;
+        font-weight: 600;
+      }
+      .header p {
+        font-size: 13px;
+        color: #666;
+        margin-top: 4px;
+      }
+
+      /* Compact Toolbar */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 24px;
+        background: #fafafa;
+        border-bottom: 1px solid #e5e5e5;
+      }
+
+      .dropdown {
+        position: relative;
+      }
+
+      .dropdown-trigger {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .dropdown-trigger:hover {
+        border-color: #c0c0c0;
+      }
+      .dropdown-trigger.active {
+        border-color: #3b82f6;
+      }
+
+      .dropdown-trigger .indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        font-size: 10px;
+        color: white;
+        background: #3b82f6;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        min-width: 200px;
+        z-index: 100;
+      }
+
+      .dropdown-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e5e5;
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .dropdown-item:hover {
+        background: #f5f5f5;
+      }
+      .dropdown-item.active {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .dropdown-item .check {
+        width: 16px;
+        text-align: center;
+      }
+
+      .dropdown-item .count {
+        margin-left: auto;
+        font-size: 11px;
+        color: #888;
+      }
+
+      .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+
+      .divider {
+        height: 1px;
+        background: #e5e5e5;
+        margin: 8px 0;
+      }
+
+      /* Search */
+      .search-wrapper {
+        flex: 1;
+        max-width: 300px;
+      }
+
+      .search-wrapper input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+
+      /* Active Filters Bar */
+      .active-filters {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 24px;
+        background: white;
+        border-bottom: 1px solid #e5e5e5;
+        font-size: 12px;
+      }
+
+      .active-filters-label {
+        color: #666;
+      }
+
+      .filter-tag {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: #dbeafe;
+        border-radius: 12px;
+        font-size: 12px;
+        color: #1e40af;
+      }
+
+      .filter-tag .remove {
+        cursor: pointer;
+        opacity: 0.6;
+      }
+
+      .filter-tag .remove:hover {
+        opacity: 1;
+      }
+
+      .clear-all {
+        margin-left: auto;
+        padding: 4px 10px;
+        border: none;
+        background: transparent;
+        color: #3b82f6;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      /* Timeline */
+      .timeline {
+        height: 350px;
+        background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+        position: relative;
+      }
+
+      .mock-bar {
+        height: 20px;
+        border-radius: 4px;
+        border: 2px solid;
+        margin-bottom: 12px;
+        margin-left: 100px;
+      }
+
+      .mock-bar:nth-child(1) {
+        width: 120px;
+        background: #dbeafe;
+        border-color: #10b981;
+        margin-top: 40px;
+      }
+      .mock-bar:nth-child(2) {
+        width: 80px;
+        background: #dbeafe;
+        border-color: #10b981;
+        margin-left: 100px;
+      }
+      .mock-bar:nth-child(3) {
+        width: 200px;
+        background: #dcfce7;
+        border-color: #10b981;
+        margin-left: 150px;
+      }
+      .mock-bar:nth-child(4) {
+        width: 150px;
+        background: #dcfce7;
+        border-color: #10b981;
+        margin-left: 250px;
+      }
+      .mock-bar:nth-child(5) {
+        width: 300px;
+        background: #dbeafe;
+        border-color: #10b981;
+        margin-left: 350px;
+      }
+
+      /* Legend */
+      .legend-bar {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 12px 24px;
+        border-top: 1px solid #e5e5e5;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Execution timeline</h2>
+        <p>Relative start and duration for each executed node.</p>
+      </div>
+
+      <div class="toolbar">
+        <!-- Status Dropdown -->
+        <div class="dropdown">
+          <div class="dropdown-trigger active">
+            <span>Status</span>
+            <span class="indicator">1</span>
+            <span>▼</span>
+          </div>
+          <div class="dropdown-menu">
+            <div class="dropdown-header">Filter by status</div>
+            <div class="dropdown-item active">
+              <span class="check">✓</span>
+              <span class="swatch" style="background: #10b981"></span>
+              <span>Success</span>
+              <span class="count">11</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="check"></span>
+              <span class="swatch" style="background: #f59e0b"></span>
+              <span>Warning</span>
+              <span class="count">2</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="check"></span>
+              <span class="swatch" style="background: #ef4444"></span>
+              <span>Error</span>
+              <span class="count">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Type Dropdown -->
+        <div class="dropdown">
+          <div class="dropdown-trigger active">
+            <span>Type</span>
+            <span class="indicator">1</span>
+            <span>▼</span>
+          </div>
+          <div class="dropdown-menu">
+            <div class="dropdown-header">Filter by type</div>
+            <div class="dropdown-item active">
+              <span class="check">✓</span>
+              <span
+                class="swatch"
+                style="border-left: 3px solid #3b82f6; width: 13px"
+              ></span>
+              <span>Model</span>
+              <span class="count">11</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="check"></span>
+              <span
+                class="swatch"
+                style="border-left: 3px solid #8b5cf6; width: 13px"
+              ></span>
+              <span>Test</span>
+              <span class="count">8</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="check"></span>
+              <span
+                class="swatch"
+                style="border-left: 3px solid #f59e0b; width: 13px"
+              ></span>
+              <span>Seed</span>
+              <span class="count">3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dependencies Dropdown -->
+        <div class="dropdown">
+          <div class="dropdown-trigger">
+            <span>Dependencies</span>
+            <span>▼</span>
+          </div>
+          <div class="dropdown-menu">
+            <div class="dropdown-header">Direction</div>
+            <div class="dropdown-item active">
+              <span class="check">✓</span>
+              <span>⇄ Both</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="check"></span>
+              <span>← Upstream</span>
+            </div>
+            <div class="dropdown-item">
+              <span class="check"></span>
+              <span>→ Downstream</span>
+            </div>
+            <div class="divider"></div>
+            <div class="dropdown-header">Depth: 2</div>
+            <div class="dropdown-item" style="padding: 8px 16px">
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value="2"
+                style="width: 100%"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- View Options -->
+        <div class="dropdown">
+          <div class="dropdown-trigger">
+            <span>View</span>
+            <span>▼</span>
+          </div>
+        </div>
+
+        <div class="search-wrapper">
+          <input type="text" placeholder="Search nodes..." />
+        </div>
+      </div>
+
+      <div class="active-filters">
+        <span class="active-filters-label">Active filters:</span>
+        <span class="filter-tag">
+          <span class="swatch" style="background: #10b981"></span>
+          Success
+          <span class="remove">×</span>
+        </span>
+        <span class="filter-tag">
+          <span
+            class="swatch"
+            style="border-left: 3px solid #3b82f6; width: 10px"
+          ></span>
+          Model
+          <span class="remove">×</span>
+        </span>
+        <button class="clear-all">Clear all</button>
+      </div>
+
+      <div class="timeline">
+        <div class="mock-bar"></div>
+        <div class="mock-bar"></div>
+        <div class="mock-bar"></div>
+        <div class="mock-bar"></div>
+        <div class="mock-bar"></div>
+      </div>
+
+      <div class="legend-bar">
+        <div class="legend-item">
+          <span class="legend-swatch" style="background: #dbeafe"></span>
+          <span>Fill = resource type</span>
+        </div>
+        <div class="legend-item">
+          <span
+            class="legend-swatch"
+            style="background: white; border: 2px solid #10b981"
+          ></span>
+          <span>Border = status</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

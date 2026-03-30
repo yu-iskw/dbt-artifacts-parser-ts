@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { MANIFEST_JSON, RUN_RESULTS_JSON } from "./discovery";
+import { DBT_MANIFEST_JSON, DBT_RUN_RESULTS_JSON } from "@dbt-tools/core";
 import type { ArtifactSourceService } from "./sourceService";
 
 async function readJsonBody(
@@ -60,10 +60,10 @@ export async function tryHandleArtifactSourceViteRequest(
 
   if (
     req.method === "GET" &&
-    (pathname === `/api/${MANIFEST_JSON}` ||
-      pathname === `/api/artifacts/current/${MANIFEST_JSON}` ||
-      pathname === `/api/${RUN_RESULTS_JSON}` ||
-      pathname === `/api/artifacts/current/${RUN_RESULTS_JSON}`)
+    (pathname === `/api/${DBT_MANIFEST_JSON}` ||
+      pathname === `/api/artifacts/current/${DBT_MANIFEST_JSON}` ||
+      pathname === `/api/${DBT_RUN_RESULTS_JSON}` ||
+      pathname === `/api/artifacts/current/${DBT_RUN_RESULTS_JSON}`)
   ) {
     const current = await service.getCurrentArtifacts();
     if (current == null) {
@@ -72,7 +72,7 @@ export async function tryHandleArtifactSourceViteRequest(
       return true;
     }
 
-    const bytes = pathname.endsWith(MANIFEST_JSON)
+    const bytes = pathname.endsWith(DBT_MANIFEST_JSON)
       ? current.manifestBytes
       : current.runResultsBytes;
     res.setHeader("Content-Type", "application/json");
