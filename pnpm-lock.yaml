@@ -87,9 +87,6 @@ importers:
       dbt-artifacts-parser:
         specifier: workspace:*
         version: link:../../dbt-artifacts-parser
-      graphology:
-        specifier: ^0.26.0
-        version: 0.26.0(graphology-types@0.24.8)
     devDependencies:
       '@types/node':
         specifier: ^25.5.0

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SQLAnalyzer } from "./sql-analyzer";
+import { SQLAnalyzer, sqlDialectFromDbtAdapterType } from "./sql-analyzer";
 
 describe("SQLAnalyzer", () => {
   const analyzer = new SQLAnalyzer();
@@ -118,5 +118,27 @@ describe("SQLAnalyzer", () => {
     const result = analyzer.analyze(sql);
 
     expect(result).toEqual({});
+  });
+});
+
+describe("sqlDialectFromDbtAdapterType", () => {
+  it("maps known dbt adapter_type values to node-sql-parser database names", () => {
+    expect(sqlDialectFromDbtAdapterType("snowflake")).toBe("snowflake");
+    expect(sqlDialectFromDbtAdapterType("bigquery")).toBe("bigquery");
+    expect(sqlDialectFromDbtAdapterType("postgres")).toBe("postgresql");
+    expect(sqlDialectFromDbtAdapterType("postgresql")).toBe("postgresql");
+    expect(sqlDialectFromDbtAdapterType("redshift")).toBe("redshift");
+    expect(sqlDialectFromDbtAdapterType("sqlite")).toBe("sqlite");
+  });
+
+  it("falls back to mysql for unknown or missing adapters", () => {
+    expect(sqlDialectFromDbtAdapterType(undefined)).toBe("mysql");
+    expect(sqlDialectFromDbtAdapterType(null)).toBe("mysql");
+    expect(sqlDialectFromDbtAdapterType("unknown_warehouse")).toBe("mysql");
+  });
+
+  it("maps databricks-like adapters to postgresql for parsing", () => {
+    expect(sqlDialectFromDbtAdapterType("databricks")).toBe("postgresql");
+    expect(sqlDialectFromDbtAdapterType("trino")).toBe("postgresql");
   });
 });

@@ -19,6 +19,7 @@
   - [`components/ui/`](packages/dbt-tools/web/src/components/ui/) — generic primitives (e.g. Spinner, Toast, Skeleton, Tooltip, SubtitleWithAction).
   - **Remote artifact sources (S3 / GCS):** [`packages/dbt-tools/web/src/artifact-source/`](packages/dbt-tools/web/src/artifact-source/) — Vite middleware resolves runs from `DBT_TOOLS_REMOTE_SOURCE` (JSON parsed via `@dbt-tools/core` [`getDbtToolsRemoteSourceConfigFromEnv`](packages/dbt-tools/core/src/config/dbt-tools-env.ts)); browser client [`artifactSourceApi.ts`](packages/dbt-tools/web/src/services/artifactSourceApi.ts); decision [ADR-0029](docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md).
 - **Path alias `@web`:** maps to `src/` for this package ([`tsconfig.json`](packages/dbt-tools/web/tsconfig.json), [`vite.config.ts`](packages/dbt-tools/web/vite.config.ts)). Root [`vitest.config.mjs`](vitest.config.mjs) defines the same alias so monorepo `pnpm test` resolves `@web/...` — keep these in sync if the alias changes.
+- **`@dbt-tools/core` vs `core/browser`:** Use `@dbt-tools/core/browser` in workers and anywhere that must stay free of Node built-ins. The full `@dbt-tools/core` entry is for Vite/Node-only code (`artifact-source/`, `dbt-target-plugin.ts`). ESLint encodes this for workers, hooks, and components ([`eslint.config.mjs`](eslint.config.mjs)).
 
 ## Quality gates (before claiming work complete)
 
