@@ -78,12 +78,12 @@ async function handleRequest(
     return;
   }
 
-  // Try the exact static file first
-  const staticPath = path.join(
-    DIST_DIR,
-    pathname === "/" ? "index.html" : pathname,
-  );
-  if (await serveFile(res, staticPath)) return;
+  // Resolve to an absolute path and guard against path traversal
+  const rel = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const candidate = path.resolve(DIST_DIR, rel);
+  if (candidate.startsWith(DIST_DIR + path.sep)) {
+    if (await serveFile(res, candidate)) return;
+  }
 
   // SPA fallback: serve index.html for client-side routes
   if (await serveFile(res, path.join(DIST_DIR, "index.html"))) return;
