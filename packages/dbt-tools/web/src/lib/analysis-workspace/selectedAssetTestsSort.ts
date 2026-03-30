@@ -12,16 +12,19 @@ export type AssetTestsSortKey =
   | "location";
 export type AssetTestsSortDirection = "asc" | "desc";
 
+function signedOrder(
+  order: number,
+  direction: AssetTestsSortDirection,
+): number {
+  return direction === "asc" ? order : -order;
+}
+
 function assetTestSortRank(resource: ResourceNode): number {
   if (resource.statusTone === "danger" || resource.statusTone === "warning") {
     return 0;
   }
   if (resource.statusTone === "positive") return 1;
   return 2;
-}
-
-function assetTestLocationValue(resource: ResourceNode): string | null {
-  return displayResourcePath(resource);
 }
 
 function compareNullableText(
@@ -32,8 +35,7 @@ function compareNullableText(
   if (left == null && right == null) return 0;
   if (left == null) return direction === "asc" ? 1 : -1;
   if (right == null) return direction === "asc" ? -1 : 1;
-  const order = left.localeCompare(right);
-  return direction === "asc" ? order : -order;
+  return signedOrder(left.localeCompare(right), direction);
 }
 
 function compareExecutionTimeDesc(
@@ -60,7 +62,7 @@ function compareSelectedAssetTestsByTest(
   direction: AssetTestsSortDirection,
 ): number {
   const nameOrder = left.name.localeCompare(right.name);
-  if (nameOrder !== 0) return direction === "asc" ? nameOrder : -nameOrder;
+  if (nameOrder !== 0) return signedOrder(nameOrder, direction);
   return left.uniqueId.localeCompare(right.uniqueId);
 }
 
@@ -84,7 +86,7 @@ function compareSelectedAssetTestsByType(
   const typeOrder = formatResourceTypeLabel(left.resourceType).localeCompare(
     formatResourceTypeLabel(right.resourceType),
   );
-  if (typeOrder !== 0) return direction === "asc" ? typeOrder : -typeOrder;
+  if (typeOrder !== 0) return signedOrder(typeOrder, direction);
   return left.name.localeCompare(right.name);
 }
 
@@ -94,8 +96,8 @@ function compareSelectedAssetTestsByLocation(
   direction: AssetTestsSortDirection,
 ): number {
   const locationOrder = compareNullableText(
-    assetTestLocationValue(left),
-    assetTestLocationValue(right),
+    displayResourcePath(left),
+    displayResourcePath(right),
     direction,
   );
   if (locationOrder !== 0) return locationOrder;
@@ -109,14 +111,14 @@ function compareSelectedAssetTestsByStatus(
 ): number {
   const statusOrder = assetTestSortRank(left) - assetTestSortRank(right);
   if (statusOrder !== 0) {
-    return direction === "asc" ? -statusOrder : statusOrder;
+    return -signedOrder(statusOrder, direction);
   }
   const durationOrder = compareExecutionTimeDesc(left, right);
   if (durationOrder !== 0) {
     return directedDurationOrder(durationOrder, direction);
   }
   const nameOrder = left.name.localeCompare(right.name);
-  if (nameOrder !== 0) return direction === "asc" ? nameOrder : -nameOrder;
+  if (nameOrder !== 0) return signedOrder(nameOrder, direction);
   return left.uniqueId.localeCompare(right.uniqueId);
 }
 

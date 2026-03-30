@@ -4,6 +4,7 @@ import type {
   AssetViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
+import { NOT_EXECUTED } from "@web/lib/analysis-workspace/catalogCopy";
 import {
   formatSeconds,
   badgeClassName,
@@ -16,8 +17,6 @@ import {
   type AssetTestsSortKey,
 } from "@web/lib/analysis-workspace/selectedAssetTestsSort";
 import { SectionCard, ResourceTypeBadge } from "../shared";
-
-const NOT_EXECUTED = "Not executed";
 
 function selectedAssetQualityPosture(
   evidence: ReturnType<typeof buildSelectedAssetTestEvidence>,
@@ -48,22 +47,20 @@ function selectedAssetQualityPosture(
   };
 }
 
-function sortIndicator(
-  currentKey: AssetTestsSortKey,
-  activeKey: AssetTestsSortKey,
+function columnHeaderSortUi(
+  sortedBy: AssetTestsSortKey,
+  columnKey: AssetTestsSortKey,
   direction: AssetTestsSortDirection,
-): string {
-  if (currentKey !== activeKey) return " ";
-  return direction === "asc" ? "↑" : "↓";
-}
-
-function ariaSortValue(
-  currentKey: AssetTestsSortKey,
-  activeKey: AssetTestsSortKey,
-  direction: AssetTestsSortDirection,
-) {
-  if (currentKey !== activeKey) return "none";
-  return direction === "asc" ? "ascending" : "descending";
+): {
+  indicator: string;
+  ariaSort: "none" | "ascending" | "descending";
+} {
+  if (sortedBy !== columnKey) {
+    return { indicator: " ", ariaSort: "none" };
+  }
+  return direction === "asc"
+    ? { indicator: "↑", ariaSort: "ascending" }
+    : { indicator: "↓", ariaSort: "descending" };
 }
 
 function nextSortDirection(
@@ -172,28 +169,31 @@ export function AssetTestsSection({
             </p>
           </div>
           <div className="asset-tests-table__header" role="row">
-            {HEADER_COLUMNS.map(({ key, label, alignEnd, testCell }) => (
-              <div
-                key={key}
-                className={`asset-tests-table__cell${testCell ? " asset-tests-table__cell--test" : ""}${alignEnd ? " asset-tests-table__cell--align-end" : ""}`}
-                role="columnheader"
-                aria-sort={ariaSortValue(sortKey, key, sortDirection)}
-              >
-                <button
-                  type="button"
-                  className={`asset-tests-table__sort-button${alignEnd ? " asset-tests-table__sort-button--align-end" : ""}`}
-                  onClick={() => setSortFromHeader(key)}
+            {HEADER_COLUMNS.map(({ key, label, alignEnd, testCell }) => {
+              const sortUi = columnHeaderSortUi(sortKey, key, sortDirection);
+              return (
+                <div
+                  key={key}
+                  className={`asset-tests-table__cell${testCell ? " asset-tests-table__cell--test" : ""}${alignEnd ? " asset-tests-table__cell--align-end" : ""}`}
+                  role="columnheader"
+                  aria-sort={sortUi.ariaSort}
                 >
-                  {label}
-                  <span
-                    className="asset-tests-table__sort-indicator"
-                    aria-hidden="true"
+                  <button
+                    type="button"
+                    className={`asset-tests-table__sort-button${alignEnd ? " asset-tests-table__sort-button--align-end" : ""}`}
+                    onClick={() => setSortFromHeader(key)}
                   >
-                    {sortIndicator(sortKey, key, sortDirection)}
-                  </span>
-                </button>
-              </div>
-            ))}
+                    {label}
+                    <span
+                      className="asset-tests-table__sort-indicator"
+                      aria-hidden="true"
+                    >
+                      {sortUi.indicator}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
             <div
               className="asset-tests-table__cell asset-tests-table__cell--align-end"
               role="columnheader"

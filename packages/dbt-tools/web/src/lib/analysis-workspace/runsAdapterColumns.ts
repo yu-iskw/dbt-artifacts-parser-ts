@@ -29,13 +29,6 @@ function getFieldPriority(
   return field.isScalar ? 0 : 1;
 }
 
-function findField(
-  row: ExecutionRow,
-  key: string,
-): AdapterResponseField | undefined {
-  return row.adapterResponseFields?.find((field) => field.key === key);
-}
-
 export function getRunsAdapterColumnId(key: string): RunsAdapterColumnId {
   return `adapter:${key}`;
 }
@@ -54,7 +47,7 @@ export function getRunsAdapterField(
   row: ExecutionRow,
   key: string,
 ): AdapterResponseField | undefined {
-  return findField(row, key);
+  return row.adapterResponseFields?.find((field) => field.key === key);
 }
 
 export function getRunsAdapterColumnLayout(
@@ -92,8 +85,10 @@ export function getRunsAdapterColumnLayout(
       }),
     )
     .sort((left, right) => {
-      if (getFieldPriority(left) !== getFieldPriority(right)) {
-        return getFieldPriority(left) - getFieldPriority(right);
+      const leftPriority = getFieldPriority(left);
+      const rightPriority = getFieldPriority(right);
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
       }
       if (left.presenceCount !== right.presenceCount) {
         return right.presenceCount - left.presenceCount;

@@ -191,7 +191,10 @@ test.describe("inventory workspace", () => {
     await expect(
       page.locator(".asset-tests-table__header button", { hasText: "Status" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Name" })).toHaveCount(0);
+    const testsTable = page.locator(".asset-tests-table");
+    await expect(testsTable.getByRole("button", { name: "Name" })).toHaveCount(
+      0,
+    );
     await expect(page.getByText("not_null_orders_order_id")).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Open in Runs/i }).first(),

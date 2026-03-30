@@ -19,20 +19,20 @@ import type {
   LineageViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
+import {
+  NOT_CAPTURED,
+  NOT_EXECUTED,
+} from "@web/lib/analysis-workspace/catalogCopy";
+import {
+  displayResourcePath,
+  formatSeconds,
+} from "@web/lib/analysis-workspace/utils";
 import { SectionCard, ResourceTypeBadge } from "../shared";
 import { LineagePanel } from "../lineage/LineagePanel";
-import {
-  formatSeconds,
-  displayResourcePath,
-} from "@web/lib/analysis-workspace/utils";
 import { SqlPanel } from "./AssetsViewSqlPanel";
 import { AssetTestsSection } from "./AssetTestsSection";
 import { useResourceCode } from "@web/hooks/useResourceCode";
 import { Spinner } from "../../ui/Spinner";
-
-/** Catalog copy when a field is missing from artifacts (sonarjs/no-duplicate-string). */
-const NOT_CAPTURED = "Not captured";
-const NOT_EXECUTED = "Not executed";
 
 type AssetSectionId = Exclude<AssetViewState["activeTab"], "runtime">;
 
