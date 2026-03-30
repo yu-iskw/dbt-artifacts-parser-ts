@@ -1,5 +1,5 @@
-import type { BottleneckResult } from "./run-results-search";
-import type { ExecutionSummary } from "./execution-analyzer";
+import type { BottleneckResult } from "../run-results-search";
+import type { ExecutionSummary } from "../execution-analyzer";
 
 export interface GanttItem {
   unique_id: string;
