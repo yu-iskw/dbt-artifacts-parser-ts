@@ -70,3 +70,11 @@ flowchart LR
 - E2E tests: one with default dir, one with upload-only.
 - Absolute paths (including `~`-expanded) are allowed; only relative paths are validated against cwd.
 - The dbt-target plugin uses `enforce: 'pre'` so its middleware serves `/api/*` before Vite's SPA fallback.
+
+## Amendment (2026-03-30)
+
+Canonical dbt-tools environment variables for the artifacts directory use the **`DBT_TOOLS_*`** namespace per [28. DBT_TOOLS prefix for dbt-tools environment variables](0028-dbt-tools-prefix-for-dbt-tools-environment-variables.md) (for example **`DBT_TOOLS_TARGET_DIR`**); legacy names such as `DBT_TARGET` remain supported with one-time deprecation warnings, and the Decision above describes preload behavior using those historical names.
+
+### Living detail
+
+- [`packages/dbt-tools/core/src/config/dbt-tools-env.ts`](../../packages/dbt-tools/core/src/config/dbt-tools-env.ts)

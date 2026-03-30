@@ -44,3 +44,11 @@ When DBT_TARGET preloads artifacts successfully, users run `dbt run` repeatedly 
 
 - File watch adds minimal server overhead; debouncing limits reload frequency.
 - `fs.watch` behavior varies by OS; tested on macOS.
+
+## Amendment (2026-03-30)
+
+Auto-reload behavior and scope are unchanged; **canonical** watch and debounce variables are **`DBT_TOOLS_WATCH`** and **`DBT_TOOLS_RELOAD_DEBOUNCE_MS`** per [28. DBT_TOOLS prefix for dbt-tools environment variables](0028-dbt-tools-prefix-for-dbt-tools-environment-variables.md), with legacy `DBT_WATCH` and `DBT_RELOAD_DEBOUNCE_MS` still read alongside one-time warnings, and the Decision above documents configuration using the historical names.
+
+### Living detail
+
+- [`packages/dbt-tools/core/src/config/dbt-tools-env.ts`](../../packages/dbt-tools/core/src/config/dbt-tools-env.ts)
