@@ -188,7 +188,13 @@ export async function loadCurrentManagedArtifacts(): Promise<{
     return loadManagedArtifactsFallback();
   }
 
-  const status = (await response.json()) as ArtifactSourceStatus;
+  let status: ArtifactSourceStatus;
+  try {
+    status = (await response.json()) as ArtifactSourceStatus;
+  } catch {
+    // Preview/static hosts often return 200 + index.html for unknown /api/* paths.
+    return loadManagedArtifactsFallback();
+  }
   if (status.currentSource == null) {
     return { status, result: null };
   }
