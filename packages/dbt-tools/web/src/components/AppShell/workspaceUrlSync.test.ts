@@ -35,6 +35,7 @@ const baseRuns = (): RunsViewState => ({
   sortBy: "attention",
   groupBy: "none",
   selectedExecutionId: null,
+  showAdapterMetrics: true,
 });
 
 const baseLineage = (): LineageViewState => ({
@@ -76,6 +77,23 @@ describe("createInitialNavigationState", () => {
     expect(s.activeView).toBe("runs");
     expect(s.runsViewState.kind).toBe("models");
     expect(s.runsViewState.selectedExecutionId).toBe("run-9");
+  });
+
+  it("parses adapter=1 for runs warehouse metric columns", () => {
+    const s = createInitialNavigationState("?view=runs&adapter=1");
+    expect(s.activeView).toBe("runs");
+    expect(s.runsViewState.showAdapterMetrics).toBe(true);
+  });
+
+  it("defaults showAdapterMetrics true when adapter param absent on runs", () => {
+    const s = createInitialNavigationState("?view=runs");
+    expect(s.runsViewState.showAdapterMetrics).toBe(true);
+  });
+
+  it("parses adapter=0 to hide runs warehouse metric columns", () => {
+    const s = createInitialNavigationState("?view=runs&adapter=0");
+    expect(s.activeView).toBe("runs");
+    expect(s.runsViewState.showAdapterMetrics).toBe(false);
   });
 
   it("supports settings as an initial destination", () => {
@@ -143,6 +161,42 @@ describe("applySearchToWorkspaceState", () => {
       sourceLens: "runs",
     });
     expect(inv.sourceLens).toBe("runs");
+  });
+
+  it("applies showAdapterMetrics from URL on runs view", () => {
+    const r = applySearchToWorkspaceState("?view=runs&adapter=true");
+    const runs = r.runsViewState({
+      ...baseRuns(),
+      showAdapterMetrics: false,
+    });
+    expect(runs.showAdapterMetrics).toBe(true);
+  });
+
+  it("sets showAdapterMetrics true when adapter param absent on runs", () => {
+    const r = applySearchToWorkspaceState("?view=runs");
+    const runs = r.runsViewState({
+      ...baseRuns(),
+      showAdapterMetrics: false,
+    });
+    expect(runs.showAdapterMetrics).toBe(true);
+  });
+
+  it("applies adapter=0 to hide warehouse metrics on runs view", () => {
+    const r = applySearchToWorkspaceState("?view=runs&adapter=0");
+    const runs = r.runsViewState({
+      ...baseRuns(),
+      showAdapterMetrics: true,
+    });
+    expect(runs.showAdapterMetrics).toBe(false);
+  });
+
+  it("preserves showAdapterMetrics when navigating to inventory", () => {
+    const r = applySearchToWorkspaceState("?view=inventory");
+    const runs = r.runsViewState({
+      ...baseRuns(),
+      showAdapterMetrics: true,
+    });
+    expect(runs.showAdapterMetrics).toBe(true);
   });
 });
 
@@ -227,6 +281,39 @@ describe("buildNextUrlFromWorkspaceState", () => {
     expect(url).toContain("view=runs");
     expect(url).toContain("kind=tests");
     expect(url).toContain("selected=ex-2");
+  });
+
+  it("omits adapter param when showAdapterMetrics is true (default-on)", () => {
+    const url = buildNextUrlFromWorkspaceState({
+      pathname: "/x",
+      hash: "",
+      activeView: "runs",
+      assetViewState: inv(),
+      runsViewState: {
+        ...baseRuns(),
+        showAdapterMetrics: true,
+      },
+      timelineSelectedExecutionId: null,
+      lineageViewState: baseLineage(),
+    });
+    expect(url).toContain("view=runs");
+    expect(url).not.toContain("adapter=");
+  });
+
+  it("serializes adapter=0 when showAdapterMetrics is false", () => {
+    const url = buildNextUrlFromWorkspaceState({
+      pathname: "/x",
+      hash: "",
+      activeView: "runs",
+      assetViewState: inv(),
+      runsViewState: {
+        ...baseRuns(),
+        showAdapterMetrics: false,
+      },
+      timelineSelectedExecutionId: null,
+      lineageViewState: baseLineage(),
+    });
+    expect(url).toContain("adapter=0");
   });
 
   it("serializes timeline selected and drops kind", () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildExplorerTree,
+  buildSelectedAssetTestEvidence,
   collectAncestorBranchIdsForResource,
   flattenExplorerTree,
   findNodeByLeafResourceId,
@@ -41,6 +42,31 @@ describe("buildExplorerTree", () => {
     const leafIds = collectLeafIds(tree);
     expect(leafIds).toContain("model.jaffle_shop.orders");
     expect(leafIds).toContain("model.jaffle_shop.customers");
+  });
+
+  it("uses descendant non-test resource counts for branches", () => {
+    const resources = [
+      makeResource({
+        name: "orders",
+        originalFilePath: "models/marts/orders.sql",
+      }),
+      makeResource({
+        name: "customers",
+        originalFilePath: "models/marts/customers.sql",
+      }),
+      makeResource({
+        uniqueId: "test.jaffle_shop.orders_not_null",
+        name: "orders_not_null",
+        resourceType: "test",
+        originalFilePath: "tests/orders_not_null.sql",
+      }),
+    ];
+    const tree = buildExplorerTree(resources, "project", "jaffle_shop");
+    expect(tree[0]?.count).toBe(2);
+    const modelsBranch = tree[0]?.children.find(
+      (node) => node.label === "models",
+    );
+    expect(modelsBranch?.count).toBe(2);
   });
 });
 
@@ -103,5 +129,88 @@ describe("collectAncestorBranchIdsForResource", () => {
     expect(
       collectAncestorBranchIdsForResource(tree, "model.jaffle_shop.missing"),
     ).toEqual(new Set());
+  });
+});
+
+describe("buildSelectedAssetTestEvidence", () => {
+  it("collects attached tests and groups warning+danger into attention", () => {
+    const resources = [
+      makeResource({ name: "orders" }),
+      makeResource({
+        uniqueId: "test.jaffle_shop.orders_not_null",
+        name: "orders_not_null",
+        resourceType: "test",
+        statusTone: "positive",
+        status: "pass",
+      }),
+      makeResource({
+        uniqueId: "test.jaffle_shop.orders_unique",
+        name: "orders_unique",
+        resourceType: "test",
+        statusTone: "danger",
+        status: "fail",
+      }),
+      makeResource({
+        uniqueId: "test.jaffle_shop.other_asset",
+        name: "other_asset",
+        resourceType: "test",
+        statusTone: "warning",
+        status: "warn",
+      }),
+    ];
+
+    const evidence = buildSelectedAssetTestEvidence(
+      "model.jaffle_shop.orders",
+      resources,
+      {
+        "test.jaffle_shop.orders_not_null": {
+          upstreamCount: 1,
+          downstreamCount: 0,
+          upstream: [
+            {
+              uniqueId: "model.jaffle_shop.orders",
+              name: "orders",
+              resourceType: "model",
+              depth: 1,
+            },
+          ],
+          downstream: [],
+        },
+        "test.jaffle_shop.orders_unique": {
+          upstreamCount: 1,
+          downstreamCount: 0,
+          upstream: [
+            {
+              uniqueId: "model.jaffle_shop.orders",
+              name: "orders",
+              resourceType: "model",
+              depth: 1,
+            },
+          ],
+          downstream: [],
+        },
+        "test.jaffle_shop.other_asset": {
+          upstreamCount: 1,
+          downstreamCount: 0,
+          upstream: [
+            {
+              uniqueId: "model.jaffle_shop.customers",
+              name: "customers",
+              resourceType: "model",
+              depth: 1,
+            },
+          ],
+          downstream: [],
+        },
+      },
+    );
+
+    expect(evidence.total).toBe(2);
+    expect(evidence.passing).toBe(1);
+    expect(evidence.attention).toBe(1);
+    expect(evidence.tests.map((test) => test.uniqueId)).toEqual([
+      "test.jaffle_shop.orders_unique",
+      "test.jaffle_shop.orders_not_null",
+    ]);
   });
 });

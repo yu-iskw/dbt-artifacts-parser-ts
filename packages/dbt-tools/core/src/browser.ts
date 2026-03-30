@@ -3,11 +3,20 @@
  * Re-exports only APIs that do not depend on Node.js (fs, path).
  */
 export { ManifestGraph } from "./analysis/manifest-graph";
-export { ExecutionAnalyzer } from "./analysis/execution-analyzer";
+export {
+  ExecutionAnalyzer,
+  buildNodeExecutionsFromRunResults,
+} from "./analysis/execution-analyzer";
 export {
   searchRunResults,
   detectBottlenecks,
+  detectAdapterHeavyNodes,
 } from "./analysis/run-results-search";
+export {
+  buildAdapterTotals,
+  normalizeAdapterResponse,
+  adapterMetricsHasData,
+} from "./analysis/adapter-response-metrics";
 export {
   buildAnalysisSnapshotFromArtifacts,
   buildAnalysisSnapshotFromParsedArtifacts,
@@ -21,7 +30,16 @@ export type {
   BottleneckNode,
   BottleneckResult,
   RunResultsSearchCriteria,
+  AdapterHeavyMetric,
+  AdapterHeavyNode,
+  AdapterHeavyResult,
 } from "./analysis/run-results-search";
+export type {
+  AdapterResponseField,
+  AdapterResponseFieldKind,
+  AdapterResponseMetrics,
+  AdapterTotalsSnapshot,
+} from "./analysis/adapter-response-metrics";
 export type {
   AnalysisSnapshot,
   AnalysisSnapshotBuildTimings,

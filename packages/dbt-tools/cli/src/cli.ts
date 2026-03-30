@@ -232,6 +232,29 @@ program
     "Nodes exceeding s seconds (alternative to top-N)",
     parseFloat,
   )
+  .option(
+    "--adapter-summary",
+    "Include adapter_response aggregates (and default top-5 slot/bytes in human output)",
+  )
+  .option(
+    "--adapter-top-by <metric>",
+    "Rank nodes by adapter metric: bytes_processed | slot_ms | rows_affected",
+  )
+  .option(
+    "--adapter-top-n <n>",
+    "Top N for --adapter-top-by (default: 10)",
+    parseInt,
+  )
+  .option(
+    "--adapter-min-bytes <n>",
+    "When using --adapter-top-by, require bytes_processed >= n",
+    parseFloat,
+  )
+  .option(
+    "--adapter-min-slot-ms <n>",
+    "When using --adapter-top-by, require slot_ms >= n",
+    parseFloat,
+  )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
   .action(
@@ -244,17 +267,57 @@ program
         bottlenecks?: boolean;
         bottlenecksTop?: number;
         bottlenecksThreshold?: number;
+        adapterSummary?: boolean;
+        adapterTopBy?: string;
+        adapterTopN?: number;
+        adapterMinBytes?: number;
+        adapterMinSlotMs?: number;
         json?: boolean;
         noJson?: boolean;
       },
-    ) =>
+    ) => {
+      const allowed = new Set(["bytes_processed", "slot_ms", "rows_affected"]);
+      let adapterTopBy:
+        | "bytes_processed"
+        | "slot_ms"
+        | "rows_affected"
+        | undefined;
+      if (options.adapterTopBy != null && options.adapterTopBy !== "") {
+        if (!allowed.has(options.adapterTopBy)) {
+          handleError(
+            new Error(
+              `--adapter-top-by must be one of: ${[...allowed].join(", ")}`,
+            ),
+            isTTY(),
+          );
+          return;
+        }
+        adapterTopBy = options.adapterTopBy as
+          | "bytes_processed"
+          | "slot_ms"
+          | "rows_affected";
+      }
       runReportAction(
         runResultsPath,
         manifestPath,
-        options,
+        {
+          targetDir: options.targetDir,
+          fields: options.fields,
+          bottlenecks: options.bottlenecks,
+          bottlenecksTop: options.bottlenecksTop,
+          bottlenecksThreshold: options.bottlenecksThreshold,
+          adapterSummary: options.adapterSummary,
+          adapterTopBy,
+          adapterTopN: options.adapterTopN,
+          adapterMinBytes: options.adapterMinBytes,
+          adapterMinSlotMs: options.adapterMinSlotMs,
+          json: options.json,
+          noJson: options.noJson,
+        },
         handleError,
         isTTY,
-      ),
+      );
+    },
   );
 
 /**

@@ -1,4 +1,5 @@
 // Analysis exports
+export * from "./analysis/adapter-response-metrics";
 export * from "./analysis/manifest-graph";
 export * from "./analysis/execution-analyzer";
 export * from "./analysis/dependency-service";

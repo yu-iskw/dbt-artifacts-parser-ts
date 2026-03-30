@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loadWorkspace } from "./helpers/preload";
 
+const ASSET_WORKSPACE_SECTION = ".asset-workspace__section";
 const LEAF_SELECTOR = ".explorer-tree__row--leaf";
 const BRANCH_SELECTOR = ".explorer-tree__row--branch";
 const BRANCH_LABEL_SELECTOR = ".explorer-tree__label";
@@ -36,7 +37,7 @@ test.describe("inventory workspace", () => {
     await expect(assetActions).not.toContainText("Open in Runs");
     await expect(assetActions).toContainText(OPEN_IN_TIMELINE_LABEL);
     await expect(assetActions).not.toContainText(EXPAND_LINEAGE_LABEL);
-    const lineageCard = page.locator(".asset-workspace__section").filter({
+    const lineageCard = page.locator(ASSET_WORKSPACE_SECTION).filter({
       has: page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
     });
     await expect(
@@ -53,8 +54,20 @@ test.describe("inventory workspace", () => {
     await expect(
       page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Runtime" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Tests" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "SQL" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Runtime" })).toHaveCount(0);
+    const sectionIds = await page
+      .locator(ASSET_WORKSPACE_SECTION)
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("id")),
+      );
+    expect(sectionIds).toEqual([
+      "asset-section-summary",
+      "asset-section-lineage",
+      "asset-section-tests",
+      "asset-section-sql",
+    ]);
   });
 
   test("branch rows fold and unfold the inventory tree", async ({ page }) => {
@@ -156,11 +169,53 @@ test.describe("inventory workspace", () => {
     await expect(page).toHaveURL(/assetTab=lineage/);
   });
 
+  test("orders shows attached test evidence with quick jump to runs", async ({
+    page,
+  }) => {
+    const ordersLeaf = page.locator(
+      `${LEAF_SELECTOR}[title="model.jaffle_shop.orders"]`,
+    );
+
+    await ordersLeaf.click();
+    await expect(page.getByRole("heading", { name: "Tests" })).toBeVisible();
+    await expect(
+      page.locator(".asset-tests-summary__metric").first(),
+    ).toContainText("Attached tests");
+    await expect(page.locator(".asset-tests-table__header")).toBeVisible();
+    await expect(page.locator(".asset-tests-table__header")).toContainText(
+      "Duration",
+    );
+    await expect(
+      page.locator(".asset-tests-table__header button", { hasText: "Test" }),
+    ).toBeVisible();
+    await expect(
+      page.locator(".asset-tests-table__header button", { hasText: "Status" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Name" })).toHaveCount(0);
+    await expect(page.getByText("not_null_orders_order_id")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Open in Runs/i }).first(),
+    ).toBeVisible();
+  });
+
+  test("legacy runtime asset tab still lands on summary content", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/?view=inventory&resource=model.jaffle_shop.orders&assetTab=runtime",
+    );
+
+    await expect(page).toHaveURL(/assetTab=runtime/);
+    await expect(page.getByText("Asset summary")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Runtime" })).toHaveCount(0);
+    await expect(page.getByText("Execution time")).toBeVisible();
+  });
+
   test("expand lineage opens the embedded fullscreen dialog", async ({
     page,
   }) => {
     await page.locator(LEAF_SELECTOR).first().click();
-    const lineageCard = page.locator(".asset-workspace__section").filter({
+    const lineageCard = page.locator(ASSET_WORKSPACE_SECTION).filter({
       has: page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),
     });
     await lineageCard

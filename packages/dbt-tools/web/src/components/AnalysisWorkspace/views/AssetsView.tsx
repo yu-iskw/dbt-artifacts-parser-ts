@@ -25,6 +25,8 @@ import {
   formatSeconds,
   displayResourcePath,
 } from "@web/lib/analysis-workspace/utils";
+import { SqlPanel } from "./AssetsViewSqlPanel";
+import { AssetTestsSection } from "./AssetTestsSection";
 import { useResourceCode } from "@web/hooks/useResourceCode";
 import { Spinner } from "../../ui/Spinner";
 
@@ -32,121 +34,12 @@ import { Spinner } from "../../ui/Spinner";
 const NOT_CAPTURED = "Not captured";
 const NOT_EXECUTED = "Not executed";
 
-// ---------------------------------------------------------------------------
-// SQL syntax highlighting — zero-dependency tokenizer
-// ---------------------------------------------------------------------------
-const SQL_KEYWORDS = new Set(
-  "SELECT FROM WHERE WITH AS JOIN ON GROUP BY ORDER LIMIT HAVING UNION CASE WHEN THEN ELSE END LEFT RIGHT INNER OUTER CROSS DISTINCT NULL AND OR NOT IN IS BETWEEN LIKE EXISTS INSERT INTO UPDATE SET DELETE CREATE TABLE VIEW REPLACE IF ASC DESC USING AT ZONE INTERVAL QUALIFY WINDOW ROWS RANGE UNBOUNDED PRECEDING FOLLOWING CURRENT ROW PARTITION OVER".split(
-    " ",
-  ),
-);
-const SQL_FUNCTIONS = new Set(
-  "SUM COUNT AVG MAX MIN COALESCE CAST IFF IF ROW_NUMBER RANK DENSE_RANK NTILE LEAD LAG FIRST_VALUE LAST_VALUE NVL NVL2 NULLIF GREATEST LEAST TRIM LTRIM RTRIM UPPER LOWER LENGTH SUBSTR SUBSTRING REPLACE SPLIT CONCAT DATE YEAR MONTH DAY HOUR MINUTE SECOND DATEDIFF DATEADD CURRENT_DATE CURRENT_TIMESTAMP TO_DATE TO_TIMESTAMP TO_NUMBER TO_VARCHAR TRY_CAST CONVERT FLOOR CEIL ROUND ABS MOD SQRT LOG EXP ARRAY_AGG LISTAGG STRING_AGG GROUP_CONCAT FLATTEN UNNEST GENERATE_SERIES".split(
-    " ",
-  ),
-);
+type AssetSectionId = Exclude<AssetViewState["activeTab"], "runtime">;
 
-interface SqlToken {
-  type: string;
-  value: string;
-}
-
-type AssetSectionId = AssetViewState["activeTab"];
-
-// eslint-disable-next-line sonarjs/cognitive-complexity -- SQL lexer branches
-function tokenizeSQL(sql: string): SqlToken[] {
-  const tokens: SqlToken[] = [];
-  let pos = 0;
-  const len = sql.length;
-
-  while (pos < len) {
-    // Block comment
-    if (sql.startsWith("/*", pos)) {
-      const end = sql.indexOf("*/", pos + 2);
-      const value = end === -1 ? sql.slice(pos) : sql.slice(pos, end + 2);
-      tokens.push({ type: "comment", value });
-      pos += value.length;
-      continue;
-    }
-    // Line comment
-    if (sql.startsWith("--", pos)) {
-      const end = sql.indexOf("\n", pos);
-      const value = end === -1 ? sql.slice(pos) : sql.slice(pos, end + 1);
-      tokens.push({ type: "comment", value });
-      pos += value.length;
-      continue;
-    }
-    // Single-quoted string
-    if (sql[pos] === "'") {
-      let i = pos + 1;
-      while (i < len) {
-        if (sql[i] === "'" && sql[i - 1] !== "\\") {
-          i++;
-          break;
-        }
-        i++;
-      }
-      tokens.push({ type: "string", value: sql.slice(pos, i) });
-      pos = i;
-      continue;
-    }
-    // Number
-    const numMatch = /^[0-9]+(\.[0-9]+)?/.exec(sql.slice(pos));
-    if (numMatch && (pos === 0 || !/[a-zA-Z_]/.test(sql[pos - 1]))) {
-      tokens.push({ type: "number", value: numMatch[0] });
-      pos += numMatch[0].length;
-      continue;
-    }
-    // Word (keyword, function, or identifier)
-    const wordMatch = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(sql.slice(pos));
-    if (wordMatch) {
-      const word = wordMatch[0];
-      const upper = word.toUpperCase();
-      const type = SQL_KEYWORDS.has(upper)
-        ? "keyword"
-        : SQL_FUNCTIONS.has(upper)
-          ? "function"
-          : "identifier";
-      tokens.push({ type, value: word });
-      pos += word.length;
-      continue;
-    }
-    // Operator
-    if (/[=<>!|+\-*/%^&~]/.test(sql[pos])) {
-      tokens.push({ type: "operator", value: sql[pos] });
-      pos++;
-      continue;
-    }
-    // Punctuation
-    if (/[(),;.[\]{}]/.test(sql[pos])) {
-      tokens.push({ type: "punctuation", value: sql[pos] });
-      pos++;
-      continue;
-    }
-    // Whitespace / anything else — keep as-is
-    tokens.push({ type: "plain", value: sql[pos] });
-    pos++;
-  }
-  return tokens;
-}
-
-export function SqlPanel({ sql }: { sql: string }) {
-  const tokens = tokenizeSQL(sql);
-  return (
-    <pre className="sql-panel">
-      <code>
-        {tokens.map((token, i) =>
-          token.type === "plain" || token.type === "identifier" ? (
-            token.value
-          ) : (
-            <span key={i} className={`sql-token-${token.type}`}>
-              {token.value}
-            </span>
-          ),
-        )}
-      </code>
-    </pre>
-  );
+function normalizeAssetSectionId(
+  activeTab: AssetViewState["activeTab"],
+): AssetSectionId {
+  return activeTab === "runtime" ? "summary" : activeTab;
 }
 
 function DefinitionList({
@@ -383,58 +276,6 @@ function AssetSummarySection({
   );
 }
 
-function AssetRuntimeSection({ resource }: { resource: ResourceNode }) {
-  return (
-    <SectionCard
-      title="Runtime"
-      subtitle="Execution evidence linked to the selected asset."
-    >
-      <div className="detail-grid">
-        <div className="detail-stat">
-          <span>Status</span>
-          <strong>{resource.status ?? NOT_EXECUTED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Execution time</span>
-          <strong>{formatSeconds(resource.executionTime)}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Thread</span>
-          <strong>{resource.threadId ?? "n/a"}</strong>
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-function AssetTestsSection({
-  dependencySummary,
-}: {
-  dependencySummary: AnalysisState["dependencyIndex"][string] | undefined;
-}) {
-  return (
-    <SectionCard
-      title="Tests"
-      subtitle="Quality evidence and related dependency posture."
-    >
-      <div className="detail-grid">
-        <div className="detail-stat">
-          <span>Direct upstream</span>
-          <strong>{dependencySummary?.upstreamCount ?? 0}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Direct downstream</span>
-          <strong>{dependencySummary?.downstreamCount ?? 0}</strong>
-        </div>
-      </div>
-      <p className="resource-spotlight__description">
-        Use Runs to inspect detailed execution and quality evidence linked to
-        this asset.
-      </p>
-    </SectionCard>
-  );
-}
-
 export function AssetsView({
   resource,
   analysis,
@@ -500,19 +341,18 @@ export function AssetsView({
       activeLegendKeys:
         typeof value === "function" ? value(cur.activeLegendKeys) : value,
     }));
-  const activeTab = assetViewState.activeTab;
+  const activeSectionId = normalizeAssetSectionId(assetViewState.activeTab);
   const [isLineageDialogOpen, setLineageDialogOpen] = useState(false);
   const sectionRefs = useRef<Record<AssetSectionId, HTMLElement | null>>({
     summary: null,
     lineage: null,
     sql: null,
-    runtime: null,
     tests: null,
   });
 
   useEffect(() => {
     if (!resource) return;
-    const section = sectionRefs.current[activeTab];
+    const section = sectionRefs.current[activeSectionId];
     if (!section) return;
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -521,7 +361,7 @@ export function AssetsView({
       block: "start",
       behavior: prefersReducedMotion ? "auto" : "smooth",
     });
-  }, [activeTab, resource]);
+  }, [activeSectionId, resource]);
 
   const {
     compiledCode: loadedCompiled,
@@ -639,6 +479,20 @@ export function AssetsView({
           </section>
 
           <section
+            id="asset-section-tests"
+            ref={(node) => {
+              sectionRefs.current.tests = node;
+            }}
+            className="asset-workspace__section"
+          >
+            <AssetTestsSection
+              resource={resource}
+              analysis={analysis}
+              onNavigateTo={onNavigateTo}
+            />
+          </section>
+
+          <section
             id="asset-section-sql"
             ref={(node) => {
               sectionRefs.current.sql = node;
@@ -653,26 +507,6 @@ export function AssetsView({
               codeError={codeError}
               hasCompiledSql={hasCompiledSql}
             />
-          </section>
-
-          <section
-            id="asset-section-runtime"
-            ref={(node) => {
-              sectionRefs.current.runtime = node;
-            }}
-            className="asset-workspace__section"
-          >
-            <AssetRuntimeSection resource={resource} />
-          </section>
-
-          <section
-            id="asset-section-tests"
-            ref={(node) => {
-              sectionRefs.current.tests = node;
-            }}
-            className="asset-workspace__section"
-          >
-            <AssetTestsSection dependencySummary={dependencySummary} />
           </section>
         </div>
       </div>

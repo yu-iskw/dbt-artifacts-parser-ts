@@ -29,7 +29,14 @@ export type RunsKind =
   | "seeds"
   | "snapshots"
   | "operations";
-export type RunsSortBy = "attention" | "duration" | "name" | "status" | "start";
+export type RunsBaseSortBy =
+  | "attention"
+  | "duration"
+  | "name"
+  | "status"
+  | "start";
+export type RunsAdapterColumnId = `adapter:${string}`;
+export type RunsSortBy = RunsBaseSortBy | RunsAdapterColumnId;
 export type RunsGroupBy = "none" | "type" | "status" | "thread";
 
 export type DashboardStatusFilter = "all" | StatusTone;
@@ -112,6 +119,8 @@ export interface RunsViewState {
   sortBy: RunsSortBy;
   groupBy: RunsGroupBy;
   selectedExecutionId: string | null;
+  /** When true, show adapter metric columns when the run includes parseable metrics. */
+  showAdapterMetrics: boolean;
 }
 
 export interface LineageViewState {

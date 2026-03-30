@@ -3,6 +3,12 @@ import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import { detectBottlenecks, type BottleneckResult } from "./run-results-search";
 import { ExecutionAnalyzer, type ExecutionSummary } from "./execution-analyzer";
 import { ManifestGraph } from "./manifest-graph";
+import type {
+  AdapterResponseField,
+  AdapterResponseMetrics,
+  AdapterTotalsSnapshot,
+} from "./adapter-response-metrics";
+import { buildAdapterTotals } from "./adapter-response-metrics";
 
 export interface GanttItem {
   unique_id: string;
@@ -97,6 +103,8 @@ export interface ExecutionRow {
   threadId: string | null;
   start: number | null;
   end: number | null;
+  adapterMetrics?: AdapterResponseMetrics;
+  adapterResponseFields?: AdapterResponseField[];
 }
 
 export interface StatusBreakdownItem {
@@ -153,6 +161,8 @@ export interface AnalysisSnapshot {
   timelineAdjacency: Record<string, TimelineAdjacencyEntry>;
   selectedResourceId: string | null;
   invocationId?: string | null;
+  /** Aggregated adapter_response metrics when any node reported data */
+  adapterTotals?: AdapterTotalsSnapshot;
 }
 
 export interface AnalysisSnapshotBuildTimings {
@@ -959,9 +969,19 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
           typeof execution.thread_id === "string" ? execution.thread_id : null,
         start: gantt?.start ?? null,
         end: gantt?.end ?? null,
+        ...(execution.adapterMetrics != null
+          ? { adapterMetrics: execution.adapterMetrics }
+          : {}),
+        ...(execution.adapterResponseFields != null
+          ? { adapterResponseFields: execution.adapterResponseFields }
+          : {}),
       };
     })
     .sort((a, b) => b.executionTime - a.executionTime);
+
+  const adapterTotals = buildAdapterTotals(
+    nodeExecutions.map((e) => e.adapterMetrics),
+  );
 
   const resourceGroups = buildResourceGroups(resources);
   const statusBreakdown = buildStatusBreakdown(summary, nodeExecutions);
@@ -993,6 +1013,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
     timelineAdjacency,
     selectedResourceId,
     invocationId: buildInvocationId(runResultsJson),
+    ...(adapterTotals != null ? { adapterTotals } : {}),
   };
 
   return {

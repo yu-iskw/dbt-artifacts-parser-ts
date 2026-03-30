@@ -799,7 +799,8 @@
   letter-spacing: 0.06em;
 }
 
-.workspace-search:not(.workspace-search--global) input {
+.workspace-search:not(.workspace-search--global) input,
+.workspace-search:not(.workspace-search--global) select {
   width: 100%;
   padding: 0.95rem 1rem;
   border-radius: 16px;
@@ -1523,7 +1524,7 @@ details.timeline-filter-accordion .timeline-controls {
 .results-table__header,
 .results-table__row {
   display: grid;
-  grid-template-columns: minmax(220px, 2.1fr) 0.8fr 0.9fr 0.8fr 0.9fr;
+  grid-template-columns: var(--results-table-columns);
   align-items: center;
 }
 
@@ -1552,12 +1553,26 @@ details.timeline-filter-accordion .timeline-controls {
   border-radius: 18px;
   background: var(--bg-surface-muted);
   border: 1px solid var(--border-subtle);
+  text-align: left;
 }
 
-.results-table__row span {
-  display: block;
-  margin-top: 0.2rem;
+.results-table__cell {
+  min-width: 0;
   font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.results-table__cell--item strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.results-table__cell--align-end {
+  text-align: right;
 }
 
 .tone-badge--positive {
@@ -1723,7 +1738,7 @@ details.timeline-filter-accordion .timeline-controls {
 
   .results-table__header,
   .results-table__row {
-    grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(90px, 1fr));
+    grid-template-columns: var(--results-table-columns);
   }
 }
 
@@ -1788,26 +1803,11 @@ details.timeline-filter-accordion .timeline-controls {
   }
 
   .results-table__row > div:not(:first-child)::before {
+    content: attr(data-label);
     color: var(--text-soft);
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-  }
-
-  .results-table__row > div:nth-child(2)::before {
-    content: "Type";
-  }
-
-  .results-table__row > div:nth-child(3)::before {
-    content: "Status";
-  }
-
-  .results-table__row > div:nth-child(4)::before {
-    content: "Duration";
-  }
-
-  .results-table__row > div:nth-child(5)::before {
-    content: "Thread";
   }
 
   .rank-list__row {

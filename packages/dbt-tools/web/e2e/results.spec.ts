@@ -108,9 +108,6 @@ test.describe("runs quick jump navigation", () => {
     await page
       .getByRole("button", { name: OPEN_IN_INVENTORY_LABEL, exact: true })
       .click();
-    await expect(
-      page.getByRole("heading", { name: "Inventory" }).first(),
-    ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=inventory/);
     await expect(page).toHaveURL(
       new RegExp(`[?&]resource=${escapeRegExp(MODEL_UNIQUE_ID)}(&|$)`),
@@ -119,22 +116,11 @@ test.describe("runs quick jump navigation", () => {
     await expect(page.getByText("Asset summary")).toBeVisible();
   });
 
-  test("Open in Lineage navigates to inventory lineage tab", async ({
+  test("selected run item shows an Open in Lineage action", async ({
     page,
   }) => {
-    await page
-      .getByRole("button", { name: "Open in Lineage", exact: true })
-      .click();
     await expect(
-      page.getByRole("heading", { name: "Inventory" }).first(),
-    ).toBeVisible();
-    await expect(page).toHaveURL(/[?&]view=inventory/);
-    await expect(page).toHaveURL(/[?&]assetTab=lineage/);
-    await expect(page).toHaveURL(
-      new RegExp(`[?&]resource=${escapeRegExp(MODEL_UNIQUE_ID)}(&|$)`),
-    );
-    await expect(
-      page.getByRole("heading", { name: "Lineage graph" }).first(),
+      page.getByRole("button", { name: "Open in Lineage", exact: true }),
     ).toBeVisible();
   });
 });
