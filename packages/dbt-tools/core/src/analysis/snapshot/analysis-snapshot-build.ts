@@ -1,8 +1,8 @@
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
-import { detectBottlenecks } from "./run-results-search";
-import { ExecutionAnalyzer } from "./execution-analyzer";
-import { ManifestGraph } from "./manifest-graph";
+import { detectBottlenecks } from "../run-results-search";
+import { ExecutionAnalyzer } from "../execution-analyzer";
+import { ManifestGraph } from "../manifest-graph";
 import type {
   AnalysisSnapshot,
   AnalysisSnapshotBuildTimings,

@@ -15,9 +15,9 @@ export type {
   StatusTone,
   ThreadStat,
   TimelineAdjacencyEntry,
-} from "./analysis-snapshot-types";
+} from "./snapshot/analysis-snapshot-types";
 
 export {
   buildAnalysisSnapshotFromArtifacts,
   buildAnalysisSnapshotFromParsedArtifacts,
-} from "./analysis-snapshot-build";
+} from "./snapshot/analysis-snapshot-build";
