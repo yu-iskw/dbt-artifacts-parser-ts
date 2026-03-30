@@ -10,13 +10,17 @@
   "license": "Apache-2.0",
   "author": "yu-iskw",
   "type": "module",
+  "bin": {
+    "dbt-web": "./dist-server/serve.js"
+  },
   "files": [
     "dist",
+    "dist-server",
     "README.md"
   ],
   "scripts": {
     "prepack": "npm run build",
-    "build": "pnpm --filter @dbt-tools/core build && tsc && vite build",
+    "build": "pnpm --filter @dbt-tools/core build && tsc && vite build && vite build --config vite.server.config.ts",
     "dev": "vite",
     "dev:debug": "DBT_TOOLS_DEBUG=1 vite",
     "dev:target": "DBT_TOOLS_TARGET_DIR=./target vite",
@@ -30,6 +34,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1019.0",
     "@dbt-tools/core": "workspace:*",
+    "commander": "^14.0.3",
     "@google-cloud/storage": "^7.19.0",
     "@tanstack/react-virtual": "^3.13.23",
     "dbt-artifacts-parser": "workspace:*",
