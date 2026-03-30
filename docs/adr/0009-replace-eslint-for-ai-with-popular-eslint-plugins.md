@@ -93,3 +93,7 @@ The Decision diagram lists TypeScript-ESLint, SonarJS, core `no-unreachable`, an
 `react/prop-types` off), **eslint-plugin-react-hooks** (`react-hooks/exhaustive-deps` as
 error), and **eslint-plugin-jsx-a11y** (flat recommended). Complexity and SonarJS limits
 for those files remain as documented in ADR-0008 (including amendments).
+
+## Amendment (2026-03-30)
+
+Effective complexity and SonarJS thresholds for all globs, including React files, are defined only in root `eslint.config.mjs` and [8. Stricter ESLint complexity rules for AI agent feedback](0008-stricter-eslint-complexity-rules-for-ai-agent-feedback.md)’s **2026-03-30** amendment, not by the original numeric table in ADR-0008’s Decision section.

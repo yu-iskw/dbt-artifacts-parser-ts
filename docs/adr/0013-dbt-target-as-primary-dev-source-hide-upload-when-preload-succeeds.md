@@ -36,3 +36,11 @@ When preload succeeds (`analysis` is set on mount), treat that as the primary st
 **Negative:**
 
 - None identified.
+
+## Amendment (2026-03-30)
+
+The UX invariants above are unchanged; the **stable configuration contract** for “preload from a configured target directory” is canonical **`DBT_TOOLS_TARGET_DIR`** (and legacy `DBT_TARGET` / `DBT_TARGET_DIR` with warnings) per [28. DBT_TOOLS prefix for dbt-tools environment variables](0028-dbt-tools-prefix-for-dbt-tools-environment-variables.md), while Context and Decision still refer to `DBT_TARGET` as the historical name.
+
+### Living detail
+
+- [`packages/dbt-tools/core/src/config/dbt-tools-env.ts`](../../packages/dbt-tools/core/src/config/dbt-tools-env.ts)
