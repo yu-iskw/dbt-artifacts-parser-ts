@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
@@ -53,13 +53,13 @@ async function serveFile(
 }
 
 function openInBrowser(url: string): void {
-  const cmd =
+  const [bin, ...args]: [string, ...string[]] =
     process.platform === "darwin"
-      ? `open "${url}"`
+      ? ["open", url]
       : process.platform === "win32"
-        ? `start "" "${url}"`
-        : `xdg-open "${url}"`;
-  exec(cmd, () => undefined);
+        ? ["cmd", "/c", "start", url]
+        : ["xdg-open", url];
+  execFile(bin, args, () => undefined);
 }
 
 async function handleRequest(
