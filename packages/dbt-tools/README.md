@@ -55,9 +55,9 @@ pnpm add @dbt-tools/web
 
 All `@dbt-tools/*` packages are published on npm:
 
-- `@dbt-tools/cli`: https://www.npmjs.com/package/@dbt-tools/cli
-- `@dbt-tools/web`: https://www.npmjs.com/package/@dbt-tools/web
-- `@dbt-tools/core`: https://www.npmjs.com/package/@dbt-tools/core
+- `@dbt-tools/cli`: [@dbt-tools/cli on npm](https://www.npmjs.com/package/@dbt-tools/cli)
+- `@dbt-tools/web`: [@dbt-tools/web on npm](https://www.npmjs.com/package/@dbt-tools/web)
+- `@dbt-tools/core`: [@dbt-tools/core on npm](https://www.npmjs.com/package/@dbt-tools/core)
 
 ### `npx` availability
 
@@ -89,10 +89,10 @@ pnpm dev
 graph LR
   dbt["dbt run\n(generates artifacts)"]
   FS["./target/\nmanifest.json\nrun_results.json"]
-  DAP[dbt-artifacts-parser\ntype-safe parsing]
-  CORE[@dbt-tools/core\ngraph · analysis]
-  CLI[@dbt-tools/cli]
-  WEB[@dbt-tools/web]
+  DAP["dbt-artifacts-parser\ntype-safe parsing"]
+  CORE["@dbt-tools/core\ngraph · analysis"]
+  CLI["@dbt-tools/cli"]
+  WEB["@dbt-tools/web"]
 
   dbt --> FS
   FS --> DAP

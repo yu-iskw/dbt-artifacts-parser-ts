@@ -8,7 +8,7 @@ This is a **standalone library** with no dependency on `@dbt-tools/*`. Use it wh
 
 ```mermaid
 graph LR
-  P[dbt-artifacts-parser]
+  P["dbt-artifacts-parser"]
   P --> M["manifest.json\nv1–v12"]
   P --> C["catalog.json\nv1"]
   P --> R["run_results.json\nv1–v6"]
