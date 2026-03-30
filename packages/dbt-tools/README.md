@@ -48,9 +48,31 @@ pnpm add @dbt-tools/core
 
 # CLI tool (global)
 pnpm add -g @dbt-tools/cli
+
+# Web package
+pnpm add @dbt-tools/web
 ```
 
-The web app is not published to npm. Run it locally:
+All `@dbt-tools/*` packages are published on npm:
+
+- `@dbt-tools/cli`: [@dbt-tools/cli on npm](https://www.npmjs.com/package/@dbt-tools/cli) <!-- markdown-link-check-disable-line -->
+- `@dbt-tools/web`: [@dbt-tools/web on npm](https://www.npmjs.com/package/@dbt-tools/web) <!-- markdown-link-check-disable-line -->
+- `@dbt-tools/core`: [@dbt-tools/core on npm](https://www.npmjs.com/package/@dbt-tools/core) <!-- markdown-link-check-disable-line -->
+
+### `npx` availability
+
+```bash
+# ✅ Works (package exposes the "dbt-tools" binary)
+npx @dbt-tools/cli --help
+
+# ❌ Not supported (library package; no executable)
+npx @dbt-tools/core --help
+
+# ❌ Not supported (web package ships app assets, no executable)
+npx @dbt-tools/web --help
+```
+
+To run the web app locally in this monorepo:
 
 ```bash
 cd packages/dbt-tools/web
@@ -67,10 +89,10 @@ pnpm dev
 graph LR
   dbt["dbt run\n(generates artifacts)"]
   FS["./target/\nmanifest.json\nrun_results.json"]
-  DAP[dbt-artifacts-parser\ntype-safe parsing]
-  CORE[@dbt-tools/core\ngraph · analysis]
-  CLI[@dbt-tools/cli]
-  WEB[@dbt-tools/web]
+  DAP["dbt-artifacts-parser\ntype-safe parsing"]
+  CORE["@dbt-tools/core\ngraph · analysis"]
+  CLI["@dbt-tools/cli"]
+  WEB["@dbt-tools/web"]
 
   dbt --> FS
   FS --> DAP

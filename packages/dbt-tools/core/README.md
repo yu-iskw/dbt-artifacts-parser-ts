@@ -8,14 +8,14 @@ Core library for dbt artifact graph management and analysis. Provides the analys
 
 ```mermaid
 graph TD
-  AF[dbt-artifacts-parser\nparseManifest · parseRunResults]
-  AF --> AL[ArtifactLoader]
-  AL --> MG[ManifestGraph\ngraphology DAG]
-  AL --> EA[ExecutionAnalyzer\ncritical path · Gantt]
-  MG --> DS[DependencyService\nupstream · downstream · build order]
-  MG --> GE[GraphExport\nJSON · DOT · GEXF]
-  EA --> OF[OutputFormatter\nfield filtering · JSON/text]
-  OF --> FF[FieldFilter]
+  AF["dbt-artifacts-parser\nparseManifest · parseRunResults"]
+  AF --> AL["ArtifactLoader"]
+  AL --> MG["ManifestGraph\ngraphology DAG"]
+  AL --> EA["ExecutionAnalyzer\ncritical path · Gantt"]
+  MG --> DS["DependencyService\nupstream · downstream · build order"]
+  MG --> GE["GraphExport\nJSON · DOT · GEXF"]
+  EA --> OF["OutputFormatter\nfield filtering · JSON/text"]
+  OF --> FF["FieldFilter"]
 ```
 
 ---
