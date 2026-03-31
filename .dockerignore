@@ -1,0 +1,34 @@
+# Git and tooling
+.git
+.github
+.cursor
+.claude
+.codex
+.trunk
+
+# Dependencies and caches (reinstalled in the image)
+node_modules
+**/node_modules
+
+# Build outputs (rebuilt in the image)
+**/dist
+**/dist-node
+
+# Tests and coverage
+coverage
+**/coverage
+**/.vitest
+**/*.test.ts.snap
+
+# Playwright
+**/playwright-report
+**/test-results
+**/e2e/.cache
+
+# Misc artifacts
+*.log
+.DS_Store
+lint-report.json
+coverage-report.json
+codeql-db
+codeql-results.sarif

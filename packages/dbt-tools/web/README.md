@@ -140,6 +140,22 @@ pnpm build
 pnpm preview   # serve the production build locally
 ```
 
+### Docker
+
+The image is a multi-stage build: Node installs workspace dependencies and runs `pnpm --filter @dbt-tools/web build`; the final stage serves static `dist/` with [nginx unprivileged](https://hub.docker.com/r/nginxinc/nginx-unprivileged) (non-root, port **8080**, SPA fallback to `index.html`).
+
+**Build context must be the monorepo root** (not this package directory), because the web app depends on workspace packages.
+
+```bash
+# From repository root
+docker build -f packages/dbt-tools/web/Dockerfile -t dbt-tools-web:local .
+docker run --rm -p 8080:8080 dbt-tools-web:local
+```
+
+Then open `http://localhost:8080/`.
+
+The production image is static files only: there is no Vite dev middleware, so `DBT_TOOLS_TARGET_DIR` and related server-side env vars from local dev do not apply unless you add a different deployment shape. Any future **Vite build-time** variables (`VITE_*`) must be passed at image build time, for example `docker build --build-arg VITE_EXAMPLE=...` (and your Dockerfile would need to forward them into the build step).
+
 ---
 
 ## Project Structure
