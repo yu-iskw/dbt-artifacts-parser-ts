@@ -288,7 +288,11 @@ export function inferDominantPackageFromNodeExecutions(
       counts[pkg] = (counts[pkg] ?? 0) + 1;
     }
   }
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const sorted = Object.entries(counts).sort((a, b) => {
+    const byCount = b[1] - a[1];
+    if (byCount !== 0) return byCount;
+    return a[0].localeCompare(b[0]);
+  });
   return sorted[0]?.[0] ?? null;
 }
 

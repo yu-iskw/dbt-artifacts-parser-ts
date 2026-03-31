@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { statusTone } from "./analysis-snapshot-shared";
+import {
+  buildTimelineProjectName,
+  inferDominantPackageFromNodeExecutions,
+  statusTone,
+  type PackageLookupGraph,
+} from "./analysis-snapshot-shared";
+
+const stubLookupGraph: PackageLookupGraph = {
+  hasNode: () => false,
+  getNodeAttributes: () => undefined,
+};
 
 describe("statusTone", () => {
   it("maps dbt skipped and no-op statuses to skipped tone", () => {
@@ -47,5 +57,45 @@ describe("statusTone", () => {
     "database error",
   ])("maps failure-like %s to danger", (s) => {
     expect(statusTone(s)).toBe("danger");
+  });
+});
+
+describe("inferDominantPackageFromNodeExecutions", () => {
+  it("breaks equal package counts by lexicographic package name, not execution order", () => {
+    const orderA = [
+      { unique_id: "model.pkg_z.m1" },
+      { unique_id: "model.pkg_z.m2" },
+      { unique_id: "model.pkg_a.m3" },
+      { unique_id: "model.pkg_a.m4" },
+    ];
+    const orderB = [
+      { unique_id: "model.pkg_a.m3" },
+      { unique_id: "model.pkg_z.m1" },
+      { unique_id: "model.pkg_a.m4" },
+      { unique_id: "model.pkg_z.m2" },
+    ];
+    expect(
+      inferDominantPackageFromNodeExecutions(orderA, stubLookupGraph),
+    ).toBe("pkg_a");
+    expect(
+      inferDominantPackageFromNodeExecutions(orderB, stubLookupGraph),
+    ).toBe("pkg_a");
+  });
+});
+
+describe("buildTimelineProjectName", () => {
+  it("when metadata project has no executions, falls back to lexicographic tie-break among packages", () => {
+    const manifestJson = {
+      metadata: { project_name: "only_in_metadata" },
+    };
+    const executions = [
+      { unique_id: "model.pkg_z.m1" },
+      { unique_id: "model.pkg_z.m2" },
+      { unique_id: "model.pkg_a.m3" },
+      { unique_id: "model.pkg_a.m4" },
+    ];
+    expect(
+      buildTimelineProjectName(manifestJson, executions, stubLookupGraph),
+    ).toBe("pkg_a");
   });
 });

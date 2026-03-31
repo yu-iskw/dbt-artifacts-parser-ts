@@ -58,8 +58,9 @@ export function InvocationResourceStatsTable({
         </tbody>
       </table>
       <p className="invocation-resource-stats__note">
-        Timeline counts use the same package scope as the type legend. Synthetic
-        source rows are described in ADR-0032 (
+        When a project package is in scope, manifest graph counts match that
+        package (same scope as this run and timeline). Synthetic source rows are
+        described in ADR-0032 (
         <code>
           docs/adr/0032-timeline-includes-dbt-sources-via-snapshot-synthesis.md
         </code>
