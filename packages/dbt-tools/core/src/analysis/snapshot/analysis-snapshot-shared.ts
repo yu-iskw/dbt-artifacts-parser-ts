@@ -33,8 +33,26 @@ export function statusTone(status: string | null | undefined): StatusTone {
   if (["warn", "warning"].includes(normalized)) {
     return "warning";
   }
-  if (["error", "fail", "failed", "run error"].includes(normalized)) {
+  // dbt and adapters vary on wording; keep an explicit allowlist (unknown → neutral).
+  if (
+    [
+      "error",
+      "errors",
+      "fail",
+      "failed",
+      "failure",
+      "failures",
+      "errored",
+      "run error",
+      "runtime error",
+      "compile error",
+      "database error",
+    ].includes(normalized)
+  ) {
     return "danger";
+  }
+  if (["skipped", "no op"].includes(normalized)) {
+    return "skipped";
   }
   return "neutral";
 }
@@ -204,6 +222,124 @@ export function buildProjectName(
     return (metaMaybe as Record<string, string>).project_name;
   }
   return null;
+}
+
+/** Minimal graph shape for reading package_name from executed nodes. */
+export type PackageLookupGraph = {
+  hasNode(id: string): boolean;
+  getNodeAttributes(id: string): Record<string, unknown> | undefined;
+};
+
+const PACKAGE_INFERENCE_SKIP_RESOURCE_TYPES = new Set([
+  "test",
+  "unit_test",
+  "macro",
+  "operation",
+  "sql_operation",
+]);
+
+/** Packages excluded from dominant-package mode (add-ons that are not the root project). */
+const PACKAGE_DOMINANCE_DENYLIST = new Set(["elementary"]);
+
+function packageNameForExecution(
+  e: { unique_id: string },
+  graph: PackageLookupGraph,
+): string {
+  const attrs = graph.hasNode(e.unique_id)
+    ? graph.getNodeAttributes(e.unique_id)
+    : undefined;
+  const pkgRaw = attrs?.package_name;
+  return typeof pkgRaw === "string" && pkgRaw.length > 0
+    ? pkgRaw
+    : inferPackageNameFromUniqueId(e.unique_id);
+}
+
+function resourceTypeForExecution(
+  e: { unique_id: string },
+  graph: PackageLookupGraph,
+): string {
+  const attrs = graph.hasNode(e.unique_id)
+    ? graph.getNodeAttributes(e.unique_id)
+    : undefined;
+  const rtRaw = attrs?.resource_type;
+  return typeof rtRaw === "string" && rtRaw.length > 0
+    ? rtRaw
+    : inferResourceTypeFromId(e.unique_id);
+}
+
+/**
+ * Dominant dbt package_name among executed **non-test, non-macro** nodes (mode
+ * count). Skips tests so add-on packages do not override the main project when
+ * inferring timeline scope. Returns null when the filtered set is empty.
+ */
+export function inferDominantPackageFromNodeExecutions(
+  nodeExecutions: ReadonlyArray<{ unique_id: string }>,
+  graph: PackageLookupGraph,
+): string | null {
+  if (nodeExecutions.length === 0) return null;
+  const counts: Record<string, number> = {};
+  for (const e of nodeExecutions) {
+    const resourceType = resourceTypeForExecution(e, graph);
+    if (PACKAGE_INFERENCE_SKIP_RESOURCE_TYPES.has(resourceType)) {
+      continue;
+    }
+    const pkg = packageNameForExecution(e, graph);
+    if (pkg.length > 0 && !PACKAGE_DOMINANCE_DENYLIST.has(pkg)) {
+      counts[pkg] = (counts[pkg] ?? 0) + 1;
+    }
+  }
+  const sorted = Object.entries(counts).sort((a, b) => {
+    const byCount = b[1] - a[1];
+    if (byCount !== 0) return byCount;
+    return a[0].localeCompare(b[0]);
+  });
+  return sorted[0]?.[0] ?? null;
+}
+
+/** Non-test / non-macro executions whose package matches `packageName`. */
+function countNonTestExecutionsForPackage(
+  nodeExecutions: ReadonlyArray<{ unique_id: string }>,
+  graph: PackageLookupGraph,
+  packageName: string,
+): number {
+  let n = 0;
+  for (const e of nodeExecutions) {
+    const resourceType = resourceTypeForExecution(e, graph);
+    if (PACKAGE_INFERENCE_SKIP_RESOURCE_TYPES.has(resourceType)) continue;
+    const pkg = packageNameForExecution(e, graph);
+    if (pkg === packageName) n++;
+  }
+  return n;
+}
+
+/**
+ * Project/package scope for timeline synthesis and `analysis.projectName`.
+ * Uses `metadata.project_name` when at least one non-test execution uses that
+ * package; otherwise falls back to the dominant non-test package so bad metadata
+ * does not drop in-scope sources.
+ */
+export function buildTimelineProjectName(
+  manifestJson: Record<string, unknown>,
+  nodeExecutions: ReadonlyArray<{ unique_id: string }>,
+  graph: PackageLookupGraph,
+): string | null {
+  const metaName = buildProjectName(manifestJson);
+  const dominantFiltered = inferDominantPackageFromNodeExecutions(
+    nodeExecutions,
+    graph,
+  );
+  if (metaName != null) {
+    const metaSupport = countNonTestExecutionsForPackage(
+      nodeExecutions,
+      graph,
+      metaName,
+    );
+    if (metaSupport === 0 && dominantFiltered != null) {
+      return dominantFiltered;
+    }
+    return metaName;
+  }
+  return dominantFiltered;
 }
 
 export function buildInvocationId(

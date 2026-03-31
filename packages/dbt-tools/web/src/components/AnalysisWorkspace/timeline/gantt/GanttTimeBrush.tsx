@@ -12,7 +12,7 @@ export function hasIssueSignal(
   testStatsById?: Map<string, ResourceTestStats>,
 ): boolean {
   const stats = testStatsById?.get(bundle.item.unique_id);
-  if (stats && stats.fail + stats.error > 0) return true;
+  if (stats && stats.error + stats.warn > 0) return true;
   return (
     isIssueStatus(bundle.item.status) ||
     bundle.tests.some((test) => isIssueStatus(test.status))

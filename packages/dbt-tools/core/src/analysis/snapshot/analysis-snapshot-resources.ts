@@ -67,7 +67,7 @@ export function buildResourcesAndDependencyIndex(
       dependencyIndex[uniqueId] = {
         upstreamCount: upstream.length,
         downstreamCount: downstream.length,
-        upstream: upstream.slice(0, 8).map((entry) => {
+        upstream: upstream.map((entry) => {
           const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
           return {
             uniqueId: entry.nodeId,
@@ -76,7 +76,7 @@ export function buildResourcesAndDependencyIndex(
             depth: entry.depth,
           };
         }),
-        downstream: downstream.slice(0, 8).map((entry) => {
+        downstream: downstream.map((entry) => {
           const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
           return {
             uniqueId: entry.nodeId,

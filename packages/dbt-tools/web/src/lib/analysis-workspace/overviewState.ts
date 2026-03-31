@@ -7,7 +7,11 @@ import type {
 } from "@web/types";
 import type { OverviewFilterState } from "./types";
 import { TEST_RESOURCE_TYPES } from "./constants";
-import { isFailedModelExecution, matchesExecution } from "./utils";
+import {
+  isFailedModelExecution,
+  matchesExecution,
+  matchesExecutionRowDashboardStatus,
+} from "./utils";
 
 export interface OverviewDerivedState {
   filteredExecutions: ExecutionRow[];
@@ -91,7 +95,7 @@ export function buildOverviewDerivedState(
   filters: OverviewFilterState,
 ): OverviewDerivedState {
   const filteredExecutions = analysis.executions.filter((row) => {
-    if (filters.status !== "all" && row.statusTone !== filters.status) {
+    if (!matchesExecutionRowDashboardStatus(row, filters.status)) {
       return false;
     }
     if (

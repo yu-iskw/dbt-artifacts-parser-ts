@@ -41,6 +41,7 @@ function emptySummary(): RunsResultsSummary {
       healthy: 0,
       warnings: 0,
       errors: 0,
+      issues: 0,
     },
     resourceTypes: {},
     threadIds: {},

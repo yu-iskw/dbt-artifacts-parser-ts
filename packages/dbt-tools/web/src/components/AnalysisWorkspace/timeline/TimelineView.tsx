@@ -42,7 +42,7 @@ function parentHasFailureSignal(
 ): boolean {
   const stats = testStatsById.get(item.unique_id);
   const hasTestFail = stats
-    ? stats.fail + stats.error > 0
+    ? stats.error + stats.warn > 0
     : childTests.some((t) => !isPositiveStatus(t.status));
   return !isPositiveStatus(item.status) || hasTestFail;
 }

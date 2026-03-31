@@ -1,12 +1,38 @@
-import type { AnalysisState, ResourceNode } from "@web/types";
+import type { AnalysisState, ResourceNode, StatusTone } from "@web/types";
 import type { AssetExplorerMode } from "./types";
 import { TEST_RESOURCE_TYPES } from "./constants";
+import {
+  rollupCountsHaveAttention,
+  type ResourceTestRollupCounts,
+} from "./testRollupTypes";
 import { normalizeManifestFilePath } from "./utils";
 
-export interface TestStats {
+export interface TestStats extends ResourceTestRollupCounts {
   pass: number;
-  fail: number;
-  error: number;
+  /**
+   * Attached tests with no run row / unknown status (`neutral` tone).
+   * Not included in explorer “Test issues” attention rollups or folder aggregation.
+   */
+  notExecuted: number;
+}
+
+export function emptyTestStats(): TestStats {
+  return {
+    pass: 0,
+    fail: 0,
+    error: 0,
+    warn: 0,
+    skipped: 0,
+    notExecuted: 0,
+  };
+}
+
+/**
+ * True when the tree should show “Test issues” badges (error, warn, skipped, legacy fail).
+ * Not-executed (`neutral`) attachments are excluded—they are not run outcomes and dominate large graphs.
+ */
+export function testStatsHasAttention(stats: TestStats): boolean {
+  return rollupCountsHaveAttention(stats);
 }
 
 export interface SelectedAssetTestEvidence {
@@ -33,15 +59,13 @@ export function buildResourceTestStats(
       ) ?? [];
 
     for (const resourceId of testedIds) {
-      const stats = resourceTestStats.get(resourceId) ?? {
-        pass: 0,
-        fail: 0,
-        error: 0,
-      };
+      const stats = resourceTestStats.get(resourceId) ?? emptyTestStats();
 
       if (test.statusTone === "positive") stats.pass += 1;
       else if (test.statusTone === "danger") stats.error += 1;
-      else stats.fail += 1;
+      else if (test.statusTone === "warning") stats.warn += 1;
+      else if (test.statusTone === "skipped") stats.skipped += 1;
+      else stats.notExecuted += 1;
 
       resourceTestStats.set(resourceId, stats);
     }
@@ -66,7 +90,13 @@ export function buildSelectedAssetTestEvidence(
       ).includes(resourceId),
     )
     .sort((left, right) => {
-      const toneRank = { danger: 0, warning: 1, positive: 2, neutral: 3 };
+      const toneRank: Record<StatusTone, number> = {
+        danger: 0,
+        warning: 1,
+        positive: 2,
+        skipped: 3,
+        neutral: 4,
+      };
       const toneOrder =
         toneRank[left.statusTone ?? "neutral"] -
         toneRank[right.statusTone ?? "neutral"];
@@ -241,6 +271,12 @@ export function finalizeTreeCounts(
     .sort(sortTreeNodes);
 }
 
+/** Branch id for the project-mode explorer root (must stay aligned with buildExplorerTree). */
+export function projectRootBranchId(projectName: string | null): string {
+  const label = projectName ?? "Workspace";
+  return `project:branch:${label}`;
+}
+
 // eslint-disable-next-line sonarjs/cognitive-complexity -- explorer tree cases
 export function buildExplorerTree(
   resources: ResourceNode[],
@@ -260,20 +296,22 @@ export function buildExplorerTree(
   // Aggregate leaf testStats upward to branch nodes (bottom-up recursion).
   // Returns the combined TestStats of the given node list.
   const applyTestStats = (nodes: ExplorerTreeNode[]): TestStats => {
-    const total: TestStats = { pass: 0, fail: 0, error: 0 };
+    const total = emptyTestStats();
     for (const node of nodes) {
       let nodeStats: TestStats;
       if (node.kind === "resource") {
-        nodeStats = node.testStats ?? { pass: 0, fail: 0, error: 0 };
+        nodeStats = node.testStats ?? emptyTestStats();
       } else {
         nodeStats = applyTestStats(node.children);
-        if (nodeStats.pass + nodeStats.fail + nodeStats.error > 0) {
+        if (testStatsHasAttention(nodeStats)) {
           node.testStats = nodeStats;
         }
       }
       total.pass += nodeStats.pass;
       total.fail += nodeStats.fail;
       total.error += nodeStats.error;
+      total.warn += nodeStats.warn;
+      total.skipped += nodeStats.skipped;
     }
     return total;
   };
@@ -297,7 +335,7 @@ export function buildExplorerTree(
 
   if (mode === "project") {
     const rootLabel = projectName ?? "Workspace";
-    const rootId = `${mode}:branch:${rootLabel}`;
+    const rootId = projectRootBranchId(projectName);
     const root = ensureBranch(roots, rootId, rootLabel, []);
 
     for (const resource of nonTestResources) {
@@ -322,7 +360,7 @@ export function buildExplorerTree(
         parentIds,
       );
       const stats = resourceTestStats.get(resource.uniqueId);
-      if (stats && stats.pass + stats.fail + stats.error > 0) {
+      if (stats && testStatsHasAttention(stats)) {
         leaf.testStats = stats;
       }
       siblings.push(leaf);
@@ -355,7 +393,7 @@ export function buildExplorerTree(
       parentIds,
     );
     const stats = resourceTestStats.get(resource.uniqueId);
-    if (stats && stats.pass + stats.fail + stats.error > 0) {
+    if (stats && testStatsHasAttention(stats)) {
       leaf.testStats = stats;
     }
     siblings.push(leaf);

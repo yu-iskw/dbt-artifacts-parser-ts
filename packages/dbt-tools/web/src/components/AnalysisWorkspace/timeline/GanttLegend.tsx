@@ -9,11 +9,12 @@ import {
   getThemeHex,
 } from "@web/constants/themeColors";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
+import { GANTT_LEGEND_PRIMARY_TYPES } from "@web/lib/analysis-workspace/constants";
 
 interface GanttLegendProps {
   /** Count per status key (lowercase). Only entries with count > 0 are shown. */
   statusCounts: Record<string, number>;
-  /** Count per resource type. Only entries with count > 0 are shown. */
+  /** Count per resource type in scoped timeline data. Primary types are always listed; count may be 0. */
   typeCounts: Record<string, number>;
   /** Optional: when provided, clicking a swatch toggles the corresponding filter. */
   activeStatuses?: Set<string>;
@@ -199,9 +200,9 @@ export function GanttLegend({
   const visibleStatuses = Object.keys(STATUS_COLORS).filter(
     (s) => (statusCounts[s] ?? 0) > 0,
   );
-  const visibleTypes = Object.keys(typeCounts)
-    .filter((t) => (typeCounts[t] ?? 0) > 0)
-    .sort((a, b) => a.localeCompare(b));
+  const visibleTypes = [
+    ...new Set([...GANTT_LEGEND_PRIMARY_TYPES, ...Object.keys(typeCounts)]),
+  ].sort((a, b) => a.localeCompare(b));
 
   const hasAnything =
     visibleStatuses.length > 0 ||

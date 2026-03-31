@@ -23,6 +23,7 @@ import { StatusDonutWithData } from "./overview/OverviewDonuts";
 import { OverviewFilterBar } from "./overview/OverviewFilterBar";
 import { GraphCompositionCard } from "./overview/GraphCompositionCard";
 import { OverviewExecutionContextBand } from "./overview/OverviewExecutionContextBand";
+import { InvocationResourceStats } from "../InvocationResourceStatsTable";
 
 /**
  * Health — the primary "what needs attention now?" lens.
@@ -84,6 +85,17 @@ export function HealthView({
       ).sort(),
     [analysis.executions],
   );
+
+  /** Explicit "Open Lineage" needs a resource; passive inventory load does not auto-select. */
+  const defaultLineageResourceId = useMemo(() => {
+    const model = analysis.resources.find((r) => r.resourceType === "model");
+    if (model) return model.uniqueId;
+    const nonTest = analysis.resources.find(
+      (r) => !TEST_RESOURCE_TYPES.has(r.resourceType),
+    );
+    if (nonTest) return nonTest.uniqueId;
+    return analysis.resources[0]?.uniqueId ?? null;
+  }, [analysis.resources]);
 
   return (
     <div className="workspace-view health-view">
@@ -172,7 +184,14 @@ export function HealthView({
           <button
             type="button"
             className="workspace-pill"
-            onClick={() => onNavigateTo("inventory", { assetTab: "lineage" })}
+            onClick={() =>
+              onNavigateTo("inventory", {
+                assetTab: "lineage",
+                ...(defaultLineageResourceId != null
+                  ? { resourceId: defaultLineageResourceId }
+                  : {}),
+              })
+            }
           >
             Open Lineage
           </button>
@@ -197,6 +216,13 @@ export function HealthView({
             subtext="Try clearing the dashboard filters or broadening your search."
           />
         )}
+      </section>
+
+      <section
+        className="health-section health-section--invocation-stats"
+        aria-label="Invocation resource counts"
+      >
+        <InvocationResourceStats analysis={analysis} />
       </section>
 
       {/* ── Execution context band ── */}

@@ -251,6 +251,24 @@ describe("AssetsView", () => {
     cleanupRoot(root, container);
   });
 
+  it("renders asset description as markdown in the summary section", () => {
+    const resource = makeResource({
+      description: "## Doc title\n\nBody paragraph.",
+    });
+    const { container, root } = renderAssetsView({
+      resource,
+      analysis: makeAnalysis([resource]),
+    });
+    const region = container.querySelector(
+      '[role="region"][aria-label="Asset description"]',
+    );
+    expect(region).toBeTruthy();
+    expect(region?.querySelector("h2")?.textContent).toContain("Doc title");
+    expect(region?.textContent).toContain("Body paragraph.");
+
+    cleanupRoot(root, container);
+  });
+
   it("maps the legacy runtime tab to the summary section scroll target", () => {
     const scrollIntoView = vi.fn();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;

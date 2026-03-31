@@ -15,8 +15,8 @@ import type {
 } from "./analysis-snapshot-internal";
 import {
   buildInvocationId,
-  buildProjectName,
   buildResourceGroups,
+  buildTimelineProjectName,
   buildWarehouseType,
   inferPackageNameFromUniqueId,
   inferResourceTypeFromId,
@@ -28,6 +28,7 @@ import { buildResourcesAndDependencyIndex } from "./analysis-snapshot-resources"
 import {
   buildManifestEntryLookup,
   buildSyntheticSourceRows,
+  buildSyntheticSourceRowsFromExecutedDependents,
   compareGanttItems,
   enrichGanttItemRow,
 } from "./analysis-snapshot-gantt";
@@ -53,7 +54,6 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   const graphBuildMs = now() - graphStart;
 
   const snapshotStart = now();
-  const projectName = buildProjectName(manifestJson);
   const warehouseType = buildWarehouseType(manifestJson);
   const summary = analyzer.getSummary();
   const manifestEntryLookup = buildManifestEntryLookup(manifestJson);
@@ -80,6 +80,11 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   );
 
   const graphologyGraph = graph.getGraph();
+  const timelineProjectName = buildTimelineProjectName(
+    manifestJson,
+    nodeExecutions,
+    graphologyGraph,
+  );
   const enrichedGanttData = ganttData.map((item) =>
     enrichGanttItemRow(
       item,
@@ -92,9 +97,23 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
     enrichedGanttData,
     graphologyGraph as GraphologyAttrsGraph,
   );
-  const timelineGanttData = [...enrichedGanttData, ...syntheticSourceRows].sort(
-    compareGanttItems,
-  );
+  const combinedAfterSourceTests = [
+    ...enrichedGanttData,
+    ...syntheticSourceRows,
+  ];
+  const syntheticSourceFromDependents =
+    buildSyntheticSourceRowsFromExecutedDependents(
+      combinedAfterSourceTests,
+      graphologyGraph as Parameters<
+        typeof buildSyntheticSourceRowsFromExecutedDependents
+      >[1],
+      timelineProjectName,
+    );
+  const timelineGanttData = [
+    ...enrichedGanttData,
+    ...syntheticSourceRows,
+    ...syntheticSourceFromDependents,
+  ].sort(compareGanttItems);
 
   const timelineAdjacency = buildTimelineAdjacency(
     graphologyGraph as unknown as NeighborGraph,
@@ -155,7 +174,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
 
   const analysis: AnalysisSnapshot = {
     summary,
-    projectName,
+    projectName: timelineProjectName,
     warehouseType,
     runStartedAt,
     ganttData: timelineGanttData,

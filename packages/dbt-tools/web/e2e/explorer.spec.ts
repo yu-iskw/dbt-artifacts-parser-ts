@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expandExplorerBranchIfCollapsed } from "./helpers/explorerTree";
 import { loadWorkspace } from "./helpers/preload";
 
 const ASSET_WORKSPACE_SECTION = ".asset-workspace__section";
@@ -26,6 +27,8 @@ test.describe("inventory workspace", () => {
   test("shows explorer and stacked selected asset sections", async ({
     page,
   }) => {
+    await expandExplorerBranchIfCollapsed(page, "models");
+    await expandExplorerBranchIfCollapsed(page, "marts");
     await expect(page.locator(LEAF_SELECTOR).first()).toBeVisible();
     await page.locator(LEAF_SELECTOR).first().click();
     await expect(page.getByText(INVENTORY_BROWSE_COPY)).toHaveCount(0);
@@ -82,8 +85,12 @@ test.describe("inventory workspace", () => {
     const productsLeaf = page.locator(
       `${LEAF_SELECTOR}[title="${PRODUCTS_MODEL_TITLE}"]`,
     );
+    await expandExplorerBranchIfCollapsed(page, MACROS_BRANCH_NAME);
     await expect(macrosBranch).toBeVisible();
     await expect(macroLeaf).toBeVisible();
+    await expandExplorerBranchIfCollapsed(page, "models");
+    await expandExplorerBranchIfCollapsed(page, "marts");
+    await expect(productsLeaf).toBeVisible();
 
     await productsLeaf.click();
     await macrosBranch.click();
@@ -106,6 +113,8 @@ test.describe("inventory workspace", () => {
       `${LEAF_SELECTOR}[title="model.jaffle_shop.orders"]`,
     );
 
+    await expandExplorerBranchIfCollapsed(page, "models");
+    await expandExplorerBranchIfCollapsed(page, "marts");
     await ordersLeaf.click();
     await expect(page.getByRole("heading", { name: "orders" })).toBeVisible();
 
@@ -176,6 +185,8 @@ test.describe("inventory workspace", () => {
       `${LEAF_SELECTOR}[title="model.jaffle_shop.orders"]`,
     );
 
+    await expandExplorerBranchIfCollapsed(page, "models");
+    await expandExplorerBranchIfCollapsed(page, "marts");
     await ordersLeaf.click();
     await expect(page.getByRole("heading", { name: "Tests" })).toBeVisible();
     await expect(
@@ -217,6 +228,8 @@ test.describe("inventory workspace", () => {
   test("expand lineage opens the embedded fullscreen dialog", async ({
     page,
   }) => {
+    await expandExplorerBranchIfCollapsed(page, "models");
+    await expandExplorerBranchIfCollapsed(page, "marts");
     await page.locator(LEAF_SELECTOR).first().click();
     const lineageCard = page.locator(ASSET_WORKSPACE_SECTION).filter({
       has: page.getByRole("heading", { name: LINEAGE_GRAPH_HEADING }).first(),

@@ -222,10 +222,11 @@ test("timeline type filtering explains hidden seed and source rows", async ({
     .locator(".gantt-legend__group")
     .filter({ hasText: "Type" })
     .getByRole("button", { name: /seed/i });
+  // Match dbt type "source" only; /source/i also matches "source_freshness".
   const sourceTypeButton = page
     .locator(".gantt-legend__group")
     .filter({ hasText: "Type" })
-    .getByRole("button", { name: /source/i });
+    .getByRole("button", { name: /^source(\s|\()/i });
 
   await expect(seedTypeButton).toBeVisible();
   await expect(sourceTypeButton).toBeVisible();

@@ -255,7 +255,10 @@ describe("GanttTimeBrush", () => {
       bundle(parent("issue", { start: 2_500, end: 6_000, duration: 3_500 })),
     ];
     const testStatsById = new Map<string, ResourceTestStats>([
-      ["issue", { pass: 1, fail: 1, error: 0 }],
+      [
+        "issue",
+        { pass: 1, fail: 0, error: 1, warn: 0, skipped: 0, notExecuted: 0 },
+      ],
     ]);
     const { container, root, onChange } = renderBrush({
       bundles,

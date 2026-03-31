@@ -77,6 +77,7 @@ function mockRunsSource(rows: ExecutionRow[]) {
         healthy: rows.length,
         warnings: 0,
         errors: 0,
+        issues: 0,
       },
       resourceTypes: {},
       threadIds: {},

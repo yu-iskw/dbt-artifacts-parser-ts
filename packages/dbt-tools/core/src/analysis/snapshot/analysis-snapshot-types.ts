@@ -24,7 +24,12 @@ export interface GanttItem {
   materialized?: string | null;
 }
 
-export type StatusTone = "positive" | "warning" | "danger" | "neutral";
+export type StatusTone =
+  | "positive"
+  | "warning"
+  | "danger"
+  | "neutral"
+  | "skipped";
 
 export interface MetricDefinition {
   kind: "metric";
@@ -125,8 +130,8 @@ export interface DependencyPreview {
 }
 
 /**
- * Direct (1-hop) dependency edges only. `upstream` / `downstream` preview at
- * most 8 neighbors; counts are total direct neighbors, not transitive closure.
+ * Direct (1-hop) dependency edges only. `upstream` / `downstream` list every
+ * direct neighbor; counts match those lists (not transitive closure).
  */
 export interface ResourceConnectionSummary {
   upstreamCount: number;

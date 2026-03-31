@@ -37,6 +37,15 @@ describe("createRunsResultsIndex", () => {
     expect(index.summary.facets.tests).toBe(1);
     expect(index.summary.status.all).toBe(2);
   });
+
+  it("counts issues facet as danger plus warning rows", () => {
+    const index = createRunsResultsIndex([
+      makeExecution({ uniqueId: "a", statusTone: "positive" }),
+      makeExecution({ uniqueId: "b", statusTone: "danger" }),
+      makeExecution({ uniqueId: "c", statusTone: "warning" }),
+    ]);
+    expect(index.summary.facets.issues).toBe(2);
+  });
 });
 
 describe("filterRunsResultsIndex", () => {
@@ -63,6 +72,36 @@ describe("filterRunsResultsIndex", () => {
 
     expect(matches).toHaveLength(1);
     expect(matches[0]?.row.uniqueId).toBe("customers");
+  });
+
+  it("issues status matches danger and warning rows", () => {
+    const index = createRunsResultsIndex([
+      makeExecution({ uniqueId: "ok", statusTone: "positive" }),
+      makeExecution({
+        uniqueId: "bad",
+        statusTone: "danger",
+        status: "error",
+      }),
+      makeExecution({
+        uniqueId: "warned",
+        statusTone: "warning",
+        status: "warn",
+      }),
+    ]);
+
+    const matches = filterRunsResultsIndex(index, {
+      kind: "all",
+      status: "issues",
+      query: "",
+      resourceTypes: [],
+      threadIds: [],
+      durationBand: "all",
+    });
+
+    expect(matches.map((m) => m.row.uniqueId).sort()).toEqual([
+      "bad",
+      "warned",
+    ]);
   });
 });
 

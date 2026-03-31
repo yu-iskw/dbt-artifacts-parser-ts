@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expandExplorerBranchIfCollapsed } from "./helpers/explorerTree";
 import { loadWorkspace } from "./helpers/preload";
 
 const LEAF_SELECTOR = ".explorer-tree__row--leaf";
@@ -61,6 +62,8 @@ test.describe("inventory to timeline cross-view", () => {
       page.getByRole("heading", { name: "Inventory" }).first(),
     ).toBeVisible();
 
+    await expandExplorerBranchIfCollapsed(page, "models");
+    await expandExplorerBranchIfCollapsed(page, "marts");
     await expect(page.locator(LEAF_SELECTOR).first()).toBeVisible();
     await page.locator(LEAF_SELECTOR).first().click();
     await expect(page.getByText("Asset summary")).toBeVisible();

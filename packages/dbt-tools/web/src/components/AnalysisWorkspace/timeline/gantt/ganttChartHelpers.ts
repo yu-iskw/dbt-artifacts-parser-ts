@@ -89,7 +89,7 @@ export function getFailureBundleIds(
   for (const bundle of bundles) {
     const stats = testStatsById?.get(bundle.item.unique_id);
     const hasTestFail = stats
-      ? stats.fail + stats.error > 0
+      ? stats.error + stats.warn > 0
       : bundle.tests.some((t) => !isPositiveStatus(t.status));
     if (!isPositiveStatus(bundle.item.status) || hasTestFail) {
       ids.add(bundle.item.unique_id);

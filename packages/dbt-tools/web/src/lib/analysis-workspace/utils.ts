@@ -6,6 +6,10 @@ import type {
   StatusTone,
 } from "@web/types";
 import type { DashboardStatusFilter, OverviewFilterState } from "./types";
+import {
+  rollupCountsHaveAttention,
+  type ResourceTestRollupCounts,
+} from "./testRollupTypes";
 import { TEST_RESOURCE_TYPES, PRIMARY_TIMELINE_TYPES } from "./constants";
 
 export function isFailedModelExecution(row: ExecutionRow): boolean {
@@ -91,8 +95,16 @@ export function matchesResource(
 export function matchesAssetStatus(
   resource: ResourceNode,
   status: DashboardStatusFilter,
+  resourceTestRollupById?: ReadonlyMap<string, ResourceTestRollupCounts>,
 ): boolean {
-  return status === "all" || resource.statusTone === status;
+  if (status === "all") return true;
+  if (status === "issues") {
+    if (resource.statusTone === "danger") return true;
+    return rollupCountsHaveAttention(
+      resourceTestRollupById?.get(resource.uniqueId),
+    );
+  }
+  return resource.statusTone === status;
 }
 
 export function matchesAssetResourceType(
@@ -115,6 +127,18 @@ export function matchesExecution(row: ExecutionRow, query: string): boolean {
     row.status,
     row.threadId ?? "",
   ].some((value) => value.toLowerCase().includes(normalized));
+}
+
+/** Runs / health execution lists: `issues` means danger or warning on the row (not explorer test rollup). */
+export function matchesExecutionRowDashboardStatus(
+  row: ExecutionRow,
+  status: DashboardStatusFilter,
+): boolean {
+  if (status === "all") return true;
+  if (status === "issues") {
+    return row.statusTone === "danger" || row.statusTone === "warning";
+  }
+  return row.statusTone === status;
 }
 
 /**

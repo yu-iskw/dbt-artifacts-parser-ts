@@ -18,6 +18,11 @@ export type {
 
 export interface ResourceTestStats {
   pass: number;
+  /** Legacy bucket; aggregation keeps this at 0. */
   fail: number;
   error: number;
+  warn: number;
+  skipped: number;
+  /** Tests with no run row or unknown status (`neutral` tone), not dbt skipped. */
+  notExecuted: number;
 }

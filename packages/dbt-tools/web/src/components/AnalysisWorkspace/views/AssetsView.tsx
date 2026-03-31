@@ -1,6 +1,5 @@
 import {
   type Dispatch,
-  type ReactNode,
   type SetStateAction,
   useEffect,
   useMemo,
@@ -8,31 +7,18 @@ import {
   useState,
 } from "react";
 import { EmptyState } from "../../EmptyState";
-import type {
-  AnalysisState,
-  MetricDefinition,
-  ResourceNode,
-  SemanticModelDefinition,
-} from "@web/types";
+import type { AnalysisState, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
   LineageViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
-import {
-  NOT_CAPTURED,
-  NOT_EXECUTED,
-} from "@web/lib/analysis-workspace/catalogCopy";
-import {
-  displayResourcePath,
-  formatSeconds,
-} from "@web/lib/analysis-workspace/utils";
-import { SectionCard, ResourceTypeBadge } from "../shared";
+import { ResourceTypeBadge } from "../shared";
 import { LineagePanel } from "../lineage/LineagePanel";
-import { SqlPanel } from "./AssetsViewSqlPanel";
 import { AssetTestsSection } from "./AssetTestsSection";
 import { useResourceCode } from "@web/hooks/useResourceCode";
-import { Spinner } from "../../ui/Spinner";
+import { AssetSummarySection } from "./AssetSummarySection";
+import { AssetSqlOrDefinitionCard } from "./AssetsViewSqlDefinitionCard";
 
 type AssetSectionId = Exclude<AssetViewState["activeTab"], "runtime">;
 
@@ -40,240 +26,6 @@ function normalizeAssetSectionId(
   activeTab: AssetViewState["activeTab"],
 ): AssetSectionId {
   return activeTab === "runtime" ? "summary" : activeTab;
-}
-
-function DefinitionList({
-  label,
-  values,
-}: {
-  label: string;
-  values: string[];
-}) {
-  if (values.length === 0) return null;
-  return (
-    <div className="definition-list">
-      <span>{label}</span>
-      <div className="definition-list__values">
-        {values.map((value) => (
-          <span key={value} className="definition-pill">
-            {value}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function renderMetricDefinition(definition: MetricDefinition): ReactNode {
-  return (
-    <div className="definition-panel">
-      <div className="detail-grid">
-        <div className="detail-stat">
-          <span>Label</span>
-          <strong>{definition.label ?? NOT_CAPTURED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Metric type</span>
-          <strong>{definition.metricType ?? NOT_CAPTURED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Source</span>
-          <strong>{definition.sourceReference ?? NOT_CAPTURED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Time granularity</span>
-          <strong>{definition.timeGranularity ?? NOT_CAPTURED}</strong>
-        </div>
-      </div>
-      {definition.expression && (
-        <div className="definition-block">
-          <span>Expression</span>
-          <pre>{definition.expression}</pre>
-        </div>
-      )}
-      {definition.description && (
-        <div className="definition-block">
-          <span>Description</span>
-          <p>{definition.description}</p>
-        </div>
-      )}
-      <DefinitionList label="Measures" values={definition.measures} />
-      <DefinitionList label="Referenced metrics" values={definition.metrics} />
-      <DefinitionList label="Filters" values={definition.filters} />
-    </div>
-  );
-}
-
-function renderSemanticModelDefinition(
-  definition: SemanticModelDefinition,
-): ReactNode {
-  return (
-    <div className="definition-panel">
-      <div className="detail-grid">
-        <div className="detail-stat">
-          <span>Label</span>
-          <strong>{definition.label ?? NOT_CAPTURED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Source model</span>
-          <strong>{definition.sourceReference ?? NOT_CAPTURED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Default time dimension</span>
-          <strong>{definition.defaultTimeDimension ?? NOT_CAPTURED}</strong>
-        </div>
-      </div>
-      <DefinitionList label="Entities" values={definition.entities} />
-      <DefinitionList label="Measures" values={definition.measures} />
-      <DefinitionList label="Dimensions" values={definition.dimensions} />
-      {definition.description && (
-        <div className="definition-block">
-          <span>Description</span>
-          <p>{definition.description}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function assetSqlOrDefinitionBody({
-  showsDefinition,
-  definition,
-  sqlText,
-  codeLoading,
-  codeError,
-}: {
-  showsDefinition: boolean;
-  definition: ResourceNode["definition"];
-  sqlText: string | undefined;
-  codeLoading: boolean;
-  codeError: string | null;
-}): ReactNode {
-  if (showsDefinition && definition) {
-    return definition.kind === "metric"
-      ? renderMetricDefinition(definition)
-      : renderSemanticModelDefinition(definition);
-  }
-  if (codeLoading) {
-    return (
-      <div className="asset-sql-loading" aria-busy="true">
-        <Spinner size={28} label="Loading SQL" />
-        <span className="asset-sql-loading__label">Loading SQL…</span>
-      </div>
-    );
-  }
-  if (codeError) {
-    return (
-      <EmptyState icon="⚠" headline="Could not load SQL" subtext={codeError} />
-    );
-  }
-  if (sqlText) {
-    return <SqlPanel sql={sqlText} />;
-  }
-  return (
-    <EmptyState
-      icon="⌘"
-      headline={
-        showsDefinition ? "No definition available" : "No SQL available"
-      }
-      subtext={
-        showsDefinition
-          ? "This resource does not expose enough definition metadata in the current artifacts."
-          : "This resource does not expose compiled or raw SQL in the current artifacts."
-      }
-    />
-  );
-}
-
-function AssetSqlOrDefinitionCard({
-  showsDefinition,
-  definition,
-  sqlText,
-  codeLoading,
-  codeError,
-  hasCompiledSql,
-}: {
-  showsDefinition: boolean;
-  definition: ResourceNode["definition"];
-  sqlText: string | undefined;
-  codeLoading: boolean;
-  codeError: string | null;
-  hasCompiledSql: boolean;
-}) {
-  return (
-    <SectionCard
-      title={showsDefinition ? "Definition" : "SQL"}
-      subtitle={
-        showsDefinition
-          ? definition?.kind === "metric"
-            ? "Structured metric definition captured from the manifest."
-            : "Structured semantic model definition captured from the manifest."
-          : hasCompiledSql
-            ? "Compiled SQL for the selected resource."
-            : "Raw SQL captured from the manifest."
-      }
-    >
-      {assetSqlOrDefinitionBody({
-        showsDefinition,
-        definition,
-        sqlText,
-        codeLoading,
-        codeError,
-      })}
-    </SectionCard>
-  );
-}
-
-function AssetSummarySection({
-  resource,
-  dependencySummary,
-}: {
-  resource: ResourceNode;
-  dependencySummary: AnalysisState["dependencyIndex"][string] | undefined;
-}) {
-  return (
-    <SectionCard
-      title="Asset summary"
-      subtitle="Core execution and discovery context for the selected asset."
-    >
-      <div className="detail-grid">
-        <div className="detail-stat">
-          <span>Status</span>
-          <strong>{resource.status ?? NOT_EXECUTED}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Execution time</span>
-          <strong>{formatSeconds(resource.executionTime)}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Thread</span>
-          <strong>{resource.threadId ?? "n/a"}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Path</span>
-          <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Direct upstream</span>
-          <strong>{dependencySummary?.upstreamCount ?? 0}</strong>
-        </div>
-        <div className="detail-stat">
-          <span>Direct downstream</span>
-          <strong>{dependencySummary?.downstreamCount ?? 0}</strong>
-        </div>
-      </div>
-      {resource.description ? (
-        <p className="resource-spotlight__description">
-          {resource.description}
-        </p>
-      ) : (
-        <p className="resource-spotlight__description resource-spotlight__description--muted">
-          No description was captured for this asset. Catalog-oriented metadata
-          can surface here when present in the manifest.
-        </p>
-      )}
-    </SectionCard>
-  );
 }
 
 export function AssetsView({

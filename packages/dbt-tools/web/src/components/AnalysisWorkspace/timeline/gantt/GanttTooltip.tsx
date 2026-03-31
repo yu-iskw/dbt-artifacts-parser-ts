@@ -182,12 +182,25 @@ export function GanttTooltip({
             {formatMs(hover.item.executeEnd - hover.item.executeStart)}
           </div>
         )}
-      {testStats && testStats.pass + testStats.fail + testStats.error > 0 && (
-        <div>
-          <span style={TOOLTIP_LABEL_STYLE}>Tests: </span>✓{testStats.pass} · ✗
-          {testStats.fail + testStats.error}
-        </div>
-      )}
+      {testStats &&
+        testStats.pass +
+          testStats.fail +
+          testStats.error +
+          testStats.warn +
+          testStats.skipped >
+          0 && (
+          <div>
+            <span style={TOOLTIP_LABEL_STYLE}>Tests: </span>
+            {[
+              testStats.pass > 0 ? `✓${testStats.pass}` : null,
+              testStats.error > 0 ? `✗${testStats.error}` : null,
+              testStats.warn > 0 ? `!${testStats.warn}` : null,
+              testStats.skipped > 0 ? `−${testStats.skipped}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+        )}
     </div>
   );
 }

@@ -39,7 +39,8 @@ export type RunsAdapterColumnId = `adapter:${string}`;
 export type RunsSortBy = RunsBaseSortBy | RunsAdapterColumnId;
 export type RunsGroupBy = "none" | "type" | "status" | "thread";
 
-export type DashboardStatusFilter = "all" | StatusTone;
+/** `issues` = failed execution on the asset or dbt test attention rollup (explorer); runs table uses danger+warning rows. */
+export type DashboardStatusFilter = "all" | "issues" | StatusTone;
 export type AssetExplorerMode = "project" | "database";
 export type LensMode = "status" | "type" | "coverage";
 export type TimelineDependencyDirection = "upstream" | "both" | "downstream";
@@ -163,7 +164,6 @@ export interface AnalysisWorkspaceProps {
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
   lineageViewState: LineageViewState;
   onLineageViewStateChange: Dispatch<SetStateAction<LineageViewState>>;
-  investigationSelection: InvestigationSelectionState;
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
