@@ -8,19 +8,19 @@ import type {
   WorkspaceSignal,
 } from "@web/lib/analysis-workspace/types";
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
-import { EmptyState } from "../../EmptyState";
+import { EmptyState } from "../../../EmptyState";
 import {
   OverviewActionListCard,
   OverviewCoverageCard,
   OverviewCriticalPathCard,
-} from "./overview/OverviewCards";
-import { StatusDonutWithData } from "./overview/OverviewDonuts";
-import { GraphCompositionCard } from "./overview/GraphCompositionCard";
+} from "../overview/OverviewCards";
+import { StatusDonutWithData } from "../overview/OverviewDonuts";
+import { GraphCompositionCard } from "../overview/GraphCompositionCard";
 import {
   HealthFootprintPanel,
   HealthThreadDistribution,
-} from "./overview/OverviewExecutionContextBand";
-import { InvocationResourceStats } from "../InvocationResourceStatsTable";
+} from "../overview/OverviewExecutionContextBand";
+import { InvocationResourceStats } from "../../InvocationResourceStatsTable";
 import { HealthPostureBlock } from "./overview/HealthPostureBlock";
 import { HealthMetricRow } from "./overview/HealthMetricRow";
 import { HealthExecutionStatusPills } from "./overview/HealthExecutionStatusPills";

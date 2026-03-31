@@ -180,7 +180,8 @@ After the first successful push, set package visibility (public vs private) unde
 packages/dbt-tools/web/
 ├── src/
 │   ├── components/          # React UI components
-│   │   ├── AnalysisWorkspace/   # Gantt timeline and execution view
+│   │   ├── AnalysisWorkspace/   # Analyzer workspace (import via ./AnalysisWorkspace → index.tsx)
+│   │   │   └── views/           # Feature views: health/, inventory/, runs/; shared overview/ + assets
 │   │   ├── AppShell/            # Top-level layout shell
 │   │   └── ui/                  # Shared primitive components
 │   ├── hooks/               # Custom React hooks

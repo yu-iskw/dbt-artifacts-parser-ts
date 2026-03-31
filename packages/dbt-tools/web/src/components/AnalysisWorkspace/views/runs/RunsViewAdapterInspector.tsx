@@ -3,7 +3,7 @@ import {
   getRunsAdapterField,
   type RunsAdapterColumn,
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
-import { EntityInspector, formatResourceTypeLabel } from "../shared";
+import { EntityInspector, formatResourceTypeLabel } from "../../shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 
 function formatInspectorFields(

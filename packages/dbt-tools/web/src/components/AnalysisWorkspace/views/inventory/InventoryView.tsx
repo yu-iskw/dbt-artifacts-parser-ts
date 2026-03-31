@@ -7,9 +7,9 @@ import type {
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { searchResourcesFromWorker } from "@web/services/analysisLoader";
-import { AssetsView } from "./AssetsView";
-import { EmptyState } from "../../EmptyState";
-import { WorkspaceScaffold } from "../shared";
+import { AssetsView } from "../AssetsView";
+import { EmptyState } from "../../../EmptyState";
+import { WorkspaceScaffold } from "../../shared";
 
 const LINEAGE_SEARCH_DEBOUNCE_MS = 200;
 
