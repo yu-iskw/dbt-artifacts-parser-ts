@@ -16,7 +16,7 @@ import {
   getRunsAdapterColumnLayout,
   isRunsAdapterSortBy,
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
-import { WorkspaceScaffold } from "../shared";
+import { WorkspaceScaffold } from "../../shared";
 import { RunsAdapterInspector } from "./RunsViewAdapterInspector";
 import { RunsResultsTable } from "./RunsViewResultsTable";
 import { RunsToolbar } from "./RunsViewToolbar";

@@ -5,6 +5,12 @@ import { searchResourcesFromWorker } from "@web/services/analysisLoader";
 
 const OMNIBOX_LIMIT = 8;
 
+/** Return shape of {@link useOmniboxResults} for props typing without a value import. */
+export type OmniboxResultsSnapshot = {
+  results: ResourceNode[];
+  loading: boolean;
+};
+
 /** Recent resources only (empty query). Search hits use the analysis worker. */
 export function computeOmniboxRecentResults(
   analysis: AnalysisState | null,
@@ -27,7 +33,7 @@ export function computeOmniboxRecentResults(
 export function useOmniboxResults(
   analysis: AnalysisState | null,
   searchState: SearchState,
-): { results: ResourceNode[]; loading: boolean } {
+): OmniboxResultsSnapshot {
   const queryTrimmed = searchState.query.trim();
   const recentResults = useMemo(
     () => computeOmniboxRecentResults(analysis, searchState),

@@ -1,341 +1,151 @@
-import { type CSSProperties, useMemo, useState } from "react";
-import { getThemeHex } from "@web/constants/themeColors";
+import { useId, useMemo } from "react";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
-import {
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-} from "recharts";
-import type { ExecutionRow, StatusBreakdownItem, StatusTone } from "@web/types";
+import type { ExecutionRow, StatusTone } from "@web/types";
 import { getStatusTonePalette } from "@web/lib/analysis-workspace/constants";
 import {
-  buildStatusBreakdownForRows,
+  EXECUTION_TYPE_BAR_LABEL_INSIDE_MIN_SHARE,
+  formatExecutionTypeSegmentPercent,
+  shouldPlaceExecutionSegmentLabelInsideBar,
+  sortStatusBreakdownByCountDesc,
+} from "@web/lib/analysis-workspace/executionTypeBarLabels";
+import {
+  buildTypeStatusBreakdowns,
   type TypeStatusBreakdown,
 } from "@web/lib/analysis-workspace/overviewState";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import { formatResourceTypeLabel } from "../../shared";
-import { TOGGLE_WRAPPER_STYLE, type HealthViewMode } from "./constants";
 
-function buildTypeStatusBreakdowns(
-  executions: ExecutionRow[],
-): TypeStatusBreakdown[] {
-  const rowsByType = new Map<string, ExecutionRow[]>();
-  for (const row of executions) {
-    const current = rowsByType.get(row.resourceType) ?? [];
-    current.push(row);
-    rowsByType.set(row.resourceType, current);
-  }
-
-  return [...rowsByType.entries()]
-    .map(([resourceType, rows]) => ({
-      resourceType,
-      count: rows.length,
-      duration: rows.reduce((sum, row) => sum + row.executionTime, 0),
-      statusBreakdown: buildStatusBreakdownForRows(rows),
-    }))
-    .sort((a, b) => b.count - a.count);
-}
-
-export function TypeStatusDonutCard({
+function TypeStatusBarRow({
   group,
   statusColors,
-  tooltipContentStyle,
 }: {
   group: TypeStatusBreakdown;
   statusColors: Record<StatusTone, string>;
-  tooltipContentStyle: CSSProperties;
 }) {
-  const statusData = group.statusBreakdown.map((entry) => ({
-    name: entry.status,
-    value: entry.count,
-    tone: entry.tone,
-  }));
-  const accentTone = group.statusBreakdown[0]?.tone ?? "neutral";
+  const labelId = useId();
+  const entries = group.statusBreakdown.filter((e) => e.count > 0);
+  const breakdownEntries =
+    entries.length > 0 ? sortStatusBreakdownByCountDesc(entries) : [];
+  const typeLabel = formatResourceTypeLabel(group.resourceType);
 
   return (
-    <article
-      className="type-donut-card"
-      style={{ "--type-accent": statusColors[accentTone] } as CSSProperties}
-    >
-      <div className="type-donut-card__title">
-        <strong>{formatResourceTypeLabel(group.resourceType)}</strong>
-        <span className="type-donut-card__count">{group.count} runs</span>
+    <div className="exec-type-bar-row">
+      <div className="exec-type-bar-row__label" id={labelId} title={typeLabel}>
+        {typeLabel}
       </div>
-      <div className="type-donut-card__meta">
-        <span>{formatSeconds(group.duration)} runtime</span>
-      </div>
-      <div className="type-donut-card__chart">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={statusData}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={26}
-              outerRadius={42}
-              paddingAngle={2}
-              strokeWidth={0}
-            >
-              {statusData.map((entry) => (
-                <Cell
-                  key={`${group.resourceType}-${entry.name}`}
-                  fill={statusColors[entry.tone as StatusTone]}
-                />
-              ))}
-            </Pie>
-            <RechartsTooltip
-              formatter={(value) => [`${Number(value ?? 0)} runs`, "Count"]}
-              contentStyle={tooltipContentStyle}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="type-donut-card__legend">
-        {group.statusBreakdown.map((entry) => (
-          <div
-            key={`${group.resourceType}-${entry.status}`}
-            className="type-donut-card__legend-row"
+      <div className="exec-type-bar-row__bars">
+        <div
+          className="exec-type-bar-track"
+          role="group"
+          aria-labelledby={labelId}
+        >
+          {entries.map((entry) => {
+            const inside = shouldPlaceExecutionSegmentLabelInsideBar(
+              entry.share,
+            );
+            const pctLabel = formatExecutionTypeSegmentPercent(entry.share);
+            const detail = `${entry.status}: ${entry.count} runs (${pctLabel}) of ${group.rowDenominatorCount}`;
+            const isMinor =
+              entry.share < EXECUTION_TYPE_BAR_LABEL_INSIDE_MIN_SHARE;
+            return (
+              <div
+                key={`${group.resourceType}-${entry.status}`}
+                className={
+                  isMinor
+                    ? "exec-type-bar-segment exec-type-bar-segment--minor"
+                    : "exec-type-bar-segment"
+                }
+                style={{
+                  flex: `${entry.count} 1 0%`,
+                  backgroundColor: statusColors[entry.tone],
+                }}
+                title={detail}
+                aria-label={detail}
+              >
+                {inside ? (
+                  <span className="exec-type-bar-segment__inner">
+                    {pctLabel} ({entry.count})
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+        {entries.length > 0 ? (
+          <ul
+            className="exec-type-bar-row__breakdown"
+            aria-label={`${typeLabel} status breakdown`}
           >
-            <div className="type-donut-card__legend-label">
-              <span
-                className="legend-row__swatch"
-                style={{ background: statusColors[entry.tone] }}
-              />
-              <span>{entry.status}</span>
-            </div>
-            <div className="type-donut-card__legend-metric">
-              <strong>{entry.count}</strong>
-              <span>{(entry.share * 100).toFixed(0)}%</span>
-            </div>
-          </div>
-        ))}
+            {breakdownEntries.map((entry) => {
+              const pctLabel = formatExecutionTypeSegmentPercent(entry.share);
+              return (
+                <li
+                  key={`${group.resourceType}-${entry.status}-breakdown`}
+                  className="exec-type-bar-row__breakdown-item"
+                >
+                  <span
+                    className="legend-row__swatch"
+                    style={{ background: statusColors[entry.tone] }}
+                    aria-hidden
+                  />
+                  <span className="exec-type-bar-row__breakdown-label">
+                    {entry.status}
+                  </span>
+                  <span className="exec-type-bar-row__breakdown-metric">
+                    {entry.count} · {pctLabel}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
       </div>
-    </article>
+    </div>
   );
 }
 
-export function TypeStatusDonutGrid({
+function TypeStatusBarStack({
   executions,
+  executionsForShareDenominator,
 }: {
   executions: ExecutionRow[];
+  executionsForShareDenominator: ExecutionRow[];
 }) {
   const theme = useSyncedDocumentTheme();
   const statusColors = useMemo(() => getStatusTonePalette(theme), [theme]);
-  const tooltipContentStyle = useMemo((): CSSProperties => {
-    const t = getThemeHex(theme);
-    return {
-      borderRadius: 12,
-      border: `1px solid ${t.borderDefault}`,
-      boxShadow:
-        theme === "dark"
-          ? "0 8px 24px rgba(0, 0, 0, 0.45)"
-          : "0 20px 40px rgba(26, 34, 43, 0.14)",
-    };
-  }, [theme]);
-
-  const groups = buildTypeStatusBreakdowns(executions);
+  const groups = useMemo(
+    () => buildTypeStatusBreakdowns(executions, executionsForShareDenominator),
+    [executions, executionsForShareDenominator],
+  );
 
   if (groups.length === 0) {
     return <div className="empty-state">No execution data.</div>;
   }
 
   return (
-    <div className="type-donut-grid">
+    <div className="exec-type-bar-stack" data-testid="exec-type-bar-stack">
       {groups.map((group) => (
-        <TypeStatusDonutCard
+        <TypeStatusBarRow
           key={group.resourceType}
           group={group}
           statusColors={statusColors}
-          tooltipContentStyle={tooltipContentStyle}
         />
       ))}
     </div>
   );
 }
 
-export function StatusDonutChart({
-  statusData,
-  statusBreakdown,
-}: {
-  statusData: Array<{ name: string; value: number; tone: string }>;
-  statusBreakdown: StatusBreakdownItem[];
-}) {
-  const theme = useSyncedDocumentTheme();
-  const statusColors = useMemo(() => getStatusTonePalette(theme), [theme]);
-  const tooltipContentStyle = useMemo((): CSSProperties => {
-    const t = getThemeHex(theme);
-    return {
-      borderRadius: 14,
-      border: `1px solid ${t.borderDefault}`,
-      boxShadow:
-        theme === "dark"
-          ? "0 8px 24px rgba(0, 0, 0, 0.45)"
-          : "0 20px 40px rgba(26, 34, 43, 0.14)",
-    };
-  }, [theme]);
-
-  const renderStatusLabel = ({
-    cx,
-    cy,
-    midAngle,
-    outerRadius,
-    percent,
-    name,
-  }: {
-    cx?: number;
-    cy?: number;
-    midAngle?: number;
-    outerRadius?: number;
-    percent?: number;
-    name?: string;
-  }) => {
-    if (
-      cx == null ||
-      cy == null ||
-      midAngle == null ||
-      outerRadius == null ||
-      percent == null ||
-      name == null ||
-      percent < 0.08
-    ) {
-      return null;
-    }
-    const radians = Math.PI / 180;
-    const lineStartRadius = outerRadius + 6;
-    const lineEndRadius = outerRadius + 18;
-    const x1 = cx + lineStartRadius * Math.cos(-midAngle * radians);
-    const y1 = cy + lineStartRadius * Math.sin(-midAngle * radians);
-    const x2 = cx + lineEndRadius * Math.cos(-midAngle * radians);
-    const y2 = cy + lineEndRadius * Math.sin(-midAngle * radians);
-    const toRight = x2 >= cx;
-    const x3 = x2 + (toRight ? 12 : -12);
-
-    return (
-      <g className="status-donut__callout">
-        <path d={`M${x1},${y1} L${x2},${y2} L${x3},${y2}`} />
-        <text
-          x={x3 + (toRight ? 4 : -4)}
-          y={y2}
-          textAnchor={toRight ? "start" : "end"}
-          dominantBaseline="central"
-        >
-          {name}
-        </text>
-      </g>
-    );
-  };
-
-  return (
-    <div className="status-donut">
-      <div className="status-donut__chart">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={statusData}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={56}
-              outerRadius={82}
-              paddingAngle={3}
-              strokeWidth={0}
-              labelLine={false}
-              label={renderStatusLabel}
-            >
-              {statusData.map((entry) => (
-                <Cell
-                  key={entry.name}
-                  fill={statusColors[entry.tone as StatusTone]}
-                />
-              ))}
-            </Pie>
-            <RechartsTooltip
-              formatter={(value) => [`${Number(value ?? 0)} runs`, "Count"]}
-              contentStyle={tooltipContentStyle}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="status-donut__legend">
-        {statusBreakdown.map((entry) => (
-          <div key={entry.status} className="legend-row">
-            <div className="legend-row__label">
-              <span
-                className="legend-row__swatch"
-                style={{ background: statusColors[entry.tone] }}
-              />
-              {entry.status}
-            </div>
-            <div className="legend-row__value">
-              {entry.count} · {formatSeconds(entry.duration)}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
+/** Execution breakdown by resource type: stacked status bars with per-row legend. */
 export function StatusDonutWithData({
-  statusBreakdown,
   executions,
+  executionsForShareDenominator,
 }: {
-  statusBreakdown: StatusBreakdownItem[];
   executions: ExecutionRow[];
+  executionsForShareDenominator: ExecutionRow[];
 }) {
-  const [viewMode, setViewMode] = useState<HealthViewMode>("status");
-
-  const statusData = statusBreakdown.map((entry) => ({
-    name: entry.status,
-    value: entry.count,
-    tone: entry.tone,
-  }));
-
-  const toggleButton = (
-    <div className="health-toggle">
-      <button
-        type="button"
-        className={viewMode === "status" ? "active" : ""}
-        onClick={() => setViewMode("status")}
-      >
-        By status
-      </button>
-      <button
-        type="button"
-        className={viewMode === "type" ? "active" : ""}
-        onClick={() => setViewMode("type")}
-      >
-        By type
-      </button>
-    </div>
-  );
-
-  if (viewMode === "type") {
-    return (
-      <div>
-        <div style={TOGGLE_WRAPPER_STYLE}>{toggleButton}</div>
-        <TypeStatusDonutGrid executions={executions} />
-      </div>
-    );
-  }
-
-  if (statusData.length === 0) {
-    return (
-      <div>
-        <div style={TOGGLE_WRAPPER_STYLE}>{toggleButton}</div>
-        <div className="empty-state">No execution statuses were recorded.</div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <div style={TOGGLE_WRAPPER_STYLE}>{toggleButton}</div>
-      <StatusDonutChart
-        statusData={statusData}
-        statusBreakdown={statusBreakdown}
-      />
-    </div>
+    <TypeStatusBarStack
+      executions={executions}
+      executionsForShareDenominator={executionsForShareDenominator}
+    />
   );
 }

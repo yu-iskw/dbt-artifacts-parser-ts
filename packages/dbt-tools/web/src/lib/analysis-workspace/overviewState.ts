@@ -15,6 +15,8 @@ import {
 
 export interface OverviewDerivedState {
   filteredExecutions: ExecutionRow[];
+  /** Same query + Types slice as `filteredExecutions`, but dashboard status treated as All (for execution-breakdown % denominators). */
+  baselineExecutionsForBreakdown: ExecutionRow[];
   filteredStatusBreakdown: StatusBreakdownItem[];
   filteredThreadStats: ThreadStat[];
   filteredTypes: string[];
@@ -31,14 +33,41 @@ export interface OverviewDerivedState {
 
 export interface TypeStatusBreakdown {
   resourceType: string;
+  /** Visible row count in the status-filtered slice (bar flex uses per-status counts from this set). */
   count: number;
   duration: number;
+  /** Baseline row count for this type in the slice ignoring dashboard status (denominator for shares and of-N tooltips). */
+  rowDenominatorCount: number;
   statusBreakdown: StatusBreakdownItem[];
+}
+
+function filterExecutionsForOverviewSlice(
+  executions: ExecutionRow[],
+  filters: OverviewFilterState,
+  includeDashboardStatus: boolean,
+): ExecutionRow[] {
+  return executions.filter((row) => {
+    if (
+      includeDashboardStatus &&
+      !matchesExecutionRowDashboardStatus(row, filters.status)
+    ) {
+      return false;
+    }
+    if (
+      filters.resourceTypes.size > 0 &&
+      !filters.resourceTypes.has(row.resourceType)
+    ) {
+      return false;
+    }
+    return matchesExecution(row, filters.query);
+  });
 }
 
 export function buildStatusBreakdownForRows(
   executions: ExecutionRow[],
+  options?: { denominatorTotal?: number },
 ): StatusBreakdownItem[] {
+  const denominatorTotal = options?.denominatorTotal ?? executions.length;
   const byStatus = new Map<
     string,
     { count: number; duration: number; tone: StatusTone }
@@ -58,9 +87,48 @@ export function buildStatusBreakdownForRows(
       status,
       count: value.count,
       duration: value.duration,
-      share: executions.length > 0 ? value.count / executions.length : 0,
+      share: denominatorTotal > 0 ? value.count / denominatorTotal : 0,
       tone: value.tone,
     }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Groups visible executions by resource type; status shares use per-type counts from
+ * `baselineExecutions` (query + Types only) so dashboard status filters do not renormalize to 100%.
+ */
+export function buildTypeStatusBreakdowns(
+  visibleExecutions: ExecutionRow[],
+  baselineExecutions: ExecutionRow[],
+): TypeStatusBreakdown[] {
+  const baselineCountByType = new Map<string, number>();
+  for (const row of baselineExecutions) {
+    baselineCountByType.set(
+      row.resourceType,
+      (baselineCountByType.get(row.resourceType) ?? 0) + 1,
+    );
+  }
+
+  const rowsByType = new Map<string, ExecutionRow[]>();
+  for (const row of visibleExecutions) {
+    const current = rowsByType.get(row.resourceType) ?? [];
+    current.push(row);
+    rowsByType.set(row.resourceType, current);
+  }
+
+  return [...rowsByType.entries()]
+    .map(([resourceType, rows]) => {
+      const rowDenominatorCount = baselineCountByType.get(resourceType) ?? 0;
+      return {
+        resourceType,
+        count: rows.length,
+        duration: rows.reduce((sum, row) => sum + row.executionTime, 0),
+        rowDenominatorCount,
+        statusBreakdown: buildStatusBreakdownForRows(rows, {
+          denominatorTotal: rowDenominatorCount,
+        }),
+      };
+    })
     .sort((a, b) => b.count - a.count);
 }
 
@@ -94,18 +162,16 @@ export function buildOverviewDerivedState(
   analysis: AnalysisState,
   filters: OverviewFilterState,
 ): OverviewDerivedState {
-  const filteredExecutions = analysis.executions.filter((row) => {
-    if (!matchesExecutionRowDashboardStatus(row, filters.status)) {
-      return false;
-    }
-    if (
-      filters.resourceTypes.size > 0 &&
-      !filters.resourceTypes.has(row.resourceType)
-    ) {
-      return false;
-    }
-    return matchesExecution(row, filters.query);
-  });
+  const filteredExecutions = filterExecutionsForOverviewSlice(
+    analysis.executions,
+    filters,
+    true,
+  );
+  const baselineExecutionsForBreakdown = filterExecutionsForOverviewSlice(
+    analysis.executions,
+    filters,
+    false,
+  );
 
   const testRows = filteredExecutions.filter((row) =>
     TEST_RESOURCE_TYPES.has(row.resourceType),
@@ -114,6 +180,7 @@ export function buildOverviewDerivedState(
 
   return {
     filteredExecutions,
+    baselineExecutionsForBreakdown,
     filteredStatusBreakdown: buildStatusBreakdownForRows(filteredExecutions),
     filteredThreadStats,
     filteredTypes: Array.from(

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildStatusBreakdownForRows,
   buildThreadStatsForRows,
+  buildTypeStatusBreakdowns,
   buildOverviewDerivedState,
 } from "./overviewState";
 import type { AnalysisState, ExecutionRow } from "@web/types";
@@ -44,6 +45,46 @@ describe("buildStatusBreakdownForRows", () => {
     expect(breakdown.find((b) => b.status === "ok")?.count).toBe(2);
     expect(breakdown.find((b) => b.status === "fail")?.count).toBe(1);
   });
+
+  it("uses denominatorTotal for share when provided", () => {
+    const rows = [
+      makeExecution({ uniqueId: "a", status: "fail", statusTone: "danger" }),
+    ];
+    const breakdown = buildStatusBreakdownForRows(rows, {
+      denominatorTotal: 100,
+    });
+    expect(breakdown.find((b) => b.status === "fail")?.share).toBe(0.01);
+  });
+});
+
+describe("buildTypeStatusBreakdowns", () => {
+  it("uses baseline per-type count for shares when visible rows are status-filtered", () => {
+    const baseline = [
+      makeExecution({
+        uniqueId: "m1",
+        status: "success",
+        statusTone: "positive",
+      }),
+      makeExecution({
+        uniqueId: "m2",
+        status: "success",
+        statusTone: "positive",
+      }),
+      makeExecution({
+        uniqueId: "m3",
+        status: "fail",
+        statusTone: "danger",
+      }),
+    ];
+    const visible = baseline.filter((r) => r.statusTone === "danger");
+    const groups = buildTypeStatusBreakdowns(visible, baseline);
+    expect(groups).toHaveLength(1);
+    const group = groups[0]!;
+    const failEntry = group.statusBreakdown.find((b) => b.status === "fail");
+    expect(failEntry?.share).toBeCloseTo(1 / 3);
+    expect(group.rowDenominatorCount).toBe(3);
+    expect(group.count).toBe(1);
+  });
 });
 
 describe("buildThreadStatsForRows", () => {
@@ -80,6 +121,7 @@ describe("buildOverviewDerivedState", () => {
     expect(state.filteredExecutions).toHaveLength(1);
     expect(state.filteredExecutions[0]?.uniqueId).toBe("b");
     expect(state.failingNodes).toBe(1);
+    expect(state.baselineExecutionsForBreakdown).toHaveLength(2);
   });
 
   it("applies resource type filter", () => {
@@ -116,5 +158,38 @@ describe("buildOverviewDerivedState", () => {
     });
     expect(state.filteredExecutions).toHaveLength(2);
     expect(state.warningNodes).toBe(1);
+  });
+
+  it("baselineExecutionsForBreakdown honors resource type filter but not dashboard status", () => {
+    const analysis = {
+      executions: [
+        makeExecution({
+          uniqueId: "a",
+          resourceType: "model",
+          statusTone: "positive",
+        }),
+        makeExecution({
+          uniqueId: "b",
+          resourceType: "model",
+          statusTone: "danger",
+        }),
+        makeExecution({
+          uniqueId: "c",
+          resourceType: "test",
+          statusTone: "positive",
+        }),
+      ],
+    } as AnalysisState;
+    const state = buildOverviewDerivedState(analysis, {
+      status: "danger",
+      resourceTypes: new Set(["model"]),
+      query: "",
+    });
+    expect(state.filteredExecutions).toHaveLength(1);
+    expect(state.filteredExecutions[0]?.uniqueId).toBe("b");
+    expect(state.baselineExecutionsForBreakdown).toHaveLength(2);
+    expect(
+      state.baselineExecutionsForBreakdown.map((r) => r.uniqueId).sort(),
+    ).toEqual(["a", "b"]);
   });
 });
