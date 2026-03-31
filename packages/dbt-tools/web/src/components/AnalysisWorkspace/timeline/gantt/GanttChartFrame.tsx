@@ -50,7 +50,6 @@ export function GanttChartFrame({
   onSelect,
   onPointer,
   onHoverClear,
-  dependencyEdgeHint,
   labelColumnResize,
 }: {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -80,7 +79,6 @@ export function GanttChartFrame({
   onSelect?: (id: string | null) => void;
   onPointer: (e: MouseEvent<HTMLDivElement>, mode: "move" | "click") => void;
   onHoverClear: () => void;
-  dependencyEdgeHint?: string;
   labelColumnResize?: GanttLabelColumnResizeProps;
 }) {
   const frameRef = useRef<HTMLElement>(null);
@@ -179,7 +177,6 @@ export function GanttChartFrame({
           canShowTimestamps={canShowTimestamps}
           timeZone={timeZone}
           testStats={testStatsById?.get(hover.item.unique_id)}
-          dependencyEdgeHint={dependencyEdgeHint}
         />
       )}
     </section>

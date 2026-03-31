@@ -25,7 +25,6 @@ vi.mock("./useGanttCanvasDraw", () => ({
 vi.mock("./useGanttFocusEdges", () => ({
   useGanttFocusEdges: () => ({
     edges: [],
-    dependencyEdgeHint: undefined,
   }),
 }));
 

@@ -70,7 +70,6 @@ export function GanttTooltip({
   canShowTimestamps,
   timeZone,
   testStats,
-  dependencyEdgeHint,
 }: {
   hover: HoverState;
   frameWidth: number;
@@ -79,8 +78,6 @@ export function GanttTooltip({
   canShowTimestamps: boolean;
   timeZone: string;
   testStats?: ResourceTestStats;
-  /** Caps, off-timeline neighbors, extended mode — see buildDependencyContextHint. */
-  dependencyEdgeHint?: string;
 }) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(() =>
@@ -191,12 +188,6 @@ export function GanttTooltip({
           {testStats.fail + testStats.error}
         </div>
       )}
-      {dependencyEdgeHint ? (
-        <div style={{ marginTop: "0.35rem" }}>
-          <div style={TOOLTIP_LABEL_STYLE}>Dependency context</div>
-          <div>{dependencyEdgeHint}</div>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -185,14 +185,13 @@ export function GanttChart({
   /** Selection wins over hover for which dependency edges are shown. */
   const edgeFocusId = selectedId ?? hover?.item.unique_id ?? null;
 
-  const { edges, dependencyEdgeHint } = useGanttFocusEdges({
+  const { edges } = useGanttFocusEdges({
     edgeFocusId,
     timelineAdjacency,
     itemById,
     bundleIndexById,
     dependencyDirection,
     dependencyDepthHops,
-    hoverUniqueId: hover?.item.unique_id,
   });
 
   const focusedIds = useMemo(() => {
@@ -317,7 +316,6 @@ export function GanttChart({
         onSelect={onSelect}
         onPointer={handlePointerInteraction}
         onHoverClear={() => setHover(null)}
-        dependencyEdgeHint={dependencyEdgeHint}
         labelColumnResize={{
           width: effectiveLabelW,
           viewportH,
