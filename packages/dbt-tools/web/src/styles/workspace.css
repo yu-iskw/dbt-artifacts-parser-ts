@@ -460,47 +460,93 @@
   color: var(--text-soft);
 }
 
-/* Thread list */
-.thread-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+/* Thread distribution (Health — execution context) */
+.thread-dist-metric-pills {
+  margin: 0 0 0.55rem;
+  flex-wrap: wrap;
 }
 
-.thread-list__row {
+.thread-dist-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.thread-dist-row {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 7.5rem) minmax(0, 1fr) minmax(
+      4.5rem,
+      auto
+    );
+  gap: 0.5rem 0.65rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0.7rem;
+  padding: 0.45rem 0.65rem;
   border-radius: calc(var(--radius-sm) - 4px);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  min-width: 0;
 }
 
-.thread-list__row > div:first-child {
-  display: flex;
-  flex-direction: column;
-  gap: 0.08rem;
-}
-
-.thread-list__row strong {
+.thread-dist-row__label {
   font-weight: 700;
   color: var(--text);
-  font-size: 0.83rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.thread-list__row span {
-  font-size: 0.74rem;
-  color: var(--text-soft);
+.thread-dist-row__track-wrap {
+  min-width: 0;
 }
 
-.thread-list__row > div:last-child {
-  font-size: 0.82rem;
+.thread-dist-row__track {
+  width: 100%;
+  min-height: 1.35rem;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-surface-muted);
+}
+
+.thread-dist-row__fill {
+  height: 100%;
+  min-height: 1.35rem;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: width 0.2s ease;
+}
+
+.thread-dist-row__value {
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--text-muted);
+  text-align: right;
   flex-shrink: 0;
+}
+
+@media (width <= 520px) {
+  .thread-dist-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  .thread-dist-row__label {
+    grid-column: 1 / -1;
+  }
+
+  .thread-dist-row__track-wrap {
+    grid-column: 1 / 2;
+  }
+
+  .thread-dist-row__value {
+    grid-column: 2 / 3;
+    text-align: right;
+  }
 }
 
 /* Rank list (graph composition) */
