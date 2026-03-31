@@ -331,7 +331,6 @@ function WorkspaceContent({
   setRunsViewState,
   lineageViewState,
   setLineageViewState,
-  investigationSelection,
   setInvestigationSelection,
   handleNavigateTo,
 }: {
@@ -360,7 +359,6 @@ function WorkspaceContent({
   setRunsViewState: UseWorkspaceUrlStateResult["setRunsViewState"];
   lineageViewState: UseWorkspaceUrlStateResult["lineageViewState"];
   setLineageViewState: UseWorkspaceUrlStateResult["setLineageViewState"];
-  investigationSelection: UseWorkspaceUrlStateResult["investigationSelection"];
   setInvestigationSelection: UseWorkspaceUrlStateResult["setInvestigationSelection"];
   handleNavigateTo: UseWorkspaceUrlStateResult["handleNavigateTo"];
 }) {
@@ -397,7 +395,6 @@ function WorkspaceContent({
         onRunsViewStateChange={setRunsViewState}
         lineageViewState={lineageViewState}
         onLineageViewStateChange={setLineageViewState}
-        investigationSelection={investigationSelection}
         onInvestigationSelectionChange={setInvestigationSelection}
         onNavigateTo={handleNavigateTo}
         workspaceSignals={workspaceSignals}
@@ -448,7 +445,6 @@ export function AppWorkspaceChrome({
     setLineageViewState,
     searchState,
     setSearchState,
-    investigationSelection,
     setInvestigationSelection,
     setNavigationTarget,
     handleNavigateTo,
@@ -535,7 +531,6 @@ export function AppWorkspaceChrome({
           setRunsViewState={setRunsViewState}
           lineageViewState={lineageViewState}
           setLineageViewState={setLineageViewState}
-          investigationSelection={investigationSelection}
           setInvestigationSelection={setInvestigationSelection}
           handleNavigateTo={handleNavigateTo}
         />

@@ -42,12 +42,10 @@ export function AnalysisWorkspace({
   onRunsViewStateChange,
   lineageViewState,
   onLineageViewStateChange,
-  investigationSelection,
   onInvestigationSelectionChange,
   onNavigateTo,
   workspaceSignals,
 }: AnalysisWorkspaceProps) {
-  void investigationSelection;
   const projectName =
     analysis.projectName ?? deriveProjectName(analysis.executions);
 

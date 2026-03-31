@@ -97,7 +97,7 @@ describe("ResourceMarkdownDescription", () => {
 
     beforeEach(() => {
       roCallbacks.length = 0;
-      globalThis.ResizeObserver = class {
+      globalThis.ResizeObserver = class MockResizeObserver implements ResizeObserver {
         private readonly cb: ResizeObserverCallback;
         constructor(cb: ResizeObserverCallback) {
           this.cb = cb;
@@ -107,8 +107,9 @@ describe("ResourceMarkdownDescription", () => {
             this.cb([], this);
           });
         }
+        unobserve(): void {}
         disconnect(): void {}
-      } as unknown as typeof ResizeObserver;
+      };
     });
 
     it("shows expand when collapsed viewport overflows then collapse when expanded", () => {

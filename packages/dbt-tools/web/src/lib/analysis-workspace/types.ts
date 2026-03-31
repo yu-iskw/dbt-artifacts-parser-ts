@@ -164,7 +164,6 @@ export interface AnalysisWorkspaceProps {
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
   lineageViewState: LineageViewState;
   onLineageViewStateChange: Dispatch<SetStateAction<LineageViewState>>;
-  investigationSelection: InvestigationSelectionState;
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;

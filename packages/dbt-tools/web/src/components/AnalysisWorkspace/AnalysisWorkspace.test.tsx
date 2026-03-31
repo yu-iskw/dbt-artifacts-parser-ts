@@ -164,11 +164,6 @@ describe("AnalysisWorkspace explorer expansion", () => {
           onRunsViewStateChange={vi.fn()}
           lineageViewState={noopLineage}
           onLineageViewStateChange={vi.fn()}
-          investigationSelection={{
-            selectedResourceId: null,
-            selectedExecutionId: null,
-            sourceLens: null,
-          }}
           onInvestigationSelectionChange={vi.fn()}
           onNavigateTo={vi.fn()}
         />
@@ -228,11 +223,6 @@ describe("AnalysisWorkspace explorer expansion", () => {
           onRunsViewStateChange={vi.fn()}
           lineageViewState={noopLineage}
           onLineageViewStateChange={vi.fn()}
-          investigationSelection={{
-            selectedResourceId: null,
-            selectedExecutionId: null,
-            sourceLens: null,
-          }}
           onInvestigationSelectionChange={vi.fn()}
           onNavigateTo={vi.fn()}
         />
@@ -316,11 +306,6 @@ describe("AnalysisWorkspace explorer expansion", () => {
           onRunsViewStateChange={vi.fn()}
           lineageViewState={noopLineage}
           onLineageViewStateChange={vi.fn()}
-          investigationSelection={{
-            selectedResourceId: null,
-            selectedExecutionId: null,
-            sourceLens: null,
-          }}
           onInvestigationSelectionChange={vi.fn()}
           onNavigateTo={vi.fn()}
         />
