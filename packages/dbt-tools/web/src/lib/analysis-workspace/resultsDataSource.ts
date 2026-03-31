@@ -1,6 +1,7 @@
 import type { ExecutionRow } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "./constants";
 import type { DashboardStatusFilter, RunsKind, RunsViewState } from "./types";
+import { matchesExecutionRowDashboardStatus } from "./utils";
 import {
   getRunsAdapterColumnKey,
   getRunsAdapterField,
@@ -24,6 +25,8 @@ export interface RunsFacetCounts {
   healthy: number;
   warnings: number;
   errors: number;
+  /** Rows with danger or warning execution tone (for Issues facet). */
+  issues: number;
 }
 
 export interface RunsResultsSummary {
@@ -75,6 +78,7 @@ function createEmptyFacetCounts(): RunsFacetCounts {
     healthy: 0,
     warnings: 0,
     errors: 0,
+    issues: 0,
   };
 }
 
@@ -113,7 +117,7 @@ function isStatusMatch(
   row: ExecutionRow,
   status: DashboardStatusFilter,
 ): boolean {
-  return status === "all" || row.statusTone === status;
+  return matchesExecutionRowDashboardStatus(row, status);
 }
 
 function getKindForRow(row: ExecutionRow): Exclude<RunsKind, "all"> {
@@ -192,14 +196,21 @@ function compareRows(
           danger: 0,
           warning: 1,
           positive: 2,
-          neutral: 3,
+          skipped: 3,
+          neutral: 4,
         } as const;
         const toneCompare = rank[left.statusTone] - rank[right.statusTone];
         if (toneCompare !== 0) return toneCompare;
         return right.executionTime - left.executionTime;
       }
     case "attention": {
-      const rank = { danger: 0, warning: 1, positive: 2, neutral: 3 } as const;
+      const rank = {
+        danger: 0,
+        warning: 1,
+        positive: 2,
+        skipped: 3,
+        neutral: 4,
+      } as const;
       const toneCompare = rank[left.statusTone] - rank[right.statusTone];
       if (toneCompare !== 0) return toneCompare;
       return right.executionTime - left.executionTime;
@@ -224,9 +235,11 @@ function summarize(entries: RunsResultsIndexEntry[]): RunsResultsSummary {
     } else if (row.statusTone === "warning") {
       status.warning += 1;
       facets.warnings += 1;
+      facets.issues += 1;
     } else if (row.statusTone === "danger") {
       status.danger += 1;
       facets.errors += 1;
+      facets.issues += 1;
     }
 
     facets[getKindForRow(row)] += 1;

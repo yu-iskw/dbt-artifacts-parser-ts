@@ -95,4 +95,31 @@ describe("sortSelectedAssetTests", () => {
     const sorted = sortSelectedAssetTests([pass, warn], "status", "desc");
     expect(sorted.map((r) => r.name)).toEqual(["bad", "ok"]);
   });
+
+  it("sorts by status rank: neutral after skipped after positive (desc)", () => {
+    const neutral = makeTestResource({
+      name: "n",
+      uniqueId: "test.pkg.n",
+      statusTone: "neutral",
+      executionTime: 1,
+    });
+    const skipped = makeTestResource({
+      name: "s",
+      uniqueId: "test.pkg.s",
+      statusTone: "skipped",
+      executionTime: 1,
+    });
+    const pass = makeTestResource({
+      name: "p",
+      uniqueId: "test.pkg.p",
+      statusTone: "positive",
+      executionTime: 1,
+    });
+    const sorted = sortSelectedAssetTests(
+      [neutral, skipped, pass],
+      "status",
+      "desc",
+    );
+    expect(sorted.map((r) => r.name)).toEqual(["p", "s", "n"]);
+  });
 });

@@ -11,6 +11,7 @@ export function getStatusTonePalette(
     warning: t.amber,
     danger: t.rose,
     neutral: t.slate,
+    skipped: t.accent,
   };
 }
 

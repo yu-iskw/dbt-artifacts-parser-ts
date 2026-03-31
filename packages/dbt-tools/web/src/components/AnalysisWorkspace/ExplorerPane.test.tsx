@@ -3,17 +3,15 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ResourceNode } from "@web/types";
+import type { ResourceNode, StatusTone } from "@web/types";
 import {
+  buildExplorerTreeEmptySubtext,
   EXPLORER_UI_COPY,
   ExplorerTreeTestStatsGroup,
   ResourceTypeSummaryBar,
 } from "./ExplorerPane";
 
-function makeModel(
-  uniqueId: string,
-  statusTone: "positive" | "neutral" | "warning" | "danger",
-): ResourceNode {
+function makeModel(uniqueId: string, statusTone: StatusTone): ResourceNode {
   return {
     uniqueId,
     name: uniqueId,
@@ -41,19 +39,59 @@ describe("EXPLORER_UI_COPY", () => {
     );
   });
 
-  it("explains folder test rollup in tree copy", () => {
+  it("execution fail empty hint explains run rows vs not executed", () => {
+    const text = EXPLORER_UI_COPY.treeEmptyExecutionFilterSubtext("danger");
+    expect(text.toLowerCase()).toMatch(/fail/);
+    expect(text.toLowerCase()).toMatch(/not executed/);
+    expect(text.toLowerCase()).toMatch(/run results/);
+    expect(text.toLowerCase()).toMatch(/issues/);
+  });
+
+  it("issues empty hint contrasts execution fail vs test rollup", () => {
+    const text = EXPLORER_UI_COPY.treeEmptyExecutionFilterSubtext("issues");
+    expect(text.toLowerCase()).toMatch(/issues/);
+    expect(text.toLowerCase()).toMatch(/fail/);
+  });
+
+  it("explains attention-only tree test copy", () => {
     expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(
-      /dbt test/,
+      /dbt test|attention/,
     );
     expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(
-      /circle|negative/,
+      /not executed|not shown/,
     );
     expect(EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel.toLowerCase()).toMatch(
-      /rollup/,
+      /rollup|attention|skipped/,
     );
     expect(EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel.toLowerCase()).toMatch(
-      /circle|minus/,
+      /not-executed|not shown/,
     );
+    expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(/pass/);
+  });
+});
+
+describe("buildExplorerTreeEmptySubtext", () => {
+  it("uses default subtext when no restrictive filters", () => {
+    expect(
+      buildExplorerTreeEmptySubtext({
+        status: "all",
+        resourceQuery: "",
+        activeResourceTypeCount: 0,
+      }),
+    ).toBe(EXPLORER_UI_COPY.treeEmptyDefaultSubtext);
+  });
+
+  it("combines execution status with search and type hints", () => {
+    const sub = buildExplorerTreeEmptySubtext({
+      status: "danger",
+      resourceQuery: "orders",
+      activeResourceTypeCount: 2,
+    });
+    expect(sub).toContain(
+      EXPLORER_UI_COPY.treeEmptyExecutionFilterSubtext("danger"),
+    );
+    expect(sub).toContain(EXPLORER_UI_COPY.treeEmptySearchSubtext);
+    expect(sub).toContain(EXPLORER_UI_COPY.treeEmptyResourceTypesSubtext);
   });
 });
 
@@ -131,6 +169,7 @@ describe("ExplorerTreeTestStatsGroup", () => {
             error: 0,
             warn: 0,
             skipped: 0,
+            notExecuted: 0,
           }}
           variant="branch"
         />,
@@ -139,7 +178,7 @@ describe("ExplorerTreeTestStatsGroup", () => {
     expect(container.textContent?.trim()).toBe("");
   });
 
-  it("shows a visible Tests label and branch aria-label", () => {
+  it("shows Test issues label, error only, no pass pill", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -152,13 +191,14 @@ describe("ExplorerTreeTestStatsGroup", () => {
             error: 1,
             warn: 0,
             skipped: 0,
+            notExecuted: 0,
           }}
           variant="branch"
         />,
       );
     });
-    expect(container.textContent).toContain("Tests");
-    expect(container.textContent).toContain("✓2");
+    expect(container.textContent).toContain("Test issues");
+    expect(container.textContent).not.toContain("✓");
     expect(container.textContent).toContain("✗1");
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute("aria-label")).toBe(
@@ -169,7 +209,7 @@ describe("ExplorerTreeTestStatsGroup", () => {
     );
   });
 
-  it("uses leaf aria-label for resource rows", () => {
+  it("renders nothing for pass-only stats", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -177,23 +217,22 @@ describe("ExplorerTreeTestStatsGroup", () => {
       root.render(
         <ExplorerTreeTestStatsGroup
           testStats={{
-            pass: 1,
+            pass: 5,
             fail: 0,
             error: 0,
             warn: 0,
             skipped: 0,
+            notExecuted: 0,
           }}
           variant="leaf"
         />,
       );
     });
-    const group = container.querySelector('[role="group"]');
-    expect(group?.getAttribute("aria-label")).toBe(
-      EXPLORER_UI_COPY.treeTestStatsLeafAriaLabel,
-    );
+    expect(container.querySelector('[role="group"]')).toBeNull();
+    expect(container.textContent?.trim()).toBe("");
   });
 
-  it("shows warn and skipped badges without red X when no errors", () => {
+  it("shows warn and dbt-skipped badges without red X when no errors", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -206,14 +245,14 @@ describe("ExplorerTreeTestStatsGroup", () => {
             error: 0,
             warn: 2,
             skipped: 3,
+            notExecuted: 0,
           }}
           variant="branch"
         />,
       );
     });
     expect(container.textContent).toContain("!2");
-    expect(container.textContent).toContain("○3");
-    expect(container.textContent).not.toContain("\u2212");
+    expect(container.textContent).toContain("\u22123");
     expect(container.textContent).not.toContain("✗");
     const skipped = container.querySelector(
       ".explorer-tree__test-stat--skipped",
@@ -223,7 +262,56 @@ describe("ExplorerTreeTestStatsGroup", () => {
     );
   });
 
-  it("sets per-segment titles for pass and error stats", () => {
+  it("renders nothing for not-executed-only stats", () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <ExplorerTreeTestStatsGroup
+          testStats={{
+            pass: 0,
+            fail: 0,
+            error: 0,
+            warn: 0,
+            skipped: 0,
+            notExecuted: 2,
+          }}
+          variant="leaf"
+        />,
+      );
+    });
+    expect(container.querySelector('[role="group"]')).toBeNull();
+    expect(container.textContent?.trim()).toBe("");
+  });
+
+  it("shows error badge but not not-executed when both are non-zero", () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <ExplorerTreeTestStatsGroup
+          testStats={{
+            pass: 0,
+            fail: 0,
+            error: 1,
+            warn: 0,
+            skipped: 0,
+            notExecuted: 99,
+          }}
+          variant="leaf"
+        />,
+      );
+    });
+    expect(container.textContent).toContain("✗1");
+    expect(container.textContent).not.toContain("99");
+    expect(
+      container.querySelector(".explorer-tree__test-stat--not-executed"),
+    ).toBeNull();
+  });
+
+  it("sets per-segment title for error stats", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -236,16 +324,15 @@ describe("ExplorerTreeTestStatsGroup", () => {
             error: 2,
             warn: 0,
             skipped: 0,
+            notExecuted: 0,
           }}
           variant="branch"
         />,
       );
     });
     expect(
-      container
-        .querySelector(".explorer-tree__test-stat--pass")
-        ?.getAttribute("title"),
-    ).toBe(EXPLORER_UI_COPY.treeTestStatPassTitle(5));
+      container.querySelector(".explorer-tree__test-stat--pass"),
+    ).toBeNull();
     expect(
       container
         .querySelector(".explorer-tree__test-stat--fail")

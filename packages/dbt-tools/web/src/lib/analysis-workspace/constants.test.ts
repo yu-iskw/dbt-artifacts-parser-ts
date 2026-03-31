@@ -8,6 +8,7 @@ describe("getStatusTonePalette", () => {
     expect(p.danger).toBe("#C0352B");
     expect(p.warning).toBe("#A56315");
     expect(p.neutral).toBe("#64748B");
+    expect(p.skipped).toBe("#635BFF");
   });
 
   it("returns distinct semantic colors for dark theme", () => {
@@ -16,5 +17,6 @@ describe("getStatusTonePalette", () => {
     expect(p.danger).toBe("#FF8D86");
     expect(p.warning).toBe("#F5B95C");
     expect(p.neutral).toBe("#8690AA");
+    expect(p.skipped).toBe("#8A7CFF");
   });
 });

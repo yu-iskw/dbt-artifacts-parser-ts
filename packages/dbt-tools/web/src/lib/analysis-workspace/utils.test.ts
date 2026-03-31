@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatSeconds,
   deriveProjectName,
+  matchesAssetStatus,
   matchesResource,
   isMainProjectResource,
   isDefaultTimelineResource,
@@ -55,6 +56,48 @@ describe("matchesResource", () => {
     expect(matchesResource(makeResource(), "customers")).toBe(false));
   it("empty query always matches", () =>
     expect(matchesResource(makeResource(), "")).toBe(true));
+});
+
+describe("matchesAssetStatus", () => {
+  it("issues matches danger execution tone without rollup", () => {
+    expect(
+      matchesAssetStatus(
+        makeResource({ uniqueId: "m1", statusTone: "danger" }),
+        "issues",
+        new Map(),
+      ),
+    ).toBe(true);
+  });
+
+  it("issues matches successful model when rollup map shows test attention", () => {
+    expect(
+      matchesAssetStatus(
+        makeResource({ uniqueId: "m1", statusTone: "positive" }),
+        "issues",
+        new Map([["m1", { fail: 0, error: 1, warn: 0, skipped: 0 }]]),
+      ),
+    ).toBe(true);
+  });
+
+  it("issues excludes successful model with no rollup attention", () => {
+    expect(
+      matchesAssetStatus(
+        makeResource({ uniqueId: "m1", statusTone: "positive" }),
+        "issues",
+        new Map(),
+      ),
+    ).toBe(false);
+  });
+
+  it("Fail filter ignores test rollup", () => {
+    expect(
+      matchesAssetStatus(
+        makeResource({ uniqueId: "m1", statusTone: "positive" }),
+        "danger",
+        new Map([["m1", { fail: 0, error: 1, warn: 0, skipped: 0 }]]),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("isMainProjectResource", () => {

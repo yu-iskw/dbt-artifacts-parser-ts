@@ -165,7 +165,10 @@ describe("getFailureBundleIds", () => {
     const p = parent("p", { status: "success" });
     const bundles = [row(p)];
     const stats = new Map([
-      ["p", { pass: 1, fail: 0, error: 1, warn: 0, skipped: 0 }],
+      [
+        "p",
+        { pass: 1, fail: 0, error: 1, warn: 0, skipped: 0, notExecuted: 0 },
+      ],
     ]);
     expect(getFailureBundleIds(bundles, stats)).toEqual(new Set(["p"]));
   });
@@ -174,7 +177,10 @@ describe("getFailureBundleIds", () => {
     const p = parent("p", { status: "success" });
     const bundles = [row(p)];
     const stats = new Map([
-      ["p", { pass: 1, fail: 0, error: 0, warn: 1, skipped: 0 }],
+      [
+        "p",
+        { pass: 1, fail: 0, error: 0, warn: 1, skipped: 0, notExecuted: 0 },
+      ],
     ]);
     expect(getFailureBundleIds(bundles, stats)).toEqual(new Set(["p"]));
   });
@@ -185,7 +191,10 @@ describe("getFailureBundleIds", () => {
       row(p, { tests: [testItem("t1", "p", { status: "pass" })] }),
     ];
     const stats = new Map([
-      ["p", { pass: 1, fail: 0, error: 0, warn: 0, skipped: 0 }],
+      [
+        "p",
+        { pass: 1, fail: 0, error: 0, warn: 0, skipped: 0, notExecuted: 0 },
+      ],
     ]);
     expect(getFailureBundleIds(bundles, stats).size).toBe(0);
   });

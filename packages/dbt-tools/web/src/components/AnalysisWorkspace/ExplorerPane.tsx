@@ -14,7 +14,7 @@ import type {
 } from "@web/lib/analysis-workspace/types";
 import {
   getResourceOriginLabel,
-  testStatsHasAny,
+  testStatsHasAttention,
   type ExplorerTreeRow,
   type TestStats,
 } from "@web/lib/analysis-workspace/explorerTree";
@@ -64,14 +64,11 @@ export const EXPLORER_UI_COPY = {
     return `${typeLabel}: executed asset run outcomes for this type, not dbt test totals.`;
   },
   treeTestStatsTitle:
-    "Rollup of dbt test results for resources in this folder or on this row. Red X counts failed or errored tests only. The circle before not-run counts is a label, not a negative value. Warnings and not-run or unknown tests are separate. A test that depends on multiple resources may be counted more than once in folder totals.",
+    "Attention-only rollup of executed dbt test outcomes for this folder or row: failed or errored, warning, and dbt-skipped. Passing tests and tests with no run result (not executed) are not shown here. A test that depends on multiple resources may be counted more than once in folder totals.",
   treeTestStatsBranchAriaLabel:
-    "Dbt test outcome rollup for resources in this folder: pass, failed or error, warning, and not-run counts. Not-run uses a circle label, not a minus sign. Not-run is not a failure. Tests with multiple upstream dependencies may be counted more than once when summed at higher folders.",
+    "Dbt test attention rollup for resources in this folder: failed or error, warning, and skipped counts only. Passing tests and not-executed tests are not shown. Tests with multiple upstream dependencies may be counted more than once when summed at higher folders.",
   treeTestStatsLeafAriaLabel:
-    "Dbt test outcomes attached to this resource: pass, failed or error, warning, and not-run. Not-run uses a circle label, not a minus sign. Not-run is not a failure.",
-  treeTestStatPassTitle(count: number): string {
-    return `Passing dbt test attachments: ${count}`;
-  },
+    "Dbt test attention outcomes for this resource: failed or error, warning, and skipped only. Passing tests and not-executed tests are not shown.",
   treeTestStatErrorTitle(count: number): string {
     return `Failed or errored dbt test attachments: ${count}`;
   },
@@ -79,11 +76,57 @@ export const EXPLORER_UI_COPY = {
     return `Warning dbt test attachments: ${count}`;
   },
   treeTestStatSkippedTitle(count: number): string {
-    return `Not run or neutral dbt test attachments: ${count}. This count is not negative; the circle prefix is not a minus sign. Folder rollups may count one test multiple times when it depends on several resources.`;
+    return `Dbt skipped or no-op test attachments: ${count}. Folder rollups may count one test multiple times when it depends on several resources.`;
   },
-  treeFolderResourceCountTitle:
-    "Resources in this folder after current filters.",
+  treeEmptyHeadline: "No resources found",
+  treeEmptyDefaultSubtext:
+    "Adjust filters or search to find matching branches or assets.",
+  treeEmptySearchSubtext: "Try clearing or changing the resource search box.",
+  treeEmptyResourceTypesSubtext:
+    "One or more dbt resource types are narrowed; add types or reset type filters to see more assets.",
+  treeEmptyExecutionFilterSubtext(status: DashboardStatusFilter): string {
+    switch (status) {
+      case "danger":
+        return "Execution status is Fail: only assets with a failed or errored result in this run are shown. Assets without a run row are treated as Not executed, not Fail. For models whose run succeeded but dbt tests failed, use Issues. Try Execution status All, or confirm run results are loaded for this workspace.";
+      case "issues":
+        return "Execution status is Issues: assets with a failed or errored run result, or with failed, warned, or skipped dbt test attachments in this run. Fail shows execution failures only.";
+      case "neutral":
+        return "Execution status is Not executed: only assets without a matching run result (or unknown status) are shown. Try All or confirm run results are loaded.";
+      case "positive":
+        return "Execution status is Success: only successful runs are shown. Try All or adjust other filters.";
+      case "warning":
+        return "Execution status is Warn: only warned runs are shown. Try All or adjust other filters.";
+      case "skipped":
+        return "Execution status is Skipped: only skipped runs are shown. Try All or adjust other filters.";
+      default:
+        return "";
+    }
+  },
 } as const;
+
+/** Composes explorer tree empty copy when filters or search yield zero rows. Exported for unit tests. */
+export function buildExplorerTreeEmptySubtext(options: {
+  status: DashboardStatusFilter;
+  resourceQuery: string;
+  activeResourceTypeCount: number;
+}): string {
+  const parts: string[] = [];
+  if (options.status !== "all") {
+    parts.push(
+      EXPLORER_UI_COPY.treeEmptyExecutionFilterSubtext(options.status),
+    );
+  }
+  if (options.resourceQuery.trim()) {
+    parts.push(EXPLORER_UI_COPY.treeEmptySearchSubtext);
+  }
+  if (options.activeResourceTypeCount > 0) {
+    parts.push(EXPLORER_UI_COPY.treeEmptyResourceTypesSubtext);
+  }
+  if (parts.length === 0) {
+    return EXPLORER_UI_COPY.treeEmptyDefaultSubtext;
+  }
+  return parts.join(" ");
+}
 
 export function ExplorerTreeTestStatsGroup({
   testStats,
@@ -92,7 +135,7 @@ export function ExplorerTreeTestStatsGroup({
   testStats: TestStats;
   variant: "branch" | "leaf";
 }) {
-  if (!testStatsHasAny(testStats)) return null;
+  if (!testStatsHasAttention(testStats)) return null;
   const ariaLabel =
     variant === "branch"
       ? EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel
@@ -105,17 +148,9 @@ export function ExplorerTreeTestStatsGroup({
       title={EXPLORER_UI_COPY.treeTestStatsTitle}
     >
       <span className="explorer-tree__test-stats-label" aria-hidden="true">
-        Tests
+        Test issues
       </span>
       <span className="explorer-tree__test-stats">
-        {testStats.pass > 0 && (
-          <span
-            className="explorer-tree__test-stat explorer-tree__test-stat--pass"
-            title={EXPLORER_UI_COPY.treeTestStatPassTitle(testStats.pass)}
-          >
-            ✓{testStats.pass}
-          </span>
-        )}
         {testStats.error > 0 && (
           <span
             className="explorer-tree__test-stat explorer-tree__test-stat--fail"
@@ -137,7 +172,7 @@ export function ExplorerTreeTestStatsGroup({
             className="explorer-tree__test-stat explorer-tree__test-stat--skipped"
             title={EXPLORER_UI_COPY.treeTestStatSkippedTitle(testStats.skipped)}
           >
-            ○{testStats.skipped}
+            −{testStats.skipped}
           </span>
         )}
       </span>
@@ -272,6 +307,7 @@ function ExplorerTreeList({
   toggleExpandedNode,
   selectedResourceId,
   setSelectedResourceId,
+  treeEmptyDisplay,
 }: {
   treeRows: ExplorerTreeRow[];
   explorerMode: AssetExplorerMode;
@@ -279,6 +315,8 @@ function ExplorerTreeList({
   toggleExpandedNode: (id: string) => void;
   selectedResourceId: string | null;
   setSelectedResourceId: (id: string | null) => void;
+  /** When the tree has no rows, shown instead of the generic search-only message. */
+  treeEmptyDisplay?: { headline: string; subtext: string };
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -295,13 +333,13 @@ function ExplorerTreeList({
   const measureRow = virtualizer.measureElement;
 
   if (treeRows.length === 0) {
+    const headline =
+      treeEmptyDisplay?.headline ?? EXPLORER_UI_COPY.treeEmptyHeadline;
+    const subtext =
+      treeEmptyDisplay?.subtext ?? EXPLORER_UI_COPY.treeEmptyDefaultSubtext;
     return (
       <div ref={scrollRef} className="explorer-tree">
-        <EmptyState
-          icon="🔍"
-          headline="No resources found"
-          subtext="Adjust the search query to find matching branches or assets."
-        />
+        <EmptyState icon="🔍" headline={headline} subtext={subtext} />
       </div>
     );
   }
@@ -351,13 +389,6 @@ function ExplorerTreeList({
                       variant="branch"
                     />
                   )}
-                  <span
-                    className="explorer-tree__count"
-                    title={EXPLORER_UI_COPY.treeFolderResourceCountTitle}
-                    aria-label={`${node.count} resources in this folder after filters`}
-                  >
-                    {node.count}
-                  </span>
                 </button>
               </VirtualExplorerRow>
             );
@@ -532,9 +563,11 @@ export function ExplorerPane({
                 {(
                   [
                     ["all", "All"],
+                    ["issues", "Issues"],
                     ["positive", "Success"],
                     ["warning", "Warn"],
                     ["danger", "Fail"],
+                    ["skipped", "Skipped"],
                     ["neutral", "Not executed"],
                   ] as const
                 ).map(([value, label]) => (
@@ -587,6 +620,18 @@ export function ExplorerPane({
         toggleExpandedNode={toggleExpandedNode}
         selectedResourceId={selectedResourceId}
         setSelectedResourceId={setSelectedResourceId}
+        treeEmptyDisplay={
+          treeRows.length === 0
+            ? {
+                headline: EXPLORER_UI_COPY.treeEmptyHeadline,
+                subtext: buildExplorerTreeEmptySubtext({
+                  status,
+                  resourceQuery,
+                  activeResourceTypeCount: activeResourceTypes.size,
+                }),
+              }
+            : undefined
+        }
       />
     </aside>
   );

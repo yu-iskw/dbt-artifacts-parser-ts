@@ -440,6 +440,11 @@
   color: var(--text-tertiary);
 }
 
+.graph-node-tooltip__status--skipped {
+  background: var(--bg-accent-soft);
+  color: var(--text-accent);
+}
+
 .graph-node-tooltip__description {
   margin-top: 0.38rem;
   font-size: 0.78rem;

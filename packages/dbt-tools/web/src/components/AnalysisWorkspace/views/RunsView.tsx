@@ -44,6 +44,7 @@ const FACETS: {
   { kind: "snapshots", label: "Snapshots", countKey: "snapshots" },
   { kind: "operations", label: "Operations", countKey: "operations" },
   { status: "positive", label: "Healthy", countKey: "healthy" },
+  { status: "issues", label: "Issues", countKey: "issues" },
   { status: "warning", label: "Warnings", countKey: "warnings" },
   { status: "danger", label: "Errors", countKey: "errors" },
 ];

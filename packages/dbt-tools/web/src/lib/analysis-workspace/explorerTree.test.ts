@@ -7,6 +7,7 @@ import {
   collectLeafIds,
   findNodeByLeafResourceId,
   flattenExplorerTree,
+  testStatsHasAttention,
   type ExplorerTreeRow,
 } from "./explorerTree";
 import type { ResourceNode } from "@web/types";
@@ -37,7 +38,7 @@ describe("buildResourceTestStats", () => {
     },
   ];
 
-  it("counts neutral tests as skipped, not fail", () => {
+  it("counts neutral tests as notExecuted, not skipped", () => {
     const modelId = "model.jaffle_shop.orders";
     const model = makeResource({ name: "orders" });
     const neutralTest = makeResource({
@@ -61,7 +62,37 @@ describe("buildResourceTestStats", () => {
       fail: 0,
       error: 0,
       warn: 0,
+      skipped: 0,
+      notExecuted: 1,
+    });
+  });
+
+  it("counts skipped-tone tests in skipped bucket", () => {
+    const modelId = "model.jaffle_shop.orders";
+    const model = makeResource({ name: "orders" });
+    const skippedTest = makeResource({
+      uniqueId: "test.jaffle_shop.s",
+      name: "s",
+      resourceType: "test",
+      originalFilePath: "tests/s.sql",
+      statusTone: "skipped",
+    });
+    const dependencyIndex = {
+      [skippedTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: modelUpstream(modelId),
+        downstream: [],
+      },
+    };
+    const map = buildResourceTestStats([model, skippedTest], dependencyIndex);
+    expect(map.get(modelId)).toEqual({
+      pass: 0,
+      fail: 0,
+      error: 0,
+      warn: 0,
       skipped: 1,
+      notExecuted: 0,
     });
   });
 
@@ -110,11 +141,124 @@ describe("buildResourceTestStats", () => {
       error: 1,
       warn: 1,
       skipped: 0,
+      notExecuted: 0,
     });
   });
 });
 
+describe("testStatsHasAttention", () => {
+  it("is false for pass-only stats", () => {
+    expect(
+      testStatsHasAttention({
+        pass: 99,
+        fail: 0,
+        error: 0,
+        warn: 0,
+        skipped: 0,
+        notExecuted: 0,
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when only notExecuted is non-zero", () => {
+    expect(
+      testStatsHasAttention({
+        pass: 0,
+        fail: 0,
+        error: 0,
+        warn: 0,
+        skipped: 0,
+        notExecuted: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it("is true when error, warn, skipped, or fail is non-zero", () => {
+    expect(
+      testStatsHasAttention({
+        pass: 0,
+        fail: 0,
+        error: 1,
+        warn: 0,
+        skipped: 0,
+        notExecuted: 0,
+      }),
+    ).toBe(true);
+    expect(
+      testStatsHasAttention({
+        pass: 0,
+        fail: 0,
+        error: 0,
+        warn: 1,
+        skipped: 0,
+        notExecuted: 0,
+      }),
+    ).toBe(true);
+    expect(
+      testStatsHasAttention({
+        pass: 0,
+        fail: 0,
+        error: 0,
+        warn: 0,
+        skipped: 1,
+        notExecuted: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it("is true when notExecuted is non-zero but error is also non-zero", () => {
+    expect(
+      testStatsHasAttention({
+        pass: 0,
+        fail: 0,
+        error: 1,
+        warn: 0,
+        skipped: 0,
+        notExecuted: 99,
+      }),
+    ).toBe(true);
+  });
+});
+
 describe("buildExplorerTree", () => {
+  const modelUpstream = (modelId: string) => [
+    {
+      uniqueId: modelId,
+      name: "orders",
+      resourceType: "model",
+      depth: 1,
+    },
+  ];
+
+  it("does not attach testStats for pass-only attachments on leaves or branches", () => {
+    const modelId = "model.jaffle_shop.orders";
+    const model = makeResource({ name: "orders" });
+    const passTest = makeResource({
+      uniqueId: "test.jaffle_shop.p",
+      name: "p",
+      resourceType: "test",
+      originalFilePath: "tests/p.sql",
+      statusTone: "positive",
+    });
+    const dependencyIndex = {
+      [passTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: modelUpstream(modelId),
+        downstream: [],
+      },
+    };
+    const tree = buildExplorerTree(
+      [model, passTest],
+      "project",
+      "jaffle_shop",
+      dependencyIndex,
+    );
+    const leaf = findNodeByLeafResourceId(tree, modelId);
+    expect(leaf?.testStats).toBeUndefined();
+    expect(tree[0]?.testStats).toBeUndefined();
+  });
+
   it("returns empty array for no resources", () => {
     const tree = buildExplorerTree([], "project", "jaffle_shop");
     expect(tree).toHaveLength(0);

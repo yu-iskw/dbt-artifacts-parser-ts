@@ -117,7 +117,7 @@
   overflow: hidden;
 }
 
-/* Test stats badges (with muted “Tests” prefix) */
+/* Test attention badges (muted “Test issues” prefix) */
 .explorer-tree__test-stats-wrap {
   display: inline-flex;
   align-items: center;
@@ -148,11 +148,6 @@
   border-radius: 999px;
 }
 
-.explorer-tree__test-stat--pass {
-  color: var(--mint);
-  background: var(--mint-soft);
-}
-
 .explorer-tree__test-stat--fail {
   color: var(--rose);
   background: var(--rose-soft);
@@ -164,20 +159,9 @@
 }
 
 .explorer-tree__test-stat--skipped {
-  color: var(--text-soft);
-  background: var(--bg-surface-muted);
+  color: var(--text-accent);
+  background: var(--bg-accent-soft);
   letter-spacing: 0.01em;
-}
-
-/* Count badge on branch row */
-.explorer-tree__count {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text-soft);
-  background: var(--bg-surface-muted);
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  flex-shrink: 0;
 }
 
 /* ─── Overview layout ────────────────────────────────────────────────────── */

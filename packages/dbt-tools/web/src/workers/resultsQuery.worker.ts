@@ -156,6 +156,11 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
         ).length,
         errors: lastMatches.filter((entry) => entry.row.statusTone === "danger")
           .length,
+        issues: lastMatches.filter(
+          (entry) =>
+            entry.row.statusTone === "danger" ||
+            entry.row.statusTone === "warning",
+        ).length,
       },
       resourceTypes: Object.fromEntries(
         Object.entries(

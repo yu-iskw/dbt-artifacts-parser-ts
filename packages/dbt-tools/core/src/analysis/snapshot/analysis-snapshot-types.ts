@@ -24,7 +24,12 @@ export interface GanttItem {
   materialized?: string | null;
 }
 
-export type StatusTone = "positive" | "warning" | "danger" | "neutral";
+export type StatusTone =
+  | "positive"
+  | "warning"
+  | "danger"
+  | "neutral"
+  | "skipped";
 
 export interface MetricDefinition {
   kind: "metric";

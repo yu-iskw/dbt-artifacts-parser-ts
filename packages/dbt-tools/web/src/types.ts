@@ -23,4 +23,6 @@ export interface ResourceTestStats {
   error: number;
   warn: number;
   skipped: number;
+  /** Tests with no run row or unknown status (`neutral` tone), not dbt skipped. */
+  notExecuted: number;
 }

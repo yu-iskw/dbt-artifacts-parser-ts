@@ -33,8 +33,26 @@ export function statusTone(status: string | null | undefined): StatusTone {
   if (["warn", "warning"].includes(normalized)) {
     return "warning";
   }
-  if (["error", "fail", "failed", "run error"].includes(normalized)) {
+  // dbt and adapters vary on wording; keep an explicit allowlist (unknown → neutral).
+  if (
+    [
+      "error",
+      "errors",
+      "fail",
+      "failed",
+      "failure",
+      "failures",
+      "errored",
+      "run error",
+      "runtime error",
+      "compile error",
+      "database error",
+    ].includes(normalized)
+  ) {
     return "danger";
+  }
+  if (["skipped", "no op"].includes(normalized)) {
+    return "skipped";
   }
   return "neutral";
 }

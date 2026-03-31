@@ -1,23 +1,38 @@
-import type { AnalysisState, ResourceNode } from "@web/types";
+import type { AnalysisState, ResourceNode, StatusTone } from "@web/types";
 import type { AssetExplorerMode } from "./types";
 import { TEST_RESOURCE_TYPES } from "./constants";
+import {
+  rollupCountsHaveAttention,
+  type ResourceTestRollupCounts,
+} from "./testRollupTypes";
 import { normalizeManifestFilePath } from "./utils";
 
-export interface TestStats {
+export interface TestStats extends ResourceTestRollupCounts {
   pass: number;
-  /** Legacy bucket; `buildResourceTestStats` leaves this at 0. */
-  fail: number;
-  error: number;
-  warn: number;
-  skipped: number;
+  /**
+   * Attached tests with no run row / unknown status (`neutral` tone).
+   * Not included in explorer “Test issues” attention rollups or folder aggregation.
+   */
+  notExecuted: number;
 }
 
 export function emptyTestStats(): TestStats {
-  return { pass: 0, fail: 0, error: 0, warn: 0, skipped: 0 };
+  return {
+    pass: 0,
+    fail: 0,
+    error: 0,
+    warn: 0,
+    skipped: 0,
+    notExecuted: 0,
+  };
 }
 
-export function testStatsHasAny(stats: TestStats): boolean {
-  return stats.pass + stats.fail + stats.error + stats.warn + stats.skipped > 0;
+/**
+ * True when the tree should show “Test issues” badges (error, warn, skipped, legacy fail).
+ * Not-executed (`neutral`) attachments are excluded—they are not run outcomes and dominate large graphs.
+ */
+export function testStatsHasAttention(stats: TestStats): boolean {
+  return rollupCountsHaveAttention(stats);
 }
 
 export interface SelectedAssetTestEvidence {
@@ -49,7 +64,8 @@ export function buildResourceTestStats(
       if (test.statusTone === "positive") stats.pass += 1;
       else if (test.statusTone === "danger") stats.error += 1;
       else if (test.statusTone === "warning") stats.warn += 1;
-      else stats.skipped += 1;
+      else if (test.statusTone === "skipped") stats.skipped += 1;
+      else stats.notExecuted += 1;
 
       resourceTestStats.set(resourceId, stats);
     }
@@ -74,7 +90,13 @@ export function buildSelectedAssetTestEvidence(
       ).includes(resourceId),
     )
     .sort((left, right) => {
-      const toneRank = { danger: 0, warning: 1, positive: 2, neutral: 3 };
+      const toneRank: Record<StatusTone, number> = {
+        danger: 0,
+        warning: 1,
+        positive: 2,
+        skipped: 3,
+        neutral: 4,
+      };
       const toneOrder =
         toneRank[left.statusTone ?? "neutral"] -
         toneRank[right.statusTone ?? "neutral"];
@@ -275,7 +297,7 @@ export function buildExplorerTree(
         nodeStats = node.testStats ?? emptyTestStats();
       } else {
         nodeStats = applyTestStats(node.children);
-        if (testStatsHasAny(nodeStats)) {
+        if (testStatsHasAttention(nodeStats)) {
           node.testStats = nodeStats;
         }
       }
@@ -332,7 +354,7 @@ export function buildExplorerTree(
         parentIds,
       );
       const stats = resourceTestStats.get(resource.uniqueId);
-      if (stats && testStatsHasAny(stats)) {
+      if (stats && testStatsHasAttention(stats)) {
         leaf.testStats = stats;
       }
       siblings.push(leaf);
@@ -365,7 +387,7 @@ export function buildExplorerTree(
       parentIds,
     );
     const stats = resourceTestStats.get(resource.uniqueId);
-    if (stats && testStatsHasAny(stats)) {
+    if (stats && testStatsHasAttention(stats)) {
       leaf.testStats = stats;
     }
     siblings.push(leaf);

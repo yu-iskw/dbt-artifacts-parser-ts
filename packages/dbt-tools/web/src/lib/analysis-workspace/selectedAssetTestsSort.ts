@@ -24,7 +24,8 @@ function assetTestSortRank(resource: ResourceNode): number {
     return 0;
   }
   if (resource.statusTone === "positive") return 1;
-  return 2;
+  if (resource.statusTone === "skipped") return 2;
+  return 3;
 }
 
 function compareNullableText(

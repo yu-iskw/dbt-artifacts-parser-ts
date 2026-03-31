@@ -86,6 +86,17 @@ export function HealthView({
     [analysis.executions],
   );
 
+  /** Explicit "Open Lineage" needs a resource; passive inventory load does not auto-select. */
+  const defaultLineageResourceId = useMemo(() => {
+    const model = analysis.resources.find((r) => r.resourceType === "model");
+    if (model) return model.uniqueId;
+    const nonTest = analysis.resources.find(
+      (r) => !TEST_RESOURCE_TYPES.has(r.resourceType),
+    );
+    if (nonTest) return nonTest.uniqueId;
+    return analysis.resources[0]?.uniqueId ?? null;
+  }, [analysis.resources]);
+
   return (
     <div className="workspace-view health-view">
       {/* ── Layer B: Lens header ── */}
@@ -173,7 +184,14 @@ export function HealthView({
           <button
             type="button"
             className="workspace-pill"
-            onClick={() => onNavigateTo("inventory", { assetTab: "lineage" })}
+            onClick={() =>
+              onNavigateTo("inventory", {
+                assetTab: "lineage",
+                ...(defaultLineageResourceId != null
+                  ? { resourceId: defaultLineageResourceId }
+                  : {}),
+              })
+            }
           >
             Open Lineage
           </button>

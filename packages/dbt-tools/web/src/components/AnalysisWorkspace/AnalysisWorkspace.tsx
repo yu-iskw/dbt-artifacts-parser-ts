@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type {
   AnalysisWorkspaceProps,
-  AssetViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import {
@@ -13,12 +12,13 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import {
   buildExplorerTree,
-  collectAncestorBranchIdsForResource,
+  buildResourceTestStats,
   collectBranchIds,
   collectLeafIds,
   flattenExplorerTree,
 } from "@web/lib/analysis-workspace/explorerTree";
 import { ExplorerPane } from "./ExplorerPane";
+import { useInventoryExplorerExpansion } from "./useInventoryExplorerExpansion";
 import { HealthView } from "./views/HealthView";
 import { InventoryView } from "./views/InventoryView";
 import { TimelineView } from "./timeline/TimelineView";
@@ -26,14 +26,6 @@ import { RunsView } from "./views/RunsView";
 
 function usesExplorerPane(view: WorkspaceView): boolean {
   return view === "inventory";
-}
-
-function preserveSelectedOrNull(
-  visibleLeafIds: string[],
-  selectedId: string | null,
-) {
-  if (!selectedId) return visibleLeafIds[0] ?? null;
-  return selectedId;
 }
 
 export function AnalysisWorkspace({
@@ -78,19 +70,30 @@ export function AnalysisWorkspace({
     [scopedExplorerResources],
   );
 
+  const resourceTestRollupById = useMemo(
+    () =>
+      buildResourceTestStats(scopedExplorerResources, analysis.dependencyIndex),
+    [analysis.dependencyIndex, scopedExplorerResources],
+  );
+
   const explorerResources = useMemo(
     () =>
       scopedExplorerResources.filter(
         (resource) =>
-          matchesAssetStatus(resource, assetViewState.status) &&
+          matchesAssetStatus(
+            resource,
+            assetViewState.status,
+            resourceTestRollupById,
+          ) &&
           matchesAssetResourceType(resource, assetViewState.resourceTypes) &&
           matchesResource(resource, assetViewState.resourceQuery),
       ),
     [
-      scopedExplorerResources,
       assetViewState.resourceQuery,
       assetViewState.resourceTypes,
       assetViewState.status,
+      resourceTestRollupById,
+      scopedExplorerResources,
     ],
   );
 
@@ -113,28 +116,6 @@ export function AnalysisWorkspace({
     () => collectBranchIds(explorerTree),
     [explorerTree],
   );
-  const initializedExplorerModeRef = useRef<
-    AssetViewState["explorerMode"] | null
-  >(null);
-  const previousSelectedResourceIdRef = useRef<string | null>(
-    assetViewState.selectedResourceId,
-  );
-
-  useEffect(() => {
-    if (explorerTree.length === 0) return;
-    if (initializedExplorerModeRef.current === assetViewState.explorerMode)
-      return;
-    initializedExplorerModeRef.current = assetViewState.explorerMode;
-    onAssetViewStateChange((current) => ({
-      ...current,
-      expandedNodeIds: new Set(allBranchIds),
-    }));
-  }, [
-    allBranchIds,
-    assetViewState.explorerMode,
-    explorerTree.length,
-    onAssetViewStateChange,
-  ]);
 
   const expandedNodeIds = useMemo(
     () =>
@@ -153,39 +134,23 @@ export function AnalysisWorkspace({
     () => collectLeafIds(explorerTree),
     [explorerTree],
   );
-  const selectedResourceId = preserveSelectedOrNull(
-    visibleLeafIds,
-    assetViewState.selectedResourceId,
-  );
+  /** URL / explicit user selection only; no implicit first leaf. */
+  const selectedResourceId = assetViewState.selectedResourceId;
   const selectedResource =
     analysis.resources.find(
       (resource) => resource.uniqueId === selectedResourceId,
     ) ?? null;
 
-  useEffect(() => {
-    const currentSelectedId = assetViewState.selectedResourceId;
-    const previousSelectedId = previousSelectedResourceIdRef.current;
-    previousSelectedResourceIdRef.current = currentSelectedId;
-
-    if (!currentSelectedId || currentSelectedId === previousSelectedId) return;
-    if (visibleLeafIds.includes(currentSelectedId)) return;
-
-    const ancestorIds = collectAncestorBranchIdsForResource(
-      explorerTree,
-      currentSelectedId,
-    );
-    if (ancestorIds.size === 0) return;
-
-    onAssetViewStateChange((current) => ({
-      ...current,
-      expandedNodeIds: new Set([...current.expandedNodeIds, ...ancestorIds]),
-    }));
-  }, [
-    assetViewState.selectedResourceId,
+  useInventoryExplorerExpansion(
     explorerTree,
+    allBranchIds,
+    expandedNodeIds,
+    projectName,
+    assetViewState.explorerMode,
+    assetViewState.selectedResourceId,
+    selectedResourceId,
     onAssetViewStateChange,
-    visibleLeafIds,
-  ]);
+  );
 
   const explorerPane = usesExplorerPane(activeView) ? (
     <ExplorerPane

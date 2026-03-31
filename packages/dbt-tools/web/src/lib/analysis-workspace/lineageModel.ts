@@ -458,6 +458,7 @@ export const STATUS_LENS_FILLS: Record<string, string> = {
   positive: "var(--bg-success-soft)",
   warning: "var(--bg-warning-soft)",
   danger: "var(--bg-danger-soft)",
+  skipped: "var(--bg-accent-soft)",
   neutral: "var(--bg-surface-muted)",
 };
 
@@ -559,7 +560,7 @@ export function getLensLegendItems(
       for (const layout of nodeLayouts.values()) {
         tones.add(layout.resource.statusTone ?? "neutral");
       }
-      const order = ["positive", "warning", "danger", "neutral"];
+      const order = ["positive", "warning", "danger", "skipped", "neutral"];
       return order.map((t) => ({
         key: t,
         label: capitalizeFirst(t),

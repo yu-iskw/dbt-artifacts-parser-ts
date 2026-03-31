@@ -1645,6 +1645,11 @@ details.timeline-filter-accordion .timeline-controls {
   color: var(--text-tertiary);
 }
 
+.tone-badge--skipped {
+  background: var(--bg-accent-soft);
+  color: var(--text-accent);
+}
+
 .empty-state {
   padding: 1rem 0;
   line-height: 1.5;
