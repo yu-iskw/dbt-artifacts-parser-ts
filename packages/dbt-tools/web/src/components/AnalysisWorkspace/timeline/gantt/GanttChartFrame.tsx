@@ -10,8 +10,17 @@ import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { ThemeMode } from "@web/constants/themeColors";
 import type { FocusTimelineEdge } from "./edgeGeometry";
 import { GanttEdgeLayer } from "./GanttEdgeLayer";
+import { GanttLabelResizeHandle } from "./GanttLabelResizeHandle";
 import { GanttTooltip } from "./GanttTooltip";
 import type { HoverState } from "./hitTest";
+
+export interface GanttLabelColumnResizeProps {
+  width: number;
+  viewportH: number;
+  minW: number;
+  maxW: number;
+  onChange: (nextWidthPx: number) => void;
+}
 
 export function GanttChartFrame({
   canvasRef,
@@ -42,6 +51,7 @@ export function GanttChartFrame({
   onPointer,
   onHoverClear,
   dependencyEdgeHint,
+  labelColumnResize,
 }: {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -71,6 +81,7 @@ export function GanttChartFrame({
   onPointer: (e: MouseEvent<HTMLDivElement>, mode: "move" | "click") => void;
   onHoverClear: () => void;
   dependencyEdgeHint?: string;
+  labelColumnResize?: GanttLabelColumnResizeProps;
 }) {
   const frameRef = useRef<HTMLElement>(null);
   const [frameWidth, setFrameWidth] = useState(0);
@@ -148,6 +159,16 @@ export function GanttChartFrame({
       >
         <div style={{ height: totalScrollH }} />
       </div>
+
+      {labelColumnResize ? (
+        <GanttLabelResizeHandle
+          labelColumnW={labelColumnResize.width}
+          viewportH={labelColumnResize.viewportH}
+          minW={labelColumnResize.minW}
+          maxW={labelColumnResize.maxW}
+          onWidthChange={labelColumnResize.onChange}
+        />
+      ) : null}
 
       {hover && (
         <GanttTooltip

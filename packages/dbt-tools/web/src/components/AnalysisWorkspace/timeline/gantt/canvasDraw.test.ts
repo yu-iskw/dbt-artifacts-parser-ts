@@ -91,6 +91,9 @@ function createMock2dContext(): CanvasRenderingContext2D & {
         };
       }
       if (prop === "canvas") return null;
+      if (prop === "measureText") {
+        return (text: string) => ({ width: Math.max(8, text.length * 6) });
+      }
       if (typeof prop === "string" && prop in store) return store[prop];
       return fn;
     },

@@ -13,17 +13,15 @@ import {
   BUNDLE_HULL_PAD,
   LABEL_W,
   MIN_CHIP_W,
-  NAME_Y,
   ROW_H,
   TEST_BAR_H,
   TEST_LANE_H,
-  TIME_Y,
   X_PAD,
   type DisplayMode,
 } from "./constants";
 import {
   computeTicks,
-  formatMs,
+  filterTicksForPixelDensity,
   formatTimestamp,
   isIssueStatus,
   isPositiveStatus,
@@ -119,9 +117,6 @@ interface DrawRowLabelsParams {
   rowY: number;
   labelW: number;
   xOffset: number;
-  displayMode: DisplayMode;
-  runStartedAt: number | null | undefined;
-  timeZone: string;
   emphasis: number;
   palette: CanvasPalette;
 }
@@ -132,9 +127,6 @@ function drawRowLabels({
   rowY,
   labelW,
   xOffset,
-  displayMode,
-  runStartedAt,
-  timeZone,
   emphasis,
   palette,
 }: DrawRowLabelsParams) {
@@ -144,22 +136,11 @@ function drawRowLabels({
   ctx.rect(xOffset, rowY, labelW - 10 - xOffset, ROW_H);
   ctx.clip();
   ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
 
   ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
   ctx.fillStyle = palette.labelText;
-  ctx.fillText(item.name || item.unique_id, xOffset + 2, rowY + NAME_Y);
-
-  const startLabel =
-    displayMode === "timestamps" && runStartedAt != null
-      ? formatTimestamp(runStartedAt + item.start, timeZone)
-      : `+${formatMs(item.start)}`;
-  const endLabel =
-    displayMode === "timestamps" && runStartedAt != null
-      ? formatTimestamp(runStartedAt + item.end, timeZone)
-      : `+${formatMs(item.end)}`;
-  ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
-  ctx.fillStyle = palette.metaText;
-  ctx.fillText(`${startLabel} → ${endLabel}`, xOffset + 2, rowY + TIME_Y);
+  ctx.fillText(item.name || item.unique_id, xOffset + 2, rowY + ROW_H / 2);
   ctx.restore();
 }
 
@@ -408,11 +389,25 @@ function drawGanttAxisTicks({
   palette,
 }: DrawGanttAxisTicksParams): void {
   const rangeDuration = Math.max(1, rangeEnd - rangeStart);
-  const ticks = computeTicks(rangeStart, rangeEnd);
+  const rawTicks = computeTicks(rangeStart, rangeEnd);
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = palette.axisTick;
+
+  const getDisplayLabel = (tick: { ms: number; label: string }) =>
+    displayMode === "timestamps" && runStartedAt != null
+      ? formatTimestamp(runStartedAt + tick.ms, timeZone)
+      : tick.label;
+
+  const ticks = filterTicksForPixelDensity(
+    rawTicks,
+    rangeStart,
+    rangeEnd,
+    chartW,
+    getDisplayLabel,
+    (text) => ctx.measureText(text).width,
+  );
 
   for (const tick of ticks) {
     const x = labelW + ((tick.ms - rangeStart) / rangeDuration) * chartW;
@@ -442,9 +437,6 @@ interface DrawGanttVisibleRowParams {
   rangeEnd: number;
   focusIds: Set<string> | null;
   hoveredId: string | null;
-  displayMode: DisplayMode;
-  runStartedAt: number | null | undefined;
-  timeZone: string;
   theme: ThemeMode;
   palette: CanvasPalette;
   testStatsById?: Map<string, ResourceTestStats>;
@@ -464,9 +456,6 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     rangeEnd,
     focusIds,
     hoveredId,
-    displayMode,
-    runStartedAt,
-    timeZone,
     theme,
     palette,
     testStatsById,
@@ -489,9 +478,6 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     rowY,
     labelW,
     xOffset: 0,
-    displayMode,
-    runStartedAt,
-    timeZone,
     emphasis,
     palette,
   });
@@ -617,9 +603,6 @@ export function drawGantt(
       rangeEnd,
       focusIds,
       hoveredId,
-      displayMode,
-      runStartedAt,
-      timeZone,
       theme,
       palette,
       testStatsById,
