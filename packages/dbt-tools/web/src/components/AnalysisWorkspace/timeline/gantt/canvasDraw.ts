@@ -19,6 +19,7 @@ import {
   X_PAD,
   type DisplayMode,
 } from "./constants";
+import { clampTimelineIntervalToChartStripPx } from "./ganttChartHelpers";
 import {
   computeTicks,
   filterTicksForPixelDensity,
@@ -83,6 +84,55 @@ function strokeRoundRect(
 ) {
   roundRectPath(ctx, x, y, w, h, r);
   ctx.stroke();
+}
+
+/** Darkened compile-phase band clipped to the clamped bar/chip rounded rect. */
+function fillCompilePhaseShade(
+  ctx: CanvasRenderingContext2D,
+  params: {
+    rangeStart: number;
+    rangeEnd: number;
+    chartLeft: number;
+    chartW: number;
+    compileStart: number | null | undefined;
+    compileEnd: number | null | undefined;
+    barX: number;
+    barY: number;
+    barW: number;
+    barH: number;
+    radius: number;
+    theme: ThemeMode;
+  },
+): void {
+  const {
+    rangeStart,
+    rangeEnd,
+    chartLeft,
+    chartW,
+    compileStart: cs,
+    compileEnd: ce,
+    barX,
+    barY,
+    barW,
+    barH,
+    radius,
+    theme,
+  } = params;
+  if (cs == null || ce == null || ce <= cs) return;
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
+  const compileX = chartLeft + ((cs - rangeStart) / rangeDuration) * chartW;
+  const compileEndX = chartLeft + ((ce - rangeStart) / rangeDuration) * chartW;
+  const segLeft = Math.max(barX, compileX);
+  const segRight = Math.min(barX + barW, compileEndX);
+  const segW = segRight - segLeft;
+  if (segW <= 0.5) return;
+  ctx.save();
+  roundRectPath(ctx, barX, barY, barW, barH, radius);
+  ctx.clip();
+  ctx.fillStyle =
+    theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
+  ctx.fillRect(segLeft, barY, segW, barH);
+  ctx.restore();
 }
 
 type CanvasPalette = ReturnType<typeof getCanvasColors>;
@@ -177,13 +227,15 @@ function drawRowBar({
   palette,
   theme,
 }: DrawRowBarParams) {
-  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
   const barY = rowY + BAR_PAD;
-  const barStartX =
-    labelW + ((item.start - rangeStart) / rangeDuration) * chartW;
-  const barEndX = labelW + ((item.end - rangeStart) / rangeDuration) * chartW;
-  const barX = Math.min(barStartX, barEndX);
-  const barW = Math.max(2, barEndX - barStartX);
+  const { x: barX, width: barW } = clampTimelineIntervalToChartStripPx(
+    rangeStart,
+    rangeEnd,
+    item.start,
+    item.end,
+    labelW,
+    chartW,
+  );
   const radius = 3;
   const hasTestIssue = hasAttachedTestIssue(attachedTestStats);
   const hasIssueOutline = isIssueStatus(item.status) || hasTestIssue;
@@ -193,25 +245,20 @@ function drawRowBar({
   ctx.fillStyle = getResourceTypeSoftFill(item.resourceType, theme);
   fillRoundRect(ctx, barX, barY, barW, BAR_H, radius);
 
-  const cs = item.compileStart;
-  const ce = item.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs;
-  if (hasCompile) {
-    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
-    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
-    const segLeft = Math.max(barX, compileX);
-    const segRight = Math.min(barX + barW, compileEndX);
-    const segW = segRight - segLeft;
-    if (segW > 0.5) {
-      ctx.save();
-      roundRectPath(ctx, barX, barY, barW, BAR_H, radius);
-      ctx.clip();
-      ctx.fillStyle =
-        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
-      ctx.fillRect(segLeft, barY, segW, BAR_H);
-      ctx.restore();
-    }
-  }
+  fillCompilePhaseShade(ctx, {
+    rangeStart,
+    rangeEnd,
+    chartLeft: labelW,
+    chartW,
+    compileStart: item.compileStart,
+    compileEnd: item.compileEnd,
+    barX,
+    barY,
+    barW,
+    barH: BAR_H,
+    radius,
+    theme,
+  });
 
   if (hasTestIssue && isPositiveStatus(item.status)) {
     ctx.fillStyle = palette.testFailStripe;
@@ -266,12 +313,15 @@ function drawTestChip({
   emphasis,
   isHovered,
 }: DrawTestChipParams) {
-  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
-  const chipStartX =
-    labelW + ((test.start - rangeStart) / rangeDuration) * chartW;
-  const chipEndX = labelW + ((test.end - rangeStart) / rangeDuration) * chartW;
-  const chipX = Math.min(chipStartX, chipEndX);
-  const chipW = Math.max(MIN_CHIP_W, chipEndX - chipStartX);
+  const { x: chipX, width: chipW } = clampTimelineIntervalToChartStripPx(
+    rangeStart,
+    rangeEnd,
+    test.start,
+    test.end,
+    labelW,
+    chartW,
+    MIN_CHIP_W,
+  );
   const chipH = TEST_BAR_H;
   const radius = 2;
   const hasIssueOutline = isIssueStatus(test.status);
@@ -281,25 +331,20 @@ function drawTestChip({
   ctx.fillStyle = getResourceTypeSoftFill(test.resourceType, theme);
   fillRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
 
-  const cs = test.compileStart;
-  const ce = test.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs;
-  if (hasCompile) {
-    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
-    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
-    const segLeft = Math.max(chipX, compileX);
-    const segRight = Math.min(chipX + chipW, compileEndX);
-    const segW = segRight - segLeft;
-    if (segW > 0.5) {
-      ctx.save();
-      roundRectPath(ctx, chipX, chipY, chipW, chipH, radius);
-      ctx.clip();
-      ctx.fillStyle =
-        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
-      ctx.fillRect(segLeft, chipY, segW, chipH);
-      ctx.restore();
-    }
-  }
+  fillCompilePhaseShade(ctx, {
+    rangeStart,
+    rangeEnd,
+    chartLeft: labelW,
+    chartW,
+    compileStart: test.compileStart,
+    compileEnd: test.compileEnd,
+    barX: chipX,
+    barY: chipY,
+    barW: chipW,
+    barH: chipH,
+    radius,
+    theme,
+  });
 
   ctx.strokeStyle = hasIssueOutline
     ? palette.testFailStripe
