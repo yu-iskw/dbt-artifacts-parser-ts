@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to use for the image"
+        description: Tag to use for the image
         required: true
         type: string
   # push:
