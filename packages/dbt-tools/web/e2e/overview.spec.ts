@@ -38,4 +38,21 @@ test.describe("health view", () => {
       ).toBeVisible();
     }
   });
+
+  test("thread distribution metric radios and bar list", async ({ page }) => {
+    await expect(
+      page.getByRole("heading", { name: "Thread distribution" }).first(),
+    ).toBeVisible();
+    const metricGroup = page.getByRole("radiogroup", {
+      name: "Thread distribution metric",
+    });
+    await expect(metricGroup).toBeVisible();
+    await expect(
+      metricGroup.getByRole("radio", { name: /Resources/i }),
+    ).toBeVisible();
+    await metricGroup.getByRole("radio", { name: /Resources/i }).click();
+    await expect(
+      page.getByRole("list", { name: "Worker lanes by metric" }),
+    ).toBeVisible();
+  });
 });
