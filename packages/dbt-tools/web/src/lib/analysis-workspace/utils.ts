@@ -5,7 +5,7 @@ import type {
   ResourceNode,
   StatusTone,
 } from "@web/types";
-import type { DashboardStatusFilter, OverviewFilterState } from "./types";
+import type { DashboardStatusFilter } from "./types";
 import {
   rollupCountsHaveAttention,
   type ResourceTestRollupCounts,
@@ -235,12 +235,4 @@ export function isDefaultTimelineResource(
   }
   if (projectName == null) return true;
   return item.packageName === projectName;
-}
-
-export function hasOverviewFilters(filters: OverviewFilterState): boolean {
-  return (
-    filters.status !== "all" ||
-    filters.resourceTypes.size > 0 ||
-    filters.query.trim().length > 0
-  );
 }

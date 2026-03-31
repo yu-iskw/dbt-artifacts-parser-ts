@@ -305,54 +305,6 @@
   color: var(--accent);
 }
 
-.workspace-signals {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.signal-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding: 1rem 1.1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  box-shadow: var(--panel-shadow);
-}
-
-.signal-card__label {
-  margin: 0;
-  color: var(--text-soft);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.signal-card strong {
-  font-size: 1.35rem;
-  letter-spacing: -0.03em;
-}
-
-.signal-card span {
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-
-.signal-card--positive {
-  border-color: var(--border-success);
-}
-
-.signal-card--warning {
-  border-color: var(--border-warning);
-}
-
-.signal-card--danger {
-  border-color: var(--border-danger);
-}
-
 .resource-spotlight__description--muted {
   color: var(--text-muted);
 }
@@ -490,7 +442,6 @@
 }
 
 @media (width <= 1100px) {
-  .workspace-signals,
   .upload-feature-grid,
   .overview-hero {
     grid-template-columns: 1fr;
@@ -498,10 +449,6 @@
 }
 
 @media (width <= 720px) {
-  .workspace-signals {
-    grid-template-columns: 1fr;
-  }
-
   .upload-hero {
     grid-template-columns: 1fr;
   }

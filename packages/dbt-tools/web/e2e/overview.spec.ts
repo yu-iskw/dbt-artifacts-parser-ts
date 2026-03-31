@@ -15,15 +15,18 @@ test.describe("health view", () => {
         "Run posture, critical issues, and dependency pressure at a glance.",
       ),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Open Runs" })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Open Timeline" }),
+      page.getByRole("region", { name: "Run posture" }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator("#app-sidebar")
+        .getByRole("button", { name: "Runs", exact: true }),
     ).toBeVisible();
   });
 
   test("shows major analysis sections", async ({ page }) => {
     for (const heading of [
-      "Attention",
       "Bottlenecks",
       "Critical path",
       "Execution breakdown",

@@ -2,10 +2,11 @@ import { test, expect } from "@playwright/test";
 import { expandExplorerBranchIfCollapsed } from "./helpers/explorerTree";
 import { loadWorkspace } from "./helpers/preload";
 
+const APP_SIDEBAR = "#app-sidebar";
 const LEAF_SELECTOR = ".explorer-tree__row--leaf";
 const OPEN_IN_TIMELINE_LABEL = "Open in Timeline";
 
-test.describe("health cross-view pills", () => {
+test.describe("health cross-view via sidebar", () => {
   test.beforeEach(async ({ page }) => {
     await loadWorkspace(page);
     await expect(
@@ -13,34 +14,43 @@ test.describe("health cross-view pills", () => {
     ).toBeVisible();
   });
 
-  test("Open Runs navigates to runs view", async ({ page }) => {
-    await page.getByRole("button", { name: "Open Runs" }).click();
+  test("Runs in sidebar navigates to runs view", async ({ page }) => {
+    await page
+      .locator(APP_SIDEBAR)
+      .getByRole("button", { name: "Runs", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Runs" }).first(),
     ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=runs/);
   });
 
-  test("Open Timeline navigates to timeline view", async ({ page }) => {
-    await page.getByRole("button", { name: "Open Timeline" }).click();
+  test("Timeline in sidebar navigates to timeline view", async ({ page }) => {
+    await page
+      .locator(APP_SIDEBAR)
+      .getByRole("button", { name: "Timeline", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Timeline" }).first(),
     ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=timeline/);
   });
 
-  test("Browse Inventory navigates to inventory view", async ({ page }) => {
-    await page.getByRole("button", { name: "Browse Inventory" }).click();
+  test("Inventory in sidebar navigates to inventory view", async ({ page }) => {
+    await page
+      .locator(APP_SIDEBAR)
+      .getByRole("button", { name: "Inventory", exact: true })
+      .click();
     await expect(
       page.getByRole("heading", { name: "Inventory" }).first(),
     ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=inventory/);
   });
 
-  test("Open Lineage navigates to inventory with lineage tab", async ({
-    page,
-  }) => {
-    await page.getByRole("button", { name: "Open Lineage" }).click();
+  test("deep link opens inventory with lineage tab", async ({ page }) => {
+    await page.goto(
+      "/?view=inventory&resource=model.jaffle_shop.orders&assetTab=lineage",
+    );
     await expect(
       page.getByRole("heading", { name: "Inventory" }).first(),
     ).toBeVisible();

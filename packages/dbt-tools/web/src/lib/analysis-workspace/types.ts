@@ -152,7 +152,7 @@ export interface AnalysisWorkspaceProps {
   analysis: AnalysisState;
   activeView: WorkspaceView;
   analysisSource: WorkspaceArtifactSource | null;
-  /** Signals built from workspace data — passed down to HealthView hero strip. */
+  /** Signals built from workspace data — Health posture block (e.g. workspace mode). */
   workspaceSignals: WorkspaceSignal[];
   overviewFilters: OverviewFilterState;
   onOverviewFiltersChange: Dispatch<SetStateAction<OverviewFilterState>>;
