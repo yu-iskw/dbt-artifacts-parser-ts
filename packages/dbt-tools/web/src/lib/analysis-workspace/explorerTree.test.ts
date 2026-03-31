@@ -7,6 +7,7 @@ import {
   collectLeafIds,
   findNodeByLeafResourceId,
   flattenExplorerTree,
+  projectRootBranchId,
   testStatsHasAttention,
   type ExplorerTreeRow,
 } from "./explorerTree";
@@ -217,6 +218,16 @@ describe("testStatsHasAttention", () => {
         notExecuted: 99,
       }),
     ).toBe(true);
+  });
+});
+
+describe("projectRootBranchId", () => {
+  it("uses Workspace label when projectName is null", () => {
+    expect(projectRootBranchId(null)).toBe("project:branch:Workspace");
+  });
+
+  it("prefixes project name", () => {
+    expect(projectRootBranchId("pkg")).toBe("project:branch:pkg");
   });
 });
 

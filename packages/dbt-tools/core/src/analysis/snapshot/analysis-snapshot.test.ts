@@ -84,8 +84,8 @@ describe("analysis snapshot facade", () => {
     for (const summary of Object.values(analysis.dependencyIndex)) {
       expect(summary.upstream.every((u) => u.depth === 1)).toBe(true);
       expect(summary.downstream.every((d) => d.depth === 1)).toBe(true);
-      expect(summary.upstream.length).toBeLessThanOrEqual(8);
-      expect(summary.downstream.length).toBeLessThanOrEqual(8);
+      expect(summary.upstream.length).toBe(summary.upstreamCount);
+      expect(summary.downstream.length).toBe(summary.downstreamCount);
     }
 
     const model = analysis.resources.find((r) => r.resourceType === "model");

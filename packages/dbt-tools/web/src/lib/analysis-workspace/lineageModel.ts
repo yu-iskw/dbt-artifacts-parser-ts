@@ -592,6 +592,73 @@ export function getLensLegendItems(
   }
 }
 
+/** IDs reachable from `selectedId` when edges are treated as undirected (lineage column layout). */
+function reachableNodeIdsFromSelected(
+  edges: Array<{ from: string; to: string }>,
+  selectedId: string,
+  allowedIds: Set<string>,
+): Set<string> {
+  const adj = new Map<string, string[]>();
+  for (const { from, to } of edges) {
+    if (!allowedIds.has(from) || !allowedIds.has(to)) continue;
+    const a = adj.get(from);
+    if (a) a.push(to);
+    else adj.set(from, [to]);
+    const b = adj.get(to);
+    if (b) b.push(from);
+    else adj.set(to, [from]);
+  }
+
+  const visited = new Set<string>();
+  if (!allowedIds.has(selectedId)) return visited;
+
+  const queue = [selectedId];
+  visited.add(selectedId);
+  for (let i = 0; i < queue.length; i += 1) {
+    const id = queue[i]!;
+    for (const nbr of adj.get(id) ?? []) {
+      if (!visited.has(nbr)) {
+        visited.add(nbr);
+        queue.push(nbr);
+      }
+    }
+  }
+  return visited;
+}
+
+/** Drop nodes not in the undirected connected component of `selectedResourceId` over `graphEdges`. */
+function pruneLineageToSelectedComponent(
+  nodeLayouts: Map<string, LineageGraphNodeLayout>,
+  graphEdges: Array<{ from: string; to: string }>,
+  selectedResourceId: string,
+): Pick<LineageGraphModel, "nodeLayouts" | "graphEdges"> {
+  if (!nodeLayouts.has(selectedResourceId)) {
+    return { nodeLayouts, graphEdges };
+  }
+
+  const allowedIds = new Set(nodeLayouts.keys());
+  const reachable = reachableNodeIdsFromSelected(
+    graphEdges,
+    selectedResourceId,
+    allowedIds,
+  );
+
+  if (reachable.size === nodeLayouts.size) {
+    return { nodeLayouts, graphEdges };
+  }
+
+  const prunedLayouts = new Map<string, LineageGraphNodeLayout>();
+  for (const [id, layout] of nodeLayouts.entries()) {
+    if (reachable.has(id)) prunedLayouts.set(id, layout);
+  }
+  const prunedIds = new Set(prunedLayouts.keys());
+  const prunedEdges = graphEdges.filter(
+    (edge) => prunedIds.has(edge.from) && prunedIds.has(edge.to),
+  );
+
+  return { nodeLayouts: prunedLayouts, graphEdges: prunedEdges };
+}
+
 export function filterLineageGraphModel(
   model: LineageGraphModel,
   lensMode: LensMode,
@@ -599,10 +666,11 @@ export function filterLineageGraphModel(
   selectedResourceId: string,
 ): Pick<LineageGraphModel, "nodeLayouts" | "graphEdges"> {
   if (activeLegendKeys.size === 0) {
-    return {
-      nodeLayouts: model.nodeLayouts,
-      graphEdges: model.graphEdges,
-    };
+    return pruneLineageToSelectedComponent(
+      model.nodeLayouts,
+      model.graphEdges,
+      selectedResourceId,
+    );
   }
 
   const filteredNodeLayouts = new Map<string, LineageGraphNodeLayout>();
@@ -620,8 +688,9 @@ export function filterLineageGraphModel(
     (edge) => visibleIds.has(edge.from) && visibleIds.has(edge.to),
   );
 
-  return {
-    nodeLayouts: filteredNodeLayouts,
-    graphEdges: filteredGraphEdges,
-  };
+  return pruneLineageToSelectedComponent(
+    filteredNodeLayouts,
+    filteredGraphEdges,
+    selectedResourceId,
+  );
 }

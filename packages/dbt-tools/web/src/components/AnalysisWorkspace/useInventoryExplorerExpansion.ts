@@ -4,11 +4,15 @@ import type { AssetViewState } from "@web/lib/analysis-workspace/types";
 import {
   collectAncestorBranchIdsForResource,
   type ExplorerTreeNode,
+  projectRootBranchId,
 } from "@web/lib/analysis-workspace/explorerTree";
 
 /**
  * Expands ancestors for the selected resource (deep links / clicks) and, in
  * project mode with no selection, expands only the project root branch.
+ *
+ * Selection is a single `assetViewState.selectedResourceId` — the parent does
+ * not apply a separate "effective" resolver; URL and state stay aligned.
  */
 export function useInventoryExplorerExpansion(
   explorerTree: ExplorerTreeNode[],
@@ -16,17 +20,16 @@ export function useInventoryExplorerExpansion(
   expandedNodeIds: Set<string>,
   projectName: string | null,
   assetExplorerMode: AssetViewState["explorerMode"],
-  assetSelectedResourceId: string | null,
-  effectiveSelectedResourceId: string | null,
+  selectedResourceId: string | null,
   onAssetViewStateChange: Dispatch<SetStateAction<AssetViewState>>,
 ): void {
   useEffect(() => {
-    if (explorerTree.length === 0 || effectiveSelectedResourceId == null) {
+    if (explorerTree.length === 0 || selectedResourceId == null) {
       return;
     }
     const needed = collectAncestorBranchIdsForResource(
       explorerTree,
-      effectiveSelectedResourceId,
+      selectedResourceId,
     );
     if (needed.size === 0) return;
 
@@ -40,15 +43,14 @@ export function useInventoryExplorerExpansion(
         expandedNodeIds: new Set([...current.expandedNodeIds, ...needed]),
       };
     });
-  }, [explorerTree, onAssetViewStateChange, effectiveSelectedResourceId]);
+  }, [explorerTree, onAssetViewStateChange, selectedResourceId]);
 
   useEffect(() => {
     if (assetExplorerMode !== "project") return;
-    if (assetSelectedResourceId != null) return;
+    if (selectedResourceId != null) return;
     if (explorerTree.length === 0) return;
     if (expandedNodeIds.size > 0) return;
-    const rootLabel = projectName ?? "Workspace";
-    const rootId = `project:branch:${rootLabel}`;
+    const rootId = projectRootBranchId(projectName);
     if (!allBranchIds.has(rootId)) return;
 
     onAssetViewStateChange((current) => {
@@ -63,10 +65,10 @@ export function useInventoryExplorerExpansion(
   }, [
     allBranchIds,
     assetExplorerMode,
-    assetSelectedResourceId,
     expandedNodeIds.size,
     explorerTree.length,
     onAssetViewStateChange,
     projectName,
+    selectedResourceId,
   ]);
 }

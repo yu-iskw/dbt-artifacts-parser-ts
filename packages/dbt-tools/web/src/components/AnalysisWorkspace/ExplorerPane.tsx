@@ -102,7 +102,47 @@ export const EXPLORER_UI_COPY = {
         return "";
     }
   },
+  /** Section heading above run-outcome and problems rows. */
+  executionStatusSectionTitle: "Filter by run & tests",
+  /** Subheading for the primary run-outcome pill row. */
+  executionStatusRunOutcomeSubLabel: "Run outcome",
+  /** Subheading for the issues pill (run failure or test attention). */
+  executionStatusProblemsSubLabel: "Run + dbt tests",
 } as const;
+
+/** Short button labels for execution status filters (filter values unchanged). */
+export function executionStatusPillLabel(
+  status: DashboardStatusFilter,
+): string {
+  switch (status) {
+    case "all":
+      return "All";
+    case "positive":
+      return "Success";
+    case "warning":
+      return "Warn";
+    case "danger":
+      return "Fail (run)";
+    case "skipped":
+      return "Skipped";
+    case "neutral":
+      return "Not executed";
+    case "issues":
+      return "Issues (run or tests)";
+    default:
+      return status;
+  }
+}
+
+/** `title` / `aria-description` text aligned with empty-state filter explanations. */
+export function executionStatusFilterButtonTitle(
+  status: DashboardStatusFilter,
+): string {
+  if (status === "all") {
+    return "Show all assets regardless of run outcome or attached dbt test results.";
+  }
+  return EXPLORER_UI_COPY.treeEmptyExecutionFilterSubtext(status);
+}
 
 /** Composes explorer tree empty copy when filters or search yield zero rows. Exported for unit tests. */
 export function buildExplorerTreeEmptySubtext(options: {
@@ -557,29 +597,67 @@ export function ExplorerPane({
 
             <div className="explorer-filter-group">
               <span className="explorer-filter-group__label">
-                Execution status
+                {EXPLORER_UI_COPY.executionStatusSectionTitle}
               </span>
-              <div className="pill-row">
-                {(
-                  [
-                    ["all", "All"],
-                    ["issues", "Issues"],
-                    ["positive", "Success"],
-                    ["warning", "Warn"],
-                    ["danger", "Fail"],
-                    ["skipped", "Skipped"],
-                    ["neutral", "Not executed"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={status === value ? PILL_ACTIVE : PILL_BASE}
-                    onClick={() => setStatus(value)}
+              <div className="explorer-status-filters">
+                <div className="explorer-status-filters__block">
+                  <span
+                    className="explorer-status-filters__sublabel"
+                    id="explorer-status-run-outcome-label"
                   >
-                    {label}
-                  </button>
-                ))}
+                    {EXPLORER_UI_COPY.executionStatusRunOutcomeSubLabel}
+                  </span>
+                  <div
+                    className="pill-row"
+                    role="group"
+                    aria-labelledby="explorer-status-run-outcome-label"
+                  >
+                    {(
+                      [
+                        "all",
+                        "positive",
+                        "warning",
+                        "danger",
+                        "skipped",
+                        "neutral",
+                      ] as const satisfies readonly DashboardStatusFilter[]
+                    ).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={status === value ? PILL_ACTIVE : PILL_BASE}
+                        title={executionStatusFilterButtonTitle(value)}
+                        aria-label={`${executionStatusPillLabel(value)}. ${executionStatusFilterButtonTitle(value)}`}
+                        onClick={() => setStatus(value)}
+                      >
+                        {executionStatusPillLabel(value)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="explorer-status-filters__block explorer-status-filters__block--problems">
+                  <span
+                    className="explorer-status-filters__sublabel"
+                    id="explorer-status-problems-label"
+                  >
+                    {EXPLORER_UI_COPY.executionStatusProblemsSubLabel}
+                  </span>
+                  <div
+                    className="pill-row"
+                    role="group"
+                    aria-labelledby="explorer-status-problems-label"
+                  >
+                    <button
+                      type="button"
+                      className={status === "issues" ? PILL_ACTIVE : PILL_BASE}
+                      title={executionStatusFilterButtonTitle("issues")}
+                      aria-label={`${executionStatusPillLabel("issues")}. ${executionStatusFilterButtonTitle("issues")}`}
+                      onClick={() => setStatus("issues")}
+                    >
+                      {executionStatusPillLabel("issues")}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 

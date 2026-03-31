@@ -271,6 +271,12 @@ export function finalizeTreeCounts(
     .sort(sortTreeNodes);
 }
 
+/** Branch id for the project-mode explorer root (must stay aligned with buildExplorerTree). */
+export function projectRootBranchId(projectName: string | null): string {
+  const label = projectName ?? "Workspace";
+  return `project:branch:${label}`;
+}
+
 // eslint-disable-next-line sonarjs/cognitive-complexity -- explorer tree cases
 export function buildExplorerTree(
   resources: ResourceNode[],
@@ -329,7 +335,7 @@ export function buildExplorerTree(
 
   if (mode === "project") {
     const rootLabel = projectName ?? "Workspace";
-    const rootId = `${mode}:branch:${rootLabel}`;
+    const rootId = projectRootBranchId(projectName);
     const root = ensureBranch(roots, rootId, rootLabel, []);
 
     for (const resource of nonTestResources) {

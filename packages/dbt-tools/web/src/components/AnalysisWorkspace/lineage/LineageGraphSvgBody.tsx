@@ -76,6 +76,8 @@ export function LineageGraphSvgBody({
           displayMode === "summary" ? y + nodeHeight - 20 : y + nodeHeight - 23;
         const badgeHeight = displayMode === "summary" ? 15 : 17;
         const badgeRadius = badgeHeight / 2;
+        const runTone = node.resource.statusTone ?? "neutral";
+        const toneOutlineClass = ` dependency-graph__node--tone-${runTone}`;
         return (
           <g key={node.resource.uniqueId}>
             <rect
@@ -84,13 +86,13 @@ export function LineageGraphSvgBody({
               width={nodeWidth}
               height={nodeHeight}
               rx={nodeRadius}
-              className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}`}
-              stroke={
-                node.side === "selected"
-                  ? "var(--graph-node-selected-stroke)"
-                  : undefined
-              }
-              strokeWidth={node.side === "selected" ? 3 : 0}
+              className={`dependency-graph__node${node.side === "selected" ? " dependency-graph__node--selected" : ""}${isHighlighted ? "" : " dependency-graph__node--dimmed"}${toneOutlineClass}`}
+              {...(node.side === "selected"
+                ? {
+                    stroke: "var(--graph-node-selected-stroke)",
+                    strokeWidth: 3,
+                  }
+                : {})}
               style={{
                 fill: getLensNodeFill(node.resource, lensMode),
               }}

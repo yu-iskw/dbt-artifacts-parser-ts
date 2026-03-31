@@ -181,7 +181,7 @@ export function LineageGraphSurfaceView({
             }}
           >
             <svg
-              className="dependency-graph__svg"
+              className={`dependency-graph__svg dependency-graph__svg--lens-${lensMode}`}
               viewBox={`0 0 ${svgWidth} ${svgHeight}`}
               preserveAspectRatio="xMidYMid meet"
               aria-hidden="true"

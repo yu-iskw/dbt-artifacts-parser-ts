@@ -207,6 +207,69 @@
   opacity: 0.26;
 }
 
+/*
+ * Run-outcome accent on unselected nodes (selected keeps inline stroke from React).
+ * Type and coverage lenses: stronger strokes. Status lens: softer strokes (see --lens-status below).
+ */
+.dependency-graph__node--tone-positive:not(.dependency-graph__node--selected) {
+  stroke: var(--border-success);
+  stroke-width: 2.5;
+}
+
+.dependency-graph__node--tone-warning:not(.dependency-graph__node--selected) {
+  stroke: var(--border-warning);
+  stroke-width: 2.5;
+}
+
+.dependency-graph__node--tone-danger:not(.dependency-graph__node--selected) {
+  stroke: var(--border-danger);
+  stroke-width: 2.75;
+}
+
+.dependency-graph__node--tone-skipped:not(.dependency-graph__node--selected) {
+  stroke: var(--border-strong);
+  stroke-width: 2.25;
+  stroke-dasharray: 5 4;
+}
+
+.dependency-graph__node--tone-neutral:not(.dependency-graph__node--selected) {
+  stroke: var(--border-default);
+  stroke-width: 2;
+}
+
+/* Status lens: tone outline supports fill; keep strokes lighter so fill stays primary. */
+.dependency-graph__svg--lens-status
+  .dependency-graph__node--tone-positive:not(
+    .dependency-graph__node--selected
+  ) {
+  stroke-width: 2;
+  stroke-opacity: 0.65;
+}
+
+.dependency-graph__svg--lens-status
+  .dependency-graph__node--tone-warning:not(.dependency-graph__node--selected) {
+  stroke-width: 2;
+  stroke-opacity: 0.65;
+}
+
+.dependency-graph__svg--lens-status
+  .dependency-graph__node--tone-danger:not(.dependency-graph__node--selected) {
+  stroke-width: 2;
+  stroke-opacity: 0.65;
+}
+
+.dependency-graph__svg--lens-status
+  .dependency-graph__node--tone-skipped:not(.dependency-graph__node--selected) {
+  stroke-width: 2;
+  stroke-opacity: 0.55;
+}
+
+.dependency-graph__svg--lens-status
+  .dependency-graph__node--tone-neutral:not(.dependency-graph__node--selected) {
+  stroke-width: 1.75;
+  stroke-opacity: 0.5;
+}
+
 /* Node title row */
 .dependency-graph__node-title-row {
   display: flex;
@@ -1061,6 +1124,30 @@
   color: var(--text-soft);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.explorer-status-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.explorer-status-filters__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.explorer-status-filters__block--problems {
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.explorer-status-filters__sublabel {
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
 .explorer-filters {

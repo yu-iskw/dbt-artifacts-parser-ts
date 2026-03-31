@@ -147,7 +147,6 @@ export function AnalysisWorkspace({
     expandedNodeIds,
     projectName,
     assetViewState.explorerMode,
-    assetViewState.selectedResourceId,
     selectedResourceId,
     onAssetViewStateChange,
   );

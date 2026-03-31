@@ -4,9 +4,12 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ResourceNode, StatusTone } from "@web/types";
+import type { DashboardStatusFilter } from "@web/lib/analysis-workspace/types";
 import {
   buildExplorerTreeEmptySubtext,
   EXPLORER_UI_COPY,
+  executionStatusFilterButtonTitle,
+  executionStatusPillLabel,
   ExplorerTreeTestStatsGroup,
   ResourceTypeSummaryBar,
 } from "./ExplorerPane";
@@ -53,6 +56,18 @@ describe("EXPLORER_UI_COPY", () => {
     expect(text.toLowerCase()).toMatch(/fail/);
   });
 
+  it("execution filter section copy distinguishes run outcome from tests row", () => {
+    expect(EXPLORER_UI_COPY.executionStatusSectionTitle.toLowerCase()).toMatch(
+      /run/,
+    );
+    expect(EXPLORER_UI_COPY.executionStatusRunOutcomeSubLabel).toMatch(
+      /run outcome/i,
+    );
+    expect(
+      EXPLORER_UI_COPY.executionStatusProblemsSubLabel.toLowerCase(),
+    ).toMatch(/test/);
+  });
+
   it("explains attention-only tree test copy", () => {
     expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(
       /dbt test|attention/,
@@ -67,6 +82,31 @@ describe("EXPLORER_UI_COPY", () => {
       /not-executed|not shown/,
     );
     expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(/pass/);
+  });
+});
+
+describe("executionStatusPillLabel", () => {
+  it("labels Fail and Issues so they are not confused", () => {
+    expect(executionStatusPillLabel("danger")).toMatch(/fail/i);
+    expect(executionStatusPillLabel("danger")).toMatch(/run/i);
+    expect(executionStatusPillLabel("issues").toLowerCase()).toMatch(/issues/);
+    expect(executionStatusPillLabel("issues").toLowerCase()).toMatch(/test/);
+  });
+
+  it("covers every dashboard status filter value", () => {
+    const values: DashboardStatusFilter[] = [
+      "all",
+      "issues",
+      "positive",
+      "warning",
+      "danger",
+      "skipped",
+      "neutral",
+    ];
+    for (const v of values) {
+      expect(executionStatusPillLabel(v).length).toBeGreaterThan(0);
+      expect(executionStatusFilterButtonTitle(v).length).toBeGreaterThan(10);
+    }
   });
 });
 
