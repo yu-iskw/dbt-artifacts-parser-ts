@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import type { AnalysisState } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
@@ -8,7 +8,6 @@ import type {
   WorkspaceSignal,
 } from "@web/lib/analysis-workspace/types";
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
-import { hasOverviewFilters } from "@web/lib/analysis-workspace/utils";
 import { EmptyState } from "../../EmptyState";
 import {
   OverviewActionListCard,
@@ -25,11 +24,11 @@ import { InvocationResourceStats } from "../InvocationResourceStatsTable";
 import { HealthPostureBlock } from "./overview/HealthPostureBlock";
 import { HealthMetricRow } from "./overview/HealthMetricRow";
 import { HealthExecutionStatusPills } from "./overview/HealthExecutionStatusPills";
-import { HealthExecutionSliceRefine } from "./overview/HealthExecutionSliceRefine";
 
 /**
  * Health — "what needs attention now?" with an above-the-fold triage strip
  * (posture, metrics, bottlenecks) and scrollable detail below.
+ * Execution breakdown uses dashboard status pills only (no search/types slice).
  */
 export function HealthView({
   analysis,
@@ -46,16 +45,19 @@ export function HealthView({
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   workspaceSignals: WorkspaceSignal[];
 }) {
-  const deferredQuery = useDeferredValue(filters.query);
-  const derived = useMemo(
-    () =>
-      buildOverviewDerivedState(analysis, {
-        ...filters,
-        query: deferredQuery,
-      }),
-    [analysis, deferredQuery, filters],
+  const healthExecutionFilters = useMemo(
+    () => ({
+      status: filters.status,
+      query: "",
+      resourceTypes: new Set<string>(),
+    }),
+    [filters.status],
   );
-  const filtered = hasOverviewFilters(filters);
+  const derived = useMemo(
+    () => buildOverviewDerivedState(analysis, healthExecutionFilters),
+    [analysis, healthExecutionFilters],
+  );
+  const filtered = filters.status !== "all";
   const workerThreadCount =
     derived.threadCount || derived.filteredThreadStats.length;
   const modelsCount = derived.filteredExecutions.filter(
@@ -64,13 +66,6 @@ export function HealthView({
   const testsCount = derived.filteredExecutions.filter((row) =>
     TEST_RESOURCE_TYPES.has(row.resourceType),
   ).length;
-  const availableTypes = useMemo(
-    () =>
-      Array.from(
-        new Set(analysis.executions.map((row) => row.resourceType)),
-      ).sort(),
-    [analysis.executions],
-  );
 
   return (
     <div className="workspace-view health-view">
@@ -105,9 +100,9 @@ export function HealthView({
           <div className="health-section__header health-section__header--with-inline-controls">
             <div className="health-section__header-text">
               <h3>Execution breakdown</h3>
-              <p id="health-execution-slice-desc">
-                {derived.filteredExecutions.length.toLocaleString()} runs in
-                this slice. Status mix by resource type.
+              <p>
+                {derived.filteredExecutions.length.toLocaleString()} runs.
+                Status mix by resource type.
               </p>
             </div>
             <HealthExecutionStatusPills
@@ -115,12 +110,6 @@ export function HealthView({
               setFilters={setFilters}
             />
           </div>
-          <HealthExecutionSliceRefine
-            filters={filters}
-            setFilters={setFilters}
-            availableTypes={availableTypes}
-            sliceDescriptionId="health-execution-slice-desc"
-          />
           {derived.filteredExecutions.length > 0 ? (
             <StatusDonutWithData
               executions={derived.filteredExecutions}
@@ -132,7 +121,7 @@ export function HealthView({
             <EmptyState
               icon="◌"
               headline="No matching executions"
-              subtext="Open Refine slice below, set status to All, or clear all filters."
+              subtext="Set status to All to include every run, or pick another status filter."
             />
           )}
         </section>

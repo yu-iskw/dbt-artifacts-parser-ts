@@ -38,10 +38,4 @@ test.describe("health view", () => {
       ).toBeVisible();
     }
   });
-
-  test("execution breakdown exposes Refine slice control", async ({ page }) => {
-    await expect(
-      page.getByRole("button", { name: /^Refine slice ·/ }),
-    ).toBeVisible();
-  });
 });

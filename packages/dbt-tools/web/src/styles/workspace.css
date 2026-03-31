@@ -948,45 +948,6 @@
   overflow-y: auto;
 }
 
-/* Health execution slice: search, types, clear (inside Refine popover or inline) */
-.health-slice-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  max-width: min(100%, 640px);
-  flex-shrink: 0;
-}
-
-.health-slice-filters--popover-body {
-  max-width: 100%;
-}
-
-/* Refine slice chip row (Execution breakdown, below status pills) */
-.health-exec-slice-refine {
-  flex-shrink: 0;
-  max-width: min(100%, 640px);
-}
-
-.health-slice-filters__search {
-  max-width: 100%;
-}
-
-.health-slice-filters__clear {
-  align-self: flex-start;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.3rem 0.55rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-accent);
-  cursor: pointer;
-}
-
-.health-slice-filters__clear:hover {
-  background: var(--bg-selection-soft);
-}
-
 .health-section__header--with-inline-controls {
   display: flex;
   flex-wrap: wrap;
