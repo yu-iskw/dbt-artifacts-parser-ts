@@ -168,32 +168,6 @@
   }
 }
 
-/* Health chart view toggle */
-.health-toggle {
-  display: inline-flex;
-  border-radius: 999px;
-  overflow: hidden;
-  border: 1px solid var(--border-default);
-  background: var(--bg-surface);
-}
-
-.health-toggle button {
-  padding: 0.35rem 0.8rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    background 140ms ease,
-    color 140ms ease;
-}
-
-.health-toggle button.active {
-  background: var(--accent);
-  color: white;
-}
-
 /* Resource type breakdown list in health card */
 .type-breakdown {
   display: flex;
@@ -1061,18 +1035,6 @@
   line-height: 1.45;
 }
 
-.status-donut {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: center;
-}
-
-.status-donut__chart {
-  height: 230px;
-}
-
-.status-donut__legend,
 .thread-list,
 .dependency-list {
   display: flex;
@@ -1261,60 +1223,120 @@
   word-break: break-all;
 }
 
-/* Per-type donut grid in OverviewView */
-.type-donut-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-}
-
-.type-donut-card {
+/* Execution breakdown — by type: stacked status bars (Health / overview) */
+.exec-type-bar-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-default);
-  border-left: 3px solid var(--type-accent, var(--border-strong));
-  padding: 0.75rem;
+  background: var(--bg-surface);
+  overflow: hidden;
 }
 
-.type-donut-card__title {
-  display: flex;
-  justify-content: space-between;
+.exec-type-bar-row {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 8.5rem) minmax(0, 1fr);
+  gap: 0.65rem 0.85rem;
   align-items: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  margin-bottom: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  min-width: 0;
 }
 
-.type-donut-card__count {
-  font-size: 0.85rem;
+.exec-type-bar-row:last-child {
+  border-bottom: none;
+}
+
+.exec-type-bar-row__label {
+  font-size: 0.82rem;
   font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exec-type-bar-row__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.exec-type-bar-track {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 1.65rem;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-surface-muted);
+}
+
+.exec-type-bar-segment {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Visual floor for tiny slices; exact shares stay in title and breakdown line. */
+.exec-type-bar-segment--minor {
+  min-width: 4px;
+}
+
+.exec-type-bar-row__breakdown {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.exec-type-bar-row__breakdown-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.exec-type-bar-row__breakdown-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.exec-type-bar-row__breakdown-metric {
+  font-variant-numeric: tabular-nums;
   color: var(--text-soft);
 }
 
-.type-donut-card__chart {
-  width: 100%;
-  height: 110px;
+.exec-type-bar-segment__inner {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 35%);
+  line-height: 1.15;
+  text-align: center;
+  padding: 0 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.type-donut-card__legend {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-  font-size: 0.77rem;
-}
-
-.type-donut-card__legend-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.type-donut-card__legend-label {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+@media (width <= 640px) {
+  .exec-type-bar-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Gantt legend — color swatches for status and resource type */
@@ -1782,8 +1804,7 @@ details.timeline-filter-accordion .timeline-controls {
   .upload-hero,
   .workspace-split,
   .workspace-split--wide,
-  .metric-grid,
-  .status-donut {
+  .metric-grid {
     grid-template-columns: 1fr;
   }
 

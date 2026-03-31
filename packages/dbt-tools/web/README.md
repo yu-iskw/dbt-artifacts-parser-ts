@@ -156,6 +156,22 @@ Then open `http://localhost:8080/`.
 
 The production image is static files only: there is no Vite dev middleware, so `DBT_TOOLS_TARGET_DIR` and related server-side env vars from local dev do not apply unless you add a different deployment shape. Any future **Vite build-time** variables (`VITE_*`) must be passed at image build time, for example `docker build --build-arg VITE_EXAMPLE=...` (and your Dockerfile would need to forward them into the build step).
 
+#### GitHub Container Registry (CI)
+
+The workflow [`.github/workflows/docker-dbt-tools-web.yml`](../../../.github/workflows/docker-dbt-tools-web.yml) builds this Dockerfile on `push` to `main`, on `pull_request` (build only, no push), and via `workflow_dispatch`. Images are pushed to **GHCR**:
+
+`ghcr.io/<github-owner-lowercase>/dbt-tools-web`
+
+Tags include a **git SHA** tag on every push to `main` (and manual runs), and **`latest`** when the default branch is built. Replace `<github-owner-lowercase>` with the repository owner in lowercase (for example your user or org name).
+
+```bash
+# Private package: create a PAT with read:packages (or use gh auth token)
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
+docker pull ghcr.io/<github-owner-lowercase>/dbt-tools-web:latest
+```
+
+After the first successful push, set package visibility (public vs private) under the repository’s **Packages** settings if needed.
+
 ---
 
 ## Project Structure

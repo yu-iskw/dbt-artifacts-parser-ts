@@ -50,9 +50,6 @@ export default defineConfig({
           ) {
             return "react-vendor";
           }
-          if (id.includes("node_modules/recharts")) {
-            return "recharts-vendor";
-          }
           if (id.includes("node_modules/@tanstack/react-virtual")) {
             return "tanstack-virtual-vendor";
           }

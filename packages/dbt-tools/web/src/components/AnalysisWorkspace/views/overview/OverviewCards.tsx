@@ -1,51 +1,8 @@
-import type { AnalysisState, StatusTone } from "@web/types";
+import type { AnalysisState } from "@web/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import { EmptyState } from "../../../EmptyState";
 import { OverviewScopeBadge } from "./OverviewPanel";
-
-export function OverviewAttentionCard({
-  derived,
-}: {
-  derived: OverviewDerivedState;
-}) {
-  const tone: StatusTone =
-    derived.failingNodes > 0
-      ? "danger"
-      : derived.warningNodes > 0
-        ? "warning"
-        : "positive";
-  const followup =
-    derived.failingNodes > 0
-      ? `${derived.failedModels} failed model${derived.failedModels === 1 ? "" : "s"} block downstream investigation.`
-      : derived.warningNodes > 0
-        ? "Warnings surfaced. Review tests and freshness signals next."
-        : "No immediate triage items.";
-
-  return (
-    <section
-      className={`overview-module overview-module--attention overview-module--${tone}`}
-    >
-      <div className="overview-module__header">
-        <h3>Attention</h3>
-        <p>Immediate run posture and next step.</p>
-      </div>
-      <div className={`attention-card attention-card--${tone}`}>
-        <div className="attention-card__metrics">
-          <div className="attention-card__metric">
-            <span>Failing</span>
-            <strong>{derived.failingNodes}</strong>
-          </div>
-          <div className="attention-card__metric">
-            <span>Warnings</span>
-            <strong>{derived.warningNodes}</strong>
-          </div>
-        </div>
-        <p>{followup}</p>
-      </div>
-    </section>
-  );
-}
 
 export function OverviewActionListCard({
   derived,
