@@ -4,11 +4,13 @@ import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import {
   AXIS_TOP,
   BUNDLE_HULL_PAD,
+  MIN_CHIP_W,
   ROW_H,
   TEST_BAR_H,
   TEST_LANE_H,
   X_PAD,
 } from "./constants";
+import { clampTimelineIntervalToChartStripPx } from "./ganttChartHelpers";
 
 export interface HoverState {
   item: GanttItem;
@@ -80,7 +82,6 @@ export function hitTestBundle(
 
   const bundle = bundles[bundleIdx];
   if (!bundle) return null;
-  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
 
   const chartW = canvas.getBoundingClientRect().width - effectiveLabelW - X_PAD;
   const bundleRowY = AXIS_TOP + (rowOffsets[bundleIdx] ?? 0) - scrollTop;
@@ -93,33 +94,31 @@ export function hitTestBundle(
   // Chart bounds used to clamp hitboxes so that bars extending outside the
   // visible window do not make items hittable in the label column or beyond.
   const chartLeft = effectiveLabelW;
-  const chartRight = effectiveLabelW + chartW;
 
   // Check parent bar
-  const rawBarStartX =
-    effectiveLabelW +
-    ((bundle.item.start - rangeStart) / rangeDuration) * chartW;
-  const rawBarEndX =
-    effectiveLabelW + ((bundle.item.end - rangeStart) / rangeDuration) * chartW;
-  const barX = Math.max(chartLeft, Math.min(rawBarStartX, rawBarEndX));
-  const barXEnd = Math.min(chartRight, Math.max(rawBarStartX, rawBarEndX));
-  const barW = Math.max(2, barXEnd - barX);
+  const { x: barX, width: barW } = clampTimelineIntervalToChartStripPx(
+    rangeStart,
+    rangeEnd,
+    bundle.item.start,
+    bundle.item.end,
+    chartLeft,
+    chartW,
+  );
   if (mouseX >= barX && mouseX <= barX + barW) {
     return { item: bundle.item, x: mouseX, y: mouseY };
   }
 
   if (showTests && bundle.lanes.length > 0) {
     for (const { item: test, lane } of bundle.lanes) {
-      const rawChipStartX =
-        effectiveLabelW + ((test.start - rangeStart) / rangeDuration) * chartW;
-      const rawChipEndX =
-        effectiveLabelW + ((test.end - rangeStart) / rangeDuration) * chartW;
-      const chipX = Math.max(chartLeft, Math.min(rawChipStartX, rawChipEndX));
-      const chipXEnd = Math.min(
-        chartRight,
-        Math.max(rawChipStartX, rawChipEndX),
+      const { x: chipX, width: chipW } = clampTimelineIntervalToChartStripPx(
+        rangeStart,
+        rangeEnd,
+        test.start,
+        test.end,
+        chartLeft,
+        chartW,
+        MIN_CHIP_W,
       );
-      const chipW = Math.max(2, chipXEnd - chipX);
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
 
       if (

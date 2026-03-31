@@ -13,7 +13,7 @@ import type {
 import { groupIntoBundles } from "@web/lib/analysis-workspace/bundleLayout";
 import {
   AXIS_TOP,
-  LABEL_W,
+  LABEL_COLUMN_MIN_PX,
   MAX_VIEWPORT_RATIO,
   MIN_VIEWPORT_H,
   ROW_H,
@@ -22,6 +22,7 @@ import {
   type DisplayMode,
 } from "./constants";
 import { getAvailableTimeZones, getInitialTimeZone } from "./formatting";
+import { useGanttLabelColumnWidth } from "./ganttLabelColumnWidth";
 import { GanttChartFrame } from "./GanttChartFrame";
 import { GanttModeToggle } from "./GanttModeToggle";
 import { GanttTimeBrush } from "./GanttTimeBrush";
@@ -87,10 +88,8 @@ export function GanttChart({
     }
   }, [timeZone]);
 
-  const effectiveLabelW =
-    containerWidth > 0
-      ? Math.max(80, Math.min(LABEL_W, Math.round(containerWidth * 0.35)))
-      : LABEL_W;
+  const { effectiveLabelW, maxLabelW, onLabelColumnWidthDrag } =
+    useGanttLabelColumnWidth(containerWidth);
 
   const allBundles = useMemo(() => groupIntoBundles(data), [data]);
 
@@ -186,14 +185,13 @@ export function GanttChart({
   /** Selection wins over hover for which dependency edges are shown. */
   const edgeFocusId = selectedId ?? hover?.item.unique_id ?? null;
 
-  const { edges, dependencyEdgeHint } = useGanttFocusEdges({
+  const { edges } = useGanttFocusEdges({
     edgeFocusId,
     timelineAdjacency,
     itemById,
     bundleIndexById,
     dependencyDirection,
     dependencyDepthHops,
-    hoverUniqueId: hover?.item.unique_id,
   });
 
   const focusedIds = useMemo(() => {
@@ -318,7 +316,13 @@ export function GanttChart({
         onSelect={onSelect}
         onPointer={handlePointerInteraction}
         onHoverClear={() => setHover(null)}
-        dependencyEdgeHint={dependencyEdgeHint}
+        labelColumnResize={{
+          width: effectiveLabelW,
+          viewportH,
+          minW: LABEL_COLUMN_MIN_PX,
+          maxW: maxLabelW,
+          onChange: onLabelColumnWidthDrag,
+        }}
       />
     </div>
   );

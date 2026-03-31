@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import type { GanttItem, TimelineAdjacencyEntry } from "@web/types";
 import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
-import {
-  buildDependencyContextHint,
-  getFocusTimelineEdges,
-  type FocusTimelineEdge,
-} from "./edgeGeometry";
+import { getFocusTimelineEdges, type FocusTimelineEdge } from "./edgeGeometry";
 import { mapTimelineDependencyControlsToFocusOptions } from "./dependencyControls";
 
 export interface UseGanttFocusEdgesParams {
@@ -15,7 +11,6 @@ export interface UseGanttFocusEdgesParams {
   bundleIndexById: Map<string, number>;
   dependencyDirection: TimelineDependencyDirection;
   dependencyDepthHops: number;
-  hoverUniqueId: string | null | undefined;
 }
 
 export function useGanttFocusEdges({
@@ -25,11 +20,7 @@ export function useGanttFocusEdges({
   bundleIndexById,
   dependencyDirection,
   dependencyDepthHops,
-  hoverUniqueId,
-}: UseGanttFocusEdgesParams): {
-  edges: FocusTimelineEdge[];
-  dependencyEdgeHint: string | undefined;
-} {
+}: UseGanttFocusEdgesParams): { edges: FocusTimelineEdge[] } {
   const focusOptions = useMemo(
     () =>
       mapTimelineDependencyControlsToFocusOptions({
@@ -39,7 +30,7 @@ export function useGanttFocusEdges({
     [dependencyDepthHops, dependencyDirection],
   );
 
-  const { edges, extendedTruncated } = useMemo(
+  const { edges } = useMemo(
     () =>
       getFocusTimelineEdges(
         edgeFocusId,
@@ -51,27 +42,5 @@ export function useGanttFocusEdges({
     [edgeFocusId, timelineAdjacency, itemById, bundleIndexById, focusOptions],
   );
 
-  const dependencyEdgeHint = useMemo(() => {
-    if (!edgeFocusId || hoverUniqueId !== edgeFocusId) {
-      return undefined;
-    }
-    return buildDependencyContextHint({
-      focusId: edgeFocusId,
-      timelineAdjacency,
-      bundleIndexById,
-      edges,
-      focusOptions,
-      extendedTruncated,
-    });
-  }, [
-    edgeFocusId,
-    hoverUniqueId,
-    edges,
-    extendedTruncated,
-    timelineAdjacency,
-    bundleIndexById,
-    focusOptions,
-  ]);
-
-  return { edges, dependencyEdgeHint };
+  return { edges };
 }

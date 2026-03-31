@@ -1,12 +1,20 @@
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { GanttItem } from "@web/types";
 import { describe, expect, it } from "vitest";
-import { AXIS_TOP, BUNDLE_HULL_PAD, ROW_H, TEST_LANE_H } from "./constants";
+import {
+  AXIS_TOP,
+  BUNDLE_HULL_PAD,
+  MIN_CHIP_W,
+  ROW_H,
+  TEST_LANE_H,
+} from "./constants";
 import {
   bundleRowHeight,
+  clampTimelineIntervalToChartStripPx,
   computeRowLayout,
   computeVisRange,
   getFailureBundleIds,
+  TIMELINE_MIN_PARENT_BAR_WIDTH_PX,
 } from "./ganttChartHelpers";
 
 function parent(id: string, overrides: Partial<GanttItem> = {}): GanttItem {
@@ -167,5 +175,87 @@ describe("getFailureBundleIds", () => {
     ];
     const stats = new Map([["p", { pass: 1, fail: 0, error: 0 }]]);
     expect(getFailureBundleIds(bundles, stats).size).toBe(0);
+  });
+});
+
+describe("clampTimelineIntervalToChartStripPx", () => {
+  const chartLeft = 160;
+  const chartW = 400;
+  const chartRight = chartLeft + chartW;
+
+  it("clamps intervals before rangeStart to chartLeft with minimum width", () => {
+    const rangeStart = 400;
+    const rangeEnd = 800;
+    const { x, width } = clampTimelineIntervalToChartStripPx(
+      rangeStart,
+      rangeEnd,
+      0,
+      100,
+      chartLeft,
+      chartW,
+    );
+    expect(x).toBe(chartLeft);
+    expect(width).toBe(TIMELINE_MIN_PARENT_BAR_WIDTH_PX);
+  });
+
+  it("maps an interval inside the window to proportional pixels", () => {
+    const rangeStart = 0;
+    const rangeEnd = 100;
+    const { x, width } = clampTimelineIntervalToChartStripPx(
+      rangeStart,
+      rangeEnd,
+      20,
+      80,
+      chartLeft,
+      chartW,
+    );
+    expect(x).toBe(160 + 0.2 * chartW);
+    expect(width).toBe(0.6 * chartW);
+  });
+
+  it("clamps the right edge at chartRight", () => {
+    const rangeStart = 0;
+    const rangeEnd = 100;
+    const { x, width } = clampTimelineIntervalToChartStripPx(
+      rangeStart,
+      rangeEnd,
+      50,
+      150,
+      chartLeft,
+      chartW,
+    );
+    expect(x).toBe(160 + 0.5 * chartW);
+    expect(x + width).toBeLessThanOrEqual(chartRight + 1e-6);
+    expect(width).toBe(chartRight - (160 + 0.5 * chartW));
+  });
+
+  it("uses minWidthPx for test chips", () => {
+    const rangeStart = 0;
+    const rangeEnd = 100;
+    const { width } = clampTimelineIntervalToChartStripPx(
+      rangeStart,
+      rangeEnd,
+      0,
+      0.0001,
+      chartLeft,
+      chartW,
+      MIN_CHIP_W,
+    );
+    expect(width).toBeGreaterThanOrEqual(MIN_CHIP_W);
+  });
+
+  it("uses duration 1 when rangeEnd equals rangeStart (avoids division by zero)", () => {
+    const t = 42;
+    const { x, width } = clampTimelineIntervalToChartStripPx(
+      t,
+      t,
+      t,
+      t + 10,
+      chartLeft,
+      chartW,
+    );
+    expect(x).toBe(chartLeft);
+    // 10 time units × chartW px per unit, clamped to chart strip
+    expect(width).toBe(chartW);
   });
 });

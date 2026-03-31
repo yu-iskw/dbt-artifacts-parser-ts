@@ -13,17 +13,16 @@ import {
   BUNDLE_HULL_PAD,
   LABEL_W,
   MIN_CHIP_W,
-  NAME_Y,
   ROW_H,
   TEST_BAR_H,
   TEST_LANE_H,
-  TIME_Y,
   X_PAD,
   type DisplayMode,
 } from "./constants";
+import { clampTimelineIntervalToChartStripPx } from "./ganttChartHelpers";
 import {
   computeTicks,
-  formatMs,
+  filterTicksForPixelDensity,
   formatTimestamp,
   isIssueStatus,
   isPositiveStatus,
@@ -87,6 +86,55 @@ function strokeRoundRect(
   ctx.stroke();
 }
 
+/** Darkened compile-phase band clipped to the clamped bar/chip rounded rect. */
+function fillCompilePhaseShade(
+  ctx: CanvasRenderingContext2D,
+  params: {
+    rangeStart: number;
+    rangeEnd: number;
+    chartLeft: number;
+    chartW: number;
+    compileStart: number | null | undefined;
+    compileEnd: number | null | undefined;
+    barX: number;
+    barY: number;
+    barW: number;
+    barH: number;
+    radius: number;
+    theme: ThemeMode;
+  },
+): void {
+  const {
+    rangeStart,
+    rangeEnd,
+    chartLeft,
+    chartW,
+    compileStart: cs,
+    compileEnd: ce,
+    barX,
+    barY,
+    barW,
+    barH,
+    radius,
+    theme,
+  } = params;
+  if (cs == null || ce == null || ce <= cs) return;
+  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
+  const compileX = chartLeft + ((cs - rangeStart) / rangeDuration) * chartW;
+  const compileEndX = chartLeft + ((ce - rangeStart) / rangeDuration) * chartW;
+  const segLeft = Math.max(barX, compileX);
+  const segRight = Math.min(barX + barW, compileEndX);
+  const segW = segRight - segLeft;
+  if (segW <= 0.5) return;
+  ctx.save();
+  roundRectPath(ctx, barX, barY, barW, barH, radius);
+  ctx.clip();
+  ctx.fillStyle =
+    theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
+  ctx.fillRect(segLeft, barY, segW, barH);
+  ctx.restore();
+}
+
 type CanvasPalette = ReturnType<typeof getCanvasColors>;
 
 // ---------------------------------------------------------------------------
@@ -119,9 +167,6 @@ interface DrawRowLabelsParams {
   rowY: number;
   labelW: number;
   xOffset: number;
-  displayMode: DisplayMode;
-  runStartedAt: number | null | undefined;
-  timeZone: string;
   emphasis: number;
   palette: CanvasPalette;
 }
@@ -132,9 +177,6 @@ function drawRowLabels({
   rowY,
   labelW,
   xOffset,
-  displayMode,
-  runStartedAt,
-  timeZone,
   emphasis,
   palette,
 }: DrawRowLabelsParams) {
@@ -144,22 +186,11 @@ function drawRowLabels({
   ctx.rect(xOffset, rowY, labelW - 10 - xOffset, ROW_H);
   ctx.clip();
   ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
 
   ctx.font = '12px "IBM Plex Sans", "Avenir Next", sans-serif';
   ctx.fillStyle = palette.labelText;
-  ctx.fillText(item.name || item.unique_id, xOffset + 2, rowY + NAME_Y);
-
-  const startLabel =
-    displayMode === "timestamps" && runStartedAt != null
-      ? formatTimestamp(runStartedAt + item.start, timeZone)
-      : `+${formatMs(item.start)}`;
-  const endLabel =
-    displayMode === "timestamps" && runStartedAt != null
-      ? formatTimestamp(runStartedAt + item.end, timeZone)
-      : `+${formatMs(item.end)}`;
-  ctx.font = '10px "IBM Plex Mono", "Fira Mono", monospace';
-  ctx.fillStyle = palette.metaText;
-  ctx.fillText(`${startLabel} → ${endLabel}`, xOffset + 2, rowY + TIME_Y);
+  ctx.fillText(item.name || item.unique_id, xOffset + 2, rowY + ROW_H / 2);
   ctx.restore();
 }
 
@@ -196,13 +227,15 @@ function drawRowBar({
   palette,
   theme,
 }: DrawRowBarParams) {
-  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
   const barY = rowY + BAR_PAD;
-  const barStartX =
-    labelW + ((item.start - rangeStart) / rangeDuration) * chartW;
-  const barEndX = labelW + ((item.end - rangeStart) / rangeDuration) * chartW;
-  const barX = Math.min(barStartX, barEndX);
-  const barW = Math.max(2, barEndX - barStartX);
+  const { x: barX, width: barW } = clampTimelineIntervalToChartStripPx(
+    rangeStart,
+    rangeEnd,
+    item.start,
+    item.end,
+    labelW,
+    chartW,
+  );
   const radius = 3;
   const hasTestIssue = hasAttachedTestIssue(attachedTestStats);
   const hasIssueOutline = isIssueStatus(item.status) || hasTestIssue;
@@ -212,25 +245,20 @@ function drawRowBar({
   ctx.fillStyle = getResourceTypeSoftFill(item.resourceType, theme);
   fillRoundRect(ctx, barX, barY, barW, BAR_H, radius);
 
-  const cs = item.compileStart;
-  const ce = item.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs;
-  if (hasCompile) {
-    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
-    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
-    const segLeft = Math.max(barX, compileX);
-    const segRight = Math.min(barX + barW, compileEndX);
-    const segW = segRight - segLeft;
-    if (segW > 0.5) {
-      ctx.save();
-      roundRectPath(ctx, barX, barY, barW, BAR_H, radius);
-      ctx.clip();
-      ctx.fillStyle =
-        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
-      ctx.fillRect(segLeft, barY, segW, BAR_H);
-      ctx.restore();
-    }
-  }
+  fillCompilePhaseShade(ctx, {
+    rangeStart,
+    rangeEnd,
+    chartLeft: labelW,
+    chartW,
+    compileStart: item.compileStart,
+    compileEnd: item.compileEnd,
+    barX,
+    barY,
+    barW,
+    barH: BAR_H,
+    radius,
+    theme,
+  });
 
   if (hasTestIssue && isPositiveStatus(item.status)) {
     ctx.fillStyle = palette.testFailStripe;
@@ -285,12 +313,15 @@ function drawTestChip({
   emphasis,
   isHovered,
 }: DrawTestChipParams) {
-  const rangeDuration = Math.max(1, rangeEnd - rangeStart);
-  const chipStartX =
-    labelW + ((test.start - rangeStart) / rangeDuration) * chartW;
-  const chipEndX = labelW + ((test.end - rangeStart) / rangeDuration) * chartW;
-  const chipX = Math.min(chipStartX, chipEndX);
-  const chipW = Math.max(MIN_CHIP_W, chipEndX - chipStartX);
+  const { x: chipX, width: chipW } = clampTimelineIntervalToChartStripPx(
+    rangeStart,
+    rangeEnd,
+    test.start,
+    test.end,
+    labelW,
+    chartW,
+    MIN_CHIP_W,
+  );
   const chipH = TEST_BAR_H;
   const radius = 2;
   const hasIssueOutline = isIssueStatus(test.status);
@@ -300,25 +331,20 @@ function drawTestChip({
   ctx.fillStyle = getResourceTypeSoftFill(test.resourceType, theme);
   fillRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
 
-  const cs = test.compileStart;
-  const ce = test.compileEnd;
-  const hasCompile = cs != null && ce != null && ce > cs;
-  if (hasCompile) {
-    const compileX = labelW + ((cs - rangeStart) / rangeDuration) * chartW;
-    const compileEndX = labelW + ((ce - rangeStart) / rangeDuration) * chartW;
-    const segLeft = Math.max(chipX, compileX);
-    const segRight = Math.min(chipX + chipW, compileEndX);
-    const segW = segRight - segLeft;
-    if (segW > 0.5) {
-      ctx.save();
-      roundRectPath(ctx, chipX, chipY, chipW, chipH, radius);
-      ctx.clip();
-      ctx.fillStyle =
-        theme === "dark" ? "rgba(0, 0, 0, 0.24)" : "rgba(0, 0, 0, 0.12)";
-      ctx.fillRect(segLeft, chipY, segW, chipH);
-      ctx.restore();
-    }
-  }
+  fillCompilePhaseShade(ctx, {
+    rangeStart,
+    rangeEnd,
+    chartLeft: labelW,
+    chartW,
+    compileStart: test.compileStart,
+    compileEnd: test.compileEnd,
+    barX: chipX,
+    barY: chipY,
+    barW: chipW,
+    barH: chipH,
+    radius,
+    theme,
+  });
 
   ctx.strokeStyle = hasIssueOutline
     ? palette.testFailStripe
@@ -408,11 +434,25 @@ function drawGanttAxisTicks({
   palette,
 }: DrawGanttAxisTicksParams): void {
   const rangeDuration = Math.max(1, rangeEnd - rangeStart);
-  const ticks = computeTicks(rangeStart, rangeEnd);
+  const rawTicks = computeTicks(rangeStart, rangeEnd);
   ctx.font = "11px 'IBM Plex Mono', 'Fira Mono', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = palette.axisTick;
+
+  const getDisplayLabel = (tick: { ms: number; label: string }) =>
+    displayMode === "timestamps" && runStartedAt != null
+      ? formatTimestamp(runStartedAt + tick.ms, timeZone)
+      : tick.label;
+
+  const ticks = filterTicksForPixelDensity(
+    rawTicks,
+    rangeStart,
+    rangeEnd,
+    chartW,
+    getDisplayLabel,
+    (text) => ctx.measureText(text).width,
+  );
 
   for (const tick of ticks) {
     const x = labelW + ((tick.ms - rangeStart) / rangeDuration) * chartW;
@@ -442,9 +482,6 @@ interface DrawGanttVisibleRowParams {
   rangeEnd: number;
   focusIds: Set<string> | null;
   hoveredId: string | null;
-  displayMode: DisplayMode;
-  runStartedAt: number | null | undefined;
-  timeZone: string;
   theme: ThemeMode;
   palette: CanvasPalette;
   testStatsById?: Map<string, ResourceTestStats>;
@@ -464,9 +501,6 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     rangeEnd,
     focusIds,
     hoveredId,
-    displayMode,
-    runStartedAt,
-    timeZone,
     theme,
     palette,
     testStatsById,
@@ -489,9 +523,6 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     rowY,
     labelW,
     xOffset: 0,
-    displayMode,
-    runStartedAt,
-    timeZone,
     emphasis,
     palette,
   });
@@ -617,9 +648,6 @@ export function drawGantt(
       rangeEnd,
       focusIds,
       hoveredId,
-      displayMode,
-      runStartedAt,
-      timeZone,
       theme,
       palette,
       testStatsById,

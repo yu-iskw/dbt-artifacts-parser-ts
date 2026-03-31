@@ -3,9 +3,16 @@ import type { CSSProperties } from "react";
 export const ROW_H = 44;
 export const BAR_H = 14;
 export const BAR_PAD = 6;
-export const NAME_Y = 14;
-export const TIME_Y = 34;
 export const LABEL_W = 160;
+/** User preference for timeline name column width (localStorage). */
+export const TIMELINE_LABEL_WIDTH_STORAGE_KEY =
+  "dbt-tools.timelineLabelWidthPx";
+export const LABEL_COLUMN_MIN_PX = 120;
+export const LABEL_COLUMN_MAX_PX = 560;
+/** Minimum chart area width so bars stay usable when resizing the label column. */
+export const LABEL_COLUMN_RESERVED_CHART_PX = 200;
+/** Minimum horizontal gap between adjacent X-axis tick labels (CSS px). */
+export const MIN_TICK_LABEL_GAP_PX = 10;
 export const X_PAD = 24;
 export const AXIS_TOP = 32;
 export const MIN_VIEWPORT_H = 240;
