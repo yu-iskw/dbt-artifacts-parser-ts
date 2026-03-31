@@ -11,7 +11,7 @@ export function sortStatusBreakdownByCountDesc(
 }
 
 const SHARE_EFFECTIVELY_FULL = 1 - 1e-12;
-/** Below this share (with multiple statuses), show "<0.1%" instead of rounding to 0%. */
+/** Below this share, show "<0.1%" instead of rounding to 0%. */
 const SHARE_TINY_THRESHOLD = 0.0005;
 
 export function shouldPlaceExecutionSegmentLabelInsideBar(
@@ -23,16 +23,12 @@ export function shouldPlaceExecutionSegmentLabelInsideBar(
 
 /**
  * Formats a segment's share of runs within one resource type for display on execution bars.
- * Avoids integer rounding to "100%" when other statuses exist (e.g. 6038/6057 → "99.7%", not "100%").
+ * Uses `share` only (e.g. count / baseline type total) so dashboard status filters do not
+ * imply 100% just because one status segment is visible. Avoids rounding a dominant slice to
+ * "100%" when it is not full (e.g. 6038/6057 → "99.7%").
  */
-export function formatExecutionTypeSegmentPercent(
-  share: number,
-  options: { rowHasMultipleStatuses: boolean },
-): string {
+export function formatExecutionTypeSegmentPercent(share: number): string {
   if (share >= SHARE_EFFECTIVELY_FULL) {
-    return "100%";
-  }
-  if (!options.rowHasMultipleStatuses) {
     return "100%";
   }
 

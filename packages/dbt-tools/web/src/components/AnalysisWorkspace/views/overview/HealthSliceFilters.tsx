@@ -3,8 +3,8 @@ import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import type { OverviewFilterState } from "@web/lib/analysis-workspace/types";
 
 /**
- * Types, text search, and clear — scoped under a "Slice" disclosure so the
- * Execution breakdown header can carry status pills alone.
+ * Inline search, Types, and clear-all for Health detail (above Execution breakdown).
+ * Dashboard status pills live on the execution section header.
  */
 export function HealthSliceFilters({
   filters,
@@ -15,9 +15,10 @@ export function HealthSliceFilters({
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   availableTypes: string[];
 }) {
-  const sliceActiveCount =
-    filters.resourceTypes.size + (filters.query.trim() ? 1 : 0);
-  const anyFilterActive = sliceActiveCount > 0 || filters.status !== "all";
+  const anyFilterActive =
+    filters.resourceTypes.size > 0 ||
+    filters.query.trim().length > 0 ||
+    filters.status !== "all";
 
   function toggleType(resourceType: string) {
     setFilters((current) => {
@@ -29,94 +30,82 @@ export function HealthSliceFilters({
   }
 
   return (
-    <div className="health-slice-filters">
-      <details className="health-slice-filters__details">
-        <summary className="health-slice-filters__summary">
-          Slice
-          {sliceActiveCount > 0 && (
-            <span className="health-slice-filters__summary-badge">
-              {sliceActiveCount}
-            </span>
-          )}
-        </summary>
-        <div className="health-slice-filters__body" role="search">
-          <label className="workspace-search workspace-search--compact health-slice-filters__search">
-            <div className="workspace-search__input-row">
-              <input
-                value={filters.query}
-                onChange={(e) =>
-                  setFilters((current) => ({
-                    ...current,
-                    query: e.target.value,
-                  }))
-                }
-                placeholder="Filter by name, path, status, or thread…"
-                aria-label="Search executions"
-              />
-              {filters.query ? (
-                <button
-                  type="button"
-                  className="workspace-search__clear"
-                  aria-label="Clear dashboard search"
-                  onClick={() =>
-                    setFilters((current) => ({
-                      ...current,
-                      query: "",
-                    }))
-                  }
-                >
-                  ✕
-                </button>
-              ) : null}
-            </div>
-          </label>
-
-          {availableTypes.length > 0 ? (
-            <details className="health-compact-filter__types">
-              <summary className="health-compact-filter__types-summary">
-                Types
-                {filters.resourceTypes.size > 0 ? (
-                  <span className="health-compact-filter__types-badge">
-                    {filters.resourceTypes.size}
-                  </span>
-                ) : null}
-              </summary>
-              <div className="health-compact-filter__types-body pill-row">
-                {availableTypes.map((type) => {
-                  const active = filters.resourceTypes.has(type);
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      className={active ? PILL_ACTIVE : PILL_BASE}
-                      onClick={() => toggleType(type)}
-                    >
-                      {type.replace("_", " ")}
-                      {active ? " ✓" : ""}
-                    </button>
-                  );
-                })}
-              </div>
-            </details>
-          ) : null}
-
-          {anyFilterActive ? (
+    <div className="health-slice-filters" role="search">
+      <label className="workspace-search workspace-search--compact health-slice-filters__search">
+        <div className="workspace-search__input-row">
+          <input
+            value={filters.query}
+            onChange={(e) =>
+              setFilters((current) => ({
+                ...current,
+                query: e.target.value,
+              }))
+            }
+            placeholder="Filter by name, path, status, or thread…"
+            aria-label="Search executions"
+          />
+          {filters.query ? (
             <button
               type="button"
-              className="health-slice-filters__clear"
+              className="workspace-search__clear"
+              aria-label="Clear dashboard search"
               onClick={() =>
-                setFilters({
-                  status: "all",
-                  resourceTypes: new Set(),
+                setFilters((current) => ({
+                  ...current,
                   query: "",
-                })
+                }))
               }
             >
-              Clear all filters
+              ✕
             </button>
           ) : null}
         </div>
-      </details>
+      </label>
+
+      {availableTypes.length > 0 ? (
+        <details className="health-compact-filter__types">
+          <summary className="health-compact-filter__types-summary">
+            Types
+            {filters.resourceTypes.size > 0 ? (
+              <span className="health-compact-filter__types-badge">
+                {filters.resourceTypes.size}
+              </span>
+            ) : null}
+          </summary>
+          <div className="health-compact-filter__types-body pill-row">
+            {availableTypes.map((type) => {
+              const active = filters.resourceTypes.has(type);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className={active ? PILL_ACTIVE : PILL_BASE}
+                  onClick={() => toggleType(type)}
+                >
+                  {type.replace("_", " ")}
+                  {active ? " ✓" : ""}
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      ) : null}
+
+      {anyFilterActive ? (
+        <button
+          type="button"
+          className="health-slice-filters__clear"
+          onClick={() =>
+            setFilters({
+              status: "all",
+              resourceTypes: new Set(),
+              query: "",
+            })
+          }
+        >
+          Clear all filters
+        </button>
+      ) : null}
     </div>
   );
 }

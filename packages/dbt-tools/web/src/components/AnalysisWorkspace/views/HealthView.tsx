@@ -122,12 +122,17 @@ export function HealthView({
             />
           </div>
           {derived.filteredExecutions.length > 0 ? (
-            <StatusDonutWithData executions={derived.filteredExecutions} />
+            <StatusDonutWithData
+              executions={derived.filteredExecutions}
+              executionsForShareDenominator={
+                derived.baselineExecutionsForBreakdown
+              }
+            />
           ) : (
             <EmptyState
               icon="◌"
               headline="No matching executions"
-              subtext="Open Slice above to adjust search and types, set status to All, or clear all filters."
+              subtext="Adjust search or types above, set status to All, or clear all filters."
             />
           )}
         </section>

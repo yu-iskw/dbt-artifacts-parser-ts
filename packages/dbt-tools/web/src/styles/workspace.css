@@ -948,53 +948,16 @@
   overflow-y: auto;
 }
 
-/* Slice disclosure: search, types, clear-all (Health detail top) */
+/* Health detail: inline search, types, clear-all (above Execution breakdown) */
 .health-slice-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-width: min(100%, 640px);
   flex-shrink: 0;
   padding: 0.65rem 1.5rem 0.75rem;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
-}
-
-.health-slice-filters__details {
-  max-width: min(100%, 640px);
-}
-
-.health-slice-filters__summary {
-  list-style: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 0.35rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface-muted);
-  color: var(--text);
-  user-select: none;
-}
-
-.health-slice-filters__summary::-webkit-details-marker {
-  display: none;
-}
-
-.health-slice-filters__summary-badge {
-  padding: 0.08rem 0.35rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  background: var(--bg-accent-soft);
-  color: var(--text-accent);
-}
-
-.health-slice-filters__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  margin-top: 0.55rem;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--border-subtle);
 }
 
 .health-slice-filters__search {

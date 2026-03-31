@@ -32,52 +32,35 @@ describe("shouldPlaceExecutionSegmentLabelInsideBar", () => {
 describe("formatExecutionTypeSegmentPercent", () => {
   it("does not round dominant slice to 100% when other statuses exist (6038/6057)", () => {
     const share = 6038 / 6057;
-    const out = formatExecutionTypeSegmentPercent(share, {
-      rowHasMultipleStatuses: true,
-    });
+    const out = formatExecutionTypeSegmentPercent(share);
     expect(out).not.toBe("100%");
     expect(out).toMatch(/99\.7%/);
   });
 
-  it("shows 100% for a single-status row", () => {
-    expect(
-      formatExecutionTypeSegmentPercent(1, { rowHasMultipleStatuses: false }),
-    ).toBe("100%");
+  it("shows 100% for a full share", () => {
+    expect(formatExecutionTypeSegmentPercent(1)).toBe("100%");
   });
 
-  it("shows 100% when share is effectively full with multiple slices", () => {
-    expect(
-      formatExecutionTypeSegmentPercent(1, { rowHasMultipleStatuses: true }),
-    ).toBe("100%");
+  it("does not show 100% when share uses baseline denominator (e.g. status filter, one visible segment)", () => {
+    expect(formatExecutionTypeSegmentPercent(0.2)).toBe("20%");
+    expect(formatExecutionTypeSegmentPercent(2 / 6057)).toBe("<0.1%");
   });
 
   it("formats tiny shares as less than a tenth of a percent", () => {
-    expect(
-      formatExecutionTypeSegmentPercent(1 / 6057, {
-        rowHasMultipleStatuses: true,
-      }),
-    ).toBe("<0.1%");
+    expect(formatExecutionTypeSegmentPercent(1 / 6057)).toBe("<0.1%");
   });
 
   it("uses one decimal for small but visible shares", () => {
-    expect(
-      formatExecutionTypeSegmentPercent(16 / 6057, {
-        rowHasMultipleStatuses: true,
-      }),
-    ).toMatch(/^0\.3%$/);
+    expect(formatExecutionTypeSegmentPercent(16 / 6057)).toMatch(/^0\.3%$/);
   });
 
   it("uses integer percent when an exact whole", () => {
-    expect(
-      formatExecutionTypeSegmentPercent(0.5, { rowHasMultipleStatuses: true }),
-    ).toBe("50%");
+    expect(formatExecutionTypeSegmentPercent(0.5)).toBe("50%");
   });
 
   it("avoids 100.0% when just under full with two decimals if needed", () => {
     const share = 0.99951;
-    const out = formatExecutionTypeSegmentPercent(share, {
-      rowHasMultipleStatuses: true,
-    });
+    const out = formatExecutionTypeSegmentPercent(share);
     expect(out).not.toMatch(/^100\.0%$/);
     expect(out).toContain("%");
   });

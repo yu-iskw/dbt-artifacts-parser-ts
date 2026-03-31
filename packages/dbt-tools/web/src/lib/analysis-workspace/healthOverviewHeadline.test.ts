@@ -11,6 +11,7 @@ const baseDerived = (
 ): OverviewDerivedState =>
   ({
     filteredExecutions: [],
+    baselineExecutionsForBreakdown: [],
     filteredStatusBreakdown: [],
     filteredThreadStats: [],
     filteredTypes: [],

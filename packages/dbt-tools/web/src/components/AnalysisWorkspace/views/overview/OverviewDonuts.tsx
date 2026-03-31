@@ -9,30 +9,10 @@ import {
   sortStatusBreakdownByCountDesc,
 } from "@web/lib/analysis-workspace/executionTypeBarLabels";
 import {
-  buildStatusBreakdownForRows,
+  buildTypeStatusBreakdowns,
   type TypeStatusBreakdown,
 } from "@web/lib/analysis-workspace/overviewState";
 import { formatResourceTypeLabel } from "../../shared";
-
-function buildTypeStatusBreakdowns(
-  executions: ExecutionRow[],
-): TypeStatusBreakdown[] {
-  const rowsByType = new Map<string, ExecutionRow[]>();
-  for (const row of executions) {
-    const current = rowsByType.get(row.resourceType) ?? [];
-    current.push(row);
-    rowsByType.set(row.resourceType, current);
-  }
-
-  return [...rowsByType.entries()]
-    .map(([resourceType, rows]) => ({
-      resourceType,
-      count: rows.length,
-      duration: rows.reduce((sum, row) => sum + row.executionTime, 0),
-      statusBreakdown: buildStatusBreakdownForRows(rows),
-    }))
-    .sort((a, b) => b.count - a.count);
-}
 
 function TypeStatusBarRow({
   group,
@@ -43,7 +23,6 @@ function TypeStatusBarRow({
 }) {
   const labelId = useId();
   const entries = group.statusBreakdown.filter((e) => e.count > 0);
-  const rowHasMultipleStatuses = entries.length > 1;
   const breakdownEntries =
     entries.length > 0 ? sortStatusBreakdownByCountDesc(entries) : [];
   const typeLabel = formatResourceTypeLabel(group.resourceType);
@@ -63,10 +42,8 @@ function TypeStatusBarRow({
             const inside = shouldPlaceExecutionSegmentLabelInsideBar(
               entry.share,
             );
-            const pctLabel = formatExecutionTypeSegmentPercent(entry.share, {
-              rowHasMultipleStatuses,
-            });
-            const detail = `${entry.status}: ${entry.count} runs (${pctLabel}) of ${group.count}`;
+            const pctLabel = formatExecutionTypeSegmentPercent(entry.share);
+            const detail = `${entry.status}: ${entry.count} runs (${pctLabel}) of ${group.rowDenominatorCount}`;
             const isMinor =
               entry.share < EXECUTION_TYPE_BAR_LABEL_INSIDE_MIN_SHARE;
             return (
@@ -99,9 +76,7 @@ function TypeStatusBarRow({
             aria-label={`${typeLabel} status breakdown`}
           >
             {breakdownEntries.map((entry) => {
-              const pctLabel = formatExecutionTypeSegmentPercent(entry.share, {
-                rowHasMultipleStatuses,
-              });
+              const pctLabel = formatExecutionTypeSegmentPercent(entry.share);
               return (
                 <li
                   key={`${group.resourceType}-${entry.status}-breakdown`}
@@ -128,10 +103,19 @@ function TypeStatusBarRow({
   );
 }
 
-function TypeStatusBarStack({ executions }: { executions: ExecutionRow[] }) {
+function TypeStatusBarStack({
+  executions,
+  executionsForShareDenominator,
+}: {
+  executions: ExecutionRow[];
+  executionsForShareDenominator: ExecutionRow[];
+}) {
   const theme = useSyncedDocumentTheme();
   const statusColors = useMemo(() => getStatusTonePalette(theme), [theme]);
-  const groups = buildTypeStatusBreakdowns(executions);
+  const groups = useMemo(
+    () => buildTypeStatusBreakdowns(executions, executionsForShareDenominator),
+    [executions, executionsForShareDenominator],
+  );
 
   if (groups.length === 0) {
     return <div className="empty-state">No execution data.</div>;
@@ -153,8 +137,15 @@ function TypeStatusBarStack({ executions }: { executions: ExecutionRow[] }) {
 /** Execution breakdown by resource type: stacked status bars with per-row legend. */
 export function StatusDonutWithData({
   executions,
+  executionsForShareDenominator,
 }: {
   executions: ExecutionRow[];
+  executionsForShareDenominator: ExecutionRow[];
 }) {
-  return <TypeStatusBarStack executions={executions} />;
+  return (
+    <TypeStatusBarStack
+      executions={executions}
+      executionsForShareDenominator={executionsForShareDenominator}
+    />
+  );
 }
