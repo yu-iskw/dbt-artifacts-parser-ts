@@ -24,7 +24,8 @@ import {
 import { InvocationResourceStats } from "../InvocationResourceStatsTable";
 import { HealthPostureBlock } from "./overview/HealthPostureBlock";
 import { HealthMetricRow } from "./overview/HealthMetricRow";
-import { HealthCompactFilterRow } from "./overview/HealthCompactFilterRow";
+import { HealthExecutionStatusPills } from "./overview/HealthExecutionStatusPills";
+import { HealthSliceFilters } from "./overview/HealthSliceFilters";
 
 /**
  * Health — "what needs attention now?" with an above-the-fold triage strip
@@ -100,17 +101,25 @@ export function HealthView({
       </div>
 
       <div className="health-detail">
-        <HealthCompactFilterRow
+        <HealthSliceFilters
           filters={filters}
           setFilters={setFilters}
           availableTypes={availableTypes}
-          resultCount={derived.filteredExecutions.length}
         />
 
         <section className="health-section health-detail__execution">
-          <div className="health-section__header">
-            <h3>Execution breakdown</h3>
-            <p>Status distribution across the filtered execution slice.</p>
+          <div className="health-section__header health-section__header--with-inline-controls">
+            <div className="health-section__header-text">
+              <h3>Execution breakdown</h3>
+              <p>
+                {derived.filteredExecutions.length.toLocaleString()} runs in
+                this slice. Status mix by resource type.
+              </p>
+            </div>
+            <HealthExecutionStatusPills
+              filters={filters}
+              setFilters={setFilters}
+            />
           </div>
           {derived.filteredExecutions.length > 0 ? (
             <StatusDonutWithData executions={derived.filteredExecutions} />
@@ -118,7 +127,7 @@ export function HealthView({
             <EmptyState
               icon="◌"
               headline="No matching executions"
-              subtext="Try clearing the dashboard filters or broadening your search."
+              subtext="Open Slice above to adjust search and types, set status to All, or clear all filters."
             />
           )}
         </section>
