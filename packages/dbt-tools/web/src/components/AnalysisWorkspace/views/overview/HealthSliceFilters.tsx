@@ -3,17 +3,20 @@ import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import type { OverviewFilterState } from "@web/lib/analysis-workspace/types";
 
 /**
- * Inline search, Types, and clear-all for Health detail (above Execution breakdown).
+ * Search, Types, and clear-all for the Health execution slice (inline or inside Refine popover).
  * Dashboard status pills live on the execution section header.
  */
 export function HealthSliceFilters({
   filters,
   setFilters,
   availableTypes,
+  bodyClassName,
 }: {
   filters: OverviewFilterState;
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   availableTypes: string[];
+  /** Merged onto the root `role="search"` wrapper (e.g. popover body spacing). */
+  bodyClassName?: string;
 }) {
   const anyFilterActive =
     filters.resourceTypes.size > 0 ||
@@ -29,8 +32,12 @@ export function HealthSliceFilters({
     });
   }
 
+  const rootClass = ["health-slice-filters", bodyClassName]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="health-slice-filters" role="search">
+    <div className={rootClass} role="search">
       <label className="workspace-search workspace-search--compact health-slice-filters__search">
         <div className="workspace-search__input-row">
           <input

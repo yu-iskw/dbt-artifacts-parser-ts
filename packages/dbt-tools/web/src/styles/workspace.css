@@ -948,16 +948,23 @@
   overflow-y: auto;
 }
 
-/* Health detail: inline search, types, clear-all (above Execution breakdown) */
+/* Health execution slice: search, types, clear (inside Refine popover or inline) */
 .health-slice-filters {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
   max-width: min(100%, 640px);
   flex-shrink: 0;
-  padding: 0.65rem 1.5rem 0.75rem;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
+}
+
+.health-slice-filters--popover-body {
+  max-width: 100%;
+}
+
+/* Refine slice chip row (Execution breakdown, below status pills) */
+.health-exec-slice-refine {
+  flex-shrink: 0;
+  max-width: min(100%, 640px);
 }
 
 .health-slice-filters__search {
