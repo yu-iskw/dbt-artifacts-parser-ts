@@ -385,7 +385,8 @@ export function buildLineageGraphModel({
         depth,
         side,
         passCount: nodeStats?.pass ?? 0,
-        failCount: (nodeStats?.fail ?? 0) + (nodeStats?.error ?? 0),
+        // Attention test outcomes (failed/errored or warned), not skipped/not-run.
+        failCount: (nodeStats?.error ?? 0) + (nodeStats?.warn ?? 0),
       });
     });
   });

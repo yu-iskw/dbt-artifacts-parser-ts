@@ -45,8 +45,14 @@ describe("EXPLORER_UI_COPY", () => {
     expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(
       /dbt test/,
     );
+    expect(EXPLORER_UI_COPY.treeTestStatsTitle.toLowerCase()).toMatch(
+      /circle|negative/,
+    );
     expect(EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel.toLowerCase()).toMatch(
       /rollup/,
+    );
+    expect(EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel.toLowerCase()).toMatch(
+      /circle|minus/,
     );
   });
 });
@@ -119,7 +125,13 @@ describe("ExplorerTreeTestStatsGroup", () => {
     act(() => {
       root.render(
         <ExplorerTreeTestStatsGroup
-          testStats={{ pass: 0, fail: 0, error: 0 }}
+          testStats={{
+            pass: 0,
+            fail: 0,
+            error: 0,
+            warn: 0,
+            skipped: 0,
+          }}
           variant="branch"
         />,
       );
@@ -134,7 +146,13 @@ describe("ExplorerTreeTestStatsGroup", () => {
     act(() => {
       root.render(
         <ExplorerTreeTestStatsGroup
-          testStats={{ pass: 2, fail: 1, error: 0 }}
+          testStats={{
+            pass: 2,
+            fail: 0,
+            error: 1,
+            warn: 0,
+            skipped: 0,
+          }}
           variant="branch"
         />,
       );
@@ -158,7 +176,13 @@ describe("ExplorerTreeTestStatsGroup", () => {
     act(() => {
       root.render(
         <ExplorerTreeTestStatsGroup
-          testStats={{ pass: 1, fail: 0, error: 0 }}
+          testStats={{
+            pass: 1,
+            fail: 0,
+            error: 0,
+            warn: 0,
+            skipped: 0,
+          }}
           variant="leaf"
         />,
       );
@@ -167,5 +191,65 @@ describe("ExplorerTreeTestStatsGroup", () => {
     expect(group?.getAttribute("aria-label")).toBe(
       EXPLORER_UI_COPY.treeTestStatsLeafAriaLabel,
     );
+  });
+
+  it("shows warn and skipped badges without red X when no errors", () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <ExplorerTreeTestStatsGroup
+          testStats={{
+            pass: 0,
+            fail: 0,
+            error: 0,
+            warn: 2,
+            skipped: 3,
+          }}
+          variant="branch"
+        />,
+      );
+    });
+    expect(container.textContent).toContain("!2");
+    expect(container.textContent).toContain("○3");
+    expect(container.textContent).not.toContain("\u2212");
+    expect(container.textContent).not.toContain("✗");
+    const skipped = container.querySelector(
+      ".explorer-tree__test-stat--skipped",
+    );
+    expect(skipped?.getAttribute("title")).toBe(
+      EXPLORER_UI_COPY.treeTestStatSkippedTitle(3),
+    );
+  });
+
+  it("sets per-segment titles for pass and error stats", () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <ExplorerTreeTestStatsGroup
+          testStats={{
+            pass: 5,
+            fail: 0,
+            error: 2,
+            warn: 0,
+            skipped: 0,
+          }}
+          variant="branch"
+        />,
+      );
+    });
+    expect(
+      container
+        .querySelector(".explorer-tree__test-stat--pass")
+        ?.getAttribute("title"),
+    ).toBe(EXPLORER_UI_COPY.treeTestStatPassTitle(5));
+    expect(
+      container
+        .querySelector(".explorer-tree__test-stat--fail")
+        ?.getAttribute("title"),
+    ).toBe(EXPLORER_UI_COPY.treeTestStatErrorTitle(2));
   });
 });

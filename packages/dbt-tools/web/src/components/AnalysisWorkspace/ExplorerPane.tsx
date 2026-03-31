@@ -14,6 +14,7 @@ import type {
 } from "@web/lib/analysis-workspace/types";
 import {
   getResourceOriginLabel,
+  testStatsHasAny,
   type ExplorerTreeRow,
   type TestStats,
 } from "@web/lib/analysis-workspace/explorerTree";
@@ -63,10 +64,23 @@ export const EXPLORER_UI_COPY = {
     return `${typeLabel}: executed asset run outcomes for this type, not dbt test totals.`;
   },
   treeTestStatsTitle:
-    "Rollup of dbt test results for resources in this folder or on this row. A test that depends on multiple resources may be counted more than once in folder totals.",
+    "Rollup of dbt test results for resources in this folder or on this row. Red X counts failed or errored tests only. The circle before not-run counts is a label, not a negative value. Warnings and not-run or unknown tests are separate. A test that depends on multiple resources may be counted more than once in folder totals.",
   treeTestStatsBranchAriaLabel:
-    "Dbt test outcome rollup for resources in this folder. Tests with multiple upstream dependencies may be counted more than once when summed at higher folders.",
-  treeTestStatsLeafAriaLabel: "Dbt test outcomes attached to this resource.",
+    "Dbt test outcome rollup for resources in this folder: pass, failed or error, warning, and not-run counts. Not-run uses a circle label, not a minus sign. Not-run is not a failure. Tests with multiple upstream dependencies may be counted more than once when summed at higher folders.",
+  treeTestStatsLeafAriaLabel:
+    "Dbt test outcomes attached to this resource: pass, failed or error, warning, and not-run. Not-run uses a circle label, not a minus sign. Not-run is not a failure.",
+  treeTestStatPassTitle(count: number): string {
+    return `Passing dbt test attachments: ${count}`;
+  },
+  treeTestStatErrorTitle(count: number): string {
+    return `Failed or errored dbt test attachments: ${count}`;
+  },
+  treeTestStatWarnTitle(count: number): string {
+    return `Warning dbt test attachments: ${count}`;
+  },
+  treeTestStatSkippedTitle(count: number): string {
+    return `Not run or neutral dbt test attachments: ${count}. This count is not negative; the circle prefix is not a minus sign. Folder rollups may count one test multiple times when it depends on several resources.`;
+  },
   treeFolderResourceCountTitle:
     "Resources in this folder after current filters.",
 } as const;
@@ -78,8 +92,7 @@ export function ExplorerTreeTestStatsGroup({
   testStats: TestStats;
   variant: "branch" | "leaf";
 }) {
-  const total = testStats.pass + testStats.fail + testStats.error;
-  if (total <= 0) return null;
+  if (!testStatsHasAny(testStats)) return null;
   const ariaLabel =
     variant === "branch"
       ? EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel
@@ -96,13 +109,35 @@ export function ExplorerTreeTestStatsGroup({
       </span>
       <span className="explorer-tree__test-stats">
         {testStats.pass > 0 && (
-          <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
+          <span
+            className="explorer-tree__test-stat explorer-tree__test-stat--pass"
+            title={EXPLORER_UI_COPY.treeTestStatPassTitle(testStats.pass)}
+          >
             ✓{testStats.pass}
           </span>
         )}
-        {(testStats.fail > 0 || testStats.error > 0) && (
-          <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
-            ✗{testStats.fail + testStats.error}
+        {testStats.error > 0 && (
+          <span
+            className="explorer-tree__test-stat explorer-tree__test-stat--fail"
+            title={EXPLORER_UI_COPY.treeTestStatErrorTitle(testStats.error)}
+          >
+            ✗{testStats.error}
+          </span>
+        )}
+        {testStats.warn > 0 && (
+          <span
+            className="explorer-tree__test-stat explorer-tree__test-stat--warn"
+            title={EXPLORER_UI_COPY.treeTestStatWarnTitle(testStats.warn)}
+          >
+            !{testStats.warn}
+          </span>
+        )}
+        {testStats.skipped > 0 && (
+          <span
+            className="explorer-tree__test-stat explorer-tree__test-stat--skipped"
+            title={EXPLORER_UI_COPY.treeTestStatSkippedTitle(testStats.skipped)}
+          >
+            ○{testStats.skipped}
           </span>
         )}
       </span>

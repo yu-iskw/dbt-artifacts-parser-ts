@@ -250,7 +250,7 @@ describe("drawGantt", () => {
     const rowOffsets = [0, ROW_H, ROW_H * 2];
     const rowHeights = [ROW_H, bundleRowHeight(bundles[1]!, true), ROW_H];
     const testStatsById = new Map([
-      ["model.test-fail", { pass: 0, fail: 1, error: 0 }],
+      ["model.test-fail", { pass: 0, fail: 0, error: 1, warn: 0, skipped: 0 }],
     ]);
 
     drawGantt(canvas, bundles, rowOffsets, rowHeights, {

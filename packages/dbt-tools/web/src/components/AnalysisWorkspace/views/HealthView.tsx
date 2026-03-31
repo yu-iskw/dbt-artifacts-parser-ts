@@ -23,6 +23,7 @@ import { StatusDonutWithData } from "./overview/OverviewDonuts";
 import { OverviewFilterBar } from "./overview/OverviewFilterBar";
 import { GraphCompositionCard } from "./overview/GraphCompositionCard";
 import { OverviewExecutionContextBand } from "./overview/OverviewExecutionContextBand";
+import { InvocationResourceStats } from "../InvocationResourceStatsTable";
 
 /**
  * Health — the primary "what needs attention now?" lens.
@@ -197,6 +198,13 @@ export function HealthView({
             subtext="Try clearing the dashboard filters or broadening your search."
           />
         )}
+      </section>
+
+      <section
+        className="health-section health-section--invocation-stats"
+        aria-label="Invocation resource counts"
+      >
+        <InvocationResourceStats analysis={analysis} />
       </section>
 
       {/* ── Execution context band ── */}

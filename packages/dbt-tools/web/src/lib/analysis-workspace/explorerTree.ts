@@ -5,8 +5,19 @@ import { normalizeManifestFilePath } from "./utils";
 
 export interface TestStats {
   pass: number;
+  /** Legacy bucket; `buildResourceTestStats` leaves this at 0. */
   fail: number;
   error: number;
+  warn: number;
+  skipped: number;
+}
+
+export function emptyTestStats(): TestStats {
+  return { pass: 0, fail: 0, error: 0, warn: 0, skipped: 0 };
+}
+
+export function testStatsHasAny(stats: TestStats): boolean {
+  return stats.pass + stats.fail + stats.error + stats.warn + stats.skipped > 0;
 }
 
 export interface SelectedAssetTestEvidence {
@@ -33,15 +44,12 @@ export function buildResourceTestStats(
       ) ?? [];
 
     for (const resourceId of testedIds) {
-      const stats = resourceTestStats.get(resourceId) ?? {
-        pass: 0,
-        fail: 0,
-        error: 0,
-      };
+      const stats = resourceTestStats.get(resourceId) ?? emptyTestStats();
 
       if (test.statusTone === "positive") stats.pass += 1;
       else if (test.statusTone === "danger") stats.error += 1;
-      else stats.fail += 1;
+      else if (test.statusTone === "warning") stats.warn += 1;
+      else stats.skipped += 1;
 
       resourceTestStats.set(resourceId, stats);
     }
@@ -260,20 +268,22 @@ export function buildExplorerTree(
   // Aggregate leaf testStats upward to branch nodes (bottom-up recursion).
   // Returns the combined TestStats of the given node list.
   const applyTestStats = (nodes: ExplorerTreeNode[]): TestStats => {
-    const total: TestStats = { pass: 0, fail: 0, error: 0 };
+    const total = emptyTestStats();
     for (const node of nodes) {
       let nodeStats: TestStats;
       if (node.kind === "resource") {
-        nodeStats = node.testStats ?? { pass: 0, fail: 0, error: 0 };
+        nodeStats = node.testStats ?? emptyTestStats();
       } else {
         nodeStats = applyTestStats(node.children);
-        if (nodeStats.pass + nodeStats.fail + nodeStats.error > 0) {
+        if (testStatsHasAny(nodeStats)) {
           node.testStats = nodeStats;
         }
       }
       total.pass += nodeStats.pass;
       total.fail += nodeStats.fail;
       total.error += nodeStats.error;
+      total.warn += nodeStats.warn;
+      total.skipped += nodeStats.skipped;
     }
     return total;
   };
@@ -322,7 +332,7 @@ export function buildExplorerTree(
         parentIds,
       );
       const stats = resourceTestStats.get(resource.uniqueId);
-      if (stats && stats.pass + stats.fail + stats.error > 0) {
+      if (stats && testStatsHasAny(stats)) {
         leaf.testStats = stats;
       }
       siblings.push(leaf);
@@ -355,7 +365,7 @@ export function buildExplorerTree(
       parentIds,
     );
     const stats = resourceTestStats.get(resource.uniqueId);
-    if (stats && stats.pass + stats.fail + stats.error > 0) {
+    if (stats && testStatsHasAny(stats)) {
       leaf.testStats = stats;
     }
     siblings.push(leaf);

@@ -6,7 +6,6 @@ import {
 } from "react";
 import { GanttChart } from "./GanttChart";
 import { GanttLegend } from "./GanttLegend";
-import { TimelineInvocationStats } from "./TimelineInvocationStats";
 import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
 import { formatMs, isPositiveStatus } from "./gantt/formatting";
@@ -43,7 +42,7 @@ function parentHasFailureSignal(
 ): boolean {
   const stats = testStatsById.get(item.unique_id);
   const hasTestFail = stats
-    ? stats.fail + stats.error > 0
+    ? stats.error + stats.warn > 0
     : childTests.some((t) => !isPositiveStatus(t.status));
   return !isPositiveStatus(item.status) || hasTestFail;
 }
@@ -102,7 +101,6 @@ function TimelineSurface({
       title="Execution timeline"
       subtitle="Relative start and duration for each executed node."
     >
-      <TimelineInvocationStats analysis={analysis} />
       <GanttLegend
         statusCounts={statusCounts}
         typeCounts={typeCounts}

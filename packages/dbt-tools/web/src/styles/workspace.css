@@ -158,6 +158,17 @@
   background: var(--rose-soft);
 }
 
+.explorer-tree__test-stat--warn {
+  color: var(--text-warning);
+  background: var(--bg-warning-soft);
+}
+
+.explorer-tree__test-stat--skipped {
+  color: var(--text-soft);
+  background: var(--bg-surface-muted);
+  letter-spacing: 0.01em;
+}
+
 /* Count badge on branch row */
 .explorer-tree__count {
   font-size: 0.8125rem;

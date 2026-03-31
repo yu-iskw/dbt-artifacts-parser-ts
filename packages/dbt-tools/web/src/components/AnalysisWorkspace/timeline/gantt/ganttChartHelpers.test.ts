@@ -161,10 +161,21 @@ describe("getFailureBundleIds", () => {
     expect(getFailureBundleIds(bundles)).toEqual(new Set(["p"]));
   });
 
-  it("uses testStatsById fail+error when present", () => {
+  it("uses testStatsById error+warn when present", () => {
     const p = parent("p", { status: "success" });
     const bundles = [row(p)];
-    const stats = new Map([["p", { pass: 1, fail: 0, error: 1 }]]);
+    const stats = new Map([
+      ["p", { pass: 1, fail: 0, error: 1, warn: 0, skipped: 0 }],
+    ]);
+    expect(getFailureBundleIds(bundles, stats)).toEqual(new Set(["p"]));
+  });
+
+  it("treats warn-only attached tests as failure signal", () => {
+    const p = parent("p", { status: "success" });
+    const bundles = [row(p)];
+    const stats = new Map([
+      ["p", { pass: 1, fail: 0, error: 0, warn: 1, skipped: 0 }],
+    ]);
     expect(getFailureBundleIds(bundles, stats)).toEqual(new Set(["p"]));
   });
 
@@ -173,7 +184,9 @@ describe("getFailureBundleIds", () => {
     const bundles = [
       row(p, { tests: [testItem("t1", "p", { status: "pass" })] }),
     ];
-    const stats = new Map([["p", { pass: 1, fail: 0, error: 0 }]]);
+    const stats = new Map([
+      ["p", { pass: 1, fail: 0, error: 0, warn: 0, skipped: 0 }],
+    ]);
     expect(getFailureBundleIds(bundles, stats).size).toBe(0);
   });
 });

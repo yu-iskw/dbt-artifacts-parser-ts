@@ -34,7 +34,9 @@ const ISSUE_TEST_STROKE_WIDTH = 2.25;
 function hasAttachedTestIssue(
   attachedTestStats: ResourceTestStats | undefined,
 ): boolean {
-  return (attachedTestStats?.fail ?? 0) + (attachedTestStats?.error ?? 0) > 0;
+  const error = attachedTestStats?.error ?? 0;
+  const warn = attachedTestStats?.warn ?? 0;
+  return error + warn > 0;
 }
 
 // ---------------------------------------------------------------------------

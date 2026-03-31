@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   buildExplorerTree,
+  buildResourceTestStats,
   buildSelectedAssetTestEvidence,
   collectAncestorBranchIdsForResource,
-  flattenExplorerTree,
-  findNodeByLeafResourceId,
   collectLeafIds,
+  findNodeByLeafResourceId,
+  flattenExplorerTree,
   type ExplorerTreeRow,
 } from "./explorerTree";
 import type { ResourceNode } from "@web/types";
@@ -25,6 +26,93 @@ function makeResource(overrides: Partial<ResourceNode> = {}): ResourceNode {
     ...overrides,
   } as ResourceNode;
 }
+
+describe("buildResourceTestStats", () => {
+  const modelUpstream = (modelId: string) => [
+    {
+      uniqueId: modelId,
+      name: "orders",
+      resourceType: "model",
+      depth: 1,
+    },
+  ];
+
+  it("counts neutral tests as skipped, not fail", () => {
+    const modelId = "model.jaffle_shop.orders";
+    const model = makeResource({ name: "orders" });
+    const neutralTest = makeResource({
+      uniqueId: "test.jaffle_shop.n",
+      name: "n",
+      resourceType: "test",
+      originalFilePath: "tests/n.sql",
+      statusTone: "neutral",
+    });
+    const dependencyIndex = {
+      [neutralTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: modelUpstream(modelId),
+        downstream: [],
+      },
+    };
+    const map = buildResourceTestStats([model, neutralTest], dependencyIndex);
+    expect(map.get(modelId)).toEqual({
+      pass: 0,
+      fail: 0,
+      error: 0,
+      warn: 0,
+      skipped: 1,
+    });
+  });
+
+  it("maps positive, danger, and warning tones", () => {
+    const modelId = "model.jaffle_shop.orders";
+    const model = makeResource({ name: "orders" });
+    const passT = makeResource({
+      uniqueId: "test.jaffle_shop.p",
+      name: "p",
+      resourceType: "test",
+      originalFilePath: "tests/p.sql",
+      statusTone: "positive",
+    });
+    const errT = makeResource({
+      uniqueId: "test.jaffle_shop.e",
+      name: "e",
+      resourceType: "test",
+      originalFilePath: "tests/e.sql",
+      statusTone: "danger",
+    });
+    const warnT = makeResource({
+      uniqueId: "test.jaffle_shop.w",
+      name: "w",
+      resourceType: "test",
+      originalFilePath: "tests/w.sql",
+      statusTone: "warning",
+    });
+    const dependencyIndex = Object.fromEntries(
+      [passT, errT, warnT].map((t) => [
+        t.uniqueId,
+        {
+          upstreamCount: 1,
+          downstreamCount: 0,
+          upstream: modelUpstream(modelId),
+          downstream: [],
+        },
+      ]),
+    );
+    const map = buildResourceTestStats(
+      [model, passT, errT, warnT],
+      dependencyIndex,
+    );
+    expect(map.get(modelId)).toEqual({
+      pass: 1,
+      fail: 0,
+      error: 1,
+      warn: 1,
+      skipped: 0,
+    });
+  });
+});
 
 describe("buildExplorerTree", () => {
   it("returns empty array for no resources", () => {
