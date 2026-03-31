@@ -15,6 +15,7 @@ import type {
 import {
   getResourceOriginLabel,
   type ExplorerTreeRow,
+  type TestStats,
 } from "@web/lib/analysis-workspace/explorerTree";
 import {
   ExplorerBranchIcon,
@@ -51,6 +52,63 @@ export interface ExplorerPaneProps {
 }
 
 const EXPLORER_FILTERS_STORAGE_KEY = "dbt-tools.explorerFiltersExpanded";
+
+/** User-facing copy for explorer metrics; exported for unit tests. */
+export const EXPLORER_UI_COPY = {
+  resourceTypeSummaryAriaLabel:
+    "Run outcomes for executed dbt assets (non-test resources such as models and sources), grouped by resource type. Counts are how many assets succeeded versus had warnings or failures. These are not dbt test pass or fail totals.",
+  resourceTypeSummaryTitle:
+    "Run outcomes for executed dbt assets by type (excludes tests). Not dbt test pass or fail totals.",
+  resourceTypeSummaryItemTitle(typeLabel: string): string {
+    return `${typeLabel}: executed asset run outcomes for this type, not dbt test totals.`;
+  },
+  treeTestStatsTitle:
+    "Rollup of dbt test results for resources in this folder or on this row. A test that depends on multiple resources may be counted more than once in folder totals.",
+  treeTestStatsBranchAriaLabel:
+    "Dbt test outcome rollup for resources in this folder. Tests with multiple upstream dependencies may be counted more than once when summed at higher folders.",
+  treeTestStatsLeafAriaLabel: "Dbt test outcomes attached to this resource.",
+  treeFolderResourceCountTitle:
+    "Resources in this folder after current filters.",
+} as const;
+
+export function ExplorerTreeTestStatsGroup({
+  testStats,
+  variant,
+}: {
+  testStats: TestStats;
+  variant: "branch" | "leaf";
+}) {
+  const total = testStats.pass + testStats.fail + testStats.error;
+  if (total <= 0) return null;
+  const ariaLabel =
+    variant === "branch"
+      ? EXPLORER_UI_COPY.treeTestStatsBranchAriaLabel
+      : EXPLORER_UI_COPY.treeTestStatsLeafAriaLabel;
+  return (
+    <span
+      className="explorer-tree__test-stats-wrap"
+      role="group"
+      aria-label={ariaLabel}
+      title={EXPLORER_UI_COPY.treeTestStatsTitle}
+    >
+      <span className="explorer-tree__test-stats-label" aria-hidden="true">
+        Tests
+      </span>
+      <span className="explorer-tree__test-stats">
+        {testStats.pass > 0 && (
+          <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
+            ✓{testStats.pass}
+          </span>
+        )}
+        {(testStats.fail > 0 || testStats.error > 0) && (
+          <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
+            ✗{testStats.fail + testStats.error}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+}
 
 function getInitialFiltersExpanded(): boolean {
   try {
@@ -145,20 +203,29 @@ export function ResourceTypeSummaryBar({
   );
 
   return (
-    <div className="resource-type-summary" aria-label="Resource type summary">
-      {types.map(([type, { pass, fail }]) => (
-        <span key={type} className="resource-type-summary__item">
-          <span className="resource-type-summary__type">
-            {formatResourceTypeLabel(type)}
+    <div
+      className="resource-type-summary"
+      aria-label={EXPLORER_UI_COPY.resourceTypeSummaryAriaLabel}
+      title={EXPLORER_UI_COPY.resourceTypeSummaryTitle}
+    >
+      {types.map(([type, { pass, fail }]) => {
+        const typeLabel = formatResourceTypeLabel(type);
+        return (
+          <span
+            key={type}
+            className="resource-type-summary__item"
+            title={EXPLORER_UI_COPY.resourceTypeSummaryItemTitle(typeLabel)}
+          >
+            <span className="resource-type-summary__type">{typeLabel}</span>
+            {pass > 0 && (
+              <span className="resource-type-summary__pass">✓{pass}</span>
+            )}
+            {fail > 0 && (
+              <span className="resource-type-summary__fail">✗{fail}</span>
+            )}
           </span>
-          {pass > 0 && (
-            <span className="resource-type-summary__pass">✓{pass}</span>
-          )}
-          {fail > 0 && (
-            <span className="resource-type-summary__fail">✗{fail}</span>
-          )}
-        </span>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -243,26 +310,19 @@ function ExplorerTreeList({
                     <ExplorerBranchIcon mode={explorerMode} depth={depth} />
                   </span>
                   <span className="explorer-tree__label">{node.label}</span>
-                  {node.testStats &&
-                    node.testStats.pass +
-                      node.testStats.fail +
-                      node.testStats.error >
-                      0 && (
-                      <span className="explorer-tree__test-stats">
-                        {node.testStats.pass > 0 && (
-                          <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
-                            ✓{node.testStats.pass}
-                          </span>
-                        )}
-                        {(node.testStats.fail > 0 ||
-                          node.testStats.error > 0) && (
-                          <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
-                            ✗{node.testStats.fail + node.testStats.error}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  <span className="explorer-tree__count">{node.count}</span>
+                  {node.testStats && (
+                    <ExplorerTreeTestStatsGroup
+                      testStats={node.testStats}
+                      variant="branch"
+                    />
+                  )}
+                  <span
+                    className="explorer-tree__count"
+                    title={EXPLORER_UI_COPY.treeFolderResourceCountTitle}
+                    aria-label={`${node.count} resources in this folder after filters`}
+                  >
+                    {node.count}
+                  </span>
                 </button>
               </VirtualExplorerRow>
             );
@@ -293,25 +353,12 @@ function ExplorerTreeList({
                 <span className="explorer-tree__resource-body">
                   <span className="explorer-tree__label">{resource.name}</span>
                 </span>
-                {node.testStats &&
-                  node.testStats.pass +
-                    node.testStats.fail +
-                    node.testStats.error >
-                    0 && (
-                    <span className="explorer-tree__test-stats">
-                      {node.testStats.pass > 0 && (
-                        <span className="explorer-tree__test-stat explorer-tree__test-stat--pass">
-                          ✓{node.testStats.pass}
-                        </span>
-                      )}
-                      {(node.testStats.fail > 0 ||
-                        node.testStats.error > 0) && (
-                        <span className="explorer-tree__test-stat explorer-tree__test-stat--fail">
-                          ✗{node.testStats.fail + node.testStats.error}
-                        </span>
-                      )}
-                    </span>
-                  )}
+                {node.testStats && (
+                  <ExplorerTreeTestStatsGroup
+                    testStats={node.testStats}
+                    variant="leaf"
+                  />
+                )}
               </button>
             </VirtualExplorerRow>
           );

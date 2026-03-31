@@ -269,6 +269,51 @@ describe("analyzeArtifacts", () => {
     expect(result.timelineAdjacency[sourceId]).toBeDefined();
   });
 
+  it("synthesizes source rows from executed models that reference the source (no source run_results row)", async () => {
+    const { manifestJson, runResultsJson } = loadBaseFixtures();
+    const sourceId = "source.jaffle_shop.ecom.raw_orders";
+    const modelId = "model.jaffle_shop.stg_orders";
+
+    expect(
+      runResultsJson.results.some(
+        (r: Record<string, unknown>) => r.unique_id === sourceId,
+      ),
+    ).toBe(false);
+
+    const result = await analyzeArtifacts(manifestJson, runResultsJson);
+
+    const modelRow = result.ganttData.find((row) => row.unique_id === modelId);
+    const sourceRow = result.ganttData.find(
+      (row) => row.unique_id === sourceId,
+    );
+
+    expect(modelRow).toBeDefined();
+    expect(modelRow?.resourceType).toBe("model");
+    expect(sourceRow).toBeDefined();
+    expect(sourceRow?.resourceType).toBe("source");
+    expect(sourceRow?.start).toBe(modelRow?.start);
+    expect(sourceRow?.end).toBe(modelRow?.end);
+    expect(sourceRow?.compileStart).toBeNull();
+    expect(sourceRow?.executeStart).toBeNull();
+    expect(result.timelineAdjacency[sourceId]).toBeDefined();
+  });
+
+  it("uses dominant execution package when manifest metadata.project_name mismatches packages", async () => {
+    const { manifestJson, runResultsJson } = loadBaseFixtures();
+    const sourceId = "source.jaffle_shop.ecom.raw_orders";
+    const meta = manifestJson.metadata as Record<string, unknown>;
+    meta.project_name = "wrong_metadata_project";
+
+    const result = await analyzeArtifacts(manifestJson, runResultsJson);
+
+    expect(result.projectName).toBe("jaffle_shop");
+    const sourceRow = result.ganttData.find(
+      (row) => row.unique_id === sourceId,
+    );
+    expect(sourceRow).toBeDefined();
+    expect(sourceRow?.resourceType).toBe("source");
+  });
+
   it("preserves snapshot rows and resolves snapshot and seed test parents", async () => {
     const { manifestJson, runResultsJson } = loadBaseFixtures();
     const snapshotId = "snapshot.jaffle_shop.orders_snapshot";

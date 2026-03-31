@@ -1211,6 +1211,56 @@
   color: var(--text-soft);
 }
 
+.timeline-invocation-stats {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+}
+
+.timeline-invocation-stats__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.timeline-invocation-stats__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.timeline-invocation-stats__table th,
+.timeline-invocation-stats__table td {
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.timeline-invocation-stats__table thead th {
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.timeline-invocation-stats__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-invocation-stats__note {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  line-height: 1.35;
+}
+
+.timeline-invocation-stats__note code {
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
 /* Per-type donut grid in OverviewView */
 .type-donut-grid {
   display: grid;

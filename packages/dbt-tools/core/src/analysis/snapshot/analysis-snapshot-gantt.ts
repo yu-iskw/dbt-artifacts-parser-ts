@@ -3,11 +3,22 @@ import type {
   GraphLike,
   GraphologyAttrsGraph,
   ManifestEntryLookup,
+  NeighborGraph,
 } from "./analysis-snapshot-internal";
 import {
   inferPackageNameFromUniqueId,
   inferResourceTypeFromId,
 } from "./analysis-snapshot-shared";
+
+/** Graphology view needed to walk sources and outbound dependency edges. */
+type GraphologySourceDependentsGraph = GraphologyAttrsGraph &
+  NeighborGraph & {
+    forEachNode(
+      fn: (nodeId: string, attributes: Record<string, unknown>) => void,
+    ): void;
+  };
+
+const TEST_RESOURCE_TYPES_FOR_SOURCE_SYNTH = new Set(["test", "unit_test"]);
 
 export function buildManifestEntryLookup(
   manifestJson: Record<string, unknown>,
@@ -283,6 +294,72 @@ export function buildSyntheticSourceRows(
       materialized: null,
     });
   }
+
+  return syntheticRows.sort(compareGanttItems);
+}
+
+/**
+ * Synthesize timeline rows for sources that have timed, non-test dependents in
+ * `run_results` but no source row of their own (typical for `dbt run`).
+ * Runs after {@link buildSyntheticSourceRows} on the combined row list.
+ */
+export function buildSyntheticSourceRowsFromExecutedDependents(
+  combinedGanttData: GanttItem[],
+  graphologyGraph: GraphologySourceDependentsGraph,
+  projectName: string | null,
+): GanttItem[] {
+  const existingIds = new Set(combinedGanttData.map((item) => item.unique_id));
+  const itemById = new Map(
+    combinedGanttData.map((item) => [item.unique_id, item]),
+  );
+
+  const syntheticRows: GanttItem[] = [];
+
+  graphologyGraph.forEachNode((nodeId, attrs) => {
+    if (String(attrs.resource_type ?? "") !== "source") return;
+    if (existingIds.has(nodeId)) return;
+
+    const pkg =
+      typeof attrs.package_name === "string" && attrs.package_name.length > 0
+        ? attrs.package_name
+        : inferPackageNameFromUniqueId(nodeId);
+    if (projectName != null && pkg !== projectName) return;
+
+    const dependents: GanttItem[] = [];
+    for (const neighborId of graphologyGraph.outboundNeighbors(nodeId)) {
+      const item = itemById.get(neighborId);
+      if (item == null) continue;
+      if (TEST_RESOURCE_TYPES_FOR_SOURCE_SYNTH.has(item.resourceType)) continue;
+      dependents.push(item);
+    }
+
+    if (dependents.length === 0) return;
+
+    const sortedDependents = [...dependents].sort(compareGanttItems);
+    const start = Math.min(...sortedDependents.map((item) => item.start));
+    const end = Math.max(...sortedDependents.map((item) => item.end));
+
+    syntheticRows.push({
+      unique_id: nodeId,
+      name:
+        typeof attrs.name === "string" && attrs.name.length > 0
+          ? attrs.name
+          : nodeId,
+      start,
+      end,
+      duration: Math.max(0, end - start),
+      status: pickRepresentativeStatus(sortedDependents),
+      resourceType: "source",
+      packageName: pkg,
+      path: manifestDisplayPath(attrs),
+      parentId: null,
+      compileStart: null,
+      compileEnd: null,
+      executeStart: null,
+      executeEnd: null,
+      materialized: null,
+    });
+  });
 
   return syntheticRows.sort(compareGanttItems);
 }

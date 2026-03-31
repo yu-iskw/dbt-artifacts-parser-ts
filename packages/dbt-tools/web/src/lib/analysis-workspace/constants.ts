@@ -19,6 +19,7 @@ export const PILL_BASE = "workspace-pill";
 
 export const PRIMARY_PROJECT_SUMMARY_GROUPS = [
   { key: "model", label: "Models" },
+  { key: "source", label: "Sources" },
   { key: "tests", label: "Tests" },
   { key: "snapshot", label: "Snapshots" },
   { key: "metric", label: "Metrics" },

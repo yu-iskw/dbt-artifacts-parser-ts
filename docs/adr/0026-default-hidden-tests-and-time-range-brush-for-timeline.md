@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-The execution timeline view renders dbt models, seeds, snapshots, and — optionally — their attached test chips, all on a shared canvas with TanStack Virtual for vertical scrolling.
+The execution timeline view renders dbt models, seeds, snapshots, **sources** (including synthesized rows when `run_results` lacks timed source entries; see [ADR 0032](0032-timeline-includes-dbt-sources-via-snapshot-synthesis.md)), and — optionally — their attached test chips, all on a shared canvas with TanStack Virtual for vertical scrolling.
 
 Two compounding scalability problems emerged as adoption of the tool grew to real-world projects:
 
