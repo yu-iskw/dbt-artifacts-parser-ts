@@ -47,6 +47,8 @@ function makeNodeLayout(
     side,
     passCount: 0,
     failCount: 0,
+    notExecutedCount: 0,
+    skippedCount: 0,
   };
 }
 
@@ -180,6 +182,109 @@ describe("buildLineageGraphModel", () => {
 
     expect(model.nodeLayouts.get(resource.uniqueId)?.passCount).toBe(1);
     expect(model.nodeLayouts.get(resource.uniqueId)?.failCount).toBe(1);
+  });
+
+  it("attaches not-executed and skipped test counts to lineage nodes", () => {
+    const resource = makeResource({
+      statusTone: "neutral",
+      status: null,
+    });
+    const notRunTest = makeResource({
+      uniqueId: "test.jaffle_shop.not_run_a",
+      name: "not_run_a",
+      resourceType: "test",
+      path: "models/orders.yml",
+      originalFilePath: "models/orders.yml",
+      statusTone: "neutral",
+      status: null,
+    });
+    const notRunTest2 = makeResource({
+      uniqueId: "test.jaffle_shop.not_run_b",
+      name: "not_run_b",
+      resourceType: "test",
+      path: "models/orders.yml",
+      originalFilePath: "models/orders.yml",
+      statusTone: "neutral",
+      status: null,
+    });
+    const skippedTest = makeResource({
+      uniqueId: "test.jaffle_shop.skipped_one",
+      name: "skipped_one",
+      resourceType: "test",
+      path: "models/orders.yml",
+      originalFilePath: "models/orders.yml",
+      statusTone: "skipped",
+      status: "skipped",
+    });
+
+    const dependencyIndex: DependencyIndex = {
+      [resource.uniqueId]: {
+        upstreamCount: 0,
+        downstreamCount: 0,
+        upstream: [],
+        downstream: [],
+      },
+      [notRunTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: [
+          {
+            uniqueId: resource.uniqueId,
+            name: resource.name,
+            resourceType: resource.resourceType,
+            depth: 1,
+          },
+        ],
+        downstream: [],
+      },
+      [notRunTest2.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: [
+          {
+            uniqueId: resource.uniqueId,
+            name: resource.name,
+            resourceType: resource.resourceType,
+            depth: 1,
+          },
+        ],
+        downstream: [],
+      },
+      [skippedTest.uniqueId]: {
+        upstreamCount: 1,
+        downstreamCount: 0,
+        upstream: [
+          {
+            uniqueId: resource.uniqueId,
+            name: resource.name,
+            resourceType: resource.resourceType,
+            depth: 1,
+          },
+        ],
+        downstream: [],
+      },
+    };
+
+    const model = buildLineageGraphModel({
+      resource,
+      dependencySummary: dependencyIndex[resource.uniqueId],
+      dependencyIndex,
+      resourceById: new Map([
+        [resource.uniqueId, resource],
+        [notRunTest.uniqueId, notRunTest],
+        [notRunTest2.uniqueId, notRunTest2],
+        [skippedTest.uniqueId, skippedTest],
+      ]),
+      upstreamDepth: 2,
+      downstreamDepth: 2,
+      displayMode: "summary",
+    });
+
+    const layout = model.nodeLayouts.get(resource.uniqueId);
+    expect(layout?.passCount).toBe(0);
+    expect(layout?.failCount).toBe(0);
+    expect(layout?.notExecutedCount).toBe(2);
+    expect(layout?.skippedCount).toBe(1);
   });
 });
 

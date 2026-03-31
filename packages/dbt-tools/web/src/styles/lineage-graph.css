@@ -362,8 +362,27 @@
   fill: rgb(100 112 135 / 28%);
 }
 
+.dependency-graph__node-stat-pill--not-executed {
+  fill: var(--bg-surface-muted);
+  stroke: var(--border-default);
+  stroke-width: 1px;
+  stroke-dasharray: 3 2;
+}
+
+.dependency-graph__node-stat-pill--skipped {
+  fill: var(--bg-accent-soft);
+}
+
 .dependency-graph__node-stat--neutral {
   fill: #445065;
+}
+
+.dependency-graph__node-stat--not-executed {
+  fill: var(--text-soft);
+}
+
+.dependency-graph__node-stat--skipped {
+  fill: var(--text-accent);
 }
 
 .dependency-graph--summary .dependency-graph__node-stat {

@@ -14,6 +14,9 @@ export interface LineageGraphNodeLayout {
   side: "upstream" | "selected" | "downstream";
   passCount: number;
   failCount: number;
+  /** Attached tests with no run row / neutral tone (not dbt skipped). */
+  notExecutedCount: number;
+  skippedCount: number;
 }
 
 export interface LineageGraphModel {
@@ -387,6 +390,8 @@ export function buildLineageGraphModel({
         passCount: nodeStats?.pass ?? 0,
         // Attention test outcomes (failed/errored or warned), not skipped/not-run.
         failCount: (nodeStats?.error ?? 0) + (nodeStats?.warn ?? 0),
+        notExecutedCount: nodeStats?.notExecuted ?? 0,
+        skippedCount: nodeStats?.skipped ?? 0,
       });
     });
   });
