@@ -27,6 +27,7 @@ import {
   displayResourcePath,
   formatSeconds,
 } from "@web/lib/analysis-workspace/utils";
+import { ResourceMarkdownDescription } from "../ResourceMarkdownDescription";
 import { SectionCard, ResourceTypeBadge } from "../shared";
 import { LineagePanel } from "../lineage/LineagePanel";
 import { SqlPanel } from "./AssetsViewSqlPanel";
@@ -263,9 +264,10 @@ function AssetSummarySection({
         </div>
       </div>
       {resource.description ? (
-        <p className="resource-spotlight__description">
-          {resource.description}
-        </p>
+        <ResourceMarkdownDescription
+          markdown={resource.description}
+          className="resource-spotlight__description"
+        />
       ) : (
         <p className="resource-spotlight__description resource-spotlight__description--muted">
           No description was captured for this asset. Catalog-oriented metadata
