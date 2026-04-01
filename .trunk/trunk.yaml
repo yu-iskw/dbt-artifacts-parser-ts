@@ -29,10 +29,10 @@ lint:
     - taplo@0.10.0
     - shellcheck@0.11.0
     - shfmt@3.6.0
-    - actionlint@1.7.8
+    - actionlint@1.7.12
     - pre-commit-hooks@5.0.0
     - trivy@0.69.3
-    - osv-scanner@2.3.1
+    - osv-scanner@2.3.5
     - yamllint@1.38.0
     - git-diff-check
     # - markdownlint@0.48.0
