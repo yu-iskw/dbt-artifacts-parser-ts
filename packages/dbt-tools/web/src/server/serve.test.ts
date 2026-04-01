@@ -146,7 +146,9 @@ describe("startServer", () => {
 
   it("serves index.html as the SPA fallback for unknown paths", async () => {
     // Create a temp directory with a minimal index.html and point DIST_DIR to it.
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "dbt-serve-fallback-"));
+    const tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "dbt-serve-fallback-"),
+    );
     fs.writeFileSync(path.join(tmpDir, "index.html"), "<!DOCTYPE html>SPA");
 
     // Patch fs helpers to redirect dist/ reads to tmpDir.
@@ -155,7 +157,10 @@ describe("startServer", () => {
     const origReadStream = fs.createReadStream;
 
     vi.spyOn(fs, "existsSync").mockImplementation((p) =>
-      origExistsSync(String(p).replace(/[/\\]dist[/\\]?$/, `/${path.basename(tmpDir)}/`) || String(p)),
+      origExistsSync(
+        String(p).replace(/[/\\]dist[/\\]?$/, `/${path.basename(tmpDir)}/`) ||
+          String(p),
+      ),
     );
 
     // Simpler: just redirect calls whose path contains "dist" to tmpDir.
@@ -174,7 +179,10 @@ describe("startServer", () => {
           opts as Parameters<typeof fs.statSync>[1],
         ) as ReturnType<typeof fs.statSync>;
       }
-      return origStatSync(p as string, opts as Parameters<typeof fs.statSync>[1]) as ReturnType<typeof fs.statSync>;
+      return origStatSync(
+        p as string,
+        opts as Parameters<typeof fs.statSync>[1],
+      ) as ReturnType<typeof fs.statSync>;
     });
     vi.spyOn(fs, "createReadStream").mockImplementation((p, opts?) => {
       const s = String(p);

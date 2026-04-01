@@ -24,8 +24,7 @@ export default defineConfig({
         format: "es",
         entryFileNames: "server/[name].js",
         chunkFileNames: "server/[name]-[hash].js",
-        banner: (chunk) =>
-          chunk.name === "cli" ? "#!/usr/bin/env node" : "",
+        banner: (chunk) => (chunk.name === "cli" ? "#!/usr/bin/env node" : ""),
       },
     },
   },

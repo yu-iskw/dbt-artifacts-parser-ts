@@ -28,7 +28,12 @@
       "project": ["src/**/*.ts"]
     },
     "packages/dbt-tools/web": {
-      "entry": ["e2e/**/*.ts", "src/**/*.test.ts", "src/**/*.test.tsx", "src/server/cli.ts"],
+      "entry": [
+        "e2e/**/*.ts",
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/server/cli.ts"
+      ],
       "project": ["src/**/*.ts", "src/**/*.tsx"],
       "vite": true,
       "playwright": true

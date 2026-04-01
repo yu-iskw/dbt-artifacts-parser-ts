@@ -25,6 +25,14 @@ export default defineConfig({
         __dirname,
         "packages/dbt-artifacts-parser/src/run_results/index.ts",
       ),
+      "dbt-artifacts-parser/catalog": path.resolve(
+        __dirname,
+        "packages/dbt-artifacts-parser/src/catalog/index.ts",
+      ),
+      "dbt-artifacts-parser/test-utils": path.resolve(
+        __dirname,
+        "packages/dbt-artifacts-parser/src/test-utils.ts",
+      ),
     },
   },
   test: {
