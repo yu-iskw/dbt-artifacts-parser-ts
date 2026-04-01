@@ -10,13 +10,18 @@
   "license": "Apache-2.0",
   "author": "yu-iskw",
   "type": "module",
+  "bin": {
+    "dbt-tools-web": "./dist-serve/server/cli.js"
+  },
   "files": [
     "dist",
+    "dist-serve",
     "README.md"
   ],
   "scripts": {
     "prepack": "npm run build",
-    "build": "pnpm --filter @dbt-tools/core build && tsc && vite build",
+    "build": "pnpm --filter @dbt-tools/core build && tsc && vite build && pnpm run build:serve",
+    "build:serve": "vite build --config vite.server.config.ts",
     "dev": "vite",
     "dev:debug": "DBT_TOOLS_DEBUG=1 vite",
     "dev:target": "DBT_TOOLS_TARGET_DIR=./target vite",
