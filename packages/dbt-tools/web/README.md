@@ -4,13 +4,13 @@ React application for visual dbt artifact analysis: dependency graphs, execution
 
 **End users:** install from npm and run **`dbt-tools-web`** (see below). **Contributors:** clone the monorepo and use Vite — see [Developing from source](#developing-from-source) and [CONTRIBUTING.md](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/CONTRIBUTING.md).
 
-Full operator topics (Docker, GHCR, remote sources, Vite-only options) live in the [user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md) (stable URL for npmjs.com).
+Full operator topics (Docker, GHCR, remote sources, Vite-only options) live in the [user guide](../../../docs/user-guide-dbt-tools-web.md).
 
 ---
 
 ## Prerequisites
 
-- **Node.js** — use the version in [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) when developing; **Node.js 18+** is required to run the published app.
+- **Node.js** — use the version in [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) when developing; **Node.js 20+** is required to run the published app (Node 18 is EOL — see [Node.js releases](https://nodejs.org/en/about/previous-releases)).
 - A dbt **`target/`** directory (or object storage) with **`manifest.json`** and **`run_results.json`** when you want preloaded artifacts.
 
 ---
@@ -77,7 +77,7 @@ graph TD
   WW --> CORE
 ```
 
-Heavy analysis runs in a **web worker** using `@dbt-tools/core/browser`. The same artifact HTTP surface is used in **Vite dev** (monorepo) with extra file-watching behavior — see the [user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md#vite-dev-server-monorepo).
+Heavy analysis runs in a **web worker** using `@dbt-tools/core/browser`. The same artifact HTTP surface is used in **Vite dev** (monorepo) with extra file-watching behavior — see the [user guide](../../../docs/user-guide-dbt-tools-web.md#vite-dev-server-monorepo).
 
 ---
 
@@ -85,36 +85,36 @@ Heavy analysis runs in a **web worker** using `@dbt-tools/core/browser`. The sam
 
 Set these in the environment for the **Node process** that runs `dbt-tools-web` (not in the browser):
 
-| Variable                  | Description                                                                                                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DBT_TOOLS_TARGET_DIR`    | Directory containing `manifest.json` and `run_results.json` (unless using remote source)                                                                             |
-| `DBT_TOOLS_REMOTE_SOURCE` | JSON config for S3/GCS discovery (server-side only); see [user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md) |
-| `DBT_TOOLS_DEBUG`         | Set to `1` for server-side debug logs (legacy: `DBT_DEBUG`)                                                                                                          |
+| Variable                  | Description                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `DBT_TOOLS_TARGET_DIR`    | Directory containing `manifest.json` and `run_results.json` (unless using remote source)                         |
+| `DBT_TOOLS_REMOTE_SOURCE` | JSON config for S3/GCS discovery (server-side only); see [user guide](../../../docs/user-guide-dbt-tools-web.md) |
+| `DBT_TOOLS_DEBUG`         | Set to `1` for server-side debug logs (legacy: `DBT_DEBUG`)                                                      |
 
 **Deprecated (still read):** `DBT_TARGET`, `DBT_TARGET_DIR`, `DBT_DEBUG`.
 
 **Client:** add **`?debug=1`** to the URL for browser console debug logging.
 
-**Vite-only (monorepo dev):** `DBT_TOOLS_WATCH`, `DBT_TOOLS_RELOAD_DEBOUNCE_MS` — file watch and auto-reload; **not** used by the published `dbt-tools-web` binary. See the [user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md#vite-dev-server-monorepo).
+**Vite-only (monorepo dev):** `DBT_TOOLS_WATCH`, `DBT_TOOLS_RELOAD_DEBOUNCE_MS` — file watch and auto-reload; **not** used by the published `dbt-tools-web` binary. See the [user guide](../../../docs/user-guide-dbt-tools-web.md#vite-dev-server-monorepo).
 
 ---
 
 ## Docker and container images
 
-For building the **nginx static image** from the monorepo, GHCR tags, and limitations (static `dist/` only), see [user guide — Docker & GHCR](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md#docker).
+For building the **nginx static image** from the monorepo, GHCR tags, and limitations (static `dist/` only), see [user guide — Docker & GHCR](../../../docs/user-guide-dbt-tools-web.md#docker).
 
 ---
 
 ## Troubleshooting
 
-| Symptom                               | What to check                                                                                                                                                                                                                                                   |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Blank UI / no artifacts               | Pass **`--target`** or set **`DBT_TOOLS_TARGET_DIR`** to a folder that contains **`manifest.json`** (and ideally `run_results.json`). For remote mode, set **`DBT_TOOLS_REMOTE_SOURCE`**.                                                                       |
-| `GET /api/...` 404                    | Target dir missing files, wrong path, or remote config not returning a complete pair.                                                                                                                                                                           |
-| Expected “hot reload” after `dbt run` | The **npm** server re-reads files when the app fetches them; refresh the browser. **File watch + auto-reload** is a **Vite dev** feature — see the [user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md). |
-| Slow UI on huge projects              | Prefer the latest version; very large graphs still benefit from narrowing scope in the UI.                                                                                                                                                                      |
+| Symptom                               | What to check                                                                                                                                                                                               |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blank UI / no artifacts               | Pass **`--target`** or set **`DBT_TOOLS_TARGET_DIR`** to a folder that contains **`manifest.json`** (and ideally `run_results.json`). For remote mode, set **`DBT_TOOLS_REMOTE_SOURCE`**.                   |
+| `GET /api/...` 404                    | Target dir missing files, wrong path, or remote config not returning a complete pair.                                                                                                                       |
+| Expected “hot reload” after `dbt run` | The **npm** server re-reads files when the app fetches them; refresh the browser. **File watch + auto-reload** is a **Vite dev** feature — see the [user guide](../../../docs/user-guide-dbt-tools-web.md). |
+| Slow UI on huge projects              | Prefer the latest version; very large graphs still benefit from narrowing scope in the UI.                                                                                                                  |
 
-More rows and fixes: [user guide — Troubleshooting](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md#troubleshooting).
+More rows and fixes: [user guide — Troubleshooting](../../../docs/user-guide-dbt-tools-web.md#troubleshooting).
 
 ---
 
@@ -178,11 +178,11 @@ pnpm test:e2e
 
 ## Related packages
 
-| Package                                                        | Role              |
-| -------------------------------------------------------------- | ----------------- |
-| [`@dbt-tools/core`](../core/README.md)                         | Analysis engine   |
-| [`@dbt-tools/cli`](../cli/README.md)                           | CLI (`dbt-tools`) |
-| [`dbt-artifacts-parser`](../../dbt-artifacts-parser/README.md) | Artifact parsing  |
+| Package                                                                                                                        | Role              |
+| ------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| [`@dbt-tools/core`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-tools/core/README.md)            | Analysis engine   |
+| [`@dbt-tools/cli`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-tools/cli/README.md)              | CLI (`dbt-tools`) |
+| [`dbt-artifacts-parser`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-artifacts-parser/README.md) | Artifact parsing  |
 
 ---
 

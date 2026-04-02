@@ -74,7 +74,7 @@ npx @dbt-tools/web --target /path/to/dbt/target
 # npx @dbt-tools/core is not meaningful for end users
 ```
 
-Longer operator notes: [Web user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md) · [CLI user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-cli.md).
+Longer operator notes: [Web user guide](../../docs/user-guide-dbt-tools-web.md) · [CLI user guide](../../docs/user-guide-dbt-tools-cli.md).
 
 To run the web app from **source** (Vite dev server, HMR):
 

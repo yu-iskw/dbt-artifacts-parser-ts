@@ -5,6 +5,9 @@
   "keywords": [],
   "license": "ISC",
   "author": "",
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

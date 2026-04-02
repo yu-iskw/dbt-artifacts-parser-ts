@@ -9,6 +9,9 @@
   ],
   "license": "Apache-2.0",
   "author": "yu-iskw",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "dbt-tools-web": "./dist-serve/server/cli.js"

@@ -6,8 +6,8 @@ This document is for **developers** who want to build, test, or contribute to th
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) — use the version in [`.node-version`](.node-version) for local parity with CI; **18+** is acceptable for most tasks
-- [pnpm](https://pnpm.io/) ≥ 8 (`npm install -g pnpm`)
+- [Node.js](https://nodejs.org/) — **20+** required; use [`.node-version`](.node-version) for parity with CI (GitHub Actions uses `node-version-file: .node-version`)
+- [pnpm](https://pnpm.io/) **9+** (`npm install -g pnpm@9` or newer; this repo uses lockfile format 9)
 - Git
 
 ---
@@ -160,7 +160,7 @@ Packages:
 - `@dbt-tools/cli` — `npm publish` from `packages/dbt-tools/cli/` (binary: `dbt-tools`)
 - `@dbt-tools/web` — `npm publish` from `packages/dbt-tools/web/` (binary: `dbt-tools-web`; ships `dist/` + server bundle)
 
-CI publishes `@dbt-tools/*` in order via [`.github/workflows/publish-dbt-tools.yml`](.github/workflows/publish-dbt-tools.yml) after a GitHub Release (or `workflow_dispatch`).
+CI publishes `@dbt-tools/*` in order via [`.github/workflows/publish-dbt-tools.yml`](.github/workflows/publish-dbt-tools.yml) after a GitHub Release (or `workflow_dispatch`). That workflow runs **unit tests for `@dbt-tools/core` and `@dbt-tools/cli`** before publish and builds **`@dbt-tools/web`** via its package `build` script (including prepack); it does not run the web app’s full E2E suite in that job.
 
 ---
 
