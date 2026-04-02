@@ -4,27 +4,39 @@
 
 For end users, `@dbt-tools/web` ships as an npm tarball with `bin` → `dist-serve/server/cli.js`. Options considered:
 
-| Approach                        | Fidelity | Cost   | Notes                                    |
-| ------------------------------- | -------- | ------ | ---------------------------------------- |
-| Tarball + `npx`                 | High     | Medium | Matches registry install semantics       |
-| `npm install ./tgz` + bin       | High     | Medium | Extra install step                       |
-| `npm link` / `pnpm link`        | Medium   | Low    | Differs from `npx` cache install         |
-| `node dist-serve/server/cli.js` | Low      | Low    | Skips `files`, `bin`, dependency rewrite |
-| Local Verdaccio + scoped `npx`  | Highest  | High   | Only when registry resolution must match |
+| Approach                        | Fidelity | Cost   | Notes                                          |
+| ------------------------------- | -------- | ------ | ---------------------------------------------- |
+| Tarball + `npx`                 | High     | Medium | Matches registry install semantics             |
+| `npm install ./tgz` + bin       | High     | Medium | Extra install step                             |
+| `npm link` / `pnpm link`        | Medium   | Low    | Differs from `npx` cache install               |
+| `node dist-serve/server/cli.js` | Low      | Low    | Skips `files`, `bin`, dependency rewrite       |
+| Local Verdaccio + scoped `npx`  | Highest  | High   | CI uses this; matches full registry resolution |
 
-**Chosen default:** pack with pnpm (rewrites `workspace:*`), then `npx` from an empty directory using `--package` for absolute tarball paths.
+**CI default:** [`scripts/smoke-npx-with-verdaccio.sh`](../../../../scripts/smoke-npx-with-verdaccio.sh) — ephemeral Verdaccio, `pnpm publish` for `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, then pack + `npx` with `NPM_CONFIG_REGISTRY` (see [.github/workflows/test.yml](../../../../.github/workflows/test.yml) job `web-pack-npx-smoke`).
+
+**Manual default:** pack with pnpm (rewrites `workspace:*`), then `npx` from an empty directory using `--package` for absolute tarball paths — only works without extra setup if **`dbt-artifacts-parser` and `@dbt-tools/core` at that version already exist on the public registry**; otherwise use the Verdaccio script below.
 
 ## Commands (repository root)
 
-### Prerequisite: `dbt-artifacts-parser` `dist/`
+### Same as CI: Verdaccio + publish + pack + `npx`
 
-`pnpm install` does not create `packages/dbt-artifacts-parser/dist`. Web `prepack` runs `@dbt-tools/core` `tsc`, which resolves `dbt-artifacts-parser/manifest` (and related subpaths) via package exports under `dist/`. Build the parser first (matches CI `web-pack-npx-smoke`), or run a full `pnpm build`:
+After `pnpm install`, from the repo root (optional `REPO_ROOT` if not in a git checkout):
+
+```bash
+bash scripts/smoke-npx-with-verdaccio.sh
+```
+
+Uses [`scripts/verdaccio-smoke.yaml`](../../../../scripts/verdaccio-smoke.yaml) and a temp npmrc with a placeholder `_authToken` (npm 10+ requires a token for `publish`; Verdaccio accepts it with `publish: $all`). **Do not set `NPM_CONFIG_USERCONFIG` before `npx verdaccio`** starts, or `npx` may try to fetch Verdaccio from localhost.
+
+### Prerequisite: `dbt-artifacts-parser` `dist/` (manual pack path only)
+
+`pnpm install` does not create `packages/dbt-artifacts-parser/dist`. Web `prepack` runs `@dbt-tools/core` `tsc`, which resolves `dbt-artifacts-parser/manifest` (and related subpaths) via package exports under `dist/`. Build the parser first, or run a full `pnpm build`:
 
 ```bash
 pnpm --filter dbt-artifacts-parser build
 ```
 
-### Pack
+### Pack (manual path)
 
 Pack (runs `prepack` → full `@dbt-tools/web` build):
 
@@ -34,13 +46,13 @@ pnpm --filter @dbt-tools/web pack
 
 Produces **`dbt-tools-web-<version>.tgz` at the monorepo root** (gitignored `*.tgz`).
 
-**Same smoke as CI** (resolves monorepo root via `REPO_ROOT`, first argument, or `git rev-parse`):
+**Tarball-only smoke** (expects peers on the active registry; set `NPM_CONFIG_REGISTRY` to a Verdaccio URL if you published there first):
 
 ```bash
 pnpm --filter @dbt-tools/web run smoke:npx-tgz
 ```
 
-In GitHub Actions, `REPO_ROOT` is set to the workspace root before this script runs. Locally, omit `REPO_ROOT` if you run from inside the git checkout. Implementation: [`packages/dbt-tools/web/scripts/smoke-npx-packed-tarball.sh`](../../../../packages/dbt-tools/web/scripts/smoke-npx-packed-tarball.sh).
+Resolves monorepo root via `REPO_ROOT`, first argument to [`smoke-npx-packed-tarball.sh`](../../../../packages/dbt-tools/web/scripts/smoke-npx-packed-tarball.sh), or `git rev-parse`. In GitHub Actions, `REPO_ROOT` is the workspace root.
 
 Smoke **help** from a clean directory (no monorepo `node_modules` on `PATH`):
 
@@ -60,6 +72,7 @@ npx -y ./dbt-tools-web-0.4.1.tgz -- --help
 
 ## Pitfalls
 
+- **`npm error notarget` / `No matching version found for @dbt-tools/core@…`:** the packed web tarball lists concrete semver peers (rewritten from `workspace:*`). A clean-dir `npx` install hits the **registry** for those peers. Use **`bash scripts/smoke-npx-with-verdaccio.sh`** (or publish peers to npm first).
 - **Bare absolute path to `.tgz` as first `npx` argument** (e.g. `npx -y /abs/path/file.tgz -- --help`) can yield **`Permission denied`** — the shell tries to execute the archive. Use **`--package=/abs/path/...`** + **`-- dbt-tools-web`**, or a **relative** `./file.tgz`.
 - **`npm pack` without pnpm** in this monorepo can mishandle **`workspace:*`** dependencies; prefer **`pnpm --filter @dbt-tools/web pack`**.
 

@@ -77,14 +77,10 @@ jobs:
           version: 10
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build dbt-artifacts-parser (dist required for @dbt-tools/core tsc)
-        run: pnpm --filter dbt-artifacts-parser build
-      - name: Pack @dbt-tools/web (prepack builds)
-        run: pnpm --filter @dbt-tools/web pack
-      - name: npx help via tarball (clean directory)
+      - name: Verdaccio publish peers + pack + npx smoke
         env:
           REPO_ROOT: ${{ github.workspace }}
-        run: pnpm --filter @dbt-tools/web run smoke:npx-tgz
+        run: bash scripts/smoke-npx-with-verdaccio.sh
 
   e2e:
     name: E2E ${{ matrix.shard }}/2

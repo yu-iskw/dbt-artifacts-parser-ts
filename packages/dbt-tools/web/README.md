@@ -156,9 +156,17 @@ DBT_TOOLS_TARGET_DIR=./target pnpm dev
 
 ### Verify publish locally (tarball + `npx`)
 
-To smoke-test the published **`dbt-tools-web`** entrypoint and tarball layout **without publishing to npm**:
+To smoke-test the published **`dbt-tools-web`** entrypoint and tarball layout **without publishing to the public npm registry**:
 
-- **Repository root** (after `pnpm install`):
+- **Recommended (matches CI):** from the **monorepo root** after `pnpm install`, run Verdaccio, publish `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, pack, then `npx` with `NPM_CONFIG_REGISTRY` pointing at that registry:
+
+```bash
+bash scripts/smoke-npx-with-verdaccio.sh
+```
+
+This avoids **`No matching version found for @dbt-tools/core@…`** when those versions are not yet on npm (packed tarballs list concrete semver peers).
+
+- **Manual pack only** (only reliable if peer versions already exist on the registry `npx` uses, or you set `NPM_CONFIG_REGISTRY` accordingly):
 
 ```bash
 pnpm --filter @dbt-tools/web pack
