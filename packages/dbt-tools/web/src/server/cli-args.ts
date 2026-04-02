@@ -19,56 +19,102 @@ export type ParsedCli =
       open: boolean;
     };
 
-export function parseCliArgs(argv: string[]): ParsedCli {
-  let targetDir: string | undefined;
-  let port = 3000;
-  let open = true;
+type MutableCliState = {
+  targetDir: string | undefined;
+  port: number;
+  open: boolean;
+};
 
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === undefined) {
-      break;
-    }
-    if (arg === "--help" || arg === "-h") {
-      return { kind: "help" };
-    }
-    if (arg === "--no-open") {
-      open = false;
-      continue;
-    }
-    if (arg === "--target" || arg === "-t") {
-      const next = argv[i + 1];
-      if (!next || next.startsWith("-")) {
-        return {
-          kind: "error",
-          message: "Missing value for --target (or -t)",
-        };
-      }
-      targetDir = next;
-      i += 1;
-      continue;
-    }
-    if (arg === "--port" || arg === "-p") {
-      const next = argv[i + 1];
-      if (!next || next.startsWith("-")) {
-        return {
-          kind: "error",
-          message: "Missing value for --port (or -p)",
-        };
-      }
-      i += 1;
-      const parsed = parseInt(next, 10);
-      if (Number.isNaN(parsed) || parsed < 1 || parsed > 65535) {
-        return { kind: "error", message: `Invalid port: ${next}` };
-      }
-      port = parsed;
-      continue;
-    }
-    if (arg.startsWith("-")) {
-      return { kind: "error", message: `Unknown option: ${arg}` };
-    }
-    return { kind: "error", message: `Unexpected argument: ${arg}` };
+type RequiredValue =
+  | { ok: true; value: string; nextIndex: number }
+  | { ok: false; message: string };
+
+function readRequiredValue(
+  argv: string[],
+  i: number,
+  flagDesc: string,
+): RequiredValue {
+  const next = argv[i + 1];
+  if (!next || next.startsWith("-")) {
+    return { ok: false, message: `Missing value for ${flagDesc}` };
   }
+  return { ok: true, value: next, nextIndex: i + 1 };
+}
 
-  return { kind: "ok", targetDir, port, open };
+function parsePortString(s: string): number | null {
+  const parsed = Number.parseInt(s, 10);
+  if (Number.isNaN(parsed) || parsed < 1 || parsed > 65535) {
+    return null;
+  }
+  return parsed;
+}
+
+type Step =
+  | { status: "advance"; nextIndex: number }
+  | { status: "done"; result: ParsedCli };
+
+function consumeOne(argv: string[], i: number, state: MutableCliState): Step {
+  const arg = argv[i]!;
+  if (arg === "--help" || arg === "-h") {
+    return { status: "done", result: { kind: "help" } };
+  }
+  if (arg === "--no-open") {
+    state.open = false;
+    return { status: "advance", nextIndex: i + 1 };
+  }
+  if (arg === "--target" || arg === "-t") {
+    const r = readRequiredValue(argv, i, "--target (or -t)");
+    if (!r.ok) {
+      return { status: "done", result: { kind: "error", message: r.message } };
+    }
+    state.targetDir = r.value;
+    return { status: "advance", nextIndex: r.nextIndex + 1 };
+  }
+  if (arg === "--port" || arg === "-p") {
+    const r = readRequiredValue(argv, i, "--port (or -p)");
+    if (!r.ok) {
+      return { status: "done", result: { kind: "error", message: r.message } };
+    }
+    const p = parsePortString(r.value);
+    if (p === null) {
+      return {
+        status: "done",
+        result: { kind: "error", message: `Invalid port: ${r.value}` },
+      };
+    }
+    state.port = p;
+    return { status: "advance", nextIndex: r.nextIndex + 1 };
+  }
+  if (arg.startsWith("-")) {
+    return {
+      status: "done",
+      result: { kind: "error", message: `Unknown option: ${arg}` },
+    };
+  }
+  return {
+    status: "done",
+    result: { kind: "error", message: `Unexpected argument: ${arg}` },
+  };
+}
+
+export function parseCliArgs(argv: string[]): ParsedCli {
+  const state: MutableCliState = {
+    targetDir: undefined,
+    port: 3000,
+    open: true,
+  };
+  let i = 0;
+  while (i < argv.length) {
+    const step = consumeOne(argv, i, state);
+    if (step.status === "done") {
+      return step.result;
+    }
+    i = step.nextIndex;
+  }
+  return {
+    kind: "ok",
+    targetDir: state.targetDir,
+    port: state.port,
+    open: state.open,
+  };
 }
