@@ -25,6 +25,7 @@ Ensure the **npm pack** artifact installs and exposes the **`dbt-tools-web`** bi
 
 From the **repository root**:
 
+0. **Fresh install only:** ensure `dbt-artifacts-parser` has `dist/` (package exports point there). Run `pnpm --filter dbt-artifacts-parser build` or `pnpm build`. The **`web-pack-npx-smoke`** CI job builds the parser before pack; without this, `@dbt-tools/core` `tsc` fails during web `prepack`.
 1. `pnpm --filter @dbt-tools/web pack` — creates `dbt-tools-web-<version>.tgz` at the **repo root** (`prepack` runs the full web build).
 2. In a **fresh temp directory**, run **`npx -y --package="$TGZ" -- dbt-tools-web --help`** (use absolute `TGZ`; see pitfalls below), or run **`pnpm --filter @dbt-tools/web run smoke:npx-tgz`** after pack (uses [`scripts/smoke-npx-packed-tarball.sh`](../../../packages/dbt-tools/web/scripts/smoke-npx-packed-tarball.sh)).
 
@@ -32,10 +33,11 @@ Details, optional HTTP smoke, and the **absolute-path `npx` pitfall** are in [re
 
 ## Verification loop
 
-1. **Pack:** `pnpm --filter @dbt-tools/web pack` (must exit 0).
-2. **Resolve tarball:** exactly one `dbt-tools-web-*.tgz` at repo root (version matches [packages/dbt-tools/web/package.json](../../../packages/dbt-tools/web/package.json)).
-3. **Smoke:** `cd "$(mktemp -d)"` then `npx -y --package="<absolute-path-to-tgz>" -- dbt-tools-web --help` (must print usage and exit 0).
-4. **On failure:** read stderr (missing file, Node errors, `command not found`). Fix **web `package.json`**, **Vite server build** (`vite.server.config.ts`), **prepack/build scripts**, or **workspace publish** config; re-run from step 1.
+1. **Parser dist (if needed):** `pnpm --filter dbt-artifacts-parser build` after `pnpm install` when `packages/dbt-artifacts-parser/dist` is missing (same as CI).
+2. **Pack:** `pnpm --filter @dbt-tools/web pack` (must exit 0).
+3. **Resolve tarball:** exactly one `dbt-tools-web-*.tgz` at repo root (version matches [packages/dbt-tools/web/package.json](../../../packages/dbt-tools/web/package.json)).
+4. **Smoke:** `cd "$(mktemp -d)"` then `npx -y --package="<absolute-path-to-tgz>" -- dbt-tools-web --help` (must print usage and exit 0).
+5. **On failure:** read stderr (missing file, Node errors, `command not found`). Fix **web `package.json`**, **Vite server build** (`vite.server.config.ts`), **prepack/build scripts**, or **workspace publish** config; re-run from step 2.
 
 **Note:** `pack` triggers **`prepack`** and may **rebuild** the web package even after `pnpm build`; that is expected and matches publish behavior.
 

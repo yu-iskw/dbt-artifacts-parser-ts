@@ -16,6 +16,16 @@ For end users, `@dbt-tools/web` ships as an npm tarball with `bin` → `dist-ser
 
 ## Commands (repository root)
 
+### Prerequisite: `dbt-artifacts-parser` `dist/`
+
+`pnpm install` does not create `packages/dbt-artifacts-parser/dist`. Web `prepack` runs `@dbt-tools/core` `tsc`, which resolves `dbt-artifacts-parser/manifest` (and related subpaths) via package exports under `dist/`. Build the parser first (matches CI `web-pack-npx-smoke`), or run a full `pnpm build`:
+
+```bash
+pnpm --filter dbt-artifacts-parser build
+```
+
+### Pack
+
 Pack (runs `prepack` → full `@dbt-tools/web` build):
 
 ```bash
