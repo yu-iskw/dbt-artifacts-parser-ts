@@ -6,8 +6,6 @@ import { ArtifactSourceService } from "../artifact-source/sourceService.js";
 import { tryHandleArtifactSourceViteRequest } from "../artifact-source/viteArtifactRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// At runtime this file lives at dist-serve/server/serve.js
-// so dist/ is two levels up.
 const DIST_DIR = path.resolve(__dirname, "../../dist");
 
 let DIST_ROOT_REAL: string;
@@ -37,7 +35,6 @@ const MIME: Record<string, string> = {
   ".txt": "text/plain",
 };
 
-/** Containment using the same path representation as `root` (logical paths; supports symlinked `root`). */
 function isContainedUnderRoot(
   root: string,
   candidateResolved: string,
@@ -47,9 +44,8 @@ function isContainedUnderRoot(
 }
 
 /**
- * Map a filesystem candidate to a path under the real dist root for `fs.*`.
- * Rebuilds using `path.join(DIST_ROOT_REAL, relative)` after validating `relative`
- * so the dynamic segment is not used as a raw prefix (CodeQL js/path-injection).
+ * Path safe for `fs.*`: validate relative to logical `DIST_DIR`, then rebuild with
+ * `path.join(DIST_ROOT_REAL, rel)` + `realpathSync` so CodeQL `js/path-injection` sees a guarded join.
  */
 function toSafeAbsoluteUnderDist(candidatePath: string): string {
   const resolvedInput = path.resolve(candidatePath);
@@ -69,8 +65,7 @@ function toSafeAbsoluteUnderDist(candidatePath: string): string {
 }
 
 /**
- * Map a request URL path to a filesystem path under dist/, with traversal and
- * symlink escape prevention.
+ * URL path → filesystem path under dist (traversal + symlink escape). Symlinked `DIST_DIR` uses logical containment first.
  */
 export function resolveStaticPath(urlPath: string): string {
   const safe = urlPath.startsWith("/") ? urlPath : `/${urlPath}`;
@@ -85,7 +80,6 @@ export function resolveStaticPath(urlPath: string): string {
   const relativeSegment = decoded.replace(/^\/+/, "") || ".";
   const resolved = path.resolve(DIST_DIR, relativeSegment);
 
-  // Logical containment first so symlinked DIST_DIR (e.g. monorepo link) still resolves.
   if (!isContainedUnderRoot(DIST_DIR, resolved)) {
     return INDEX_HTML;
   }
@@ -101,6 +95,23 @@ export function resolveStaticPath(urlPath: string): string {
   }
 }
 
+function requestPathname(req: http.IncomingMessage): string {
+  return (req.url ?? "/").split("?")[0] ?? "/";
+}
+
+/** 500 body, or destroy if a response was already started (e.g. mid-stream read failure). */
+function sendInternalError(
+  res: http.ServerResponse,
+  destroyIfPartial: boolean,
+): void {
+  if (!res.headersSent) {
+    res.statusCode = 500;
+    res.end("Internal server error");
+  } else if (destroyIfPartial) {
+    res.destroy();
+  }
+}
+
 function sendFileWithOptionalSpaFallback(
   primaryPath: string,
   res: http.ServerResponse,
@@ -110,16 +121,11 @@ function sendFileWithOptionalSpaFallback(
   const stream = fs.createReadStream(safePath);
   stream.on("error", () => {
     stream.destroy();
-    if (allowSpaFallback && primaryPath !== INDEX_HTML && !res.headersSent) {
+    if (allowSpaFallback && !res.headersSent) {
       sendFileWithOptionalSpaFallback(INDEX_HTML, res, false);
       return;
     }
-    if (!res.headersSent) {
-      res.statusCode = 500;
-      res.end("Internal server error");
-    } else {
-      res.destroy();
-    }
+    sendInternalError(res, true);
   });
 
   const ext = path.extname(safePath).toLowerCase();
@@ -129,12 +135,13 @@ function sendFileWithOptionalSpaFallback(
 }
 
 function serveStaticFile(filePath: string, res: http.ServerResponse): void {
-  let target = toSafeAbsoluteUnderDist(filePath);
+  const safeResolved = toSafeAbsoluteUnderDist(filePath);
+  const safeIndex = toSafeAbsoluteUnderDist(INDEX_HTML);
+  let target = safeResolved;
   if (!fs.existsSync(target) || fs.statSync(target).isDirectory()) {
-    target = toSafeAbsoluteUnderDist(INDEX_HTML);
+    target = safeIndex;
   }
-
-  const allowSpaFallback = filePath !== INDEX_HTML;
+  const allowSpaFallback = safeResolved !== safeIndex;
   sendFileWithOptionalSpaFallback(target, res, allowSpaFallback);
 }
 
@@ -157,19 +164,15 @@ export function startServer(port: number): Promise<void> {
         );
         if (handled) return;
 
-        const pathname = (req.url ?? "/").split("?")[0] ?? "/";
+        const pathname = requestPathname(req);
         if (pathname === "/api" || pathname.startsWith("/api/")) {
           sendApiNotFound(res);
           return;
         }
 
-        const urlPath = req.url ?? "/";
-        serveStaticFile(resolveStaticPath(urlPath), res);
+        serveStaticFile(resolveStaticPath(req.url ?? "/"), res);
       } catch (err) {
-        if (!res.headersSent) {
-          res.statusCode = 500;
-          res.end("Internal server error");
-        }
+        sendInternalError(res, false);
         console.error("[dbt-tools-web]", err);
       }
     })();
