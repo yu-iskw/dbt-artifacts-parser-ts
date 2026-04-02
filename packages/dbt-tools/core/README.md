@@ -22,6 +22,8 @@ graph TD
 
 ## Installation
 
+This package is a **TypeScript library** — there is no CLI binary. For the command line use [`@dbt-tools/cli`](../cli/README.md) (`dbt-tools`); for the browser UI use [`@dbt-tools/web`](../web/README.md) (`dbt-tools-web`).
+
 ```bash
 pnpm add @dbt-tools/core
 ```

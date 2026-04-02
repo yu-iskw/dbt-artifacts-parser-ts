@@ -6,7 +6,7 @@ This document is for **developers** who want to build, test, or contribute to th
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) ≥ 18
+- [Node.js](https://nodejs.org/) — use the version in [`.node-version`](.node-version) for local parity with CI; **18+** is acceptable for most tasks
 - [pnpm](https://pnpm.io/) ≥ 8 (`npm install -g pnpm`)
 - Git
 
@@ -157,8 +157,10 @@ Packages:
 
 - `dbt-artifacts-parser` — `npm publish` from `packages/dbt-artifacts-parser/`
 - `@dbt-tools/core` — `npm publish` from `packages/dbt-tools/core/`
-- `@dbt-tools/cli` — `npm publish` from `packages/dbt-tools/cli/`
-- `@dbt-tools/web` — not published to npm (app only)
+- `@dbt-tools/cli` — `npm publish` from `packages/dbt-tools/cli/` (binary: `dbt-tools`)
+- `@dbt-tools/web` — `npm publish` from `packages/dbt-tools/web/` (binary: `dbt-tools-web`; ships `dist/` + server bundle)
+
+CI publishes `@dbt-tools/*` in order via [`.github/workflows/publish-dbt-tools.yml`](.github/workflows/publish-dbt-tools.yml) after a GitHub Release (or `workflow_dispatch`).
 
 ---
 

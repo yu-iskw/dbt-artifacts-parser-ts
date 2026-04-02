@@ -73,7 +73,13 @@ npm install dbt-artifacts-parser
 npm install -g @dbt-tools/cli
 dbt-tools summary          # requires ./target/manifest.json
 dbt-tools run-report       # requires ./target/run_results.json
+
+# Visual analyzer in the browser (published server binary)
+npm install -g @dbt-tools/web
+dbt-tools-web --target ./target   # or: npx @dbt-tools/web --target ./target
 ```
+
+See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for configuration (`DBT_TOOLS_REMOTE_SOURCE`, debugging, Docker pointers).
 
 ---
 

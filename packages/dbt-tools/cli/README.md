@@ -2,6 +2,8 @@
 
 Command-line interface for dbt artifact analysis. Optimized for both human and AI agent consumption.
 
+**Quick start:** install Node.js **18+** (see the repo [`.node-version`](../../../.node-version) for the version used in development), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended agent-focused topics (errors, validation, `schema` introspection) are in the [user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-cli.md).
+
 ## Commands
 
 ```mermaid

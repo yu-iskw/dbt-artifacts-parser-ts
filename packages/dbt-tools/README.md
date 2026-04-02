@@ -59,24 +59,28 @@ All `@dbt-tools/*` packages are published on npm:
 - `@dbt-tools/web`: [@dbt-tools/web on npm](https://www.npmjs.com/package/@dbt-tools/web) <!-- markdown-link-check-disable-line -->
 - `@dbt-tools/core`: [@dbt-tools/core on npm](https://www.npmjs.com/package/@dbt-tools/core) <!-- markdown-link-check-disable-line -->
 
-### `npx` availability
+### `npx` and binaries
 
 ```bash
-# ✅ Works (package exposes the "dbt-tools" binary)
+# CLI — package exposes the "dbt-tools" binary
 npx @dbt-tools/cli --help
+dbt-tools summary
 
-# ❌ Not supported (library package; no executable)
-npx @dbt-tools/core --help
-
-# ❌ Not supported (web package ships app assets, no executable)
+# Web — package exposes "dbt-tools-web" (static UI + artifact server)
 npx @dbt-tools/web --help
+npx @dbt-tools/web --target /path/to/dbt/target
+
+# Core — library only; no CLI binary
+# npx @dbt-tools/core is not meaningful for end users
 ```
 
-To run the web app locally in this monorepo:
+Longer operator notes: [Web user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-web.md) · [CLI user guide](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/user-guide-dbt-tools-cli.md).
+
+To run the web app from **source** (Vite dev server, HMR):
 
 ```bash
-cd packages/dbt-tools/web
-pnpm dev
+# from repository root
+pnpm dev:web
 ```
 
 ---
