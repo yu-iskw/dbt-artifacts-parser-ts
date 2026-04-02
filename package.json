@@ -62,7 +62,7 @@
       "@tootallnate/once": "^3.0.1",
       "esbuild": "^0.27.2",
       "flatted": ">=3.4.2",
-      "lodash": "^4.17.23",
+      "lodash": "^4.18.0",
       "rollup": ">=4.59.0"
     },
     "peerDependencyRules": {
