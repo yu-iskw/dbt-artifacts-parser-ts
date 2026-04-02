@@ -8,10 +8,11 @@
   "author": "yu-iskw",
   "scripts": {
     "build": "pnpm --recursive --sequential run build",
+    "clean": "rm -rf ./packages/dbt-tools/web/dist ./packages/dbt-tools/web/dist-serve ./packages/dbt-tools/web/playwright-report ./packages/dbt-tools/web/test-results",
     "codeql": "pnpm codeql:db && pnpm codeql:analyze",
     "codeql:analyze": "node scripts/codeql-check.mjs codeql/javascript-queries && codeql database analyze ./codeql-db codeql/javascript-queries --format=sarif-latest --output=codeql-results.sarif",
     "codeql:analyze:download": "node scripts/codeql-check.mjs && codeql database analyze ./codeql-db codeql/javascript-queries --download --format=sarif-latest --output=codeql-results.sarif",
-    "codeql:clean": "rm -rf ./codeql-db ./codeql-results.sarif ./packages/dbt-tools/web/dist ./packages/dbt-tools/web/playwright-report ./packages/dbt-tools/web/test-results",
+    "codeql:clean": "pnpm clean && rm -rf ./codeql-db ./codeql-results.sarif",
     "codeql:db": "node scripts/codeql-check.mjs && pnpm codeql:clean && codeql database create ./codeql-db --language=javascript --source-root=.",
     "coverage:report": "node scripts/coverage-score.mjs",
     "dev:web": "pnpm --filter @dbt-tools/web dev",
