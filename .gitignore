@@ -153,6 +153,9 @@ vite.config.ts.timestamp-*
 # Claude Code local overrides (project defaults in .claude/settings.json)
 .claude/settings.local.json
 
+# Cursor / continual-learning hook state (machine-local paths; do not commit)
+.cursor/hooks/state/
+
 TODO.md
 
 codeql-db/

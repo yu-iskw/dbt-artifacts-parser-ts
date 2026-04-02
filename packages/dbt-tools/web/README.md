@@ -114,6 +114,8 @@ For building the **nginx static image** from the monorepo, GHCR tags, and limita
 | Expected “hot reload” after `dbt run` | The **npm** server re-reads files when the app fetches them; refresh the browser. **File watch + auto-reload** is a **Vite dev** feature — see the [user guide](../../../docs/user-guide-dbt-tools-web.md). |
 | Slow UI on huge projects              | Prefer the latest version; very large graphs still benefit from narrowing scope in the UI.                                                                                                                  |
 
+If **`npx`** against a local **`.tgz`** fails with **`Permission denied`**, use `npx -y ./name.tgz -- --help` from the directory that contains the file, or `npx -y --package=/abs/path/name.tgz -- dbt-tools-web …`. See **Verify publish locally** under [Developing from source](#developing-from-source).
+
 More rows and fixes: [user guide — Troubleshooting](../../../docs/user-guide-dbt-tools-web.md#troubleshooting).
 
 ---
@@ -150,6 +152,40 @@ Preload local artifacts (Vite):
 ```bash
 DBT_TOOLS_TARGET_DIR=./target pnpm dev
 # or: pnpm dev:target
+```
+
+### Verify publish locally (tarball + `npx`)
+
+To smoke-test the published **`dbt-tools-web`** entrypoint and tarball layout **without publishing to the public npm registry**:
+
+- **Recommended (matches CI):** from the **monorepo root** after `pnpm install`, run Verdaccio, publish `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, pack, then `npx` with `NPM_CONFIG_REGISTRY` pointing at that registry:
+
+```bash
+bash scripts/smoke-npx-with-verdaccio.sh
+```
+
+This avoids **`No matching version found for @dbt-tools/core@…`** when those versions are not yet on npm (packed tarballs list concrete semver peers).
+
+- **Manual pack only** (only reliable if peer versions already exist on the registry `npx` uses, or you set `NPM_CONFIG_REGISTRY` accordingly):
+
+```bash
+pnpm --filter @dbt-tools/web pack
+```
+
+`prepack` runs the full web build and writes **`dbt-tools-web-<version>.tgz` at the repo root** (the file is gitignored).
+
+- **Empty directory** so `npx` does not see the monorepo’s `node_modules`:
+
+```bash
+cd "$(mktemp -d)"
+# After copying the .tgz into this directory (adjust version to match package.json):
+npx -y ./dbt-tools-web-0.4.1.tgz -- --help
+```
+
+If you pass a **bare absolute path** to the tarball, some `npx` versions try to execute it as a shell script and fail (`Permission denied`). Prefer either a **relative** `./…tgz` path or an explicit package spec:
+
+```bash
+npx -y --package=/absolute/path/to/dbt-tools-web-0.4.1.tgz -- dbt-tools-web --help
 ```
 
 ### Project layout (abridged)

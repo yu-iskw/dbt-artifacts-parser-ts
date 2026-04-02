@@ -60,7 +60,7 @@ After meaningful UI, spec, or app fixes for E2E: from the repo root run **`pnpm 
 
 ## Verifier agent
 
-The default **verifier** agent does **not** run E2E (slower, browser-dependent). Run **`pnpm test:e2e`** and this skill when the user or task calls for full web flow verification—for example after substantive **`@dbt-tools/web`** UI or E2E spec changes.
+The default **verifier** agent does **not** run Playwright E2E (slower, browser-dependent); it **does** run **`dbt-tools-web-pack-npx-smoke`** (tarball + `npx --help`) after **`pnpm build`**. Run **`pnpm test:e2e`** and this skill when the user or task calls for full web flow verification—for example after substantive **`@dbt-tools/web`** UI or E2E spec changes.
 
 ## Other projects
 
