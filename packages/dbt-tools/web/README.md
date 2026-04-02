@@ -24,18 +24,13 @@ npm install -g @dbt-tools/web
 dbt-tools-web --target /path/to/your/dbt/target
 ```
 
-Or without a global install (pick one):
+Or without a global install:
 
 ```bash
 npx @dbt-tools/web --target /path/to/your/dbt/target
-pnpm dlx @dbt-tools/web -- --target /path/to/your/dbt/target
 ```
 
-`npx` / `pnpm dlx` install the package temporarily and run the **`dbt-tools-web`** binary from npm.
-
-**Working directory:** run these from a **normal project folder** (for example your home directory, `/tmp`, or a small throwaway directory)—**not** from `packages/dbt-tools/web` inside a clone of this repo **unless** you have already built that package (`pnpm --filter @dbt-tools/web build`). Otherwise the tool may resolve the **workspace copy**, which does not ship `dist-serve/` until built, and you can see errors such as **`sh: dbt-tools-web: command not found`** (exit 127) or a missing CLI file. **Contributors** doing day-to-day UI work should use **`pnpm dev`** / **`pnpm dev:web`** with **`DBT_TOOLS_TARGET_DIR`** instead; see [Developing from source](#developing-from-source).
-
-Useful flags:
+`npx` invokes the package’s binary (`dbt-tools-web`). Useful flags:
 
 | Flag                    | Description                                          |
 | ----------------------- | ---------------------------------------------------- |
@@ -112,15 +107,16 @@ For building the **nginx static image** from the monorepo, GHCR tags, and limita
 
 ## Troubleshooting
 
-| Symptom                                               | What to check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sh: dbt-tools-web: command not found` / **exit 127** | The shell could not run the **`dbt-tools-web`** binary. **Fix:** install globally (`npm install -g @dbt-tools/web`) and ensure your global npm **`bin`** directory is on **`PATH`**, **or** run **`npx`** / **`pnpm dlx`** from a directory **outside** this package’s source tree (see [Install and run](#install-and-run-npm)). **Monorepo:** after `pnpm --filter @dbt-tools/web build`, run `pnpm --filter @dbt-tools/web exec dbt-tools-web -- --target …` from the repo root. **Debug:** in a folder where you ran `npm install @dbt-tools/web`, check that `node_modules/@dbt-tools/web/dist-serve/server/cli.js` exists, then run `node node_modules/@dbt-tools/web/dist-serve/server/cli.js --help` — if that works but `dbt-tools-web` does not, the problem is PATH or the `.bin` shim, not the app. |
-| Blank UI / no artifacts                               | Pass **`--target`** or set **`DBT_TOOLS_TARGET_DIR`** to a folder that contains **`manifest.json`** (and ideally `run_results.json`). For remote mode, set **`DBT_TOOLS_REMOTE_SOURCE`**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `GET /api/...` 404                                    | Target dir missing files, wrong path, or remote config not returning a complete pair.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Expected “hot reload” after `dbt run`                 | The **npm** server re-reads files when the app fetches them; refresh the browser. **File watch + auto-reload** is a **Vite dev** feature — see the [user guide](../../../docs/user-guide-dbt-tools-web.md).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| Slow UI on huge projects                              | Prefer the latest version; very large graphs still benefit from narrowing scope in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Symptom                               | What to check                                                                                                                                                                                               |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blank UI / no artifacts               | Pass **`--target`** or set **`DBT_TOOLS_TARGET_DIR`** to a folder that contains **`manifest.json`** (and ideally `run_results.json`). For remote mode, set **`DBT_TOOLS_REMOTE_SOURCE`**.                   |
+| `GET /api/...` 404                    | Target dir missing files, wrong path, or remote config not returning a complete pair.                                                                                                                       |
+| Expected “hot reload” after `dbt run` | The **npm** server re-reads files when the app fetches them; refresh the browser. **File watch + auto-reload** is a **Vite dev** feature — see the [user guide](../../../docs/user-guide-dbt-tools-web.md). |
+| Slow UI on huge projects              | Prefer the latest version; very large graphs still benefit from narrowing scope in the UI.                                                                                                                  |
 
-More rows, npm run paths, and diagrams: [user guide — npm install & troubleshooting](../../../docs/user-guide-dbt-tools-web.md#npm-install-npx-dlx-and-global-binary).
+If **`npx`** against a local **`.tgz`** fails with **`Permission denied`**, use `npx -y ./name.tgz -- --help` from the directory that contains the file, or `npx -y --package=/abs/path/name.tgz -- dbt-tools-web …`. See **Verify publish locally** under [Developing from source](#developing-from-source).
+
+More rows and fixes: [user guide — Troubleshooting](../../../docs/user-guide-dbt-tools-web.md#troubleshooting).
 
 ---
 
@@ -156,6 +152,32 @@ Preload local artifacts (Vite):
 ```bash
 DBT_TOOLS_TARGET_DIR=./target pnpm dev
 # or: pnpm dev:target
+```
+
+### Verify publish locally (tarball + `npx`)
+
+To smoke-test the published **`dbt-tools-web`** entrypoint and tarball layout **without publishing to npm**:
+
+- **Repository root** (after `pnpm install`):
+
+```bash
+pnpm --filter @dbt-tools/web pack
+```
+
+`prepack` runs the full web build and writes **`dbt-tools-web-<version>.tgz` at the repo root** (the file is gitignored).
+
+- **Empty directory** so `npx` does not see the monorepo’s `node_modules`:
+
+```bash
+cd "$(mktemp -d)"
+# After copying the .tgz into this directory (adjust version to match package.json):
+npx -y ./dbt-tools-web-0.4.0.tgz -- --help
+```
+
+If you pass a **bare absolute path** to the tarball, some `npx` versions try to execute it as a shell script and fail (`Permission denied`). Prefer either a **relative** `./…tgz` path or an explicit package spec:
+
+```bash
+npx -y --package=/absolute/path/to/dbt-tools-web-0.4.0.tgz -- dbt-tools-web --help
 ```
 
 ### Project layout (abridged)

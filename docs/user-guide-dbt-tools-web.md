@@ -4,63 +4,6 @@ Operator-focused documentation for the dbt-tools web analyzer. For a short npm-f
 
 ---
 
-## npm install, `npx`, `dlx`, and global binary
-
-The published package exposes the **`dbt-tools-web`** CLI ([`package.json` `bin`](../packages/dbt-tools/web/package.json)). Typical ways to run it:
-
-| Method           | Example                                                                       |
-| ---------------- | ----------------------------------------------------------------------------- |
-| Global install   | `npm install -g @dbt-tools/web` then `dbt-tools-web --target /path/to/target` |
-| One-off (`npm`)  | `npx @dbt-tools/web --target /path/to/target`                                 |
-| One-off (`pnpm`) | `pnpm dlx @dbt-tools/web -- --target /path/to/target`                         |
-
-**Prefer a neutral working directory** for `npx` / `pnpm dlx`: your home directory, `/tmp`, or any folder that is **not** `packages/dbt-tools/web` inside a clone of this repository. From inside that package directory without a prior **`pnpm --filter @dbt-tools/web build`**, the resolver may use the **workspace** tree, where **`dist-serve/server/cli.js`** (the binary target) does not exist until built—leading to **`sh: dbt-tools-web: command not found`** (exit **127**) or related install errors.
-
-### Which path should I use?
-
-```mermaid
-flowchart TD
-  START([Run the web analyzer])
-  Q1{Editing this monorepo?}
-
-  START --> Q1
-  Q1 -->|Yes| DEV[Vite dev]
-  Q1 -->|No| Q2{OK installing globally?}
-
-  DEV --> DEV1["DBT_TOOLS_TARGET_DIR=… pnpm dev\nor pnpm dev:web from repo root"]
-  DEV --> DEV2["Optional: test published-shaped CLI\npnpm --filter @dbt-tools/web build\nthen pnpm --filter @dbt-tools/web exec dbt-tools-web -- …"]
-
-  Q2 -->|Yes| A1["npm install -g @dbt-tools/web\ndbt-tools-web --target …"]
-  Q2 -->|No| A2["npx or pnpm dlx from a folder\noutside packages/dbt-tools/web"]
-
-  A1 --> OK([Server prints URL])
-  A2 --> OK
-  DEV1 --> OK
-  DEV2 --> OK
-
-  FAIL{Still fails?}
-  A1 --> FAIL
-  A2 --> FAIL
-
-  FAIL --> C["Verify node_modules/@dbt-tools/web/dist-serve/server/cli.js\nafter npm install @dbt-tools/web"]
-  C --> D{node …/cli.js --help works?}
-  D -->|Yes| SHIM[Fix PATH, global bin dir, or reinstall / clear npx cache]
-  D -->|No| PUB[Confirm package version on npm; report if tarball missing dist-serve]
-```
-
-### Contributors: exercise the same binary npm ships
-
-From the **repository root**:
-
-```bash
-pnpm --filter @dbt-tools/web build
-pnpm --filter @dbt-tools/web exec dbt-tools-web -- --target /path/to/dbt/target
-```
-
-For everyday UI work, use **Vite** with **`DBT_TOOLS_TARGET_DIR`** (previous section) instead of the published server.
-
----
-
 ## Vite dev server (monorepo)
 
 When you run `pnpm dev` / `pnpm dev:web` from the repository, **Vite** serves the app with middleware that mirrors the same **`/api/...`** artifact routes as the published **`dbt-tools-web`** server. Additional **file watching** behavior applies only here.
@@ -190,15 +133,14 @@ graph TD
 
 ## Troubleshooting
 
-| Symptom                                                   | Fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **`sh: dbt-tools-web: command not found`** / **exit 127** | The shell did not find the **`dbt-tools-web`** executable. Install globally and put npm’s global **bin** on **`PATH`**, or use **`npx`** / **`pnpm dlx`** from a **neutral cwd** (see [npm install, `npx`, `dlx`, and global binary](#npm-install-npx-dlx-and-global-binary)). In a monorepo clone, do not rely on **`npx @dbt-tools/web`** from **`packages/dbt-tools/web`** without **`pnpm --filter @dbt-tools/web build`**. To isolate shim vs. app: after `npm install @dbt-tools/web`, run **`node node_modules/@dbt-tools/web/dist-serve/server/cli.js --help`**. |
-| Blank page / "No artifacts found"                         | Ensure **`DBT_TOOLS_TARGET_DIR`** points at a directory containing **`manifest.json`**, or configure **`DBT_TOOLS_REMOTE_SOURCE`**.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Auto-reload not triggering (Vite)                         | Ensure **`DBT_TOOLS_WATCH`** is not `0`; confirm read access to the target directory.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Slow UI with large manifests                              | Web worker + virtualization target large graphs; profile the main thread if still slow.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `GET /api/manifest.json` returns 404                      | **`DBT_TOOLS_TARGET_DIR`** unset, wrong path, or (remote) no complete pair discovered.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Debug logs missing                                        | Server: restart with **`DBT_TOOLS_DEBUG=1`**. Client: **`?debug=1`** on the URL.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Expected Vite HMR from npm install                        | Use **`pnpm dev`** from the monorepo or run **`dbt-tools-web`** and refresh after artifact changes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Symptom                              | Fix                                                                                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Blank page / "No artifacts found"    | Ensure **`DBT_TOOLS_TARGET_DIR`** points at a directory containing **`manifest.json`**, or configure **`DBT_TOOLS_REMOTE_SOURCE`**. |
+| Auto-reload not triggering (Vite)    | Ensure **`DBT_TOOLS_WATCH`** is not `0`; confirm read access to the target directory.                                               |
+| Slow UI with large manifests         | Web worker + virtualization target large graphs; profile the main thread if still slow.                                             |
+| `GET /api/manifest.json` returns 404 | **`DBT_TOOLS_TARGET_DIR`** unset, wrong path, or (remote) no complete pair discovered.                                              |
+| Debug logs missing                   | Server: restart with **`DBT_TOOLS_DEBUG=1`**. Client: **`?debug=1`** on the URL.                                                    |
+| Expected Vite HMR from npm install   | Use **`pnpm dev`** from the monorepo or run **`dbt-tools-web`** and refresh after artifact changes.                                 |
 
 ---
 
