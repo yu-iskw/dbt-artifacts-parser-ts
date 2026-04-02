@@ -12,7 +12,7 @@ For end users, `@dbt-tools/web` ships as an npm tarball with `bin` → `dist-ser
 | `node dist-serve/server/cli.js` | Low      | Low    | Skips `files`, `bin`, dependency rewrite       |
 | Local Verdaccio + scoped `npx`  | Highest  | High   | CI uses this; matches full registry resolution |
 
-**CI default:** [`scripts/smoke-npx-with-verdaccio.sh`](../../../../scripts/smoke-npx-with-verdaccio.sh) — ephemeral Verdaccio, `pnpm publish` for `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, then pack + `npx` with `NPM_CONFIG_REGISTRY` (see [.github/workflows/test.yml](../../../../.github/workflows/test.yml) job `web-pack-npx-smoke`).
+**CI default:** [`scripts/smoke-npx-with-verdaccio.sh`](../../../../scripts/smoke-npx-with-verdaccio.sh) — ephemeral Verdaccio, explicit `pnpm --filter dbt-artifacts-parser run build` (so `dist/` exists before any publish/pack), then `pnpm publish` for `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, then pack + `npx` with `NPM_CONFIG_REGISTRY` (see [.github/workflows/test.yml](../../../../.github/workflows/test.yml) job `web-pack-npx-smoke`).
 
 **Manual default:** pack with pnpm (rewrites `workspace:*`), then `npx` from an empty directory using `--package` for absolute tarball paths — only works without extra setup if **`dbt-artifacts-parser` and `@dbt-tools/core` at that version already exist on the public registry**; otherwise use the Verdaccio script below.
 
@@ -26,11 +26,11 @@ After `pnpm install`, from the repo root (optional `REPO_ROOT` if not in a git c
 bash scripts/smoke-npx-with-verdaccio.sh
 ```
 
-Uses [`scripts/verdaccio-smoke.yaml`](../../../../scripts/verdaccio-smoke.yaml) and a temp npmrc with a placeholder `_authToken` (npm 10+ requires a token for `publish`; Verdaccio accepts it with `publish: $all`). **Do not set `NPM_CONFIG_USERCONFIG` before `npx verdaccio`** starts, or `npx` may try to fetch Verdaccio from localhost.
+Uses [`scripts/verdaccio-smoke.yaml`](../../../../scripts/verdaccio-smoke.yaml) and a temp npmrc with a placeholder `_authToken` (npm 10+ requires a token for `publish`; Verdaccio accepts it with `publish: $all`). **Do not set `NPM_CONFIG_USERCONFIG` before `npx verdaccio`** starts, or `npx` may try to fetch Verdaccio from localhost. The script **builds the parser before publish**; you do not need a separate parser build step for this path.
 
 ### Prerequisite: `dbt-artifacts-parser` `dist/` (manual pack path only)
 
-`pnpm install` does not create `packages/dbt-artifacts-parser/dist`. Web `prepack` runs `@dbt-tools/core` `tsc`, which resolves `dbt-artifacts-parser/manifest` (and related subpaths) via package exports under `dist/`. Build the parser first, or run a full `pnpm build`:
+`pnpm install` does not create `packages/dbt-artifacts-parser/dist`. Web `prepack` runs `@dbt-tools/core` `tsc`, which resolves `dbt-artifacts-parser/manifest` (and related subpaths) via package exports under `dist/`. The Verdaccio script above handles this automatically; for **manual** `pnpm --filter @dbt-tools/web pack` only, build the parser first, or run a full `pnpm build`:
 
 ```bash
 pnpm --filter dbt-artifacts-parser build
