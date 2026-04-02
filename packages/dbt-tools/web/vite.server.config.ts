@@ -1,18 +1,18 @@
 import path from "path";
 import { defineConfig } from "vite";
 
-// Separate Vite build for the Node.js server/CLI entry (`npx @dbt-tools/web`).
-// The package `build:serve` script passes `--ssr src/server/cli.ts` so the bundle
-// keeps Node semantics (e.g. `process.env` assignment for `--target`).
-// All npm dependencies and Node.js built-ins are externalized so they are
-// resolved from node_modules at runtime; only the local web-package source is
-// bundled into dist-serve/server/cli.js.
+const serverEntry = path.resolve(__dirname, "src/server/cli.ts");
+
+// Node SSR bundle for `npx @dbt-tools/web`. `build.ssr` keeps Node semantics
+// (e.g. real `process.env` for `--target`) even if `vite build` is run without `--ssr`.
+// npm deps and node: built-ins stay external; only local `@web` sources are bundled.
 export default defineConfig({
   build: {
+    ssr: serverEntry,
     outDir: "dist-serve",
     emptyOutDir: true,
     rollupOptions: {
-      input: path.resolve(__dirname, "src/server/cli.ts"),
+      input: serverEntry,
       external: [
         // Node.js built-ins
         /^node:/,

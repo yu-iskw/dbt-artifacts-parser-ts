@@ -21,7 +21,7 @@
   "scripts": {
     "prepack": "npm run build",
     "build": "pnpm --filter @dbt-tools/core build && tsc && vite build && pnpm run build:serve",
-    "build:serve": "vite build --config vite.server.config.ts --ssr src/server/cli.ts",
+    "build:serve": "vite build --config vite.server.config.ts",
     "dev": "vite",
     "dev:debug": "DBT_TOOLS_DEBUG=1 vite",
     "dev:target": "DBT_TOOLS_TARGET_DIR=./target vite",
