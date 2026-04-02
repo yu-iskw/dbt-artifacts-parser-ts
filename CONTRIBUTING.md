@@ -139,6 +139,17 @@ Use your cloud provider’s normal application credentials (for example the AWS 
 
 See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for the full environment variable reference and [`docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md`](./docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) for architecture.
 
+### Published `dbt-tools-web` CLI (local smoke test)
+
+To run the **same** Node server + static bundle that npm ships (not Vite):
+
+```bash
+pnpm --filter @dbt-tools/web build
+pnpm --filter @dbt-tools/web exec dbt-tools-web -- --target /path/to/dbt/target
+```
+
+Do **not** expect **`npx @dbt-tools/web`** to work with your current working directory set to **`packages/dbt-tools/web`** unless **`dist-serve/`** exists from a prior build—`npx` may resolve the workspace package and fail with **`dbt-tools-web: command not found`** or a missing CLI file. End-user install paths and diagrams: [`docs/user-guide-dbt-tools-web.md`](./docs/user-guide-dbt-tools-web.md#npm-install-npx-dlx-and-global-binary).
+
 ---
 
 ## Coverage Report

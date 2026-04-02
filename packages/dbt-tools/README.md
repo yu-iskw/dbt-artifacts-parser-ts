@@ -69,12 +69,14 @@ dbt-tools summary
 # Web — package exposes "dbt-tools-web" (static UI + artifact server)
 npx @dbt-tools/web --help
 npx @dbt-tools/web --target /path/to/dbt/target
+# pnpm: pnpm dlx @dbt-tools/web -- --target /path/to/dbt/target
+# Run npx/dlx from a neutral directory (not packages/dbt-tools/web in a clone without build) — see web user guide.
 
 # Core — library only; no CLI binary
 # npx @dbt-tools/core is not meaningful for end users
 ```
 
-Longer operator notes: [Web user guide](../../docs/user-guide-dbt-tools-web.md) · [CLI user guide](../../docs/user-guide-dbt-tools-cli.md).
+Longer operator notes: [Web user guide](../../docs/user-guide-dbt-tools-web.md#npm-install-npx-dlx-and-global-binary) · [CLI user guide](../../docs/user-guide-dbt-tools-cli.md).
 
 To run the web app from **source** (Vite dev server, HMR):
 
