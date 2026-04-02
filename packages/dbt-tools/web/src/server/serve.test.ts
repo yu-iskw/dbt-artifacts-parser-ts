@@ -135,8 +135,14 @@ describe("startServer", () => {
     }
   });
 
-  it("listens on a non-zero port", () => {
-    expect(listenPort).toBeGreaterThan(0);
+  it("listens on LISTEN_HOST with a non-zero port", () => {
+    const addr = srv!.address();
+    expect(addr).not.toBeNull();
+    expect(typeof addr).toBe("object");
+    const a = addr as { address: string; port: number };
+    expect(a.address).toBe(listenHost);
+    expect(a.port).toBeGreaterThan(0);
+    expect(listenPort).toBe(a.port);
   });
 
   it("returns 404 JSON for unhandled /api routes", async () => {
@@ -167,42 +173,41 @@ describe("startServer", () => {
     );
     fs.writeFileSync(path.join(tmpDir, "index.html"), "<!DOCTYPE html>SPA");
 
-    // Patch fs helpers to redirect dist/ reads to tmpDir.
+    const distRoot = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../dist",
+    );
+    const distRootResolved = path.resolve(distRoot);
+
+    function mapDistToTmp(p: string | Buffer | URL): string {
+      const resolved = path.resolve(String(p));
+      if (resolved === distRootResolved) {
+        return tmpDir;
+      }
+      const prefix = `${distRootResolved}${path.sep}`;
+      if (resolved.startsWith(prefix)) {
+        return path.join(tmpDir, path.relative(distRootResolved, resolved));
+      }
+      return String(p);
+    }
+
+    // Patch fs helpers to redirect resolved dist/ reads to tmpDir.
     const origExistsSync = fs.existsSync;
     const origStatSync = fs.statSync;
     const origReadStream = fs.createReadStream;
 
-    // Redirect dist/ reads to tmpDir.
     vi.spyOn(fs, "existsSync").mockImplementation((p) => {
-      const s = String(p);
-      if (s.includes(`${path.sep}dist`) || s.endsWith(`${path.sep}dist`)) {
-        return origExistsSync(s.replace(/.*dist/, tmpDir));
-      }
-      return origExistsSync(p as string);
+      return origExistsSync(mapDistToTmp(p as string));
     });
     vi.spyOn(fs, "statSync").mockImplementation((p, opts?) => {
-      const s = String(p);
-      if (s.includes(`${path.sep}dist`) || s.endsWith(`${path.sep}dist`)) {
-        return origStatSync(
-          s.replace(/.*dist/, tmpDir),
-          opts as Parameters<typeof fs.statSync>[1],
-        ) as ReturnType<typeof fs.statSync>;
-      }
       return origStatSync(
-        p as string,
+        mapDistToTmp(p as string),
         opts as Parameters<typeof fs.statSync>[1],
       ) as ReturnType<typeof fs.statSync>;
     });
     vi.spyOn(fs, "createReadStream").mockImplementation((p, opts?) => {
-      const s = String(p);
-      if (s.includes(`${path.sep}dist`) || s.endsWith(`${path.sep}dist`)) {
-        return origReadStream(
-          s.replace(/.*dist/, tmpDir),
-          opts as Parameters<typeof fs.createReadStream>[1],
-        ) as ReturnType<typeof fs.createReadStream>;
-      }
       return origReadStream(
-        p as Parameters<typeof fs.createReadStream>[0],
+        mapDistToTmp(p as Parameters<typeof fs.createReadStream>[0]),
         opts as Parameters<typeof fs.createReadStream>[1],
       ) as ReturnType<typeof fs.createReadStream>;
     });

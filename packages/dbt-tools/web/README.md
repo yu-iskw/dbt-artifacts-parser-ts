@@ -171,13 +171,13 @@ pnpm --filter @dbt-tools/web pack
 ```bash
 cd "$(mktemp -d)"
 # After copying the .tgz into this directory (adjust version to match package.json):
-npx -y ./dbt-tools-web-0.4.0.tgz -- --help
+npx -y ./dbt-tools-web-0.4.1.tgz -- --help
 ```
 
 If you pass a **bare absolute path** to the tarball, some `npx` versions try to execute it as a shell script and fail (`Permission denied`). Prefer either a **relative** `./…tgz` path or an explicit package spec:
 
 ```bash
-npx -y --package=/absolute/path/to/dbt-tools-web-0.4.0.tgz -- dbt-tools-web --help
+npx -y --package=/absolute/path/to/dbt-tools-web-0.4.1.tgz -- dbt-tools-web --help
 ```
 
 ### Project layout (abridged)

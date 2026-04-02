@@ -45,7 +45,7 @@ In GitHub Actions, `REPO_ROOT` is set to the workspace root before this script r
 Smoke **help** from a clean directory (no monorepo `node_modules` on `PATH`):
 
 ```bash
-TGZ="$PWD/dbt-tools-web-0.4.0.tgz"   # adjust version
+TGZ="$PWD/dbt-tools-web-0.4.1.tgz"   # adjust version
 cd "$(mktemp -d)"
 npx -y --package="$TGZ" -- dbt-tools-web --help
 ```
@@ -54,8 +54,8 @@ Relative tarball in the same directory as the file:
 
 ```bash
 cd "$(mktemp -d)"
-cp "$REPO_ROOT/dbt-tools-web-0.4.0.tgz" .
-npx -y ./dbt-tools-web-0.4.0.tgz -- --help
+cp "$REPO_ROOT/dbt-tools-web-0.4.1.tgz" .
+npx -y ./dbt-tools-web-0.4.1.tgz -- --help
 ```
 
 ## Pitfalls
