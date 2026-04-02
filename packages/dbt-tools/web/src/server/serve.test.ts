@@ -2,6 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ArtifactSourceStatus } from "../services/artifactSourceApi";
 
@@ -65,7 +66,7 @@ describe("resolveStaticPath", () => {
     // Derive DIST_DIR the same way serve.ts does: two levels above src/server/
     // In the test context __dirname = src/server, so DIST_DIR = web/dist
     DIST_DIR = path.resolve(
-      path.dirname(new URL(import.meta.url).pathname),
+      path.dirname(fileURLToPath(import.meta.url)),
       "../../dist",
     );
   });
@@ -78,7 +79,9 @@ describe("resolveStaticPath", () => {
 
   it("maps a file path within dist", () => {
     const result = resolveStaticPath("/assets/main.js");
-    expect(result).toBe(path.join(DIST_DIR, "assets", "main.js"));
+    expect(path.resolve(result)).toBe(
+      path.resolve(DIST_DIR, "assets", "main.js"),
+    );
   });
 
   it("blocks path traversal by falling back to index.html", () => {
@@ -101,20 +104,22 @@ describe("resolveStaticPath", () => {
 describe("startServer", () => {
   let srv: http.Server | undefined;
   let listenPort: number;
+  let listenHost: string;
 
   beforeEach(async () => {
-    const { startServer } = await import("./serve");
+    const { LISTEN_HOST, startServer } = await import("./serve");
+    listenHost = LISTEN_HOST;
 
     // Intercept http.createServer to capture the server instance so we can
     // close it after each test.
     const origCreate = http.createServer.bind(http);
-    const spy = vi
-      .spyOn(http, "createServer")
-      .mockImplementation((handler?: http.RequestListener) => {
-        const s = origCreate(handler);
-        srv = s;
-        return s;
-      });
+    const spy = vi.spyOn(http, "createServer").mockImplementation(((
+      handler?: http.RequestListener,
+    ) => {
+      const s = origCreate(handler);
+      srv = s;
+      return s;
+    }) as typeof http.createServer);
 
     await startServer(0);
     spy.mockRestore();
@@ -134,9 +139,20 @@ describe("startServer", () => {
     expect(listenPort).toBeGreaterThan(0);
   });
 
+  it("returns 404 JSON for unhandled /api routes", async () => {
+    const { status, body, contentType } = await httpGet(
+      `http://${listenHost}:${listenPort}/api/health`,
+    );
+    expect(status).toBe(404);
+    expect(contentType).toContain("application/json");
+    expect(JSON.parse(body) as { error: string }).toEqual({
+      error: "not_found",
+    });
+  });
+
   it("handles GET /api/artifact-source and returns JSON with mode=none", async () => {
     const { status, body, contentType } = await httpGet(
-      `http://localhost:${listenPort}/api/artifact-source`,
+      `http://${listenHost}:${listenPort}/api/artifact-source`,
     );
     expect(status).toBe(200);
     expect(contentType).toContain("application/json");
@@ -156,14 +172,7 @@ describe("startServer", () => {
     const origStatSync = fs.statSync;
     const origReadStream = fs.createReadStream;
 
-    vi.spyOn(fs, "existsSync").mockImplementation((p) =>
-      origExistsSync(
-        String(p).replace(/[/\\]dist[/\\]?$/, `/${path.basename(tmpDir)}/`) ||
-          String(p),
-      ),
-    );
-
-    // Simpler: just redirect calls whose path contains "dist" to tmpDir.
+    // Redirect dist/ reads to tmpDir.
     vi.spyOn(fs, "existsSync").mockImplementation((p) => {
       const s = String(p);
       if (s.includes(`${path.sep}dist`) || s.endsWith(`${path.sep}dist`)) {
@@ -199,7 +208,7 @@ describe("startServer", () => {
     });
 
     const { status, body } = await httpGet(
-      `http://localhost:${listenPort}/unknown-route`,
+      `http://${listenHost}:${listenPort}/unknown-route`,
     );
 
     fs.rmSync(tmpDir, { recursive: true, force: true });

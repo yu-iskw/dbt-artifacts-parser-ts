@@ -1,5 +1,5 @@
 import { exec } from "node:child_process";
-import { startServer } from "./serve.js";
+import { LISTEN_HOST, startServer } from "./serve.js";
 
 const USAGE = `
 Usage: dbt-tools-web [options]
@@ -63,7 +63,7 @@ if (targetDir !== undefined) {
 
 await startServer(port);
 
-const url = `http://localhost:${port}`;
+const url = `http://${LISTEN_HOST}:${port}`;
 process.stdout.write(`dbt-tools-web  ${url}\n`);
 
 if (open) {

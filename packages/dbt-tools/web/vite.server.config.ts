@@ -2,6 +2,8 @@ import path from "path";
 import { defineConfig } from "vite";
 
 // Separate Vite build for the Node.js server/CLI entry (`npx @dbt-tools/web`).
+// The package `build:serve` script passes `--ssr src/server/cli.ts` so the bundle
+// keeps Node semantics (e.g. `process.env` assignment for `--target`).
 // All npm dependencies and Node.js built-ins are externalized so they are
 // resolved from node_modules at runtime; only the local web-package source is
 // bundled into dist-serve/server/cli.js.
