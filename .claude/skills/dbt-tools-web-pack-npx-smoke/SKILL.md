@@ -25,7 +25,7 @@ Ensure the **npm pack** artifact installs and exposes the **`dbt-tools-web`** bi
 
 From the **repository root** after `pnpm install`:
 
-**CI parity (recommended):** `bash scripts/smoke-npx-with-verdaccio.sh` — starts Verdaccio, publishes `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, packs web, runs [`smoke:npx-tgz`](../../../packages/dbt-tools/web/package.json) with `NPM_CONFIG_REGISTRY` pointed at Verdaccio. Same flow as [.github/workflows/test.yml](../../../.github/workflows/test.yml) job **`web-pack-npx-smoke`**.
+**CI parity (recommended):** `bash scripts/smoke-npx-with-verdaccio.sh` — starts Verdaccio, runs `pnpm --filter dbt-artifacts-parser run build` (so parser `dist/` exists before publish/pack), publishes `dbt-artifacts-parser` → `@dbt-tools/core` → `@dbt-tools/web`, packs web, runs [`smoke:npx-tgz`](../../../packages/dbt-tools/web/package.json) with `NPM_CONFIG_REGISTRY` pointed at Verdaccio. Same flow as [.github/workflows/test.yml](../../../.github/workflows/test.yml) job **`web-pack-npx-smoke`**.
 
 **Manual tarball-only path** (only if peer versions exist on the registry you use, or set `NPM_CONFIG_REGISTRY` after publishing peers elsewhere):
 
@@ -37,7 +37,7 @@ Details, optional HTTP smoke, **`ETARGET` / missing peers**, and the **absolute-
 
 ## Verification loop
 
-1. **Prefer:** `bash scripts/smoke-npx-with-verdaccio.sh` from the repo root (must exit 0).
+1. **Prefer:** `bash scripts/smoke-npx-with-verdaccio.sh` from the repo root (must exit 0). The script builds the parser before publish; no separate parser build is required for this path.
 2. **Or manual:** parser `dist` if needed → **pack** → exactly one `dbt-tools-web-*.tgz` at repo root → **smoke** with registry that has `dbt-artifacts-parser` and `@dbt-tools/core` at the packed version.
 3. **On failure:** read stderr (`ETARGET`, `Permission denied`, missing `dist-serve`). Fix **web `package.json`**, **Vite server build** (`vite.server.config.ts`), **prepack/build scripts**, or **Verdaccio/publish** wiring; re-run.
 

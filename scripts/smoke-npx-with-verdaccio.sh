@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Local Verdaccio: publish dbt-artifacts-parser → @dbt-tools/core → @dbt-tools/web,
-# pack web to repo root, then run the same tarball + npx smoke as CI (NPM_CONFIG_REGISTRY).
+# Local Verdaccio: build dbt-artifacts-parser (populate dist/ for workspace tsc), then publish
+# dbt-artifacts-parser → @dbt-tools/core → @dbt-tools/web, pack web to repo root, then run the
+# same tarball + npx smoke as CI (NPM_CONFIG_REGISTRY). Parser build runs before publish/pack so
+# web prepack → @dbt-tools/core tsc always resolves dbt-artifacts-parser subpaths, even if pnpm
+# publish skips prepack.
 set -euo pipefail
 
 if [[ -n ${REPO_ROOT-} ]]; then
@@ -61,6 +64,8 @@ npmrc_smoke="$(mktemp)"
 	printf '//127.0.0.1:4873/:_authToken=smoke-ci-placeholder\n'
 } >"${npmrc_smoke}"
 export NPM_CONFIG_USERCONFIG="${npmrc_smoke}"
+
+pnpm --filter dbt-artifacts-parser run build
 
 pnpm publish --filter dbt-artifacts-parser --registry "${REGISTRY_URL}" --no-git-checks
 pnpm publish --filter @dbt-tools/core --registry "${REGISTRY_URL}" --no-git-checks
