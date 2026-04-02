@@ -3,7 +3,7 @@
 ## Tech stack
 
 - **Package manager:** pnpm (monorepo)
-- **Node.js:** version in [`.node-version`](.node-version) (currently 22.12.0)
+- **Node.js:** use the version in [`.node-version`](.node-version) for local development and CI (authoritative). Published packages declare **`engines.node` ≥ 20**; Node 18 is EOL — see [Node.js releases](https://nodejs.org/en/about/previous-releases).
 - **Language:** TypeScript; unit tests use Vitest from the repository root
 
 ## Frontend application

@@ -1,246 +1,188 @@
 # @dbt-tools/web
 
-React web application for visual dbt artifact analysis. Provides interactive dependency graph exploration and execution timeline visualization.
+React application for visual dbt artifact analysis: dependency graphs, execution timelines, inventory views, and optional remote runs from S3 or GCS.
+
+**End users:** install from npm and run **`dbt-tools-web`** (see below). **Contributors:** clone the monorepo and use Vite — see [Developing from source](#developing-from-source) and [CONTRIBUTING.md](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/CONTRIBUTING.md).
+
+Full operator topics (Docker, GHCR, remote sources, Vite-only options) live in the [user guide](../../../docs/user-guide-dbt-tools-web.md).
 
 ---
 
 ## Prerequisites
 
-- **Node.js** ≥ 18
-- **pnpm** ≥ 8 (the monorepo uses pnpm workspaces)
-- A dbt project with a `./target/` directory containing `manifest.json` and/or `run_results.json`
+- **Node.js** — use the version in [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) when developing; **Node.js 20+** is required to run the published app (Node 18 is EOL — see [Node.js releases](https://nodejs.org/en/about/previous-releases)).
+- A dbt **`target/`** directory (or object storage) with **`manifest.json`** and **`run_results.json`** when you want preloaded artifacts.
 
 ---
 
-## Tech Stack
+## Install and run (npm)
 
-| Layer           | Technology                                                       |
-| --------------- | ---------------------------------------------------------------- |
-| UI framework    | [React 18](https://react.dev/)                                   |
-| Build tool      | [Vite 6](https://vitejs.dev/)                                    |
-| Charts          | [Recharts](https://recharts.org/)                                |
-| Virtualization  | [@tanstack/react-virtual](https://tanstack.com/virtual)          |
-| Analysis engine | `@dbt-tools/core` (web worker, `@dbt-tools/core/browser` export) |
-| E2E tests       | [Playwright](https://playwright.dev/)                            |
-| Language        | TypeScript 5                                                     |
+The package publishes a small static server plus the **`dbt-tools-web`** binary ([source](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-tools/web/src/server/cli.ts)).
+
+```bash
+npm install -g @dbt-tools/web
+dbt-tools-web --target /path/to/your/dbt/target
+```
+
+Or without a global install:
+
+```bash
+npx @dbt-tools/web --target /path/to/your/dbt/target
+```
+
+`npx` invokes the package’s binary (`dbt-tools-web`). Useful flags:
+
+| Flag                    | Description                                          |
+| ----------------------- | ---------------------------------------------------- |
+| `--target <dir>` / `-t` | dbt `target` directory (sets `DBT_TOOLS_TARGET_DIR`) |
+| `--port <n>` / `-p`     | Listen port (default **3000**)                       |
+| `--no-open`             | Do not open a browser                                |
+| `--help` / `-h`         | Usage                                                |
+
+The server listens on **127.0.0.1** and prints the URL (e.g. `http://127.0.0.1:3000`).
+
+You can also set **`DBT_TOOLS_TARGET_DIR`** (or legacy `DBT_TARGET_DIR` / `DBT_TARGET`) in the environment instead of `--target`.
 
 ---
 
 ## Features
 
-- **Dependency graph visualization** — explore model relationships as an interactive graph
-- **Execution timeline** — Gantt-style view of `run_results.json` with critical path highlighting
-- **Auto-reload (local target)** — with `DBT_TOOLS_TARGET_DIR`, re-analyzes when `manifest.json` / `run_results.json` change on disk (e.g. after `dbt run`)
-- **Remote artifact sources (S3 / GCS)** — optional `DBT_TOOLS_REMOTE_SOURCE`; the dev server resolves the latest complete pair under a bucket prefix, polls for newer runs, and prompts before switching the workspace (see [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md))
-- **Large project support** — virtualized lists and web workers keep the UI responsive at 100k+ nodes
+- **Dependency graph** — interactive lineage
+- **Execution timeline** — Gantt-style `run_results` with critical path
+- **Local artifacts** — read `manifest.json` / `run_results.json` from a target directory via server-side routes
+- **Remote sources (S3 / GCS)** — optional `DBT_TOOLS_REMOTE_SOURCE`; server-side credentials; UI prompts before switching runs ([ADR-0029](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md))
+- **Large manifests** — web workers and virtualization for very large projects
 
 ---
 
-## Architecture
+## Architecture (runtime)
 
 ```mermaid
 graph TD
-  FS["./target/\nmanifest.json\nrun_results.json"]
-  VDS[Vite Dev Server\nDBT_TOOLS_TARGET_DIR middleware]
-  APP[React App]
-  WW[Web Worker]
-  CORE["@dbt-tools/core/browser\nManifestGraph · ExecutionAnalyzer"]
+  subgraph npmServer [dbt-tools-web_published]
+    BIN[dbt-tools-web_CLI]
+    HTTP[Node_HTTP_server]
+    ART[ArtifactSourceService\nlocal_dir_or_remote]
+    BIN --> HTTP
+    HTTP --> ART
+    ART -->|GET_/api/...| API[manifest.json_run_results_routes]
+  end
 
-  FS -->|file watch| VDS
-  VDS -->|GET /api/manifest.json\nGET /api/run_results.json| APP
+  APP[React_app_static_dist]
+  WW[Web_Worker]
+  CORE["@dbt-tools/core/browser"]
+
+  HTTP -->|static_files| APP
   APP -->|postMessage| WW
   WW --> CORE
-  CORE -->|graph · analysis results| WW
-  WW -->|postMessage| APP
-  APP -->|renders| UI[Dependency Graph\nExecution Timeline\nSummary Stats]
 ```
 
-Heavy analysis runs in a web worker to keep the main thread free. The worker imports from `@dbt-tools/core/browser` (the Node.js-free export) so it works without any server-side code.
+Heavy analysis runs in a **web worker** using `@dbt-tools/core/browser`. The same artifact HTTP surface is used in **Vite dev** (monorepo) with extra file-watching behavior — see the [user guide](../../../docs/user-guide-dbt-tools-web.md#vite-dev-server-monorepo).
 
 ---
 
-## Running Locally
+## Configuration (`dbt-tools-web` and production server)
 
-The web app is not published to npm. Run it from the monorepo:
+Set these in the environment for the **Node process** that runs `dbt-tools-web` (not in the browser):
 
-```bash
-# From repo root
-pnpm dev:web
+| Variable                  | Description                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `DBT_TOOLS_TARGET_DIR`    | Directory containing `manifest.json` and `run_results.json` (unless using remote source)                         |
+| `DBT_TOOLS_REMOTE_SOURCE` | JSON config for S3/GCS discovery (server-side only); see [user guide](../../../docs/user-guide-dbt-tools-web.md) |
+| `DBT_TOOLS_DEBUG`         | Set to `1` for server-side debug logs (legacy: `DBT_DEBUG`)                                                      |
 
-# Or from the package directory
-cd packages/dbt-tools/web
-pnpm dev
-```
+**Deprecated (still read):** `DBT_TARGET`, `DBT_TARGET_DIR`, `DBT_DEBUG`.
 
-### Preloading artifacts from a local dbt project
+**Client:** add **`?debug=1`** to the URL for browser console debug logging.
 
-Set `DBT_TOOLS_TARGET_DIR` to serve `manifest.json` and `run_results.json` from that directory:
-
-```bash
-DBT_TOOLS_TARGET_DIR=./target pnpm dev
-# or use the dev:target convenience script from the package directory:
-pnpm dev:target   # shorthand for DBT_TOOLS_TARGET_DIR=./target vite
-```
-
-Legacy names (`DBT_TARGET`, `DBT_TARGET_DIR`) still work but log a one-time deprecation warning; prefer `DBT_TOOLS_TARGET_DIR`.
-
-Then open the URL Vite prints (e.g. `http://localhost:5173/`).
-
-### Debug Logging
-
-- **Server-side** (Vite middleware): set `DBT_TOOLS_DEBUG=1` when starting dev (legacy: `DBT_DEBUG`)
-- **Client-side** (browser console): add `?debug=1` to the URL
-
-```bash
-DBT_TOOLS_DEBUG=1 DBT_TOOLS_TARGET_DIR=~/path/to/target pnpm dev
-# then open: http://localhost:5173/?debug=1
-```
-
-### Auto-reload When Artifacts Change
-
-When `DBT_TOOLS_TARGET_DIR` is set, the app automatically reloads and re-analyzes when `manifest.json` or `run_results.json` change on disk (e.g. after `dbt run`):
-
-| Variable                       | Default | Description                                         |
-| ------------------------------ | ------- | --------------------------------------------------- |
-| `DBT_TOOLS_WATCH`              | on      | Set to `0` to disable file watching and auto-reload |
-| `DBT_TOOLS_RELOAD_DEBOUNCE_MS` | `300`   | Debounce in ms for rapid file writes                |
-
-Legacy: `DBT_WATCH`, `DBT_RELOAD_DEBOUNCE_MS` (deprecated).
-
-```bash
-# Disable auto-reload
-DBT_TOOLS_WATCH=0 DBT_TOOLS_TARGET_DIR=./target pnpm dev
-```
+**Vite-only (monorepo dev):** `DBT_TOOLS_WATCH`, `DBT_TOOLS_RELOAD_DEBOUNCE_MS` — file watch and auto-reload; **not** used by the published `dbt-tools-web` binary. See the [user guide](../../../docs/user-guide-dbt-tools-web.md#vite-dev-server-monorepo).
 
 ---
 
-## Configuration
+## Docker and container images
 
-All configuration is via environment variables passed to the Vite dev server or build:
-
-| Variable                       | Default | Description                                                                                        |
-| ------------------------------ | ------- | -------------------------------------------------------------------------------------------------- |
-| `DBT_TOOLS_TARGET_DIR`         | —       | Directory containing `manifest.json` and `run_results.json`; enables the `/api/*` proxy middleware |
-| `DBT_TOOLS_REMOTE_SOURCE`      | —       | JSON config for S3 or GCS bucket + prefix discovery (server-side access only); see ADR-0029        |
-| `DBT_TOOLS_DEBUG`              | unset   | Set to `1` to enable server-side debug logging in the Vite middleware                              |
-| `DBT_TOOLS_WATCH`              | on      | Set to `0` to disable file watching and auto-reload when artifacts change                          |
-| `DBT_TOOLS_RELOAD_DEBOUNCE_MS` | `300`   | Debounce delay in ms before triggering a reload on rapid file writes                               |
-
-**Deprecated (still read):** `DBT_TARGET`, `DBT_TARGET_DIR`, `DBT_DEBUG`, `DBT_WATCH`, `DBT_RELOAD_DEBOUNCE_MS`.
-
-Add `?debug=1` to the browser URL to enable client-side debug logging.
-
----
-
-## Building for Production
-
-```bash
-pnpm build
-# Output in dist/
-pnpm preview   # serve the production build locally
-```
-
-### Docker
-
-The image is a multi-stage build: Node installs workspace dependencies and runs `pnpm --filter @dbt-tools/web build`; the final stage serves static `dist/` with [nginx unprivileged](https://hub.docker.com/r/nginxinc/nginx-unprivileged) (non-root, port **8080**, SPA fallback to `index.html`).
-
-**Build context must be the monorepo root** (not this package directory), because the web app depends on workspace packages.
-
-```bash
-# From repository root
-docker build -f packages/dbt-tools/web/Dockerfile -t dbt-tools-web:local .
-docker run --rm -p 8080:8080 dbt-tools-web:local
-```
-
-Then open `http://localhost:8080/`.
-
-The production image is static files only: there is no Vite dev middleware, so `DBT_TOOLS_TARGET_DIR` and related server-side env vars from local dev do not apply unless you add a different deployment shape. Any future **Vite build-time** variables (`VITE_*`) must be passed at image build time, for example `docker build --build-arg VITE_EXAMPLE=...` (and your Dockerfile would need to forward them into the build step).
-
-#### GitHub Container Registry (CI)
-
-The workflow [`.github/workflows/docker-dbt-tools-web.yml`](../../../.github/workflows/docker-dbt-tools-web.yml) builds this Dockerfile on `push` to `main`, on `pull_request` (build only, no push), and via `workflow_dispatch`. Images are pushed to **GHCR**:
-
-`ghcr.io/<github-owner-lowercase>/dbt-tools-web`
-
-Tags include a **git SHA** tag on every push to `main` (and manual runs), and **`latest`** when the default branch is built. Replace `<github-owner-lowercase>` with the repository owner in lowercase (for example your user or org name).
-
-```bash
-# Private package: create a PAT with read:packages (or use gh auth token)
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
-docker pull ghcr.io/<github-owner-lowercase>/dbt-tools-web:latest
-```
-
-After the first successful push, set package visibility (public vs private) under the repository’s **Packages** settings if needed.
-
----
-
-## Project Structure
-
-```text
-packages/dbt-tools/web/
-├── src/
-│   ├── components/          # React UI components
-│   │   ├── AnalysisWorkspace/   # Analyzer workspace (import via ./AnalysisWorkspace → index.tsx)
-│   │   │   └── views/           # Feature views: health/, inventory/, runs/; shared overview/ + assets
-│   │   ├── AppShell/            # Top-level layout shell
-│   │   └── ui/                  # Shared primitive components
-│   ├── hooks/               # Custom React hooks
-│   ├── services/            # Data-fetching and artifact API services
-│   ├── workers/             # Web worker for off-thread analysis
-│   ├── constants/           # Theme colors and shared constants
-│   ├── lib/                 # Analysis workspace helpers
-│   ├── styles/              # CSS tokens, base, and component styles
-│   ├── App.tsx              # Root application component
-│   └── main.tsx             # Entry point
-├── e2e/                     # Playwright end-to-end test specs
-├── vite.config.ts           # Vite + Vite middleware (DBT_TOOLS_TARGET_DIR proxy)
-└── package.json
-```
-
----
-
-## E2E Tests
-
-The web app has Playwright end-to-end tests:
-
-```bash
-pnpm test:e2e
-```
-
-See `e2e/` for test specs.
+For building the **nginx static image** from the monorepo, GHCR tags, and limitations (static `dist/` only), see [user guide — Docker & GHCR](../../../docs/user-guide-dbt-tools-web.md#docker).
 
 ---
 
 ## Troubleshooting
 
-| Symptom                              | Fix                                                                                                                                                                    |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Blank page / "No artifacts found"    | Ensure `DBT_TOOLS_TARGET_DIR` points to a directory that contains `manifest.json`                                                                                      |
-| Auto-reload not triggering           | Check `DBT_TOOLS_WATCH` is not set to `0`; verify the file watcher has read access to the target directory                                                             |
-| Slow UI with large manifests         | The web worker and virtualized lists should handle 100k+ nodes; if performance still degrades, open the browser profiler and check for main-thread analysis code paths |
-| `GET /api/manifest.json` returns 404 | `DBT_TOOLS_TARGET_DIR` is not set or the Vite dev server was started without it                                                                                        |
-| Debug logs not appearing             | Server-side: restart dev with `DBT_TOOLS_DEBUG=1`; client-side: add `?debug=1` to the URL                                                                              |
+| Symptom                               | What to check                                                                                                                                                                                               |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blank UI / no artifacts               | Pass **`--target`** or set **`DBT_TOOLS_TARGET_DIR`** to a folder that contains **`manifest.json`** (and ideally `run_results.json`). For remote mode, set **`DBT_TOOLS_REMOTE_SOURCE`**.                   |
+| `GET /api/...` 404                    | Target dir missing files, wrong path, or remote config not returning a complete pair.                                                                                                                       |
+| Expected “hot reload” after `dbt run` | The **npm** server re-reads files when the app fetches them; refresh the browser. **File watch + auto-reload** is a **Vite dev** feature — see the [user guide](../../../docs/user-guide-dbt-tools-web.md). |
+| Slow UI on huge projects              | Prefer the latest version; very large graphs still benefit from narrowing scope in the UI.                                                                                                                  |
+
+More rows and fixes: [user guide — Troubleshooting](../../../docs/user-guide-dbt-tools-web.md#troubleshooting).
 
 ---
 
-## Development
+## Developing from source
+
+For **clone, pnpm install, build order, lint, and tests**, use [CONTRIBUTING.md](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/CONTRIBUTING.md).
+
+### Tech stack
+
+| Layer          | Technology                                                    |
+| -------------- | ------------------------------------------------------------- |
+| UI             | [React](https://react.dev/)                                   |
+| Build          | [Vite](https://vitejs.dev/)                                   |
+| Charts         | [Recharts](https://recharts.org/)                             |
+| Virtualization | [@tanstack/react-virtual](https://tanstack.com/virtual)       |
+| Analysis       | `@dbt-tools/core` / `@dbt-tools/core/browser` in a web worker |
+| E2E            | [Playwright](https://playwright.dev/)                         |
+| Language       | TypeScript                                                    |
+
+### Monorepo commands
 
 ```bash
-pnpm build   # TypeScript + Vite build
-pnpm dev     # Vite dev server with HMR
+# From repository root
+pnpm dev:web
+
+# Or from this package
+cd packages/dbt-tools/web
+pnpm dev
 ```
 
-See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide, including how to set up the monorepo and run all tests.
+Preload local artifacts (Vite):
+
+```bash
+DBT_TOOLS_TARGET_DIR=./target pnpm dev
+# or: pnpm dev:target
+```
+
+### Project layout (abridged)
+
+```text
+packages/dbt-tools/web/
+├── src/
+│   ├── components/     # React UI (AnalysisWorkspace, AppShell, ui)
+│   ├── artifact-source/ # Local + remote artifact HTTP surface
+│   ├── server/         # dbt-tools-web CLI + static server
+│   ├── workers/        # Analysis web worker
+│   └── ...
+├── e2e/                # Playwright specs
+└── vite.config.ts
+```
+
+### E2E tests
+
+```bash
+pnpm test:e2e
+```
+
+(from repo root: `pnpm test:e2e` as documented in CONTRIBUTING)
 
 ---
 
-## Related Packages
+## Related packages
 
-| Package                                                        | Description                                                                  |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](../core/README.md)                         | Analysis engine used by this web app (dependency graphs, execution analysis) |
-| [`@dbt-tools/cli`](../cli/README.md)                           | Command-line interface for the same analysis, optimized for AI agents        |
-| [`dbt-artifacts-parser`](../../dbt-artifacts-parser/README.md) | Standalone library for parsing and typing dbt JSON artifacts                 |
+| Package                                                                                                                        | Role              |
+| ------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| [`@dbt-tools/core`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-tools/core/README.md)            | Analysis engine   |
+| [`@dbt-tools/cli`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-tools/cli/README.md)              | CLI (`dbt-tools`) |
+| [`dbt-artifacts-parser`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/packages/dbt-artifacts-parser/README.md) | Artifact parsing  |
 
 ---
 

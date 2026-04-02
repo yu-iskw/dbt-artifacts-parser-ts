@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/cli",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "description": "Command-line interface for dbt artifact analysis",
   "keywords": [
     "dbt",
@@ -9,6 +9,9 @@
   ],
   "license": "Apache-2.0",
   "author": "yu-iskw",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "dbt-tools": "./dist/cli.js"
   },
