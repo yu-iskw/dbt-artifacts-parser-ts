@@ -7,7 +7,7 @@
     "web",
     "visualization"
   ],
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
   "engines": {
     "node": ">=20"
@@ -19,10 +19,11 @@
   "files": [
     "dist",
     "dist-serve",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "prepack": "npm run build",
+    "prepack": "npm run build && node ../../../scripts/copy-dbt-tools-license.mjs",
     "build": "pnpm --filter @dbt-tools/core build && tsc && vite build && pnpm run build:serve",
     "build:serve": "vite build --config vite.server.config.ts",
     "dev": "vite",

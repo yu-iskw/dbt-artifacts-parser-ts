@@ -265,7 +265,9 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the full developer guide.
 
 ## License
 
-Apache License 2.0.
+**Apache License, Version 2.0.** See the full text in [`LICENSE`](./LICENSE) in this package (also published in the npm tarball). The same text is the canonical copy in [`../../LICENSES/Apache-2.0.txt`](../../LICENSES/Apache-2.0.txt).
+
+The `@dbt-tools/*` packages in this monorepo are under a separate source-available license; see [`../dbt-tools/LICENSE`](../dbt-tools/LICENSE). Repository-wide map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
 
 ## Related Projects
 

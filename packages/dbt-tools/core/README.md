@@ -198,4 +198,6 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide.
 
 ## License
 
-Apache License 2.0.
+**Source-available license** (custom; not OSI “open source”). Full text: [`../LICENSE`](../LICENSE).
+
+The **`dbt-artifacts-parser`** dependency is **Apache-2.0**; see [`../../dbt-artifacts-parser/LICENSE`](../../dbt-artifacts-parser/LICENSE).

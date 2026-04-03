@@ -176,6 +176,20 @@ docs: update @dbt-tools/core API reference
 
 ---
 
-## License
+## License and contributions
 
-Apache License 2.0. Contributions are accepted under the same license.
+The monorepo is **not** under a single license. See **[`LICENSES/README.md`](./LICENSES/README.md)** for the path-level license map. What you agree to depends on **which package** you change.
+
+### `dbt-artifacts-parser` (`packages/dbt-artifacts-parser/`)
+
+Contributions are accepted under the **Apache License, Version 2.0**. Canonical full text: [`LICENSES/Apache-2.0.txt`](./LICENSES/Apache-2.0.txt). The same text ships in npm as [`packages/dbt-artifacts-parser/LICENSE`](./packages/dbt-artifacts-parser/LICENSE). By opening a pull request that only touches this package (and shared infra that is clearly parser-related), you license your contribution under those terms.
+
+### `@dbt-tools/*` (`packages/dbt-tools/`)
+
+The dbt-tools packages are distributed under the **source-available license** in [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE) (not OSI open source). **Do not assume Apache-2.0 applies.** Scope and paths: [`LICENSES/README.md`](./LICENSES/README.md).
+
+If you contribute code that modifies dbt-tools, you must have the **right to grant** the project the permissions it needs to ship and enforce that license (typically via a **Contributor License Agreement (CLA)** or equivalent signed arrangement with the maintainer). If no CLA process is linked from the repository yet, **open an issue or contact the maintainer before submitting substantial changes** so inbound rights are clear.
+
+### Mixed or unclear changes
+
+If a single pull request touches **both** the parser and dbt-tools, split it when possible. If splitting is impractical, coordinate with the maintainer: parser portions should remain Apache-2.0-compatible, and dbt-tools portions require the inbound licensing arrangement above.
