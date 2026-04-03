@@ -109,4 +109,6 @@ graph LR
 
 ## License
 
-Apache License 2.0.
+**Source-available license** (custom; not OSI “open source”). Full text: [`LICENSE`](./LICENSE).
+
+The standalone parser **`dbt-artifacts-parser`** in this monorepo is **Apache-2.0**; see [`../dbt-artifacts-parser/LICENSE`](../dbt-artifacts-parser/LICENSE). Published `@dbt-tools/*` npm packages ship this `LICENSE` file and `package.json` metadata (`SEE LICENSE IN LICENSE`).

@@ -3,7 +3,7 @@
   "version": "0.4.1",
   "description": "TypeScript library for parsing dbt artifacts",
   "keywords": [],
-  "license": "ISC",
+  "license": "Apache-2.0",
   "author": "",
   "engines": {
     "node": ">=20"
@@ -38,6 +38,7 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {

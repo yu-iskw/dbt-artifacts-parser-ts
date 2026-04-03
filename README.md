@@ -91,4 +91,13 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to build, test, and contribute 
 
 ## License
 
-Apache License 2.0. See [LICENSE](./LICENSE) for details.
+This monorepo uses **two different licenses** for different parts of the tree. The file at the repository root is the **Apache License 2.0** text; it reflects the license for **`dbt-artifacts-parser`** and shared documentation conventions. It does **not** apply to the **`@dbt-tools/*`** source code.
+
+| Area                                                                                                   | License                                              | Full text                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [`packages/dbt-artifacts-parser/`](./packages/dbt-artifacts-parser/) (npm: `dbt-artifacts-parser`)     | **Apache-2.0**                                       | [`packages/dbt-artifacts-parser/LICENSE`](./packages/dbt-artifacts-parser/LICENSE) (same terms as [root `LICENSE`](./LICENSE)) |
+| [`packages/dbt-tools/`](./packages/dbt-tools/) (`@dbt-tools/core`, `@dbt-tools/cli`, `@dbt-tools/web`) | **Source-available** (custom; not OSI “open source”) | [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE)                                                                   |
+
+Published npm tarballs ship a `LICENSE` file and `package.json` metadata appropriate to each package. For permissions beyond what the dbt-tools license grants, contact the maintainer via the repository.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for how contributions are licensed per package.

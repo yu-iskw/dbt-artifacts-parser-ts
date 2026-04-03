@@ -7,7 +7,7 @@
     "cli",
     "analysis"
   ],
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
   "engines": {
     "node": ">=20"
@@ -17,11 +17,12 @@
   },
   "files": [
     "dist",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {
     "build": "tsc",
-    "prepack": "npm run build",
+    "prepack": "npm run build && node ../../../scripts/copy-dbt-tools-license.mjs",
     "test": "vitest run packages/dbt-tools/cli/src",
     "test:watch": "vitest packages/dbt-tools/cli/src"
   },
