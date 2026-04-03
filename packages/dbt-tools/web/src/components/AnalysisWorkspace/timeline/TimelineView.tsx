@@ -16,9 +16,11 @@ import type {
 } from "@web/lib/analysis-workspace/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
+  countTimelineTestResources,
   deriveProjectName,
   getDefaultTimelineActiveTypes,
   isDefaultTimelineResource,
+  timelineGanttHasCompileExecutePhases,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
 import { SectionCard, WorkspaceScaffold } from "../shared";
@@ -55,6 +57,7 @@ function TimelineSurface({
   bundleRowCount,
   statusCounts,
   typeCounts,
+  testsLegendCount,
   hasActiveFilters,
   typeFilterHint,
   testStatsById,
@@ -70,6 +73,7 @@ function TimelineSurface({
   bundleRowCount: number;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
+  testsLegendCount: number;
   hasActiveFilters: boolean;
   typeFilterHint: TimelineTypeFilterHint | null;
   testStatsById: ReturnType<typeof buildResourceTestStats>;
@@ -81,16 +85,7 @@ function TimelineSurface({
   >;
 }) {
   const showCompileExecuteLegend = useMemo(
-    () =>
-      analysis.ganttData.some(
-        (g) =>
-          g.compileStart != null &&
-          g.compileEnd != null &&
-          g.compileEnd > g.compileStart &&
-          g.executeStart != null &&
-          g.executeEnd != null &&
-          g.executeEnd > g.executeStart,
-      ),
+    () => timelineGanttHasCompileExecutePhases(analysis.ganttData),
     [analysis.ganttData],
   );
 
@@ -104,6 +99,7 @@ function TimelineSurface({
       <GanttLegend
         statusCounts={statusCounts}
         typeCounts={typeCounts}
+        testsLegendCount={testsLegendCount}
         activeStatuses={filters.activeStatuses}
         activeTypes={effectiveActiveTypes}
         onToggleStatus={toggleStatus}
@@ -253,11 +249,9 @@ export function TimelineView({
     return m;
   }, [analysis.ganttData]);
 
-  // Filter parent (non-test) items
   const filteredParents: GanttItem[] = useMemo(
     () =>
       analysis.ganttData.filter((item) => {
-        // Exclude test resources from parent list — they appear as chips
         if (TEST_RESOURCE_TYPES.has(item.resourceType)) return false;
 
         if (
@@ -309,7 +303,6 @@ export function TimelineView({
     ],
   );
 
-  // Include test items whose parent is in the visible parent set
   const parentIdSet = useMemo(
     () => new Set(filteredParents.map((i) => i.unique_id)),
     [filteredParents],
@@ -333,26 +326,23 @@ export function TimelineView({
     [filteredParents, filteredTests],
   );
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const item of analysis.ganttData.filter((entry) =>
-      isDefaultTimelineResource(entry, projectName),
-    )) {
+  const { statusCounts, typeCounts } = useMemo(() => {
+    const nextStatus: Record<string, number> = {};
+    const nextType: Record<string, number> = {};
+    for (const item of analysis.ganttData) {
+      if (!isDefaultTimelineResource(item, projectName)) continue;
       const status = item.status.toLowerCase();
-      counts[status] = (counts[status] ?? 0) + 1;
+      nextStatus[status] = (nextStatus[status] ?? 0) + 1;
+      const rt = item.resourceType;
+      nextType[rt] = (nextType[rt] ?? 0) + 1;
     }
-    return counts;
+    return { statusCounts: nextStatus, typeCounts: nextType };
   }, [analysis.ganttData, projectName]);
 
-  const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const item of analysis.ganttData.filter((entry) =>
-      isDefaultTimelineResource(entry, projectName),
-    )) {
-      counts[item.resourceType] = (counts[item.resourceType] ?? 0) + 1;
-    }
-    return counts;
-  }, [analysis.ganttData, projectName]);
+  const testsLegendCount = useMemo(
+    () => countTimelineTestResources(analysis.ganttData, projectName),
+    [analysis.ganttData, projectName],
+  );
 
   const hasTypeOverride = !setsEqual(effectiveActiveTypes, defaultActiveTypes);
   const typeFilterHint = useMemo(() => {
@@ -392,6 +382,7 @@ export function TimelineView({
         bundleRowCount={filteredParents.length}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
+        testsLegendCount={testsLegendCount}
         hasActiveFilters={hasActiveFilters}
         typeFilterHint={typeFilterHint}
         testStatsById={testStatsById}

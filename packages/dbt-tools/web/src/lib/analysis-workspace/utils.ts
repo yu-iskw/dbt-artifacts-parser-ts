@@ -236,3 +236,42 @@ export function isDefaultTimelineResource(
   if (projectName == null) return true;
   return item.packageName === projectName;
 }
+
+/** True when any row has compile and execute intervals with positive duration (legend + bar shading). */
+export function timelineGanttHasCompileExecutePhases(
+  items: readonly Pick<
+    GanttItem,
+    "compileStart" | "compileEnd" | "executeStart" | "executeEnd"
+  >[],
+): boolean {
+  return items.some(
+    (g) =>
+      g.compileStart != null &&
+      g.compileEnd != null &&
+      g.compileEnd > g.compileStart &&
+      g.executeStart != null &&
+      g.executeEnd != null &&
+      g.executeEnd > g.executeStart,
+  );
+}
+
+/**
+ * Counts `test` / `unit_test` rows in gantt data for the timeline legend.
+ * These are omitted from {@link isDefaultTimelineResource} (and thus from type-count aggregates).
+ */
+export function countTimelineTestResources(
+  items: readonly Pick<
+    GanttItem,
+    "resourceType" | "packageName" | "name" | "path"
+  >[],
+  projectName?: string | null,
+): number {
+  let n = 0;
+  for (const item of items) {
+    if (!TEST_RESOURCE_TYPES.has(item.resourceType ?? "")) continue;
+    if (isInternalArtifactResource(item)) continue;
+    if (projectName != null && item.packageName !== projectName) continue;
+    n++;
+  }
+  return n;
+}
