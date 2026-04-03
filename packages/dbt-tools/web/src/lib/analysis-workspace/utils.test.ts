@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  countTimelineTestResources,
   formatSeconds,
   deriveProjectName,
   matchesAssetStatus,
@@ -7,6 +8,7 @@ import {
   isMainProjectResource,
   isDefaultTimelineResource,
   getDefaultTimelineActiveTypes,
+  timelineGanttHasCompileExecutePhases,
 } from "./utils";
 import type { ResourceNode } from "@web/types";
 import type { ExecutionRow } from "@web/types";
@@ -115,6 +117,76 @@ describe("isMainProjectResource", () => {
         "jaffle_shop",
       ),
     ).toBe(false));
+});
+
+describe("timelineGanttHasCompileExecutePhases", () => {
+  it("false when compile or execute span is missing or non-positive", () => {
+    expect(timelineGanttHasCompileExecutePhases([])).toBe(false);
+    expect(
+      timelineGanttHasCompileExecutePhases([
+        {
+          compileStart: 0,
+          compileEnd: 0,
+          executeStart: 1,
+          executeEnd: 2,
+        },
+      ]),
+    ).toBe(false);
+    expect(
+      timelineGanttHasCompileExecutePhases([
+        {
+          compileStart: 0,
+          compileEnd: 1,
+          executeStart: 1,
+          executeEnd: 1,
+        },
+      ]),
+    ).toBe(false);
+  });
+
+  it("true when any row has positive compile and execute duration", () => {
+    expect(
+      timelineGanttHasCompileExecutePhases([
+        {
+          compileStart: 0,
+          compileEnd: 1,
+          executeStart: 1,
+          executeEnd: 2,
+        },
+      ]),
+    ).toBe(true);
+  });
+});
+
+describe("countTimelineTestResources", () => {
+  it("counts test and unit_test in project scope", () => {
+    expect(
+      countTimelineTestResources(
+        [
+          makeResource({ resourceType: "test", packageName: "p" }),
+          makeResource({ resourceType: "unit_test", packageName: "p" }),
+          makeResource({ resourceType: "model", packageName: "p" }),
+        ],
+        "p",
+      ),
+    ).toBe(2);
+  });
+
+  it("excludes other packages when projectName is set", () =>
+    expect(
+      countTimelineTestResources(
+        [makeResource({ resourceType: "test", packageName: "other" })],
+        "p",
+      ),
+    ).toBe(0));
+
+  it("includes tests from all packages when projectName is null", () =>
+    expect(
+      countTimelineTestResources([
+        makeResource({ resourceType: "test", packageName: "a" }),
+        makeResource({ resourceType: "test", packageName: "b" }),
+      ]),
+    ).toBe(2));
 });
 
 describe("isDefaultTimelineResource", () => {

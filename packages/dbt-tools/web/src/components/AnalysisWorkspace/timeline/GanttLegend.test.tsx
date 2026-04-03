@@ -86,4 +86,44 @@ describe("GanttLegend", () => {
 
     cleanupRoot(root, container);
   });
+
+  it("renders Tests chip in the type group with testsLegendCount", () => {
+    const onToggleShowTests = vi.fn();
+    const { container, root } = renderLegend({
+      typeCounts: { model: 1 },
+      testsLegendCount: 3,
+      showBarEncodingKey: false,
+      onToggleShowTests,
+    });
+
+    const typeLabel = [
+      ...container.querySelectorAll(".gantt-legend__label"),
+    ].find((el) => el.textContent === "Type");
+    expect(typeLabel).toBeDefined();
+    const typeGroup = typeLabel?.closest(".gantt-legend__group");
+    expect(typeGroup?.textContent).toMatch(/tests/i);
+    expect(typeGroup?.textContent).toMatch(/3/);
+
+    cleanupRoot(root, container);
+  });
+
+  it("renders Failures only in the status group after status chips", () => {
+    const onToggleFailuresOnly = vi.fn();
+    const { container, root } = renderLegend({
+      statusCounts: { success: 4 },
+      typeCounts: {},
+      showBarEncodingKey: false,
+      onToggleFailuresOnly,
+    });
+
+    const statusGroup = [
+      ...container.querySelectorAll(".gantt-legend__group"),
+    ].find(
+      (g) => g.querySelector(".gantt-legend__label")?.textContent === "Status",
+    );
+    expect(statusGroup?.textContent).toMatch(/success/i);
+    expect(statusGroup?.textContent).toMatch(/failures only/i);
+
+    cleanupRoot(root, container);
+  });
 });

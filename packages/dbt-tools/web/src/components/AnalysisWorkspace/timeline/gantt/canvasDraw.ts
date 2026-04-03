@@ -148,6 +148,7 @@ function drawRowBackground(
   rowIndex: number,
   rowY: number,
   width: number,
+  bundleRowHeightPx: number,
   isFocused: boolean,
   isHovered: boolean,
   palette: CanvasPalette,
@@ -155,7 +156,7 @@ function drawRowBackground(
   if (rowIndex % 2 !== 0) return;
   ctx.fillStyle = isHovered ? palette.rowStripeHover : palette.rowStripe;
   ctx.globalAlpha = isFocused ? 1 : 0.35;
-  ctx.fillRect(0, rowY, width, ROW_H);
+  ctx.fillRect(0, rowY, width, bundleRowHeightPx);
   ctx.globalAlpha = 1;
 }
 
@@ -355,21 +356,6 @@ function drawTestChip({
   strokeRoundRect(ctx, chipX, chipY, chipW, chipH, radius);
   ctx.restore();
 
-  // Label inside chip when wide enough
-  if (chipW >= 40) {
-    ctx.save();
-    ctx.globalAlpha = emphasis;
-    ctx.beginPath();
-    ctx.rect(chipX + 2, chipY, chipW - 4, chipH);
-    ctx.clip();
-    ctx.font = '9px "IBM Plex Sans", "Avenir Next", sans-serif';
-    ctx.fillStyle = palette.labelText;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(test.name, chipX + 2, chipY + chipH / 2);
-    ctx.restore();
-  }
-
   if (isHovered) {
     ctx.save();
     ctx.globalAlpha = 1;
@@ -464,11 +450,7 @@ function drawGanttAxisTicks({
     ctx.moveTo(x, AXIS_TOP);
     ctx.lineTo(x, h);
     ctx.stroke();
-    const label =
-      displayMode === "timestamps" && runStartedAt != null
-        ? formatTimestamp(runStartedAt + tick.ms, timeZone)
-        : tick.label;
-    ctx.fillText(label, x, AXIS_TOP / 2);
+    ctx.fillText(getDisplayLabel(tick), x, AXIS_TOP / 2);
   }
 }
 
@@ -477,6 +459,7 @@ interface DrawGanttVisibleRowParams {
   bundle: BundleRow;
   rowIndex: number;
   rowY: number;
+  bundleRowHeightPx: number;
   w: number;
   labelW: number;
   chartW: number;
@@ -496,6 +479,7 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
     bundle,
     rowIndex,
     rowY,
+    bundleRowHeightPx,
     w,
     labelW,
     chartW,
@@ -517,7 +501,16 @@ function drawGanttVisibleRow(p: DrawGanttVisibleRowParams): void {
   const isHovered = hoveredId === bundle.item.unique_id;
   const emphasis = isFocused ? 1 : 0.18;
 
-  drawRowBackground(ctx, rowIndex, rowY, w, rowHasFocus, isHovered, palette);
+  drawRowBackground(
+    ctx,
+    rowIndex,
+    rowY,
+    w,
+    bundleRowHeightPx,
+    rowHasFocus,
+    isHovered,
+    palette,
+  );
 
   drawRowLabels({
     ctx,
@@ -643,6 +636,7 @@ export function drawGantt(
       bundle,
       rowIndex: i,
       rowY,
+      bundleRowHeightPx: rowHeights[i] ?? ROW_H,
       w,
       labelW,
       chartW,

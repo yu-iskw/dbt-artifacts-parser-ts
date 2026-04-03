@@ -24,6 +24,8 @@ interface GanttLegendProps {
   /** Whether test chips are currently shown inside bundle rows. */
   showTests?: boolean;
   onToggleShowTests?: () => void;
+  /** Scoped count of test/unit_test executions in gantt data (omitted from typeCounts aggregates). */
+  testsLegendCount?: number;
   /** Whether the view is in failures-only mode. */
   failuresOnly?: boolean;
   onToggleFailuresOnly?: () => void;
@@ -44,6 +46,22 @@ const SWATCH_STYLE: CSSProperties = {
 const LEGEND_ITEM_ACTIVE_CLASS = " gantt-legend__item--active";
 
 type ThemeHex = ReturnType<typeof getThemeHex>;
+
+function legendItemClass(isActive: boolean): string {
+  return `gantt-legend__item${isActive ? LEGEND_ITEM_ACTIVE_CLASS : ""}`;
+}
+
+function typeLegendSwatchStyle(
+  themeHex: ThemeHex,
+  leftBorderColor: string,
+): CSSProperties {
+  return {
+    ...SWATCH_STYLE,
+    background: themeHex.bgSoft,
+    borderLeft: `3px solid ${leftBorderColor}`,
+    borderRadius: 0,
+  };
+}
 
 function GanttBarEncodingKey({
   theme,
@@ -116,71 +134,6 @@ function GanttBarEncodingKey({
   );
 }
 
-function GanttLegendActionRow({
-  themeHex,
-  showTests,
-  onToggleShowTests,
-  failuresOnly,
-  onToggleFailuresOnly,
-}: {
-  themeHex: ThemeHex;
-  showTests?: boolean;
-  onToggleShowTests?: () => void;
-  failuresOnly?: boolean;
-  onToggleFailuresOnly?: () => void;
-}) {
-  if (onToggleShowTests == null && onToggleFailuresOnly == null) {
-    return null;
-  }
-
-  return (
-    <div className="gantt-legend__group gantt-legend__group--actions">
-      {onToggleShowTests != null && (
-        <button
-          type="button"
-          className={`gantt-legend__item${showTests ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
-          onClick={onToggleShowTests}
-          title={showTests ? "Hide test chips" : "Show test chips"}
-          aria-pressed={showTests ?? false}
-        >
-          <span
-            style={{
-              ...SWATCH_STYLE,
-              background: themeHex.mint,
-              borderRadius: 50,
-            }}
-            aria-hidden
-          />
-          <span className="gantt-legend__name">Tests</span>
-        </button>
-      )}
-      {onToggleFailuresOnly != null && (
-        <button
-          type="button"
-          className={`gantt-legend__item${failuresOnly ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
-          onClick={onToggleFailuresOnly}
-          title={
-            failuresOnly
-              ? "Show all parent rows"
-              : "Show only parents with errors or failing tests"
-          }
-          aria-pressed={failuresOnly ?? false}
-        >
-          <span
-            style={{
-              ...SWATCH_STYLE,
-              background: themeHex.rose,
-              borderRadius: 50,
-            }}
-            aria-hidden
-          />
-          <span className="gantt-legend__name">Failures only</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function GanttLegend({
   statusCounts,
   typeCounts,
@@ -190,6 +143,7 @@ export function GanttLegend({
   onToggleType,
   showTests,
   onToggleShowTests,
+  testsLegendCount = 0,
   failuresOnly,
   onToggleFailuresOnly,
   showBarEncodingKey = true,
@@ -221,7 +175,7 @@ export function GanttLegend({
           showCompileExecuteLegend={showCompileExecuteLegend}
         />
       ) : null}
-      {visibleStatuses.length > 0 && (
+      {(visibleStatuses.length > 0 || onToggleFailuresOnly != null) && (
         <div className="gantt-legend__group">
           <span className="gantt-legend__label">Status</span>
           {visibleStatuses.map((status) => {
@@ -232,7 +186,7 @@ export function GanttLegend({
               <button
                 key={status}
                 type="button"
-                className={`gantt-legend__item${isActive ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+                className={legendItemClass(isActive)}
                 onClick={() => onToggleStatus?.(status)}
                 title={`${status} (${count})`}
               >
@@ -242,10 +196,32 @@ export function GanttLegend({
               </button>
             );
           })}
+          {onToggleFailuresOnly != null && (
+            <button
+              type="button"
+              className={legendItemClass(Boolean(failuresOnly))}
+              onClick={onToggleFailuresOnly}
+              title={
+                failuresOnly
+                  ? "Show all parent rows"
+                  : "Show only parents with errors or failing tests"
+              }
+              aria-pressed={failuresOnly ?? false}
+            >
+              <span
+                style={{
+                  ...SWATCH_STYLE,
+                  background: getStatusColor("fail", theme),
+                }}
+                aria-hidden
+              />
+              <span className="gantt-legend__name">failures only</span>
+            </button>
+          )}
         </div>
       )}
 
-      {visibleTypes.length > 0 && (
+      {(visibleTypes.length > 0 || onToggleShowTests != null) && (
         <div className="gantt-legend__group">
           <span className="gantt-legend__label">Type</span>
           {visibleTypes.map((type) => {
@@ -256,33 +232,37 @@ export function GanttLegend({
               <button
                 key={type}
                 type="button"
-                className={`gantt-legend__item${isActive ? LEGEND_ITEM_ACTIVE_CLASS : ""}`}
+                className={legendItemClass(isActive)}
                 onClick={() => onToggleType?.(type)}
                 title={`${type} (${count})`}
               >
-                <span
-                  style={{
-                    ...SWATCH_STYLE,
-                    background: themeHex.bgSoft,
-                    borderLeft: `3px solid ${color}`,
-                    borderRadius: 0,
-                  }}
-                />
+                <span style={typeLegendSwatchStyle(themeHex, color)} />
                 <span className="gantt-legend__name">{type}</span>
                 <span className="gantt-legend__count">{count}</span>
               </button>
             );
           })}
+          {onToggleShowTests != null && (
+            <button
+              type="button"
+              className={legendItemClass(Boolean(showTests))}
+              onClick={onToggleShowTests}
+              title={showTests ? "Hide test chips" : "Show test chips"}
+              aria-pressed={showTests ?? false}
+            >
+              <span
+                style={typeLegendSwatchStyle(
+                  themeHex,
+                  getResourceTypeColor("test", theme),
+                )}
+                aria-hidden
+              />
+              <span className="gantt-legend__name">tests</span>
+              <span className="gantt-legend__count">{testsLegendCount}</span>
+            </button>
+          )}
         </div>
       )}
-
-      <GanttLegendActionRow
-        themeHex={themeHex}
-        showTests={showTests}
-        onToggleShowTests={onToggleShowTests}
-        failuresOnly={failuresOnly}
-        onToggleFailuresOnly={onToggleFailuresOnly}
-      />
     </div>
   );
 }
