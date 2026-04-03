@@ -198,6 +198,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide.
 
 ## License
 
-**Source-available license** (custom; not OSI “open source”). Full text: [`../LICENSE`](../LICENSE).
+The `@dbt-tools/*` packages use a **custom source-available license**; they are **not** OSI “open source.” The following is a **short summary** — the binding terms are in the **`LICENSE`** file at the root of each published npm package (`package.json` uses `SEE LICENSE IN LICENSE`).
 
-The **`dbt-artifacts-parser`** dependency is **Apache-2.0**; see [`../../dbt-artifacts-parser/LICENSE`](../../dbt-artifacts-parser/LICENSE).
+- **You may** use and modify the software for **personal use** and for **internal use** within your organization for your own business purposes, **provided** you do not offer a **commercial service** where the software (or a derivative intended to replace or substantially replicate the published `@dbt-tools/*` packages) is a material part of the value you sell or deliver to third parties (for example hosted access, resale, or client production work centered on operating the software — see `LICENSE` for definitions).
+- **You may not**, without **prior written permission** from the copyright holder, offer such a **commercial service**, or **publish** the software or that kind of derivative to a **package registry** (npm, GitHub Packages, and similar) for third-party consumption.
+- **Dependencies** such as **`dbt-artifacts-parser`** remain under **their own** licenses (**Apache-2.0** for that library). This license does not override them.

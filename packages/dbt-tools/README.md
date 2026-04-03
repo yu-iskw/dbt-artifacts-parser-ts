@@ -109,6 +109,10 @@ graph LR
 
 ## License
 
-**Source-available license** (custom; not OSI “open source”). Full text: [`LICENSE`](./LICENSE). Repository-wide path map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
+The `@dbt-tools/*` packages use a **custom source-available license**; they are **not** OSI “open source.” The following is a **short summary** — the binding terms are in the **`LICENSE`** file at the root of each published npm package (`package.json` uses `SEE LICENSE IN LICENSE`).
 
-The standalone parser **`dbt-artifacts-parser`** in this monorepo is **Apache-2.0**; see [`../dbt-artifacts-parser/LICENSE`](../dbt-artifacts-parser/LICENSE). Published `@dbt-tools/*` npm packages ship this `LICENSE` file and `package.json` metadata (`SEE LICENSE IN LICENSE`).
+- **You may** use and modify the software for **personal use** and for **internal use** within your organization for your own business purposes, **provided** you do not offer a **commercial service** where the software (or a derivative intended to replace or substantially replicate the published `@dbt-tools/*` packages) is a material part of the value you sell or deliver to third parties (for example hosted access, resale, or client production work centered on operating the software — see `LICENSE` for definitions).
+- **You may not**, without **prior written permission** from the copyright holder, offer such a **commercial service**, or **publish** the software or that kind of derivative to a **package registry** (npm, GitHub Packages, and similar) for third-party consumption.
+- **Dependencies** such as **`dbt-artifacts-parser`** remain under **their own** licenses (**Apache-2.0** for that library). This license does not override them.
+
+The **`dbt-artifacts-parser`** tree in this monorepo is **Apache-2.0** separately from `@dbt-tools/*`. If you are reading this in the upstream **Git repository**, `LICENSES/README.md` at the repository root maps licenses by path (that file is **not** shipped inside `@dbt-tools/*` npm tarballs).
