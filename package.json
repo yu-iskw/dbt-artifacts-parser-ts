@@ -4,7 +4,7 @@
   "private": true,
   "description": "A community-driven TypeScript library for parsing dbt artifacts with full type safety and automatic version detection.",
   "keywords": [],
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
   "scripts": {
     "build": "pnpm --recursive --sequential run build",

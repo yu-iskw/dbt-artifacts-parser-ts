@@ -1,6 +1,6 @@
 # Copyright 2025 yu-iskw
 # CI workflow configuration. Published @dbt-tools packages use the source-available
-# license in packages/dbt-tools/LICENSE. Monorepo licensing: see README.md.
+# license in packages/dbt-tools/LICENSE. Monorepo licensing: see README.md and LICENSES/README.md.
 
 name: Publish @dbt-tools
 

@@ -7,6 +7,10 @@ This license applies only to the dbt-tools packages in this repository
 (under packages/dbt-tools/). It does not apply to dbt-artifacts-parser,
 which is licensed separately under the Apache License, Version 2.0.
 
+When this software is obtained as part of the upstream Git repository,
+see LICENSES/README.md at the repository root for a path-level license map
+(that file is not shipped inside @dbt-tools/* npm packages).
+
 TERMS AND CONDITIONS
 
 1. Definitions

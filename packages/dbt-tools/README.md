@@ -109,6 +109,6 @@ graph LR
 
 ## License
 
-**Source-available license** (custom; not OSI “open source”). Full text: [`LICENSE`](./LICENSE).
+**Source-available license** (custom; not OSI “open source”). Full text: [`LICENSE`](./LICENSE). Repository-wide path map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
 
 The standalone parser **`dbt-artifacts-parser`** in this monorepo is **Apache-2.0**; see [`../dbt-artifacts-parser/LICENSE`](../dbt-artifacts-parser/LICENSE). Published `@dbt-tools/*` npm packages ship this `LICENSE` file and `package.json` metadata (`SEE LICENSE IN LICENSE`).

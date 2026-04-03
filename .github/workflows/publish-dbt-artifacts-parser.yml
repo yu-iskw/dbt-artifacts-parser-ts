@@ -1,6 +1,6 @@
 # Copyright 2025 yu-iskw
 # SPDX-License-Identifier: Apache-2.0
-# Publishes dbt-artifacts-parser (Apache-2.0). Monorepo licensing: see README.md.
+# Publishes dbt-artifacts-parser (Apache-2.0). Monorepo licensing: see README.md and LICENSES/README.md.
 
 name: Publish dbt-artifacts-parser
 
