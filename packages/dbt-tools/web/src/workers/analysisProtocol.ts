@@ -20,6 +20,10 @@ export interface LoadAnalysisMessage {
   manifestBytes: ArrayBuffer;
   runResultsBytes: ArrayBuffer;
   source: AnalysisLoadSource;
+  telemetry?: {
+    traceparent?: string;
+    tracestate?: string;
+  };
 }
 
 export interface GetResourceCodeMessage {
@@ -27,6 +31,10 @@ export interface GetResourceCodeMessage {
   protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
   requestId: number;
   uniqueId: string;
+  telemetry?: {
+    traceparent?: string;
+    tracestate?: string;
+  };
 }
 
 export interface SearchResourcesMessage {
@@ -34,6 +42,10 @@ export interface SearchResourcesMessage {
   protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
   requestId: number;
   query: string;
+  telemetry?: {
+    traceparent?: string;
+    tracestate?: string;
+  };
 }
 
 export interface AnalysisReadyMessage {

@@ -7,6 +7,8 @@ import {
   type AnalysisLoadResult,
 } from "./analysisLoader";
 import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
+import { SpanStatusCode } from "@opentelemetry/api";
+import { getWebTracer } from "@web/telemetry/tracer";
 
 export type { WorkspaceArtifactSource };
 export type ManagedArtifactSourceMode = "none" | "preload" | "remote";
@@ -36,6 +38,9 @@ const LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS: readonly [string, string] = [
   "/api/manifest.json",
   "/api/run_results.json",
 ];
+const SWITCH_RUN_ERROR_MESSAGE = "Failed to switch artifact source run";
+const SWITCH_RUN_PATH = "/api/artifact-source/switch";
+const ARTIFACT_SOURCE_STATUS_PATH = "/api/artifact-source";
 
 /** Precedence: current managed paths, then legacy single-target paths. */
 const ARTIFACT_MANIFEST_RUN_RESULTS_URLS: ReadonlyArray<
@@ -149,11 +154,33 @@ async function loadManagedArtifactsFallback(): Promise<{
 }
 
 export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus> {
-  const response = await fetch("/api/artifact-source");
-  if (!response.ok) {
-    throw new Error("Failed to load artifact source status");
-  }
-  return (await response.json()) as ArtifactSourceStatus;
+  return getWebTracer().startActiveSpan(
+    "ui.api.fetch_artifact_source_status",
+    async (span) => {
+      span.setAttribute("http.request.method", "GET");
+      span.setAttribute("url.path", ARTIFACT_SOURCE_STATUS_PATH);
+      try {
+        const response = await fetch(ARTIFACT_SOURCE_STATUS_PATH);
+        span.setAttribute("http.response.status_code", response.status);
+        if (!response.ok) {
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: "Failed to load artifact source status",
+          });
+          throw new Error("Failed to load artifact source status");
+        }
+        return (await response.json()) as ArtifactSourceStatus;
+      } catch (error) {
+        span.recordException(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        throw error;
+      } finally {
+        span.end();
+      }
+    },
+  );
 }
 
 export async function refetchFromApi(
@@ -175,7 +202,7 @@ export async function loadCurrentManagedArtifacts(): Promise<{
 }> {
   let response: Response;
   try {
-    response = await fetch("/api/artifact-source");
+    response = await fetch(ARTIFACT_SOURCE_STATUS_PATH);
   } catch {
     return loadManagedArtifactsFallback();
   }
@@ -208,17 +235,38 @@ export async function loadCurrentManagedArtifacts(): Promise<{
 export async function switchToArtifactRun(
   runId?: string,
 ): Promise<ArtifactSourceStatus> {
-  const response = await fetch("/api/artifact-source/switch", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(runId ? { runId } : {}),
+  return getWebTracer().startActiveSpan("ui.api.switch_artifact_run", async (span) => {
+    span.setAttribute("http.request.method", "POST");
+    span.setAttribute("url.path", SWITCH_RUN_PATH);
+    if (runId) span.setAttribute("dbt.run_id", runId);
+
+    try {
+      const response = await fetch(SWITCH_RUN_PATH, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(runId ? { runId } : {}),
+      });
+      span.setAttribute("http.response.status_code", response.status);
+
+      if (!response.ok) {
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: SWITCH_RUN_ERROR_MESSAGE,
+        });
+        throw new Error(SWITCH_RUN_ERROR_MESSAGE);
+      }
+
+      return (await response.json()) as ArtifactSourceStatus;
+    } catch (error) {
+      span.recordException(
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+    } finally {
+      span.end();
+    }
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to switch artifact source run");
-  }
-
-  return (await response.json()) as ArtifactSourceStatus;
 }

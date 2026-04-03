@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 
+import { SpanStatusCode } from "@opentelemetry/api";
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import { matchesResource } from "../lib/analysis-workspace/utils";
@@ -17,6 +18,8 @@ import {
   type LoadAnalysisMessage,
   type SearchResourcesMessage,
 } from "./analysisProtocol";
+import { getWebTracer } from "@web/telemetry/tracer";
+import { toSpanAttributes, withExtractedCarrier } from "@web/telemetry/context";
 
 function now() {
   return performance.now();
@@ -145,66 +148,93 @@ export function handleGetResourceCodeMessage(
 export async function handleLoadAnalysisMessage(
   payload: LoadAnalysisMessage,
 ): Promise<AnalysisWorkerResponse> {
-  if (payload.protocolVersion !== ANALYSIS_WORKER_PROTOCOL_VERSION) {
-    return buildLoadErrorResponse(
-      payload.requestId,
-      `Unsupported protocol version: ${payload.protocolVersion}`,
-    );
-  }
+  return withExtractedCarrier(payload.telemetry, () =>
+    getWebTracer().startActiveSpan("worker.load_analysis", async (span) => {
+      span.setAttributes({
+        "dbt.request_id": payload.requestId,
+        "dbt.protocol_version": payload.protocolVersion,
+        ...toSpanAttributes(payload.telemetry),
+      });
 
-  try {
-    cachedGraph = null;
-    cachedResources = null;
-    const totalStart = now();
-    const decodeStart = now();
-    const manifestJson = decodeJsonBytes(payload.manifestBytes);
-    const runResultsJson = decodeJsonBytes(payload.runResultsBytes);
-    const decodeMs = now() - decodeStart;
+      if (payload.protocolVersion !== ANALYSIS_WORKER_PROTOCOL_VERSION) {
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        span.end();
+        return buildLoadErrorResponse(
+          payload.requestId,
+          `Unsupported protocol version: ${payload.protocolVersion}`,
+        );
+      }
 
-    const parseStart = now();
-    const manifest = parseManifest(manifestJson);
-    const runResults = parseRunResults(runResultsJson);
-    const parseMs = now() - parseStart;
+      try {
+        cachedGraph = null;
+        cachedResources = null;
+        const totalStart = now();
 
-    const {
-      analysis,
-      timings: snapshotTimings,
-      graph,
-    }: {
-      analysis: AnalysisSnapshot;
-      timings: { graphBuildMs: number; snapshotBuildMs: number };
-      graph: ManifestGraph;
-    } = buildAnalysisSnapshotFromParsedArtifacts(
-      manifestJson,
-      runResultsJson,
-      manifest,
-      runResults,
-    );
+        const decodeStart = now();
+        const manifestJson = decodeJsonBytes(payload.manifestBytes);
+        const runResultsJson = decodeJsonBytes(payload.runResultsBytes);
+        const decodeMs = now() - decodeStart;
 
-    cachedGraph = graph;
-    cachedResources = analysis.resources;
+        const parseStart = now();
+        const manifest = parseManifest(manifestJson);
+        const runResults = parseRunResults(runResultsJson);
+        const parseMs = now() - parseStart;
 
-    const timings: AnalysisWorkerTimings = {
-      decodeMs,
-      parseMs,
-      graphBuildMs: snapshotTimings.graphBuildMs,
-      snapshotBuildMs: snapshotTimings.snapshotBuildMs,
-      totalWorkerMs: now() - totalStart,
-    };
+        const {
+          analysis,
+          timings: snapshotTimings,
+          graph,
+        }: {
+          analysis: AnalysisSnapshot;
+          timings: { graphBuildMs: number; snapshotBuildMs: number };
+          graph: ManifestGraph;
+        } = buildAnalysisSnapshotFromParsedArtifacts(
+          manifestJson,
+          runResultsJson,
+          manifest,
+          runResults,
+        );
 
-    return {
-      type: "analysis-ready",
-      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
-      requestId: payload.requestId,
-      analysis,
-      timings,
-    };
-  } catch (error) {
-    return buildLoadErrorResponse(
-      payload.requestId,
-      error instanceof Error ? error.message : "Failed to analyze artifacts",
-    );
-  }
+        cachedGraph = graph;
+        cachedResources = analysis.resources;
+
+        const timings: AnalysisWorkerTimings = {
+          decodeMs,
+          parseMs,
+          graphBuildMs: snapshotTimings.graphBuildMs,
+          snapshotBuildMs: snapshotTimings.snapshotBuildMs,
+          totalWorkerMs: now() - totalStart,
+        };
+        span.setAttribute("dbt.worker.decode_ms", decodeMs);
+        span.setAttribute("dbt.worker.parse_ms", parseMs);
+        span.setAttribute("dbt.worker.graph_build_ms", timings.graphBuildMs);
+        span.setAttribute(
+          "dbt.worker.snapshot_build_ms",
+          timings.snapshotBuildMs,
+        );
+        span.setAttribute("dbt.worker.total_ms", timings.totalWorkerMs);
+
+        return {
+          type: "analysis-ready",
+          protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+          requestId: payload.requestId,
+          analysis,
+          timings,
+        };
+      } catch (error) {
+        span.recordException(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        return buildLoadErrorResponse(
+          payload.requestId,
+          error instanceof Error ? error.message : "Failed to analyze artifacts",
+        );
+      } finally {
+        span.end();
+      }
+    }),
+  );
 }
 
 /** Dispatches load and resource-code requests (used by tests and `onmessage`). */

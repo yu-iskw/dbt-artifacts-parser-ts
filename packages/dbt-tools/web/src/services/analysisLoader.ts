@@ -8,6 +8,9 @@ import {
   type AnalysisWorkerTimings,
 } from "../workers/analysisProtocol";
 import { debug, markDebug, measureDebug } from "../debug";
+import { SpanStatusCode } from "@opentelemetry/api";
+import { getWebTracer } from "@web/telemetry/tracer";
+import { getActiveTraceCarrier } from "@web/telemetry/context";
 
 const ERR_UNEXPECTED_ANALYSIS_RESPONSE = "Unexpected analysis worker response";
 const ERR_UNEXPECTED_RESOURCE_CODE_RESPONSE =
@@ -104,6 +107,7 @@ class AnalysisWorkerClient {
       manifestBytes,
       runResultsBytes,
       source,
+      telemetry: getActiveTraceCarrier() ?? undefined,
     };
 
     const promise = new Promise<AnalysisLoadResult>((resolve, reject) => {
@@ -141,6 +145,7 @@ class AnalysisWorkerClient {
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId,
       uniqueId,
+      telemetry: getActiveTraceCarrier() ?? undefined,
     };
 
     const promise = new Promise<ResourceCodePayload>((resolve, reject) => {
@@ -160,6 +165,7 @@ class AnalysisWorkerClient {
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId,
       query,
+      telemetry: getActiveTraceCarrier() ?? undefined,
     };
 
     const promise = new Promise<AnalysisState["resources"]>(
@@ -254,7 +260,42 @@ export async function loadAnalysisFromBuffers(
   runResultsBytes: ArrayBuffer,
   source: AnalysisLoadSource,
 ): Promise<AnalysisLoadResult> {
-  return getWorkerClient().loadAnalysis(manifestBytes, runResultsBytes, source);
+  return getWebTracer().startActiveSpan("ui.analysis.load", async (span) => {
+    span.setAttribute("dbt.source", source);
+    span.setAttribute("dbt.manifest.bytes", manifestBytes.byteLength);
+    span.setAttribute("dbt.run_results.bytes", runResultsBytes.byteLength);
+
+    try {
+      const result = await getWorkerClient().loadAnalysis(
+        manifestBytes,
+        runResultsBytes,
+        source,
+      );
+      span.setAttribute("dbt.worker.decode_ms", result.metrics.timings.decodeMs);
+      span.setAttribute("dbt.worker.parse_ms", result.metrics.timings.parseMs);
+      span.setAttribute(
+        "dbt.worker.graph_build_ms",
+        result.metrics.timings.graphBuildMs,
+      );
+      span.setAttribute(
+        "dbt.worker.snapshot_build_ms",
+        result.metrics.timings.snapshotBuildMs,
+      );
+      span.setAttribute(
+        "dbt.worker.total_ms",
+        result.metrics.timings.totalWorkerMs,
+      );
+      return result;
+    } catch (error) {
+      span.recordException(
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+    } finally {
+      span.end();
+    }
+  });
 }
 
 export async function requestResourceCodeFromWorker(
