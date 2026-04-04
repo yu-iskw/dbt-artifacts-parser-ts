@@ -10,6 +10,7 @@ import {
   isAdapterResponseObject,
   normalizeAdapterResponse,
 } from "./adapter-response-metrics";
+import { calculateWeightedCriticalPath } from "./critical-path";
 
 type RunResultLike = {
   unique_id: string;
@@ -156,105 +157,24 @@ export class ExecutionAnalyzer {
   calculateCriticalPath(
     nodeExecutions: NodeExecution[],
   ): CriticalPath | undefined {
-    // Create a map of node executions by unique_id
-    const executionMap = new Map<string, NodeExecution>();
-    for (const exec of nodeExecutions) {
-      executionMap.set(exec.unique_id, exec);
+    const executionTimes = new Map<string, number>();
+    for (const execution of nodeExecutions) {
+      executionTimes.set(execution.unique_id, execution.execution_time || 0);
     }
 
-    // Find all leaf nodes (nodes with no downstream dependents)
-    const leafNodes: string[] = [];
-    const graph = this.graph.getGraph();
-
-    graph.forEachNode((nodeId) => {
-      const outboundNeighbors = graph.outboundNeighbors(nodeId);
-      if (outboundNeighbors.length === 0 && executionMap.has(nodeId)) {
-        leafNodes.push(nodeId);
-      }
-    });
-
-    if (leafNodes.length === 0) {
-      return undefined;
-    }
-
-    // For each leaf node, find the longest path from root
-    let maxPath: string[] = [];
-    let maxTime = 0;
-
-    for (const leafNode of leafNodes) {
-      const path = this.findLongestPathToRoot(leafNode, executionMap);
-      const pathTime = this.calculatePathTime(path, executionMap);
-
-      if (pathTime > maxTime) {
-        maxTime = pathTime;
-        maxPath = path;
-      }
-    }
-
-    if (maxPath.length === 0) {
+    const result = calculateWeightedCriticalPath(
+      this.graph.getGraph(),
+      executionTimes,
+      new Set(executionTimes.keys()),
+    );
+    if (!result) {
       return undefined;
     }
 
     return {
-      path: maxPath,
-      total_time: maxTime,
+      path: result.path,
+      total_time: result.total_time,
     };
-  }
-
-  /**
-   * Find the longest path from a node to root (nodes with no dependencies)
-   */
-  private findLongestPathToRoot(
-    startNode: string,
-    executionMap: Map<string, NodeExecution>,
-  ): string[] {
-    const graph = this.graph.getGraph();
-    const visited = new Set<string>();
-    let longestPath: string[] = [];
-
-    const dfs = (currentNode: string, currentPath: string[]): void => {
-      if (visited.has(currentNode)) {
-        return;
-      }
-
-      visited.add(currentNode);
-      const newPath = [...currentPath, currentNode];
-
-      // Update longest path if this is longer
-      if (newPath.length > longestPath.length) {
-        longestPath = newPath;
-      }
-
-      // Traverse upstream (inbound neighbors)
-      const inboundNeighbors = graph.inboundNeighbors(currentNode);
-      for (const neighbor of inboundNeighbors) {
-        if (executionMap.has(neighbor)) {
-          dfs(neighbor, newPath);
-        }
-      }
-
-      visited.delete(currentNode);
-    };
-
-    dfs(startNode, []);
-    return longestPath.reverse(); // Reverse to get root-to-leaf order
-  }
-
-  /**
-   * Calculate total execution time for a path
-   */
-  private calculatePathTime(
-    path: string[],
-    executionMap: Map<string, NodeExecution>,
-  ): number {
-    let totalTime = 0;
-    for (const nodeId of path) {
-      const exec = executionMap.get(nodeId);
-      if (exec) {
-        totalTime += exec.execution_time || 0;
-      }
-    }
-    return totalTime;
   }
 
   /**

@@ -180,6 +180,72 @@ describe("ExecutionAnalyzer", () => {
   });
 
   describe("calculateCriticalPath", () => {
+    it("uses weighted DAG longest path (execution time), not hop count", () => {
+      const runResults = parseRunResults({
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "model.pkg.a",
+            status: "success",
+            execution_time: 1,
+            timing: [],
+          },
+          {
+            unique_id: "model.pkg.b",
+            status: "success",
+            execution_time: 1,
+            timing: [],
+          },
+          {
+            unique_id: "model.pkg.c",
+            status: "success",
+            execution_time: 10,
+            timing: [],
+          },
+          {
+            unique_id: "model.pkg.d",
+            status: "success",
+            execution_time: 1,
+            timing: [],
+          },
+        ],
+      } as Record<string, unknown>);
+
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+      const g = graph.getGraph();
+      g.clear();
+
+      const mkNode = (id: string) => ({
+        unique_id: id,
+        name: id,
+        package_name: "pkg",
+        resource_type: "model" as const,
+      });
+      g.addNode("model.pkg.a", mkNode("model.pkg.a"));
+      g.addNode("model.pkg.b", mkNode("model.pkg.b"));
+      g.addNode("model.pkg.c", mkNode("model.pkg.c"));
+      g.addNode("model.pkg.d", mkNode("model.pkg.d"));
+      g.addEdge("model.pkg.a", "model.pkg.b", { dependency_type: "node" });
+      g.addEdge("model.pkg.a", "model.pkg.c", { dependency_type: "node" });
+      g.addEdge("model.pkg.b", "model.pkg.d", { dependency_type: "node" });
+      g.addEdge("model.pkg.c", "model.pkg.d", { dependency_type: "node" });
+
+      const analyzer = new ExecutionAnalyzer(runResults, graph);
+      const summary = analyzer.getSummary();
+
+      expect(summary.critical_path?.path).toEqual([
+        "model.pkg.a",
+        "model.pkg.c",
+        "model.pkg.d",
+      ]);
+      expect(summary.critical_path?.total_time).toBe(12);
+    });
+
     it("should calculate critical path when nodes exist", () => {
       const runResultsJson = loadTestRunResults("v6", "run_results.json");
       const runResults = parseRunResults(
