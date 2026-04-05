@@ -123,13 +123,13 @@ function TimelineSurface({
         }
         showCompileExecuteLegend={showCompileExecuteLegend}
       />
-      <TimelineDependencyControls filters={filters} setFilters={setFilters} />
       <TimelineSearchControls
         filters={filters}
         hasActiveFilters={hasActiveFilters}
         typeFilterHint={typeFilterHint}
         setFilters={setFilters}
       />
+      <TimelineDependencyControls filters={filters} setFilters={setFilters} />
       {timeWindow != null && (
         <p className="timeline-zoom-active" role="status">
           Zoomed to {formatMs(timeWindow.end - timeWindow.start)} window
