@@ -2543,7 +2543,7 @@
   line-height: 1.45;
   color: var(--text);
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .asset-tests-table__run-message--warn {
