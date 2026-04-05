@@ -47,7 +47,8 @@ const MODEL_MATERIALIZATION_ALIASES: Record<string, MaterializationKind> = {
   materializedview: "materialized_view",
 };
 
-function normalizeResourceType(resourceType: string): string {
+/** Normalized key for dbt `resource_type` strings (trim, lower, empty → `unknown`). */
+export function normalizeDbtResourceTypeKey(resourceType: string): string {
   return resourceType.trim().toLowerCase() || "unknown";
 }
 
@@ -66,7 +67,7 @@ export function normalizeMaterializationKind(
   resourceType: string,
   materializedRaw: string | undefined | null,
 ): { kind: MaterializationKind; raw?: string } {
-  const rt = normalizeResourceType(resourceType);
+  const rt = normalizeDbtResourceTypeKey(resourceType);
   const token = normalizeMaterializedToken(materializedRaw);
 
   if (rt === "seed") return { kind: "seed" };
@@ -97,7 +98,7 @@ export function deriveSemanticsFlags(
   NodeExecutionSemantics,
   "persisted" | "createsRelation" | "compiledIntoParent"
 > {
-  const rt = normalizeResourceType(resourceType);
+  const rt = normalizeDbtResourceTypeKey(resourceType);
 
   if (rt === "source") {
     return {

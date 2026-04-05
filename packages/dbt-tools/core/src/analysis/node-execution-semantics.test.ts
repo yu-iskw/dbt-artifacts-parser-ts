@@ -2,8 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   buildNodeExecutionSemantics,
   deriveSemanticsFlags,
+  normalizeDbtResourceTypeKey,
   normalizeMaterializationKind,
 } from "./node-execution-semantics";
+
+describe("normalizeDbtResourceTypeKey", () => {
+  it("trims, lowercases, and maps empty to unknown", () => {
+    expect(normalizeDbtResourceTypeKey("  MODEL ")).toBe("model");
+    expect(normalizeDbtResourceTypeKey("")).toBe("unknown");
+    expect(normalizeDbtResourceTypeKey("   ")).toBe("unknown");
+  });
+});
 
 describe("normalizeMaterializationKind", () => {
   it("maps known model materializations", () => {

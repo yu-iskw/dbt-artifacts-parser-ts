@@ -2,12 +2,11 @@ import type { ExecutionRow, MaterializationKind } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "./constants";
 import type {
   DashboardStatusFilter,
-  RunsAdapterColumnId,
   RunsKind,
-  RunsSortBy,
   RunsSortDirection,
   RunsViewState,
 } from "./types";
+import { defaultRunsSortDirection } from "./runsSort";
 import { matchesExecutionRowDashboardStatus } from "./utils";
 import {
   getRunsAdapterColumnKey,
@@ -52,7 +51,7 @@ export interface RunsResultsQuery {
   threadIds: string[];
   durationBand: RunsViewState["durationBand"];
   sortBy: RunsViewState["sortBy"];
-  sortDirection: RunsSortDirection;
+  sortDirection: RunsViewState["sortDirection"];
   limit: number;
 }
 
@@ -168,18 +167,28 @@ function isDurationBandMatch(
   return row.executionTime >= 5;
 }
 
-const STATUS_TONE_RANK = {
+const STATUS_TONE_SORT_RANK: Record<ExecutionRow["statusTone"], number> = {
   danger: 0,
   warning: 1,
   positive: 2,
   skipped: 3,
   neutral: 4,
-} as const;
+};
+
+function compareRowsByToneThenDuration(
+  left: ExecutionRow,
+  right: ExecutionRow,
+): number {
+  const toneCompare =
+    STATUS_TONE_SORT_RANK[left.statusTone] -
+    STATUS_TONE_SORT_RANK[right.statusTone];
+  if (toneCompare !== 0) return toneCompare;
+  return right.executionTime - left.executionTime;
+}
 
 function compareAdapterValues(
   left: number | string | undefined,
   right: number | string | undefined,
-  sortDirection: RunsSortDirection,
 ): number {
   const leftMissing = left === undefined;
   const rightMissing = right === undefined;
@@ -187,127 +196,102 @@ function compareAdapterValues(
   if (leftMissing) return 1;
   if (rightMissing) return -1;
   if (typeof left === "number" && typeof right === "number") {
-    const cmp = left - right;
-    return sortDirection === "asc" ? cmp : -cmp;
+    return left - right;
   }
-  const cmp = String(left).localeCompare(String(right), undefined, {
+  return String(left).localeCompare(String(right), undefined, {
     numeric: true,
     sensitivity: "base",
   });
-  return sortDirection === "asc" ? cmp : -cmp;
 }
 
-function compareLocaleDirected(
-  a: string,
-  b: string,
-  sortDirection: RunsSortDirection,
-): number {
-  return sortDirection === "asc" ? a.localeCompare(b) : b.localeCompare(a);
+function signedCompare(cmp: number, direction: RunsSortDirection): number {
+  return direction === "asc" ? cmp : -cmp;
 }
 
-function compareByDuration(
+function compareLocaleKeysThenName(
+  leftKey: string,
+  rightKey: string,
   left: ExecutionRow,
   right: ExecutionRow,
-  sortDirection: RunsSortDirection,
+  direction: RunsSortDirection,
 ): number {
-  return sortDirection === "desc"
-    ? right.executionTime - left.executionTime
-    : left.executionTime - right.executionTime;
+  const c = leftKey.localeCompare(rightKey);
+  if (c !== 0) return signedCompare(c, direction);
+  return left.name.localeCompare(right.name);
 }
 
-function compareByStart(
+function compareRowsAdapterOrAttentionFallback(
   left: ExecutionRow,
   right: ExecutionRow,
-  sortDirection: RunsSortDirection,
+  sortBy: RunsViewState["sortBy"],
+  direction: RunsSortDirection,
 ): number {
-  return sortDirection === "desc"
-    ? (right.start ?? 0) - (left.start ?? 0)
-    : (left.start ?? 0) - (right.start ?? 0);
-}
-
-function compareByMaterialization(
-  left: ExecutionRow,
-  right: ExecutionRow,
-  sortDirection: RunsSortDirection,
-): number {
-  const lk = left.semantics?.materialization ?? "unknown";
-  const rk = right.semantics?.materialization ?? "unknown";
-  const kindCmp = compareLocaleDirected(lk, rk, sortDirection);
-  if (kindCmp !== 0) return kindCmp;
-  return compareLocaleDirected(left.name, right.name, sortDirection);
-}
-
-function compareByAttention(
-  left: ExecutionRow,
-  right: ExecutionRow,
-  sortDirection: RunsSortDirection,
-): number {
-  const toneCompare =
-    STATUS_TONE_RANK[left.statusTone] - STATUS_TONE_RANK[right.statusTone];
-  if (toneCompare !== 0) {
-    return sortDirection === "desc" ? toneCompare : -toneCompare;
+  if (!isRunsAdapterSortBy(sortBy)) {
+    return signedCompare(compareRowsByToneThenDuration(left, right), direction);
   }
-  return compareByDuration(left, right, sortDirection);
-}
-
-function compareByAdapterSortKey(
-  left: ExecutionRow,
-  right: ExecutionRow,
-  sortBy: RunsAdapterColumnId,
-  sortDirection: RunsSortDirection,
-): number {
   const key = getRunsAdapterColumnKey(sortBy);
   const leftField = getRunsAdapterField(left, key);
   const rightField = getRunsAdapterField(right, key);
   if (!leftField?.isScalar && !rightField?.isScalar) return 0;
   if (!leftField?.isScalar) return 1;
   if (!rightField?.isScalar) return -1;
-  return compareAdapterValues(
-    leftField.sortValue,
-    rightField.sortValue,
-    sortDirection,
+  return signedCompare(
+    compareAdapterValues(leftField.sortValue, rightField.sortValue),
+    direction,
   );
 }
 
 function compareRows(
   left: ExecutionRow,
   right: ExecutionRow,
-  sortBy: RunsSortBy,
-  sortDirection: RunsSortDirection,
+  sortBy: RunsViewState["sortBy"],
+  direction: RunsSortDirection,
 ): number {
   switch (sortBy) {
     case "duration":
-      return compareByDuration(left, right, sortDirection);
+      return signedCompare(left.executionTime - right.executionTime, direction);
     case "name":
-      return compareLocaleDirected(left.name, right.name, sortDirection);
+      return signedCompare(left.name.localeCompare(right.name), direction);
     case "status":
-      return compareLocaleDirected(left.status, right.status, sortDirection);
+      return signedCompare(left.status.localeCompare(right.status), direction);
+    case "start":
+      return signedCompare((left.start ?? 0) - (right.start ?? 0), direction);
+    case "materialization":
+      return compareLocaleKeysThenName(
+        left.semantics?.materialization ?? "unknown",
+        right.semantics?.materialization ?? "unknown",
+        left,
+        right,
+        direction,
+      );
     case "resourceType":
-      return compareLocaleDirected(
+      return compareLocaleKeysThenName(
         left.resourceType,
         right.resourceType,
-        sortDirection,
+        left,
+        right,
+        direction,
       );
     case "thread":
-      return compareLocaleDirected(
+      return compareLocaleKeysThenName(
         left.threadId ?? "",
         right.threadId ?? "",
-        sortDirection,
+        left,
+        right,
+        direction,
       );
-    case "start":
-      return compareByStart(left, right, sortDirection);
-    case "materialization":
-      return compareByMaterialization(left, right, sortDirection);
     case "attention":
-      return compareByAttention(left, right, sortDirection);
+      return signedCompare(
+        compareRowsByToneThenDuration(left, right),
+        direction,
+      );
     default:
-      if (isRunsAdapterSortBy(sortBy)) {
-        return compareByAdapterSortKey(left, right, sortBy, sortDirection);
-      }
-      {
-        const _exhaustive: never = sortBy;
-        return _exhaustive;
-      }
+      return compareRowsAdapterOrAttentionFallback(
+        left,
+        right,
+        sortBy,
+        direction,
+      );
   }
 }
 
@@ -361,7 +345,7 @@ export function filterRunsResultsIndex(
   index: RunsResultsIndex,
   query: Omit<RunsResultsQuery, "limit" | "sortBy" | "sortDirection"> & {
     sortBy?: RunsViewState["sortBy"];
-    sortDirection?: RunsSortDirection;
+    sortDirection?: RunsViewState["sortDirection"];
   },
 ): RunsResultsIndexEntry[] {
   const normalizedQuery = normalizeQuery(query.query);
@@ -391,7 +375,7 @@ export function filterRunsResultsIndex(
   });
 
   const sortBy = query.sortBy ?? "attention";
-  const sortDirection = query.sortDirection ?? "desc";
+  const sortDirection = query.sortDirection ?? defaultRunsSortDirection(sortBy);
   return [...matches].sort((left, right) =>
     compareRows(left.row, right.row, sortBy, sortDirection),
   );

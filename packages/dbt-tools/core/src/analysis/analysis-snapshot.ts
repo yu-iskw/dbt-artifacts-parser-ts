@@ -26,6 +26,7 @@ export type {
 export {
   buildNodeExecutionSemantics,
   deriveSemanticsFlags,
+  normalizeDbtResourceTypeKey,
   normalizeMaterializationKind,
 } from "./node-execution-semantics";
 

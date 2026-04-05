@@ -40,6 +40,53 @@ export function formatResourceTypeLabel(resourceType: string): string {
     .join(" ");
 }
 
+function readQuotedRelationSegment(
+  s: string,
+  i: number,
+): { segment: string; next: number } {
+  let seg = "";
+  while (i < s.length) {
+    if (s[i] === '"') {
+      if (s[i + 1] === '"') {
+        seg += '"';
+        i += 2;
+        continue;
+      }
+      i += 1;
+      break;
+    }
+    seg += s[i];
+    i += 1;
+  }
+  return { segment: seg, next: i };
+}
+
+/**
+ * Normalizes warehouse relation strings for display: drops outer identifier
+ * quotes per dotted segment and unescapes doubled double-quotes per SQL rules.
+ */
+export function formatRelationNameForDisplay(relation: string): string {
+  const segments: string[] = [];
+  let i = 0;
+  const s = relation;
+  while (i < s.length) {
+    if (s[i] === ".") {
+      i += 1;
+      continue;
+    }
+    if (s[i] === '"') {
+      const { segment, next } = readQuotedRelationSegment(s, i + 1);
+      segments.push(segment);
+      i = next;
+    } else {
+      const start = i;
+      while (i < s.length && s[i] !== ".") i += 1;
+      segments.push(s.slice(start, i));
+    }
+  }
+  return segments.join(".");
+}
+
 export function formatRunStartedAt(epochMs: number): string {
   return new Date(epochMs).toLocaleString("en-US", {
     dateStyle: "medium",
@@ -73,26 +120,6 @@ export function normalizeManifestFilePath(path: string | null): string | null {
     .filter(Boolean)
     .join("/");
   return sanitized.length > 0 ? sanitized : null;
-}
-
-/**
- * Strip SQL-style double quotes from manifest relation names for display
- * (e.g. `"db"."schema"."table"` → `db.schema.table`). Per-segment only;
- * escaped `""` inside a quoted segment becomes a single `"`.
- */
-export function formatRelationNameForDisplay(relation: string): string {
-  const trimmed = relation.trim();
-  if (trimmed === "") return trimmed;
-  return trimmed
-    .split(".")
-    .map((segment) => {
-      const s = segment.trim();
-      if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
-        return s.slice(1, -1).replace(/""/g, '"');
-      }
-      return s;
-    })
-    .join(".");
 }
 
 export function matchesResource(

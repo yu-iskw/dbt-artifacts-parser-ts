@@ -1,3 +1,4 @@
+import { normalizeDbtResourceTypeKey } from "@dbt-tools/core/browser";
 import type { MaterializationKind, NodeExecutionSemantics } from "@web/types";
 
 /**
@@ -15,10 +16,6 @@ const RESOURCE_TYPES_WITHOUT_MODEL_MATERIALIZATION_BADGE = new Set([
   "source",
 ]);
 
-function normalizedResourceTypeKey(resourceType: string): string {
-  return resourceType.trim().toLowerCase() || "unknown";
-}
-
 /**
  * Whether to show a materialization chip for this node. Hides meaningless
  * "Unknown" labels on sources, metrics, semantic models, etc.
@@ -29,7 +26,7 @@ export function shouldShowMaterializationSemanticsBadge(
   if (semantics.materialization !== "unknown") {
     return true;
   }
-  const rt = normalizedResourceTypeKey(semantics.resourceType);
+  const rt = normalizeDbtResourceTypeKey(semantics.resourceType);
   return !RESOURCE_TYPES_WITHOUT_MODEL_MATERIALIZATION_BADGE.has(rt);
 }
 

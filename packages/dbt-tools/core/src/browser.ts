@@ -65,5 +65,6 @@ export type {
 export {
   buildNodeExecutionSemantics,
   deriveSemanticsFlags,
+  normalizeDbtResourceTypeKey,
   normalizeMaterializationKind,
 } from "./analysis/analysis-snapshot";
