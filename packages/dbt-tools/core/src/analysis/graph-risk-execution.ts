@@ -36,6 +36,15 @@ function buildExecutionMap(
   return snapshots;
 }
 
+/** Max without spreading; empty input yields -Infinity (same as `Math.max()`). */
+function maxOverNumbers(values: readonly number[]): number {
+  let max = Number.NEGATIVE_INFINITY;
+  for (const v of values) {
+    max = Math.max(max, v);
+  }
+  return max;
+}
+
 export function createEmptyExecutionAnalysis(
   nodeCount: number,
 ): ExecutionAnalysis {
@@ -124,7 +133,7 @@ export function computeExecutionAnalysis(
       earliestStart[nodeIndex]! + (durations[nodeIndex] ?? 0);
   }
 
-  const projectDuration = Math.max(...earliestFinish);
+  const projectDuration = maxOverNumbers(earliestFinish);
   for (let position = topoOrder.length - 1; position >= 0; position--) {
     const nodeIndex = topoOrder[position]!;
     if (!executed[nodeIndex]) {

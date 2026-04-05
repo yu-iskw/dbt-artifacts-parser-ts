@@ -15,6 +15,17 @@ export function clampScore(value: number): number {
   return roundNumber(value);
 }
 
+function minMaxFinite(values: number[]): { min: number; max: number } {
+  let min = values[0]!;
+  let max = values[0]!;
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i]!;
+    min = Math.min(min, v);
+    max = Math.max(max, v);
+  }
+  return { min, max };
+}
+
 export function normalizeArray(values: number[]): number[] {
   if (values.length === 0) {
     return [];
@@ -25,8 +36,7 @@ export function normalizeArray(values: number[]): number[] {
     return values.map(() => 0);
   }
 
-  const min = Math.min(...finiteValues);
-  const max = Math.max(...finiteValues);
+  const { min, max } = minMaxFinite(finiteValues);
   if (max <= min) {
     return values.map(() => 0);
   }
@@ -44,8 +54,7 @@ export function normalizeSparseArray(
     return values.map(() => undefined);
   }
 
-  const min = Math.min(...finiteValues);
-  const max = Math.max(...finiteValues);
+  const { min, max } = minMaxFinite(finiteValues);
   if (max <= min) {
     return values.map((value) => (value === undefined ? undefined : 0));
   }
@@ -62,7 +71,10 @@ export function logSumExp(values: number[]): number {
     return Number.NEGATIVE_INFINITY;
   }
 
-  const max = Math.max(...values);
+  let max = values[0]!;
+  for (let i = 1; i < values.length; i++) {
+    max = Math.max(max, values[i]!);
+  }
   if (!Number.isFinite(max)) {
     return max;
   }
