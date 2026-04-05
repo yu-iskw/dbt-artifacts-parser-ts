@@ -21,6 +21,19 @@ import {
   parseViewFromSearch,
 } from "./appNavigation";
 
+/** When the timeline execution selection changes, reset neighborhood expand (show-all). */
+export function mergeTimelineSelection(
+  current: TimelineFilterState,
+  nextSelectedExecutionId: string | null,
+): TimelineFilterState {
+  const selChanged = nextSelectedExecutionId !== current.selectedExecutionId;
+  return {
+    ...current,
+    selectedExecutionId: nextSelectedExecutionId,
+    ...(selChanged ? { neighborhoodRowsShowAll: false } : {}),
+  };
+}
+
 export interface UrlDerivedNavigationState {
   activeView: WorkspaceView;
   assetViewState: AssetViewState;
@@ -101,6 +114,7 @@ const defaultTimelineFilters = (
       preferences?.timelineDefaults.dependencyDirection ?? "both",
     dependencyDepthHops: preferences?.timelineDefaults.dependencyDepthHops ?? 2,
     timeWindow: null,
+    neighborhoodRowsShowAll: false,
   };
 };
 
@@ -186,10 +200,11 @@ export function applySearchToWorkspaceState(search: string): {
           ? parseShowAdapterMetrics(search)
           : current.showAdapterMetrics,
     }),
-    timelineFilters: (current) => ({
-      ...current,
-      selectedExecutionId: view === "timeline" ? selectedParam : null,
-    }),
+    timelineFilters: (current) =>
+      mergeTimelineSelection(
+        current,
+        view === "timeline" ? selectedParam : null,
+      ),
     lineageViewState: buildInitialLineageViewState(search),
     investigationSelection: (current) => ({
       ...current,

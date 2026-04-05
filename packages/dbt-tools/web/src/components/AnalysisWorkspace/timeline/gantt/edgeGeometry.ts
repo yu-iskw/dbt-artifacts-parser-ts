@@ -1,5 +1,6 @@
 import type { GanttItem, TimelineAdjacencyEntry } from "@web/types";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
   AXIS_TOP,
@@ -456,6 +457,111 @@ export function countOutboundInAdjacency(
   if (!focusId || !timelineAdjacency) return 0;
   const entry = timelineAdjacency[focusId];
   return entry?.outbound.length ?? 0;
+}
+
+function bfsTimelineNeighborhoodHalf(
+  focusId: string,
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry>,
+  candidateIds: ReadonlySet<string>,
+  maxHops: number,
+  leg: "upstream" | "downstream",
+): Set<string> {
+  const result = new Set<string>();
+  result.add(focusId);
+  let frontier = new Set<string>([focusId]);
+  for (let hop = 0; hop < maxHops; hop++) {
+    const nextFrontier = new Set<string>();
+    for (const v of frontier) {
+      const entry = timelineAdjacency[v];
+      if (!entry) continue;
+      const neighbors = leg === "upstream" ? entry.inbound : entry.outbound;
+      for (const n of neighbors) {
+        if (!candidateIds.has(n)) continue;
+        if (!result.has(n)) {
+          result.add(n);
+          nextFrontier.add(n);
+        }
+      }
+    }
+    frontier = nextFrontier;
+  }
+  return result;
+}
+
+export interface CollectTimelineNeighborhoodIdsParams {
+  focusId: string | null;
+  timelineAdjacency: Record<string, TimelineAdjacencyEntry> | undefined;
+  candidateIds: ReadonlySet<string>;
+  dependencyDirection: TimelineDependencyDirection;
+  dependencyDepthHops: number;
+}
+
+/**
+ * Timeline row filtering runs on parent (bundle) ids only. When the user selects
+ * a test chip, use its parent model/source row as the graph focus so neighborhood
+ * narrowing matches selecting that parent.
+ */
+export function resolveTimelineNeighborhoodFocusId(
+  selectedId: string | null,
+  candidateParentIds: ReadonlySet<string>,
+  itemById: ReadonlyMap<string, GanttItem>,
+): string | null {
+  if (selectedId == null) return null;
+  if (candidateParentIds.has(selectedId)) return selectedId;
+  const item = itemById.get(selectedId);
+  if (
+    item &&
+    TEST_RESOURCE_TYPES.has(item.resourceType) &&
+    item.parentId != null &&
+    candidateParentIds.has(item.parentId)
+  ) {
+    return item.parentId;
+  }
+  return null;
+}
+
+/**
+ * Parent ids reachable from `focusId` within `dependencyDepthHops` along inbound
+ * and/or outbound edges (matching timeline dependency controls), restricted to
+ * `candidateIds`. Returns all `candidateIds` when focus is missing or not a
+ * candidate (no-op mask for the caller).
+ */
+export function collectTimelineNeighborhoodIds({
+  focusId,
+  timelineAdjacency,
+  candidateIds,
+  dependencyDirection,
+  dependencyDepthHops,
+}: CollectTimelineNeighborhoodIdsParams): Set<string> {
+  const noop = () => new Set(candidateIds);
+  if (focusId == null || !timelineAdjacency) return noop();
+  if (!candidateIds.has(focusId)) return noop();
+  if (!timelineAdjacency[focusId]) return noop();
+
+  const maxHops = Math.max(
+    1,
+    Math.min(TIMELINE_EXTENDED_MAX_HOPS, Math.trunc(dependencyDepthHops)),
+  );
+  const includeUpstream = dependencyDirection !== "downstream";
+  const includeDownstream = dependencyDirection !== "upstream";
+
+  const merged = new Set<string>();
+  for (const direction of ["upstream", "downstream"] as const) {
+    if (direction === "upstream" ? !includeUpstream : !includeDownstream) {
+      continue;
+    }
+    for (const id of bfsTimelineNeighborhoodHalf(
+      focusId,
+      timelineAdjacency,
+      candidateIds,
+      maxHops,
+      direction,
+    )) {
+      merged.add(id);
+    }
+  }
+
+  return merged;
 }
 
 /**

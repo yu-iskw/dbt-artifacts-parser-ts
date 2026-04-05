@@ -3,11 +3,13 @@ import {
   applySearchToWorkspaceState,
   buildNextUrlFromWorkspaceState,
   createInitialNavigationState,
+  mergeTimelineSelection,
 } from "./workspaceUrlSync";
 import type {
   AssetViewState,
   LineageViewState,
   RunsViewState,
+  TimelineFilterState,
 } from "@web/lib/analysis-workspace/types";
 
 const baseAsset = (): AssetViewState => ({
@@ -151,9 +153,45 @@ describe("applySearchToWorkspaceState", () => {
       dependencyDirection: "both",
       dependencyDepthHops: 2,
       timeWindow: null,
+      neighborhoodRowsShowAll: false,
     });
     expect(tl.selectedExecutionId).toBe("e1");
     expect(tl.query).toBe("q");
+  });
+
+  it("resets neighborhoodRowsShowAll when timeline selected changes via URL", () => {
+    const r = applySearchToWorkspaceState("?view=timeline&selected=b");
+    const tl = r.timelineFilters({
+      query: "",
+      activeStatuses: new Set(),
+      activeTypes: new Set(),
+      selectedExecutionId: "a",
+      showTests: false,
+      failuresOnly: false,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+      timeWindow: null,
+      neighborhoodRowsShowAll: true,
+    });
+    expect(tl.selectedExecutionId).toBe("b");
+    expect(tl.neighborhoodRowsShowAll).toBe(false);
+  });
+
+  it("preserves neighborhoodRowsShowAll when timeline selected unchanged from URL", () => {
+    const r = applySearchToWorkspaceState("?view=timeline&selected=a");
+    const tl = r.timelineFilters({
+      query: "",
+      activeStatuses: new Set(),
+      activeTypes: new Set(),
+      selectedExecutionId: "a",
+      showTests: false,
+      failuresOnly: false,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+      timeWindow: null,
+      neighborhoodRowsShowAll: true,
+    });
+    expect(tl.neighborhoodRowsShowAll).toBe(true);
   });
 
   it("preserves investigation sourceLens", () => {
@@ -200,6 +238,32 @@ describe("applySearchToWorkspaceState", () => {
       showAdapterMetrics: true,
     });
     expect(runs.showAdapterMetrics).toBe(true);
+  });
+});
+
+const baseTimelineFilters = (): TimelineFilterState => ({
+  query: "",
+  activeStatuses: new Set(),
+  activeTypes: new Set(),
+  selectedExecutionId: "a",
+  showTests: false,
+  failuresOnly: false,
+  dependencyDirection: "both",
+  dependencyDepthHops: 2,
+  timeWindow: null,
+  neighborhoodRowsShowAll: true,
+});
+
+describe("mergeTimelineSelection", () => {
+  it("resets neighborhoodRowsShowAll when selected execution changes", () => {
+    const next = mergeTimelineSelection(baseTimelineFilters(), "b");
+    expect(next.selectedExecutionId).toBe("b");
+    expect(next.neighborhoodRowsShowAll).toBe(false);
+  });
+
+  it("preserves neighborhoodRowsShowAll when selected execution unchanged", () => {
+    const next = mergeTimelineSelection(baseTimelineFilters(), "a");
+    expect(next.neighborhoodRowsShowAll).toBe(true);
   });
 });
 

@@ -9,6 +9,10 @@ import { GanttLegend } from "./GanttLegend";
 import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
 import { formatMs, isPositiveStatus } from "./gantt/formatting";
+import {
+  type TimelineNeighborhoodUi,
+  useTimelineNeighborhoodRows,
+} from "./useTimelineNeighborhoodRows";
 import type { AnalysisState, GanttItem } from "@web/types";
 import type {
   InvestigationSelectionState,
@@ -28,6 +32,48 @@ import {
   TimelineSearchControls,
   type TimelineTypeFilterHint,
 } from "./TimelineSearchControls";
+
+function TimelineNeighborhoodBanner({
+  ui,
+  setFilters,
+}: {
+  ui: TimelineNeighborhoodUi;
+  setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+}) {
+  if (ui.mode === "narrowed") {
+    return (
+      <>
+        Showing {ui.shown.toLocaleString()} of {ui.total.toLocaleString()}{" "}
+        timeline rows (dependency neighborhood)
+        {" — "}
+        <button
+          type="button"
+          className="timeline-neighborhood-action"
+          onClick={() =>
+            setFilters((c) => ({ ...c, neighborhoodRowsShowAll: true }))
+          }
+        >
+          Show all rows
+        </button>
+      </>
+    );
+  }
+  return (
+    <>
+      Showing all {ui.total.toLocaleString()} timeline rows
+      {" — "}
+      <button
+        type="button"
+        className="timeline-neighborhood-action"
+        onClick={() =>
+          setFilters((c) => ({ ...c, neighborhoodRowsShowAll: false }))
+        }
+      >
+        Neighborhood only ({ui.narrowedCount.toLocaleString()} rows)
+      </button>
+    </>
+  );
+}
 
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
   if (left.size !== right.size) return false;
@@ -55,6 +101,7 @@ function TimelineSurface({
   effectiveActiveTypes,
   filteredData,
   bundleRowCount,
+  neighborhoodUi,
   statusCounts,
   typeCounts,
   materializationCounts,
@@ -72,6 +119,7 @@ function TimelineSurface({
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
   bundleRowCount: number;
+  neighborhoodUi: TimelineNeighborhoodUi | null;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   materializationCounts: Record<string, number>;
@@ -117,13 +165,13 @@ function TimelineSurface({
         }
         showCompileExecuteLegend={showCompileExecuteLegend}
       />
-      <TimelineDependencyControls filters={filters} setFilters={setFilters} />
       <TimelineSearchControls
         filters={filters}
         hasActiveFilters={hasActiveFilters}
         typeFilterHint={typeFilterHint}
         setFilters={setFilters}
       />
+      <TimelineDependencyControls filters={filters} setFilters={setFilters} />
       {timeWindow != null && (
         <p className="timeline-zoom-active" role="status">
           Zoomed to {formatMs(timeWindow.end - timeWindow.start)} window
@@ -135,6 +183,14 @@ function TimelineSurface({
           >
             Clear zoom ×
           </button>
+        </p>
+      )}
+      {neighborhoodUi != null && (
+        <p className="timeline-neighborhood-active" role="status">
+          <TimelineNeighborhoodBanner
+            ui={neighborhoodUi}
+            setFilters={setFilters}
+          />
         </p>
       )}
       {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
@@ -157,7 +213,19 @@ function TimelineSurface({
           setFilters((c) => ({ ...c, timeWindow: tw }))
         }
         onSelect={(id) => {
-          setFilters((current) => ({ ...current, selectedExecutionId: id }));
+          setFilters((current) => {
+            const selCleared = id == null;
+            const selChanged = id !== current.selectedExecutionId;
+            const neighborhoodRowsShowAll =
+              selCleared || selChanged
+                ? false
+                : current.neighborhoodRowsShowAll;
+            return {
+              ...current,
+              selectedExecutionId: id,
+              neighborhoodRowsShowAll,
+            };
+          });
           onInvestigationSelectionChange((current) => ({
             ...current,
             selectedExecutionId: id,
@@ -306,9 +374,15 @@ export function TimelineView({
     ],
   );
 
+  const { displayedParents, neighborhoodUi } = useTimelineNeighborhoodRows(
+    analysis,
+    filters,
+    filteredParents,
+  );
+
   const parentIdSet = useMemo(
-    () => new Set(filteredParents.map((i) => i.unique_id)),
-    [filteredParents],
+    () => new Set(displayedParents.map((i) => i.unique_id)),
+    [displayedParents],
   );
 
   const filteredTests: GanttItem[] = useMemo(
@@ -325,8 +399,8 @@ export function TimelineView({
   );
 
   const filteredData: GanttItem[] = useMemo(
-    () => [...filteredParents, ...filteredTests],
-    [filteredParents, filteredTests],
+    () => [...displayedParents, ...filteredTests],
+    [displayedParents, filteredTests],
   );
 
   const materializationCounts = useMemo(() => {
@@ -391,7 +465,8 @@ export function TimelineView({
         filters={filters}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
-        bundleRowCount={filteredParents.length}
+        bundleRowCount={displayedParents.length}
+        neighborhoodUi={neighborhoodUi}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
         materializationCounts={materializationCounts}

@@ -26,6 +26,7 @@ import {
   applySearchToWorkspaceState,
   buildNextUrlFromWorkspaceState,
   createInitialNavigationState,
+  mergeTimelineSelection,
 } from "../components/AppShell/workspaceUrlSync";
 
 export interface UseWorkspaceUrlStateResult {
@@ -162,11 +163,12 @@ export function useWorkspaceUrlState(
           selectedExecutionId:
             options.executionId ?? current.selectedExecutionId,
         }));
-        setTimelineFilters((current) => ({
-          ...current,
-          selectedExecutionId:
+        setTimelineFilters((current) =>
+          mergeTimelineSelection(
+            current,
             options.executionId ?? current.selectedExecutionId,
-        }));
+          ),
+        );
       }
       if (view === "runs" && options?.resourceId) {
         setRunsViewState((current) => ({

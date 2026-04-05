@@ -100,6 +100,7 @@ const noopTimeline = {
   dependencyDirection: "both" as const,
   dependencyDepthHops: 1,
   timeWindow: null,
+  neighborhoodRowsShowAll: false,
 };
 
 const actEnvironment = globalThis as typeof globalThis & {

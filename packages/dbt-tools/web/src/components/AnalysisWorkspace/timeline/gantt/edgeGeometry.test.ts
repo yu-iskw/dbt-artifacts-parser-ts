@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import {
   applyNeighborCap,
   applyUpstreamCap,
+  collectTimelineNeighborhoodIds,
+  resolveTimelineNeighborhoodFocusId,
   countInboundInAdjacency,
   countInboundOnTimeline,
   countOutboundInAdjacency,
@@ -618,5 +620,166 @@ describe("parcelCenterY and focusEdgePath", () => {
     });
     expect(d.startsWith("M")).toBe(true);
     expect(d.includes("C")).toBe(true);
+  });
+});
+
+describe("resolveTimelineNeighborhoodFocusId", () => {
+  const parent = model("model.p");
+  const t = test("test.t1", "model.p");
+
+  it("returns parent id when selection is a test in candidates", () => {
+    const itemById = new Map([
+      [parent.unique_id, parent],
+      [t.unique_id, t],
+    ]);
+    const candidates = new Set([parent.unique_id]);
+    expect(
+      resolveTimelineNeighborhoodFocusId(t.unique_id, candidates, itemById),
+    ).toBe(parent.unique_id);
+  });
+
+  it("returns selected id when it is already a parent candidate", () => {
+    const itemById = new Map([[parent.unique_id, parent]]);
+    const candidates = new Set([parent.unique_id]);
+    expect(
+      resolveTimelineNeighborhoodFocusId(
+        parent.unique_id,
+        candidates,
+        itemById,
+      ),
+    ).toBe(parent.unique_id);
+  });
+
+  it("returns null when test parent is missing from candidates", () => {
+    const itemById = new Map([[t.unique_id, t]]);
+    const candidates = new Set<string>();
+    expect(
+      resolveTimelineNeighborhoodFocusId(t.unique_id, candidates, itemById),
+    ).toBeNull();
+  });
+
+  it("returns null for unknown selection id", () => {
+    expect(
+      resolveTimelineNeighborhoodFocusId(
+        "missing",
+        new Set([parent.unique_id]),
+        new Map(),
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("collectTimelineNeighborhoodIds", () => {
+  const chainAdj: Record<string, TimelineAdjacencyEntry> = {
+    a: { inbound: [], outbound: ["b"] },
+    b: { inbound: ["a"], outbound: ["c"] },
+    c: { inbound: ["b"], outbound: [] },
+  };
+  const candidates = new Set(["a", "b", "c"]);
+
+  it("returns all candidates when focus is null", () => {
+    const set = collectTimelineNeighborhoodIds({
+      focusId: null,
+      timelineAdjacency: chainAdj,
+      candidateIds: candidates,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+    });
+    expect(set).toEqual(new Set(candidates));
+  });
+
+  it("returns all candidates when timelineAdjacency is undefined", () => {
+    const set = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: undefined,
+      candidateIds: candidates,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+    });
+    expect(set).toEqual(new Set(candidates));
+  });
+
+  it("returns all candidates when focus is not in candidateIds", () => {
+    const subset = new Set(["a", "c"]);
+    const set = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: chainAdj,
+      candidateIds: subset,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+    });
+    expect(set).toEqual(subset);
+  });
+
+  it("returns all candidates when focus has no adjacency entry", () => {
+    const cand = new Set(["orphan", "a"]);
+    const set = collectTimelineNeighborhoodIds({
+      focusId: "orphan",
+      timelineAdjacency: chainAdj,
+      candidateIds: cand,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+    });
+    expect(set).toEqual(cand);
+  });
+
+  it("expands upstream one hop from center", () => {
+    const set = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: chainAdj,
+      candidateIds: candidates,
+      dependencyDirection: "upstream",
+      dependencyDepthHops: 1,
+    });
+    expect([...set].sort()).toEqual(["a", "b"]);
+  });
+
+  it("expands downstream one hop from center", () => {
+    const set = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: chainAdj,
+      candidateIds: candidates,
+      dependencyDirection: "downstream",
+      dependencyDepthHops: 1,
+    });
+    expect([...set].sort()).toEqual(["b", "c"]);
+  });
+
+  it("unions both directions through full chain at sufficient depth", () => {
+    const set = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: chainAdj,
+      candidateIds: candidates,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+    });
+    expect([...set].sort()).toEqual(["a", "b", "c"]);
+  });
+
+  it("respects hop limit for longer chains", () => {
+    const long: Record<string, TimelineAdjacencyEntry> = {
+      a: { inbound: [], outbound: ["b"] },
+      b: { inbound: ["a"], outbound: ["c"] },
+      c: { inbound: ["b"], outbound: ["d"] },
+      d: { inbound: ["c"], outbound: [] },
+    };
+    const longCand = new Set(["a", "b", "c", "d"]);
+    const one = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: long,
+      candidateIds: longCand,
+      dependencyDirection: "both",
+      dependencyDepthHops: 1,
+    });
+    expect([...one].sort()).toEqual(["a", "b", "c"]);
+
+    const two = collectTimelineNeighborhoodIds({
+      focusId: "b",
+      timelineAdjacency: long,
+      candidateIds: longCand,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+    });
+    expect([...two].sort()).toEqual(["a", "b", "c", "d"]);
   });
 });

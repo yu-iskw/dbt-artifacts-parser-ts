@@ -43,6 +43,7 @@ function makeWorkspace() {
       dependencyDirection: "both",
       dependencyDepthHops: 1,
       timeWindow: null,
+      neighborhoodRowsShowAll: false,
     },
     setTimelineFilters: vi.fn(),
     assetViewState: {
