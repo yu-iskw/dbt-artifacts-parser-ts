@@ -1,0 +1,49 @@
+name: Supply chain checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "20 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supply-chain-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    name: Dependency review (PR gate)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  osv-scan:
+    name: OSV scan (full dependency graph)
+    if: github.event_name != 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.1
+    with:
+      scan-args: |-
+        --lockfile=pnpm-lock.yaml
+        --recursive
+        .
+      fail-on-vuln: true
+      upload-sarif: true
+      results-file-name: osv-results.sarif

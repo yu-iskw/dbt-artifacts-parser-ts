@@ -52,8 +52,6 @@ jobs:
       - name: Run tests
         run: |
           pnpm --filter ./packages/dbt-artifacts-parser test
-      - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (trusted publishing + provenance)
         run: |
-          pnpm publish --filter ./packages/dbt-artifacts-parser --no-git-checks --access public
+          pnpm publish --filter ./packages/dbt-artifacts-parser --no-git-checks --access public --provenance
