@@ -162,11 +162,15 @@ export function useWorkspaceUrlState(
           selectedExecutionId:
             options.executionId ?? current.selectedExecutionId,
         }));
-        setTimelineFilters((current) => ({
-          ...current,
-          selectedExecutionId:
-            options.executionId ?? current.selectedExecutionId,
-        }));
+        setTimelineFilters((current) => {
+          const nextSel = options.executionId ?? current.selectedExecutionId;
+          const selChanged = nextSel !== current.selectedExecutionId;
+          return {
+            ...current,
+            selectedExecutionId: nextSel,
+            ...(selChanged ? { neighborhoodRowsShowAll: false } : {}),
+          };
+        });
       }
       if (view === "runs" && options?.resourceId) {
         setRunsViewState((current) => ({

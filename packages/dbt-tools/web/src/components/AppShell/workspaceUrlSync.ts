@@ -101,6 +101,7 @@ const defaultTimelineFilters = (
       preferences?.timelineDefaults.dependencyDirection ?? "both",
     dependencyDepthHops: preferences?.timelineDefaults.dependencyDepthHops ?? 2,
     timeWindow: null,
+    neighborhoodRowsShowAll: false,
   };
 };
 
@@ -186,10 +187,15 @@ export function applySearchToWorkspaceState(search: string): {
           ? parseShowAdapterMetrics(search)
           : current.showAdapterMetrics,
     }),
-    timelineFilters: (current) => ({
-      ...current,
-      selectedExecutionId: view === "timeline" ? selectedParam : null,
-    }),
+    timelineFilters: (current) => {
+      const nextSel = view === "timeline" ? selectedParam : null;
+      const selChanged = nextSel !== current.selectedExecutionId;
+      return {
+        ...current,
+        selectedExecutionId: nextSel,
+        ...(selChanged ? { neighborhoodRowsShowAll: false } : {}),
+      };
+    },
     lineageViewState: buildInitialLineageViewState(search),
     investigationSelection: (current) => ({
       ...current,

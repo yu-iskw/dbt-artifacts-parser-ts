@@ -96,6 +96,12 @@ export interface TimelineFilterState {
    * virtualizer. null means the full timeline is shown.
    */
   timeWindow: TimeWindow | null;
+  /**
+   * When a row is selected, the timeline normally hides parent rows outside the
+   * dependency neighborhood. When true, all filtered parents stay visible until
+   * selection changes or is cleared. Session-only (not in URL).
+   */
+  neighborhoodRowsShowAll: boolean;
 }
 
 export interface AssetViewState {

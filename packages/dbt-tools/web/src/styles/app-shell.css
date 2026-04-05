@@ -1450,6 +1450,26 @@
   line-height: 1.35;
 }
 
+.timeline-zoom-active,
+.timeline-neighborhood-active {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.65rem;
+  line-height: 1.4;
+}
+
+.timeline-zoom-clear,
+.timeline-neighborhood-action {
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--accent-primary, var(--link-color, #6c5ce7));
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
 .timeline-toolbar {
   display: flex;
   flex-wrap: wrap;

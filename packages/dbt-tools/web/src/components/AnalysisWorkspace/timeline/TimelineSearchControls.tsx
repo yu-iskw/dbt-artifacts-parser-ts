@@ -77,6 +77,7 @@ export function TimelineSearchControls({
                 selectedExecutionId: null,
                 dependencyDirection: "both",
                 dependencyDepthHops: 2,
+                neighborhoodRowsShowAll: false,
               }));
             }}
           >

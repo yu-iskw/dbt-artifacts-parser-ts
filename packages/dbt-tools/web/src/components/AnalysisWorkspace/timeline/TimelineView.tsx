@@ -9,6 +9,10 @@ import { GanttLegend } from "./GanttLegend";
 import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
 import { formatMs, isPositiveStatus } from "./gantt/formatting";
+import {
+  type TimelineNeighborhoodUi,
+  useTimelineNeighborhoodRows,
+} from "./useTimelineNeighborhoodRows";
 import type { AnalysisState, GanttItem } from "@web/types";
 import type {
   InvestigationSelectionState,
@@ -55,6 +59,7 @@ function TimelineSurface({
   effectiveActiveTypes,
   filteredData,
   bundleRowCount,
+  neighborhoodUi,
   statusCounts,
   typeCounts,
   materializationCounts,
@@ -72,6 +77,7 @@ function TimelineSurface({
   effectiveActiveTypes: Set<string>;
   filteredData: GanttItem[];
   bundleRowCount: number;
+  neighborhoodUi: TimelineNeighborhoodUi | null;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
   materializationCounts: Record<string, number>;
@@ -137,6 +143,42 @@ function TimelineSurface({
           </button>
         </p>
       )}
+      {neighborhoodUi != null && (
+        <p className="timeline-neighborhood-active" role="status">
+          {neighborhoodUi.mode === "narrowed" ? (
+            <>
+              Showing {neighborhoodUi.shown.toLocaleString()} of{" "}
+              {neighborhoodUi.total.toLocaleString()} timeline rows (dependency
+              neighborhood)
+              {" — "}
+              <button
+                type="button"
+                className="timeline-neighborhood-action"
+                onClick={() =>
+                  setFilters((c) => ({ ...c, neighborhoodRowsShowAll: true }))
+                }
+              >
+                Show all rows
+              </button>
+            </>
+          ) : (
+            <>
+              Showing all {neighborhoodUi.total.toLocaleString()} timeline rows
+              {" — "}
+              <button
+                type="button"
+                className="timeline-neighborhood-action"
+                onClick={() =>
+                  setFilters((c) => ({ ...c, neighborhoodRowsShowAll: false }))
+                }
+              >
+                Neighborhood only (
+                {neighborhoodUi.narrowedCount.toLocaleString()} rows)
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
         <p className="timeline-large-dataset-hint" role="status">
           Showing {bundleRowCount.toLocaleString()} timeline rows. Use search or
@@ -157,7 +199,20 @@ function TimelineSurface({
           setFilters((c) => ({ ...c, timeWindow: tw }))
         }
         onSelect={(id) => {
-          setFilters((current) => ({ ...current, selectedExecutionId: id }));
+          setFilters((current) => {
+            const selCleared = id == null;
+            const selChanged = id !== current.selectedExecutionId;
+            const neighborhoodRowsShowAll = selCleared
+              ? false
+              : selChanged
+                ? false
+                : current.neighborhoodRowsShowAll;
+            return {
+              ...current,
+              selectedExecutionId: id,
+              neighborhoodRowsShowAll,
+            };
+          });
           onInvestigationSelectionChange((current) => ({
             ...current,
             selectedExecutionId: id,
@@ -306,9 +361,15 @@ export function TimelineView({
     ],
   );
 
+  const { displayedParents, neighborhoodUi } = useTimelineNeighborhoodRows(
+    analysis,
+    filters,
+    filteredParents,
+  );
+
   const parentIdSet = useMemo(
-    () => new Set(filteredParents.map((i) => i.unique_id)),
-    [filteredParents],
+    () => new Set(displayedParents.map((i) => i.unique_id)),
+    [displayedParents],
   );
 
   const filteredTests: GanttItem[] = useMemo(
@@ -325,8 +386,8 @@ export function TimelineView({
   );
 
   const filteredData: GanttItem[] = useMemo(
-    () => [...filteredParents, ...filteredTests],
-    [filteredParents, filteredTests],
+    () => [...displayedParents, ...filteredTests],
+    [displayedParents, filteredTests],
   );
 
   const materializationCounts = useMemo(() => {
@@ -391,7 +452,8 @@ export function TimelineView({
         filters={filters}
         effectiveActiveTypes={effectiveActiveTypes}
         filteredData={filteredData}
-        bundleRowCount={filteredParents.length}
+        bundleRowCount={displayedParents.length}
+        neighborhoodUi={neighborhoodUi}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
         materializationCounts={materializationCounts}

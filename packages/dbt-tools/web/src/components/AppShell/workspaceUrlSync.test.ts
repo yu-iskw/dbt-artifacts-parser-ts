@@ -151,9 +151,45 @@ describe("applySearchToWorkspaceState", () => {
       dependencyDirection: "both",
       dependencyDepthHops: 2,
       timeWindow: null,
+      neighborhoodRowsShowAll: false,
     });
     expect(tl.selectedExecutionId).toBe("e1");
     expect(tl.query).toBe("q");
+  });
+
+  it("resets neighborhoodRowsShowAll when timeline selected changes via URL", () => {
+    const r = applySearchToWorkspaceState("?view=timeline&selected=b");
+    const tl = r.timelineFilters({
+      query: "",
+      activeStatuses: new Set(),
+      activeTypes: new Set(),
+      selectedExecutionId: "a",
+      showTests: false,
+      failuresOnly: false,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+      timeWindow: null,
+      neighborhoodRowsShowAll: true,
+    });
+    expect(tl.selectedExecutionId).toBe("b");
+    expect(tl.neighborhoodRowsShowAll).toBe(false);
+  });
+
+  it("preserves neighborhoodRowsShowAll when timeline selected unchanged from URL", () => {
+    const r = applySearchToWorkspaceState("?view=timeline&selected=a");
+    const tl = r.timelineFilters({
+      query: "",
+      activeStatuses: new Set(),
+      activeTypes: new Set(),
+      selectedExecutionId: "a",
+      showTests: false,
+      failuresOnly: false,
+      dependencyDirection: "both",
+      dependencyDepthHops: 2,
+      timeWindow: null,
+      neighborhoodRowsShowAll: true,
+    });
+    expect(tl.neighborhoodRowsShowAll).toBe(true);
   });
 
   it("preserves investigation sourceLens", () => {

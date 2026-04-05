@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loadWorkspace } from "./helpers/preload";
+import { loadWorkspace, mockPreload } from "./helpers/preload";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -206,6 +206,44 @@ test.describe("timeline workspace", () => {
       "true",
     );
     await expect(page.getByRole("button", { name: "Max" })).toBeVisible();
+  });
+
+  test("dependency neighborhood strip toggles with selection", async ({
+    page,
+  }) => {
+    const selectedId = "model.jaffle_shop.orders";
+    await mockPreload(page);
+    await page.goto(
+      `/?view=timeline&selected=${encodeURIComponent(selectedId)}`,
+    );
+    const workspaceNav = page.getByRole("navigation", {
+      name: "Workspace sections",
+    });
+    await expect(
+      workspaceNav.getByRole("button", { name: "Health" }),
+    ).toBeEnabled({ timeout: 30_000 });
+    await expect(
+      page.getByRole("heading", { name: "Timeline" }).first(),
+    ).toBeVisible();
+
+    await page.getByRole("tab", { name: /Upstream/ }).click();
+    await page
+      .getByRole("button", { name: "Decrease dependency depth" })
+      .click();
+
+    await expect(
+      page.getByText(/timeline rows \(dependency neighborhood\)/i),
+    ).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole("button", { name: "Show all rows" }).click();
+    await expect(
+      page.getByRole("button", { name: /Neighborhood only/ }),
+    ).toBeVisible();
+
+    await page.goto("/?view=timeline");
+    await expect(
+      page.getByText(/timeline rows \(dependency neighborhood\)/i),
+    ).toHaveCount(0);
   });
 });
 
