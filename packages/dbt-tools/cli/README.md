@@ -11,12 +11,14 @@ graph TD
   CLI[dbt-tools]
   CLI --> summary["summary\nmanifest statistics"]
   CLI --> graph["graph\nexport dependency graph"]
+  CLI --> gr["graph-risk\nDAG bottlenecks / blast radius"]
   CLI --> rr["run-report\nexecution report"]
   CLI --> deps["deps\nupstream / downstream deps"]
   CLI --> schema["schema\nruntime introspection"]
 
   summary -->|manifest.json| MG[ManifestGraph]
   graph -->|manifest.json| MG
+  gr -->|manifest.json\n+ optional run_results.json| GRA[GraphRiskAnalyzer]
   rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
   deps -->|manifest.json| DS[DependencyService]
   schema -.->|describes| CLI
@@ -40,6 +42,7 @@ pnpm add -g @dbt-tools/cli
 - **Field filtering**: Reduce context window usage with `--fields` option
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
+- **Graph risk analysis**: Rank DAG bottlenecks, fragile joins, and blast radius from artifacts
 
 ---
 
@@ -139,6 +142,52 @@ dbt-tools run-report --json
 - `--bottlenecks` - Include bottleneck section in report
 - `--bottlenecks-top <n>` - Top N slowest nodes (default: 10 when --bottlenecks)
 - `--bottlenecks-threshold <s>` - Nodes exceeding s seconds (alternative to top-N; cannot use with --bottlenecks-top)
+- `--json` - Force JSON output
+- `--no-json` - Force human-readable output
+
+### graph-risk
+
+Rank structural DAG bottlenecks and fragility from `manifest.json`, with optional execution-aware weighting from `run_results.json`.
+
+```bash
+# Manifest-only structural ranking
+dbt-tools graph-risk
+
+# Add execution-aware weighting
+dbt-tools graph-risk --run-results ./target/run_results.json
+
+# Top 20 by bottleneck score
+dbt-tools graph-risk --metric bottleneckScore --top 20
+
+# Include sources as analyzable nodes
+dbt-tools graph-risk --resource-types model,source
+
+# JSON output
+dbt-tools graph-risk --json
+```
+
+What it reports:
+
+- **Blast radius**: downstream reach / likely blast area if a node changes
+- **Fragility**: fan-in, lineage depth, reconvergence, and path concentration
+- **Path concentration**: share of root-to-leaf paths that pass through a node
+- **Execution coverage**: how much of the analyzed DAG had runtime data in this run
+
+Limitations:
+
+- Structural analysis works from `manifest.json` alone.
+- Execution-aware scoring is partial when `run_results.json` is partial.
+- Scores are explainable heuristics for prioritization, not hard pass/fail truths.
+
+**Options:**
+
+- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
+- `--target-dir <dir>` - Custom target directory
+- `--run-results <path>` - Optional path to run_results.json for execution-aware scoring
+- `--top <n>` - Top N nodes to include per ranking (default: 10)
+- `--metric <metric>` - Ranking metric: `overallRiskScore`, `bottleneckScore`, `blastRadiusScore`, `fragilityScore`, `reconvergenceScore`, `pathConcentrationScore`
+- `--resource-types <csv>` - Comma-separated analyzable resource types (default: `model`)
+- `--fields <fields>` - Comma-separated list of fields to include in JSON output
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 

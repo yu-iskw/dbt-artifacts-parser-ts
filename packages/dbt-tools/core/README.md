@@ -12,9 +12,11 @@ graph TD
   AF --> AL["ArtifactLoader"]
   AL --> MG["ManifestGraph\ngraphology DAG"]
   AL --> EA["ExecutionAnalyzer\ncritical path · Gantt"]
+  MG --> GRA["GraphRiskAnalyzer\nblast radius · fragility · chokepoints"]
   MG --> DS["DependencyService\nupstream · downstream · build order"]
   MG --> GE["GraphExport\nJSON · DOT · GEXF"]
   EA --> OF["OutputFormatter\nfield filtering · JSON/text"]
+  GRA --> OF
   OF --> FF["FieldFilter"]
 ```
 
@@ -34,7 +36,11 @@ pnpm add @dbt-tools/core
 
 ```typescript
 import { parseManifest } from "dbt-artifacts-parser/manifest";
-import { ManifestGraph, ExecutionAnalyzer } from "@dbt-tools/core";
+import {
+  GraphRiskAnalyzer,
+  ManifestGraph,
+  ExecutionAnalyzer,
+} from "@dbt-tools/core";
 
 // Build dependency graph
 const manifest = parseManifest(manifestJson);
@@ -49,11 +55,16 @@ const upstream = graph.getUpstream("model.my_project.my_model");
 const downstream = graph.getDownstream("model.my_project.my_model");
 
 // Execution analysis
-const analyzer = new ExecutionAnalyzer(runResults, manifest);
+const analyzer = new ExecutionAnalyzer(runResults, graph);
 const report = analyzer.getSummary();
 console.log(
-  `Critical path: ${report.critical_path.map((n) => n.name).join(" → ")}`,
+  `Critical path: ${report.critical_path?.path.join(" → ") ?? "n/a"}`,
 );
+
+// Graph risk analysis
+const riskAnalyzer = new GraphRiskAnalyzer({ manifest, runResults });
+const riskSummary = riskAnalyzer.analyze();
+console.log(riskSummary.topBottlenecks[0]?.findings);
 ```
 
 ---
@@ -67,6 +78,7 @@ import {
   // Analysis
   ManifestGraph,
   ExecutionAnalyzer,
+  GraphRiskAnalyzer,
   DependencyService,
   SqlAnalyzer,
   RunResultsSearch,
@@ -131,6 +143,28 @@ Analyzes dbt execution results to compute critical paths and bottlenecks.
 | `getSummary()`        | Returns execution summary with critical path, total time, slowest nodes |
 | `getNodeExecutions()` | Per-node execution details (status, duration, thread)                   |
 | `getGanttData()`      | Gantt chart data for timeline visualization                             |
+
+### GraphRiskAnalyzer
+
+Ranks structural DAG risk from `manifest.json` and optionally weights it with `run_results.json`.
+
+| Method          | Description                                                                             |
+| --------------- | --------------------------------------------------------------------------------------- |
+| `analyze()`     | Returns graph-risk summary with top bottlenecks, fragile nodes, and blast radius        |
+| `getNode(id)`   | Returns a per-node risk assessment with findings and recommendations                    |
+| `getTopNodes()` | Returns top-ranked nodes for `overallRiskScore`, `bottleneckScore`, and related metrics |
+
+Algorithm notes:
+
+- Structural analysis works from the manifest alone.
+- Path concentration is computed in log-space so large DAG path counts stay numerically stable.
+- Reconvergence blends parent count, ancestor overlap, and upstream branch breadth.
+- Execution-aware scoring is partial when `run_results.json` only covers part of the DAG; missing runtime metrics stay absent rather than being treated as zero.
+
+Limitations:
+
+- Scores are explainable prioritization heuristics for refactoring, not absolute truth.
+- By default the analyzer focuses on `model` nodes; other resource types can be opted in.
 
 ### DependencyService
 

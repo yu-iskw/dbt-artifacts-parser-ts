@@ -38,6 +38,8 @@ const DESC_RUN_RESULTS_PATH =
   "Path to run_results.json file (defaults to ./target/run_results.json)";
 const DESC_MANIFEST_OPTIONAL =
   "Path to manifest.json file (optional, for critical path analysis)";
+const DESC_RUN_RESULTS_OPTIONAL =
+  "Optional path to run_results.json file for execution-aware scoring";
 
 function getSummarySchema(): CommandSchema {
   return {
@@ -214,6 +216,75 @@ function getRunReportSchema(): CommandSchema {
   };
 }
 
+function getGraphRiskSchema(): CommandSchema {
+  return {
+    command: "graph-risk",
+    description:
+      "Rank structural and execution-aware graph risk from dbt artifacts",
+    arguments: [
+      {
+        name: ARG_MANIFEST_PATH,
+        required: false,
+        description: DESC_MANIFEST_PATH,
+      },
+    ],
+    options: [
+      {
+        name: OPT_TARGET_DIR,
+        type: TYPE_STRING,
+        description: DESC_TARGET_DIR,
+      },
+      {
+        name: "--run-results",
+        type: TYPE_STRING,
+        description: DESC_RUN_RESULTS_OPTIONAL,
+      },
+      {
+        name: "--top",
+        type: "number",
+        default: "10",
+        description: "Top N nodes to return per ranking",
+      },
+      {
+        name: "--metric",
+        type: "enum",
+        values: [
+          "overallRiskScore",
+          "bottleneckScore",
+          "blastRadiusScore",
+          "fragilityScore",
+          "reconvergenceScore",
+          "pathConcentrationScore",
+        ],
+        default: "overallRiskScore",
+        description: "Ranking metric",
+      },
+      {
+        name: "--resource-types",
+        type: TYPE_STRING,
+        description: "Comma-separated resource types to analyze",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      {
+        name: OPT_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_JSON,
+      },
+      {
+        name: OPT_NO_JSON,
+        type: TYPE_BOOLEAN,
+        description: DESC_FORCE_HUMAN,
+      },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools graph-risk --run-results ./target/run_results.json",
+  };
+}
+
 type SchemaOption = {
   name: string;
   type: string;
@@ -337,6 +408,7 @@ export function getAllSchemas(): Record<string, CommandSchema> {
   return {
     summary: getSummarySchema(),
     graph: getGraphSchema(),
+    "graph-risk": getGraphRiskSchema(),
     "run-report": getRunReportSchema(),
     deps: getDepsSchema(),
     schema: getSchemaCommandSchema(),

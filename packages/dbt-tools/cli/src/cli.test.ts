@@ -35,6 +35,7 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("summary");
       expect(schemas).toHaveProperty("deps");
       expect(schemas).toHaveProperty("graph");
+      expect(schemas).toHaveProperty("graph-risk");
       expect(schemas).toHaveProperty("run-report");
       expect(schemas).toHaveProperty("schema");
     });
@@ -102,6 +103,24 @@ describe("CLI Integration", () => {
       );
       expect(thresholdOpt).toBeDefined();
       expect(thresholdOpt?.type).toBe("number");
+    });
+
+    it("should have graph-risk schema with ranking options", () => {
+      const schema = getCommandSchema("graph-risk");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("graph-risk");
+
+      const metricOpt = schema?.options?.find((o) => o.name === "--metric");
+      expect(metricOpt).toBeDefined();
+      expect(metricOpt?.type).toBe("enum");
+      expect(metricOpt?.values).toContain("overallRiskScore");
+      expect(metricOpt?.values).toContain("blastRadiusScore");
+
+      const resourceTypesOpt = schema?.options?.find(
+        (o) => o.name === "--resource-types",
+      );
+      expect(resourceTypesOpt).toBeDefined();
+      expect(resourceTypesOpt?.type).toBe("string");
     });
   });
 

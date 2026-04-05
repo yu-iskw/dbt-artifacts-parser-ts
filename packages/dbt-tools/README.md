@@ -6,11 +6,11 @@ A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifact
 
 ## Packages
 
-| Package                               | Description                                                     |
-| ------------------------------------- | --------------------------------------------------------------- |
-| [`@dbt-tools/core`](./core/README.md) | Core library — dependency graphs, execution analysis, utilities |
-| [`@dbt-tools/cli`](./cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis                    |
-| [`@dbt-tools/web`](./web/README.md)   | React web app for visual artifact analysis                      |
+| Package                               | Description                                                      |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| [`@dbt-tools/core`](./core/README.md) | Core library — dependency graphs, execution analysis, graph risk |
+| [`@dbt-tools/cli`](./cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis and graph risk      |
+| [`@dbt-tools/web`](./web/README.md)   | React web app for visual artifact analysis                       |
 
 ---
 
@@ -34,8 +34,8 @@ graph TD
 | I want to…                                                                                                                                      | Use                                                                                                                             |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Parse dbt JSON artifacts in TypeScript with type safety                                                                                         | [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md)                                                                     |
-| Build a dependency graph or run execution analysis programmatically                                                                             | [`@dbt-tools/core`](./core/README.md)                                                                                           |
-| Analyze artifacts from the command line or feed results to an AI agent                                                                          | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
+| Build a dependency graph, graph-risk ranking, or run execution analysis programmatically                                                        | [`@dbt-tools/core`](./core/README.md)                                                                                           |
+| Analyze artifacts from the command line, including graph bottlenecks and blast radius                                                           | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
 | Visually explore dependencies and execution timelines in a browser (local target, upload, or optional **S3/GCS** via `DBT_TOOLS_REMOTE_SOURCE`) | [`@dbt-tools/web`](./web/README.md) · [ADR-0029](../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) |
 
 ---

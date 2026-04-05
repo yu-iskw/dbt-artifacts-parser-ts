@@ -5,6 +5,7 @@ export * from "./analysis/execution-analyzer";
 export * from "./analysis/dependency-service";
 export * from "./analysis/sql-analyzer";
 export * from "./analysis/run-results-search";
+export * from "./analysis/graph-risk-analyzer";
 export * from "./analysis/analysis-snapshot";
 
 // Config exports (Node; not re-exported from browser entry)

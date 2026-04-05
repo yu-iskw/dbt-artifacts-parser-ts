@@ -19,8 +19,10 @@ import {
   getAllSchemas,
   exportGraphToFormat,
   writeGraphOutput,
+  type DbtResourceType,
+  type GraphRiskRankingMetric,
 } from "@dbt-tools/core";
-import { runReportAction, depsAction } from "./cli-actions";
+import { runReportAction, depsAction, graphRiskAction } from "./cli-actions";
 import { CLI_PACKAGE_VERSION } from "./version";
 
 const program = new Command();
@@ -39,6 +41,8 @@ const DESC_GRAPH_FORMAT = "Export format: json, dot, gexf";
 const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
+const DESC_RUN_RESULTS_OPTIONAL =
+  "Optional path to run_results.json file for execution-aware scoring";
 
 program
   .name("dbt-tools")
@@ -218,6 +222,122 @@ program
       } catch (error) {
         handleError(error, isTTY());
       }
+    },
+  );
+
+/**
+ * Graph risk command: structural and execution-aware DAG risk ranking
+ */
+program
+  .command("graph-risk")
+  .description("Rank graph bottlenecks and fragile nodes from dbt artifacts")
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--run-results <path>", DESC_RUN_RESULTS_OPTIONAL)
+  .option(
+    "--top <n>",
+    "Top N nodes to return per ranking (default: 10)",
+    parseInt,
+  )
+  .option(
+    "--metric <metric>",
+    "Ranking metric: overallRiskScore | bottleneckScore | blastRadiusScore | fragilityScore | reconvergenceScore | pathConcentrationScore",
+  )
+  .option(
+    "--resource-types <csv>",
+    "Comma-separated resource types to analyze (default: model)",
+  )
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        runResults?: string;
+        top?: number;
+        metric?: string;
+        resourceTypes?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) => {
+      const allowedMetrics = new Set<GraphRiskRankingMetric>([
+        "overallRiskScore",
+        "bottleneckScore",
+        "blastRadiusScore",
+        "fragilityScore",
+        "reconvergenceScore",
+        "pathConcentrationScore",
+      ]);
+      const allowedResourceTypes = new Set<DbtResourceType>([
+        "model",
+        "source",
+        "seed",
+        "snapshot",
+        "test",
+        "analysis",
+        "macro",
+        "exposure",
+        "metric",
+        "semantic_model",
+        "unit_test",
+        "field",
+        "function",
+      ]);
+
+      let metric: GraphRiskRankingMetric | undefined;
+      if (options.metric) {
+        if (!allowedMetrics.has(options.metric as GraphRiskRankingMetric)) {
+          handleError(
+            new Error(
+              `--metric must be one of: ${[...allowedMetrics].join(", ")}`,
+            ),
+            isTTY(),
+          );
+          return;
+        }
+        metric = options.metric as GraphRiskRankingMetric;
+      }
+
+      let resourceTypes: DbtResourceType[] | undefined;
+      if (options.resourceTypes) {
+        resourceTypes = options.resourceTypes
+          .split(",")
+          .map((value) => value.trim())
+          .filter((value): value is DbtResourceType => value.length > 0);
+
+        const invalidTypes = resourceTypes.filter(
+          (resourceType) => !allowedResourceTypes.has(resourceType),
+        );
+        if (invalidTypes.length > 0) {
+          handleError(
+            new Error(
+              `--resource-types contains unsupported values: ${invalidTypes.join(", ")}`,
+            ),
+            isTTY(),
+          );
+          return;
+        }
+      }
+
+      graphRiskAction(
+        manifestPath,
+        {
+          targetDir: options.targetDir,
+          runResults: options.runResults,
+          top: options.top,
+          metric,
+          resourceTypes,
+          fields: options.fields,
+          json: options.json,
+          noJson: options.noJson,
+        },
+        handleError,
+        isTTY,
+      );
     },
   );
 
