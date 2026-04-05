@@ -54,4 +54,6 @@ jobs:
           pnpm --filter ./packages/dbt-artifacts-parser test
       - name: Publish to npm (trusted publishing + provenance)
         run: |
+          # No NODE_AUTH_TOKEN is required here when npm Trusted Publisher is configured.
+          # Authentication is performed via GitHub OIDC using `permissions.id-token: write`.
           pnpm publish --filter ./packages/dbt-artifacts-parser --no-git-checks --access public --provenance

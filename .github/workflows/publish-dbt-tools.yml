@@ -86,6 +86,8 @@ jobs:
           popd >/dev/null
       - name: Publish to npm (trusted publishing + provenance)
         run: |
+          # No NODE_AUTH_TOKEN is required here when npm Trusted Publisher is configured.
+          # Authentication is performed via GitHub OIDC using `permissions.id-token: write`.
           pnpm publish --filter @dbt-tools/core --no-git-checks --access public --provenance
           pnpm publish --filter @dbt-tools/cli --no-git-checks --access public --provenance
           pnpm publish --filter @dbt-tools/web --no-git-checks --access public --provenance
