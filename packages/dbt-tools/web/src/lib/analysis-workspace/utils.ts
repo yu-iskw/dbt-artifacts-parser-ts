@@ -2,6 +2,7 @@ import type {
   AnalysisState,
   ExecutionRow,
   GanttItem,
+  MaterializationKind,
   ResourceNode,
   StatusTone,
 } from "@web/types";
@@ -37,6 +38,53 @@ export function formatResourceTypeLabel(resourceType: string): string {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function readQuotedRelationSegment(
+  s: string,
+  i: number,
+): { segment: string; next: number } {
+  let seg = "";
+  while (i < s.length) {
+    if (s[i] === '"') {
+      if (s[i + 1] === '"') {
+        seg += '"';
+        i += 2;
+        continue;
+      }
+      i += 1;
+      break;
+    }
+    seg += s[i];
+    i += 1;
+  }
+  return { segment: seg, next: i };
+}
+
+/**
+ * Normalizes warehouse relation strings for display: drops outer identifier
+ * quotes per dotted segment and unescapes doubled double-quotes per SQL rules.
+ */
+export function formatRelationNameForDisplay(relation: string): string {
+  const segments: string[] = [];
+  let i = 0;
+  const s = relation;
+  while (i < s.length) {
+    if (s[i] === ".") {
+      i += 1;
+      continue;
+    }
+    if (s[i] === '"') {
+      const { segment, next } = readQuotedRelationSegment(s, i + 1);
+      segments.push(segment);
+      i = next;
+    } else {
+      const start = i;
+      while (i < s.length && s[i] !== ".") i += 1;
+      segments.push(s.slice(start, i));
+    }
+  }
+  return segments.join(".");
 }
 
 export function formatRunStartedAt(epochMs: number): string {
@@ -114,10 +162,28 @@ export function matchesAssetResourceType(
   return activeTypes.size === 0 || activeTypes.has(resource.resourceType);
 }
 
+export function matchesAssetMaterializationKind(
+  resource: ResourceNode,
+  activeKinds: ReadonlySet<MaterializationKind>,
+): boolean {
+  if (activeKinds.size === 0) return true;
+  const kind = resource.semantics?.materialization ?? "unknown";
+  return activeKinds.has(kind);
+}
+
 export function matchesExecution(row: ExecutionRow, query: string): boolean {
   if (!query) return true;
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
+  const sem = row.semantics;
+  const semBits = sem
+    ? [
+        sem.materialization,
+        sem.rawMaterialization ?? "",
+        sem.incrementalStrategy ?? "",
+        sem.relationName ?? "",
+      ]
+    : [];
   return [
     row.name,
     row.resourceType,
@@ -126,6 +192,7 @@ export function matchesExecution(row: ExecutionRow, query: string): boolean {
     row.uniqueId,
     row.status,
     row.threadId ?? "",
+    ...semBits,
   ].some((value) => value.toLowerCase().includes(normalized));
 }
 

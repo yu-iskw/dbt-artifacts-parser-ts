@@ -1,5 +1,6 @@
 import type { BottleneckResult } from "../run-results-search";
 import type { ExecutionSummary } from "../execution-analyzer";
+import type { NodeExecutionSemantics } from "../node-execution-semantics";
 import type {
   AdapterResponseField,
   AdapterResponseMetrics,
@@ -22,6 +23,7 @@ export interface GanttItem {
   executeStart?: number | null;
   executeEnd?: number | null;
   materialized?: string | null;
+  semantics?: NodeExecutionSemantics;
 }
 
 export type StatusTone =
@@ -82,6 +84,11 @@ export interface ResourceNode {
   statusTone: StatusTone;
   executionTime: number | null;
   threadId: string | null;
+  semantics?: NodeExecutionSemantics;
+  /** Model/column target from manifest (`attached_node`, `column_name`, etc.) for tests. */
+  testAttachedTarget?: string | null;
+  /** Non-empty `run_results.results[].message` when present. */
+  runResultMessage?: string | null;
 }
 
 export interface ResourceGroup {
@@ -106,6 +113,7 @@ export interface ExecutionRow {
   end: number | null;
   adapterMetrics?: AdapterResponseMetrics;
   adapterResponseFields?: AdapterResponseField[];
+  semantics?: NodeExecutionSemantics;
 }
 
 export interface StatusBreakdownItem {

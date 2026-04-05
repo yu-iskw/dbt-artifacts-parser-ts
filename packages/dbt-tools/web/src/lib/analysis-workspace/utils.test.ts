@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   countTimelineTestResources,
+  formatRelationNameForDisplay,
   formatSeconds,
   deriveProjectName,
   matchesAssetStatus,
@@ -29,6 +30,24 @@ function makeResource(overrides: Partial<ResourceNode> = {}): ResourceNode {
     ...overrides,
   } as ResourceNode;
 }
+
+describe("formatRelationNameForDisplay", () => {
+  it("removes redundant quotes around each dotted segment", () => {
+    expect(
+      formatRelationNameForDisplay(`"jaffle_shop"."elementary"."orders"`),
+    ).toBe("jaffle_shop.elementary.orders");
+  });
+
+  it("leaves already-unquoted relation paths unchanged", () => {
+    expect(formatRelationNameForDisplay("dev.analytics.fct_orders")).toBe(
+      "dev.analytics.fct_orders",
+    );
+  });
+
+  it("unescapes doubled double-quotes inside a quoted segment", () => {
+    expect(formatRelationNameForDisplay(`"a""b"."schema"`)).toBe(`a"b.schema`);
+  });
+});
 
 describe("formatSeconds", () => {
   it("formats sub-minute", () => expect(formatSeconds(1.5)).toBe("1.50s"));

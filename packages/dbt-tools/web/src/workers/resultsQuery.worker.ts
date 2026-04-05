@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import type { ExecutionRow } from "@web/types";
+import type { ExecutionRow, MaterializationKind } from "@web/types";
 import type {
   DashboardStatusFilter,
   RunsKind,
@@ -25,9 +25,11 @@ interface QueryMessage {
   status: DashboardStatusFilter;
   query: string;
   resourceTypes: string[];
+  materializationKinds: MaterializationKind[];
   threadIds: string[];
   durationBand: RunsViewState["durationBand"];
   sortBy: RunsViewState["sortBy"];
+  sortDirection: RunsViewState["sortDirection"];
   limit: number;
 }
 
@@ -83,9 +85,11 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
     payload.status,
     payload.query.trim().toLowerCase(),
     payload.resourceTypes.sort().join(","),
+    payload.materializationKinds.sort().join(","),
     payload.threadIds.sort().join(","),
     payload.durationBand,
     payload.sortBy,
+    payload.sortDirection,
   ].join("::");
 
   if (queryKey !== lastQueryKey) {
@@ -94,9 +98,11 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
       status: payload.status,
       query: payload.query,
       resourceTypes: payload.resourceTypes,
+      materializationKinds: payload.materializationKinds,
       threadIds: payload.threadIds,
       durationBand: payload.durationBand,
       sortBy: payload.sortBy,
+      sortDirection: payload.sortDirection,
     });
     lastQueryKey = queryKey;
   }

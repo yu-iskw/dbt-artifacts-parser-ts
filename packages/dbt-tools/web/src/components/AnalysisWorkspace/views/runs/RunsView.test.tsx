@@ -96,9 +96,11 @@ function baseRunsViewState(over: Partial<RunsViewState> = {}): RunsViewState {
     status: "all",
     query: "",
     resourceTypes: new Set(),
+    materializationKinds: new Set(),
     threadIds: new Set(),
     durationBand: "all",
     sortBy: "attention",
+    sortDirection: "desc",
     groupBy: "none",
     selectedExecutionId: null,
     showAdapterMetrics: true,
@@ -120,8 +122,9 @@ describe("RunsView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseVirtualizer.mockReturnValue({
-      getVirtualItems: () => [{ index: 0, start: 0 }],
+      getVirtualItems: () => [{ index: 0, start: 44, key: 0 }],
       getTotalSize: () => 76,
+      options: { scrollMargin: 44 },
     } as ReturnType<typeof useVirtualizer>);
     container = document.createElement("div");
     document.body.appendChild(container);

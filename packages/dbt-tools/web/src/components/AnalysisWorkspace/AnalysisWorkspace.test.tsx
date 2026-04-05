@@ -3,7 +3,11 @@
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AnalysisState, ResourceNode } from "@web/types";
+import type {
+  AnalysisState,
+  MaterializationKind,
+  ResourceNode,
+} from "@web/types";
 import type { AssetViewState } from "@web/lib/analysis-workspace/types";
 import { AnalysisWorkspace } from "./AnalysisWorkspace";
 
@@ -52,6 +56,7 @@ const baseAssetState: Omit<AssetViewState, "selectedResourceId"> = {
   explorerMode: "project",
   status: "all",
   resourceTypes: new Set(),
+  materializationKinds: new Set(),
   resourceQuery: "",
   upstreamDepth: 2,
   downstreamDepth: 2,
@@ -65,9 +70,11 @@ const noopRuns = {
   status: "all" as const,
   query: "",
   resourceTypes: new Set<string>(),
+  materializationKinds: new Set<MaterializationKind>(),
   threadIds: new Set<string>(),
   durationBand: "all" as const,
   sortBy: "name" as const,
+  sortDirection: "asc" as const,
   groupBy: "none" as const,
   selectedExecutionId: null,
   showAdapterMetrics: true,

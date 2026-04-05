@@ -84,7 +84,9 @@ export function useRunsResultsSource(
     viewState.query,
     viewState.durationBand,
     viewState.sortBy,
+    viewState.sortDirection,
     viewState.resourceTypes,
+    viewState.materializationKinds,
     viewState.threadIds,
     allRows,
   ]);
@@ -155,9 +157,11 @@ export function useRunsResultsSource(
       status: viewState.status,
       query: viewState.query,
       resourceTypes: Array.from(viewState.resourceTypes),
+      materializationKinds: Array.from(viewState.materializationKinds),
       threadIds: Array.from(viewState.threadIds),
       durationBand: viewState.durationBand,
       sortBy: viewState.sortBy,
+      sortDirection: viewState.sortDirection,
       limit: revealedCount,
     });
   }, [enabled, ready, revealedCount, viewState]);

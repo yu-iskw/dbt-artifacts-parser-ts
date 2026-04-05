@@ -1,4 +1,4 @@
-import type { ResourceNode } from "@web/types";
+import type { MaterializationKind, ResourceNode } from "@web/types";
 import type {
   AssetExplorerMode,
   DashboardStatusFilter,
@@ -17,6 +17,9 @@ export interface ExplorerPaneProps {
   availableResourceTypes: string[];
   activeResourceTypes: Set<string>;
   toggleResourceType: (value: string) => void;
+  availableMaterializationKinds: MaterializationKind[];
+  activeMaterializationKinds: Set<MaterializationKind>;
+  toggleMaterializationKind: (value: MaterializationKind) => void;
   resourceQuery: string;
   setResourceQuery: (value: string) => void;
   selectedResourceId: string | null;

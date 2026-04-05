@@ -15,6 +15,7 @@ import {
   formatResourceTypeLabel,
 } from "./shared";
 import { EXPLORER_UI_COPY } from "./explorerPaneCopy";
+import { MaterializationSemanticsBadge } from "./MaterializationSemanticsBadge";
 
 function explorerLeafAriaLabel(resource: ResourceNode): string {
   const typeLabel = formatResourceTypeLabel(resource.resourceType);
@@ -222,6 +223,12 @@ export function ExplorerTreeList({
                 <span className="explorer-tree__resource-body">
                   <span className="explorer-tree__label">{resource.name}</span>
                 </span>
+                {resource.semantics ? (
+                  <MaterializationSemanticsBadge
+                    semantics={resource.semantics}
+                    variant="compact"
+                  />
+                ) : null}
                 {node.testStats && (
                   <ExplorerTreeTestStatsGroup
                     testStats={node.testStats}

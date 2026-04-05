@@ -39,6 +39,7 @@ const defaultAssetViewState = (
   explorerMode: preferences?.inventoryDefaults.explorerMode ?? "project",
   status: "all",
   resourceTypes: new Set(),
+  materializationKinds: new Set(),
   resourceQuery: "",
   selectedResourceId: parseSelectedResourceId(search),
   upstreamDepth:
@@ -67,9 +68,11 @@ const defaultRunsViewState = (search: string): RunsViewState => {
     status: "all",
     query: "",
     resourceTypes: new Set(),
+    materializationKinds: new Set(),
     threadIds: new Set(),
     durationBand: "all",
     sortBy: "attention",
+    sortDirection: "desc",
     groupBy: "none",
     selectedExecutionId:
       view === "runs" ? parseSelectedExecutionId(search) : null,

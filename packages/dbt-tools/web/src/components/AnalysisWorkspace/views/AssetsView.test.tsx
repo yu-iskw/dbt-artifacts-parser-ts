@@ -129,6 +129,7 @@ function renderAssetsView({
           explorerMode: "project",
           status: "all",
           resourceTypes: new Set(),
+          materializationKinds: new Set(),
           resourceQuery: "",
           upstreamDepth: 2,
           downstreamDepth: 2,
@@ -229,6 +230,13 @@ describe("AssetsView", () => {
     });
 
     expect(container.textContent).toContain("Asset summary");
+    expect(
+      [...container.querySelectorAll(".asset-summary__group-title")].map(
+        (el) => el.textContent,
+      ),
+    ).toEqual(["Resource", "This run"]);
+    expect(container.textContent).toContain("warehouse.analytics");
+    expect(container.textContent).not.toContain("Direct upstream");
     expect(container.textContent).toContain("Lineage graph");
     expect(container.textContent).toContain("SQL");
     expect(container.textContent).toContain("Tests");
@@ -358,8 +366,8 @@ describe("AssetsView", () => {
       "Test",
       "Status↓",
       "Type",
+      "Target",
       "Duration",
-      "Location",
     ]);
     const testHeader = [
       ...container.querySelectorAll(".asset-tests-table__header button"),
@@ -380,26 +388,25 @@ describe("AssetsView", () => {
     cleanupRoot(root, container);
   });
 
-  it("allows sorting by clicking the location header", () => {
+  it("allows sorting by clicking the type header", () => {
     const resource = makeResource();
     const tests = [
       makeResource({
         uniqueId: "test.jaffle_shop.orders_not_null",
-        name: "pathless_test",
-        resourceType: "test",
-        path: "",
-        originalFilePath: "",
-        patchPath: "",
+        name: "zzz_unit",
+        resourceType: "unit_test",
+        path: "tests/u.sql",
+        originalFilePath: "tests/u.sql",
         status: "pass",
         statusTone: "positive",
         executionTime: 0.4,
       }),
       makeResource({
         uniqueId: "test.jaffle_shop.orders_unique",
-        name: "models_test",
+        name: "aaa_generic",
         resourceType: "test",
-        path: "models/marts/orders.yml",
-        originalFilePath: "models/marts/orders.yml",
+        path: "tests/g.sql",
+        originalFilePath: "tests/g.sql",
         status: "pass",
         statusTone: "positive",
         executionTime: 0.1,
@@ -410,21 +417,21 @@ describe("AssetsView", () => {
       analysis: makeAnalysis([resource, ...tests]),
     });
 
-    const locationHeader = [
+    const typeHeader = [
       ...container.querySelectorAll(".asset-tests-table__header button"),
-    ].find((button) => button.textContent?.includes("Location")) as
+    ].find((button) => button.textContent?.includes("Type")) as
       | HTMLButtonElement
       | undefined;
-    expect(locationHeader).toBeTruthy();
+    expect(typeHeader).toBeTruthy();
 
     act(() => {
-      locationHeader?.click();
+      typeHeader?.click();
     });
 
     const rowTitles = [
       ...container.querySelectorAll(".asset-tests-table__cell--test strong"),
     ].map((node) => node.textContent);
-    expect(rowTitles).toEqual(["models_test", "pathless_test"]);
+    expect(rowTitles).toEqual(["aaa_generic", "zzz_unit"]);
 
     cleanupRoot(root, container);
   });

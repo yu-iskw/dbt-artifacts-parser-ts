@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   adapterMetricsHasData,
   buildAdapterTotals,
+  coerceAdapterResponseInput,
   extractAdapterResponseFields,
   isAdapterResponseObject,
   normalizeAdapterResponse,
@@ -80,6 +81,24 @@ describe("normalizeAdapterResponse", () => {
     const m = normalizeAdapterResponse({});
     expect(m.rawKeys).toEqual([]);
     expect(adapterMetricsHasData(m)).toBe(false);
+  });
+});
+
+describe("coerceAdapterResponseInput", () => {
+  it("parses JSON object strings into plain objects", () => {
+    const raw = JSON.stringify({ job_id: "abc", bytes_processed: 9 });
+    expect(coerceAdapterResponseInput(raw)).toEqual({
+      job_id: "abc",
+      bytes_processed: 9,
+    });
+  });
+
+  it("returns primitive strings that are not JSON objects unchanged", () => {
+    expect(coerceAdapterResponseInput("not-json")).toBe("not-json");
+  });
+
+  it("treats empty trimmed string as null", () => {
+    expect(coerceAdapterResponseInput("  ")).toBeNull();
   });
 });
 

@@ -14,6 +14,7 @@ import type {
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { ResourceTypeBadge } from "../shared";
+import { MaterializationSemanticsBadge } from "../MaterializationSemanticsBadge";
 import { LineagePanel } from "../lineage/LineagePanel";
 import { AssetTestsSection } from "./AssetTestsSection";
 import { useResourceCode } from "@web/hooks/useResourceCode";
@@ -143,6 +144,9 @@ export function AssetsView({
   const detailSubtitle = (
     <div className="resource-detail__subtitle">
       <ResourceTypeBadge resourceType={resource.resourceType} />
+      {resource.semantics ? (
+        <MaterializationSemanticsBadge semantics={resource.semantics} />
+      ) : null}
       <span className="resource-detail__package">
         {resource.packageName || "workspace"}
       </span>
@@ -209,10 +213,7 @@ export function AssetsView({
             }}
             className="asset-workspace__section"
           >
-            <AssetSummarySection
-              resource={resource}
-              dependencySummary={dependencySummary}
-            />
+            <AssetSummarySection resource={resource} />
           </section>
 
           <section

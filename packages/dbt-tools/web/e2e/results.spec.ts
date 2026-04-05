@@ -28,7 +28,7 @@ test.describe("runs workspace", () => {
       page.getByPlaceholder("Filter by name, type, status, thread…"),
     ).toBeVisible();
     await expect(page.locator(".results-table__header")).toContainText(
-      /Item.*Type.*Status.*Duration.*Thread/s,
+      /Item.*Type.*Materialization.*Status.*Duration.*Thread/s,
     );
   });
 

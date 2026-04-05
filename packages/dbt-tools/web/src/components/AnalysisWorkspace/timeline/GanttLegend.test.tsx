@@ -107,6 +107,22 @@ describe("GanttLegend", () => {
     cleanupRoot(root, container);
   });
 
+  it("renders materialization read-only row when counts provided", () => {
+    const { container, root } = renderLegend({
+      statusCounts: {},
+      typeCounts: { model: 1 },
+      materializationCounts: { view: 2, incremental: 1 },
+      showBarEncodingKey: false,
+      onToggleType: vi.fn(),
+    });
+
+    expect(container.textContent).toMatch(/Materialization/i);
+    expect(container.textContent).toMatch(/View/);
+    expect(container.textContent).toMatch(/Incr/);
+
+    cleanupRoot(root, container);
+  });
+
   it("renders Failures only in the status group after status chips", () => {
     const onToggleFailuresOnly = vi.fn();
     const { container, root } = renderLegend({

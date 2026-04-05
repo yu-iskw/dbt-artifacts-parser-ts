@@ -114,6 +114,58 @@ describe("ExecutionAnalyzer", () => {
       ).toEqual(["custom_metric", "nested.phase"]);
       expect(executions[1]?.adapterResponseFields).toEqual([]);
     });
+
+    it("parses stringified adapter_response JSON into fields", () => {
+      const runResults = parseRunResults({
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "model.pkg.from_string",
+            status: "success",
+            execution_time: 1,
+            thread_id: "Thread-1",
+            adapter_response: JSON.stringify({
+              job_id: "job-99",
+              bytes_processed: 12,
+            }),
+            timing: [],
+          },
+        ],
+      } as Record<string, unknown>);
+
+      const executions = buildNodeExecutionsFromRunResults(runResults);
+
+      expect(
+        executions[0]?.adapterResponseFields?.map((field) => field.key),
+      ).toEqual(["bytes_processed", "job_id"]);
+    });
+
+    it("maps non-empty run result message onto node executions", () => {
+      const runResults = parseRunResults({
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "test.pkg.t",
+            status: "fail",
+            execution_time: 0.1,
+            thread_id: "Thread-1",
+            message: "  got 1 rows, expected 0  \n",
+            adapter_response: {},
+            timing: [],
+          },
+        ],
+      } as Record<string, unknown>);
+
+      const executions = buildNodeExecutionsFromRunResults(runResults);
+
+      expect(executions[0]?.message).toBe("got 1 rows, expected 0");
+    });
   });
 
   describe("getSummary", () => {

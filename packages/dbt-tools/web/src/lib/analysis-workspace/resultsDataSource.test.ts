@@ -66,12 +66,50 @@ describe("filterRunsResultsIndex", () => {
       status: "danger",
       query: "cust",
       resourceTypes: [],
+      materializationKinds: [],
       threadIds: [],
       durationBand: "all",
     });
 
     expect(matches).toHaveLength(1);
     expect(matches[0]?.row.uniqueId).toBe("customers");
+  });
+
+  it("filters by materializationKinds when set", () => {
+    const viewSemantics = {
+      resourceType: "model",
+      materialization: "view" as const,
+      persisted: true,
+      createsRelation: true,
+      compiledIntoParent: false,
+      materializationSource: "manifest" as const,
+    };
+    const tableSemantics = {
+      ...viewSemantics,
+      materialization: "table" as const,
+    };
+    const index = createRunsResultsIndex([
+      makeExecution({
+        uniqueId: "a",
+        semantics: viewSemantics,
+      }),
+      makeExecution({
+        uniqueId: "b",
+        semantics: tableSemantics,
+      }),
+    ]);
+
+    const matches = filterRunsResultsIndex(index, {
+      kind: "all",
+      status: "all",
+      query: "",
+      resourceTypes: [],
+      materializationKinds: ["view"],
+      threadIds: [],
+      durationBand: "all",
+    });
+
+    expect(matches.map((m) => m.row.uniqueId)).toEqual(["a"]);
   });
 
   it("issues status matches danger and warning rows", () => {
@@ -94,6 +132,7 @@ describe("filterRunsResultsIndex", () => {
       status: "issues",
       query: "",
       resourceTypes: [],
+      materializationKinds: [],
       threadIds: [],
       durationBand: "all",
     });
@@ -118,9 +157,11 @@ describe("queryRunsResultsIndex", () => {
       status: "all",
       query: "",
       resourceTypes: [],
+      materializationKinds: [],
       threadIds: [],
       durationBand: "all",
       sortBy: "attention",
+      sortDirection: "desc",
       limit: 100,
     });
 
@@ -170,9 +211,11 @@ describe("queryRunsResultsIndex", () => {
       status: "all",
       query: "",
       resourceTypes: [],
+      materializationKinds: [],
       threadIds: [],
       durationBand: "all",
       sortBy: "adapter:warehouse.bytes_processed",
+      sortDirection: "desc",
       limit: 20,
     });
 
@@ -222,9 +265,11 @@ describe("queryRunsResultsIndex", () => {
       status: "all",
       query: "",
       resourceTypes: [],
+      materializationKinds: [],
       threadIds: [],
       durationBand: "all",
       sortBy: "adapter:warehouse.job_id",
+      sortDirection: "asc",
       limit: 20,
     });
 
@@ -257,6 +302,7 @@ describe("queryRunsResultsIndex", () => {
       status: "all",
       query: "profiling.stage scan",
       resourceTypes: [],
+      materializationKinds: [],
       threadIds: [],
       durationBand: "all",
     });

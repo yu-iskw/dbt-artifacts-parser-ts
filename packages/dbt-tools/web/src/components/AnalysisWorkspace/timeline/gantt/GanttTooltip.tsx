@@ -3,6 +3,7 @@ import type { ResourceTestStats } from "@web/types";
 import { TOOLTIP_LABEL_STYLE } from "./constants";
 import { formatMs, formatTimestamp } from "./formatting";
 import type { HoverState } from "./hitTest";
+import { buildMaterializationTooltipText } from "@web/lib/analysis-workspace/materializationSemanticsUi";
 
 const TOOLTIP_OFFSET_X = 16;
 const TOOLTIP_OFFSET_Y = 0;
@@ -133,7 +134,22 @@ export function GanttTooltip({
           {hover.item.resourceType}
         </div>
       )}
-      {hover.item.materialized ? (
+      {hover.item.semantics ? (
+        <div style={{ marginTop: "0.25rem", maxWidth: 340 }}>
+          <div>
+            <span style={TOOLTIP_LABEL_STYLE}>Semantics: </span>
+          </div>
+          <div
+            style={{
+              whiteSpace: "pre-wrap",
+              fontSize: "0.82rem",
+              lineHeight: 1.35,
+            }}
+          >
+            {buildMaterializationTooltipText(hover.item.semantics)}
+          </div>
+        </div>
+      ) : hover.item.materialized ? (
         <div>
           <span style={TOOLTIP_LABEL_STYLE}>Materialization: </span>
           {formatMaterializationLabel(hover.item.materialized)}

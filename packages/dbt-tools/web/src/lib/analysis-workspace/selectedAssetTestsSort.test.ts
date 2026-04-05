@@ -21,6 +21,7 @@ function makeTestResource(overrides: Partial<ResourceNode> = {}): ResourceNode {
     statusTone: overrides.statusTone ?? "positive",
     executionTime: overrides.executionTime ?? 1,
     threadId: overrides.threadId ?? "t1",
+    ...overrides,
   } as ResourceNode;
 }
 
@@ -62,21 +63,22 @@ describe("sortSelectedAssetTests", () => {
     expect(sorted.map((r) => r.resourceType)).toEqual(["test", "unit_test"]);
   });
 
-  it("sorts by location path ascending", () => {
-    const zPath = makeTestResource({
-      name: "z",
-      uniqueId: "test.pkg.z",
-      originalFilePath: "tests/z.sql",
-      path: "tests/z.sql",
+  it("sorts by test target string then name", () => {
+    const b = makeTestResource({
+      name: "b",
+      uniqueId: "test.pkg.b",
+      testAttachedTarget: "zebra.col",
     });
-    const aPath = makeTestResource({
+    const a = makeTestResource({
       name: "a",
-      uniqueId: "test.pkg.a2",
-      originalFilePath: "tests/a.sql",
-      path: "tests/a.sql",
+      uniqueId: "test.pkg.a",
+      testAttachedTarget: "apple.col",
     });
-    const sorted = sortSelectedAssetTests([zPath, aPath], "location", "asc");
-    expect(sorted.map((r) => r.name)).toEqual(["a", "z"]);
+    const sorted = sortSelectedAssetTests([b, a], "target", "asc");
+    expect(sorted.map((r) => r.testAttachedTarget)).toEqual([
+      "apple.col",
+      "zebra.col",
+    ]);
   });
 
   it("sorts by status rank then duration (attention before passing)", () => {

@@ -1,11 +1,4 @@
-import {
-  type Dispatch,
-  type SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { type Dispatch, type SetStateAction, useEffect, useMemo } from "react";
 import type { AnalysisState } from "@web/types";
 import type {
   InvestigationSelectionState,
@@ -20,6 +13,7 @@ import { WorkspaceScaffold } from "../../shared";
 import { RunsAdapterInspector } from "./RunsViewAdapterInspector";
 import { RunsResultsTable } from "./RunsViewResultsTable";
 import { RunsToolbar } from "./RunsViewToolbar";
+import { collectMaterializationKindsFromSemantics } from "@web/lib/analysis-workspace/materializationSemanticsUi";
 
 export function RunsView({
   analysis,
@@ -44,7 +38,6 @@ export function RunsView({
     },
   ) => void;
 }) {
-  const resultsBodyRef = useRef<HTMLDivElement>(null);
   const adapterColumnLayout = useMemo(
     () => getRunsAdapterColumnLayout(analysis.executions),
     [analysis.executions],
@@ -61,6 +54,14 @@ export function RunsView({
       runsViewState.showAdapterMetrics,
     ],
   );
+  const availableMaterializationKinds = useMemo(
+    () =>
+      collectMaterializationKindsFromSemantics(
+        analysis.executions.map((e) => e.semantics),
+      ),
+    [analysis.executions],
+  );
+
   const overflowAdapterColumns = useMemo(
     () =>
       runsViewState.showAdapterMetrics && adapterMetricsAvailable
@@ -81,9 +82,26 @@ export function RunsView({
         (column) => column.id === sortBy && column.isScalar,
       )
     ) {
-      onRunsViewStateChange((current) => ({ ...current, sortBy: "attention" }));
+      onRunsViewStateChange((current) => ({
+        ...current,
+        sortBy: "attention",
+        sortDirection: "desc",
+      }));
     }
   }, [onRunsViewStateChange, runsViewState.sortBy, visibleAdapterColumns]);
+
+  useEffect(() => {
+    if (!adapterMetricsAvailable && runsViewState.showAdapterMetrics) {
+      onRunsViewStateChange((current) => ({
+        ...current,
+        showAdapterMetrics: false,
+      }));
+    }
+  }, [
+    adapterMetricsAvailable,
+    onRunsViewStateChange,
+    runsViewState.showAdapterMetrics,
+  ]);
 
   const runsResults = useRunsResultsSource(
     analysis.executions,
@@ -95,36 +113,6 @@ export function RunsView({
       (row) => row.uniqueId === runsViewState.selectedExecutionId,
     ) ?? null;
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
-  const virtualizer = useVirtualizer({
-    count: runsResults.rows.length,
-    getScrollElement: () => resultsBodyRef.current,
-    estimateSize: () => 76,
-    overscan: 10,
-  });
-
-  useEffect(() => {
-    const scrollElement = resultsBodyRef.current;
-    if (!scrollElement) return;
-    const maybeLoadMore = () => {
-      const remaining =
-        scrollElement.scrollHeight -
-        scrollElement.scrollTop -
-        scrollElement.clientHeight;
-      if (
-        remaining < 220 &&
-        runsResults.hasMore &&
-        !runsResults.isLoading &&
-        !runsResults.isIndexing
-      ) {
-        runsResults.loadMore();
-      }
-    };
-    scrollElement.addEventListener("scroll", maybeLoadMore);
-    maybeLoadMore();
-    return () => scrollElement.removeEventListener("scroll", maybeLoadMore);
-  }, [runsResults]);
-
   return (
     <WorkspaceScaffold
       title="Runs"
@@ -135,6 +123,7 @@ export function RunsView({
           runsResults={runsResults}
           adapterColumnLayout={adapterColumnLayout}
           adapterMetricsAvailable={adapterMetricsAvailable}
+          availableMaterializationKinds={availableMaterializationKinds}
           onRunsViewStateChange={onRunsViewStateChange}
         />
       }
@@ -154,8 +143,6 @@ export function RunsView({
         analysis={analysis}
         runsResults={runsResults}
         runsViewState={runsViewState}
-        resultsBodyRef={resultsBodyRef}
-        virtualizer={virtualizer}
         adapterColumns={visibleAdapterColumns}
         onRunsViewStateChange={onRunsViewStateChange}
         onInvestigationSelectionChange={onInvestigationSelectionChange}

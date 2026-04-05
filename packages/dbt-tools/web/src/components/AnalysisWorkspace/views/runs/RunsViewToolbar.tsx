@@ -1,10 +1,13 @@
 import { type Dispatch, type SetStateAction } from "react";
 import type { RunsViewState } from "@web/lib/analysis-workspace/types";
+import { defaultRunsSortDirection } from "@web/lib/analysis-workspace/runsSort";
 import type { RunsResultsSourceState } from "@web/hooks/useRunsResultsSource";
 import {
   isRunsAdapterSortBy,
   type RunsAdapterColumnLayout,
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
+import type { MaterializationKind } from "@web/types";
+import { MaterializationKindPillRow } from "../../MaterializationKindPillRow";
 
 type RunsResultsState = RunsResultsSourceState;
 
@@ -35,12 +38,14 @@ export function RunsToolbar({
   runsResults,
   adapterColumnLayout,
   adapterMetricsAvailable,
+  availableMaterializationKinds,
   onRunsViewStateChange,
 }: {
   runsViewState: RunsViewState;
   runsResults: RunsResultsState;
   adapterColumnLayout: RunsAdapterColumnLayout;
   adapterMetricsAvailable: boolean;
+  availableMaterializationKinds: MaterializationKind[];
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
 }) {
   const visibleSortableColumns = adapterColumnLayout.visibleColumns.filter(
@@ -69,18 +74,21 @@ export function RunsToolbar({
           <span>Sort</span>
           <select
             value={runsViewState.sortBy}
-            onChange={(e) =>
+            onChange={(e) => {
+              const sortBy = e.target.value as RunsViewState["sortBy"];
               onRunsViewStateChange((current) => ({
                 ...current,
-                sortBy: e.target.value as RunsViewState["sortBy"],
-              }))
-            }
+                sortBy,
+                sortDirection: defaultRunsSortDirection(sortBy),
+              }));
+            }}
           >
             <option value="attention">Attention</option>
             <option value="duration">Duration</option>
             <option value="name">Name</option>
             <option value="status">Status</option>
             <option value="start">Start</option>
+            <option value="materialization">Materialization</option>
             {showAdapterSortOptions
               ? visibleSortableColumns.map((column) => (
                   <option key={column.id} value={column.id}>
@@ -111,12 +119,40 @@ export function RunsToolbar({
                   !showAdapterMetrics && isRunsAdapterSortBy(current.sortBy)
                     ? "attention"
                     : current.sortBy,
+                sortDirection:
+                  !showAdapterMetrics && isRunsAdapterSortBy(current.sortBy)
+                    ? "desc"
+                    : current.sortDirection,
               }));
             }}
           />
           <span>Warehouse response</span>
         </label>
       </div>
+      {availableMaterializationKinds.length > 0 ? (
+        <div
+          className="runs-toolbar__mat-filters"
+          role="group"
+          aria-label="Materialization filters"
+        >
+          <span className="runs-toolbar__mat-filters-label">
+            Materialization (manifest)
+          </span>
+          <MaterializationKindPillRow
+            kinds={availableMaterializationKinds}
+            activeKinds={runsViewState.materializationKinds}
+            onToggleKind={(kind) =>
+              onRunsViewStateChange((current) => {
+                const next = new Set(current.materializationKinds);
+                if (next.has(kind)) next.delete(kind);
+                else next.add(kind);
+                return { ...current, materializationKinds: next };
+              })
+            }
+            buttonTitle="Filter run rows by normalized manifest materialization"
+          />
+        </div>
+      ) : null}
       {runsViewState.showAdapterMetrics &&
       adapterColumnLayout.overflowColumns.length > 0 ? (
         <p className="runs-toolbar__meta">

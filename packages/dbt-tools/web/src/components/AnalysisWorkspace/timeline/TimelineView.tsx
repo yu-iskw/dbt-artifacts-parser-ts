@@ -57,6 +57,7 @@ function TimelineSurface({
   bundleRowCount,
   statusCounts,
   typeCounts,
+  materializationCounts,
   testsLegendCount,
   hasActiveFilters,
   typeFilterHint,
@@ -73,6 +74,7 @@ function TimelineSurface({
   bundleRowCount: number;
   statusCounts: Record<string, number>;
   typeCounts: Record<string, number>;
+  materializationCounts: Record<string, number>;
   testsLegendCount: number;
   hasActiveFilters: boolean;
   typeFilterHint: TimelineTypeFilterHint | null;
@@ -100,6 +102,7 @@ function TimelineSurface({
         statusCounts={statusCounts}
         typeCounts={typeCounts}
         testsLegendCount={testsLegendCount}
+        materializationCounts={materializationCounts}
         activeStatuses={filters.activeStatuses}
         activeTypes={effectiveActiveTypes}
         onToggleStatus={toggleStatus}
@@ -326,6 +329,15 @@ export function TimelineView({
     [filteredParents, filteredTests],
   );
 
+  const materializationCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const item of filteredData) {
+      const k = item.semantics?.materialization ?? "unknown";
+      acc[k] = (acc[k] ?? 0) + 1;
+    }
+    return acc;
+  }, [filteredData]);
+
   const { statusCounts, typeCounts } = useMemo(() => {
     const nextStatus: Record<string, number> = {};
     const nextType: Record<string, number> = {};
@@ -382,6 +394,7 @@ export function TimelineView({
         bundleRowCount={filteredParents.length}
         statusCounts={statusCounts}
         typeCounts={typeCounts}
+        materializationCounts={materializationCounts}
         testsLegendCount={testsLegendCount}
         hasActiveFilters={hasActiveFilters}
         typeFilterHint={typeFilterHint}

@@ -208,7 +208,7 @@ test.describe("inventory workspace", () => {
     );
     await expect(page.getByText("not_null_orders_order_id")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Open in Runs/i }).first(),
+      page.getByRole("button", { name: /open .* in runs/i }).first(),
     ).toBeVisible();
   });
 

@@ -133,6 +133,16 @@ describe("buildExplorerTreeEmptySubtext", () => {
     expect(sub).toContain(EXPLORER_UI_COPY.treeEmptySearchSubtext);
     expect(sub).toContain(EXPLORER_UI_COPY.treeEmptyResourceTypesSubtext);
   });
+
+  it("mentions materialization filters when active", () => {
+    const sub = buildExplorerTreeEmptySubtext({
+      status: "all",
+      resourceQuery: "",
+      activeResourceTypeCount: 0,
+      activeMaterializationKindCount: 1,
+    });
+    expect(sub).toContain(EXPLORER_UI_COPY.treeEmptyMaterializationSubtext);
+  });
 });
 
 describe("ResourceTypeSummaryBar", () => {
