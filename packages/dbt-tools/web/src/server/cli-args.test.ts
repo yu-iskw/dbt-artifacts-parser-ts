@@ -7,21 +7,19 @@ describe("parseCliArgs", () => {
     expect(parseCliArgs(["-h"])).toEqual({ kind: "help" });
   });
 
-  it("defaults port 3000 and open true", () => {
+  it("defaults port 3000", () => {
     expect(parseCliArgs([])).toEqual({
       kind: "ok",
       targetDir: undefined,
       port: 3000,
-      open: true,
     });
   });
 
-  it("parses --target and --no-open", () => {
+  it("accepts --no-open as a deprecated no-op", () => {
     expect(parseCliArgs(["--target", "/tmp/dbt", "--no-open"])).toEqual({
       kind: "ok",
       targetDir: "/tmp/dbt",
       port: 3000,
-      open: false,
     });
   });
 
@@ -30,7 +28,6 @@ describe("parseCliArgs", () => {
       kind: "ok",
       targetDir: "./target",
       port: 8080,
-      open: true,
     });
   });
 

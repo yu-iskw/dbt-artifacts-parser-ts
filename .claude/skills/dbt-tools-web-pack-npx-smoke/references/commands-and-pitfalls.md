@@ -83,7 +83,7 @@ With a directory containing `manifest.json` and `run_results.json`:
 ```bash
 # Example fixture dirs exist under packages/dbt-artifacts-parser/resources/ (split paths;
 # copy manifest + run_results of the same version into one temp dir for --target.)
-npx -y --package="$TGZ" -- dbt-tools-web --target "$ARTIFACT_DIR" --no-open --port 8765 &
+npx -y --package="$TGZ" -- dbt-tools-web --target "$ARTIFACT_DIR" --port 8765 &
 # curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/
 ```
 
