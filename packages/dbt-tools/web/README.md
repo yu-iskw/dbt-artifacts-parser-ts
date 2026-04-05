@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/%40dbt-tools%2Fweb?logo=npm)](https://www.npmjs.com/package/@dbt-tools/web)
 [![Build](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/build.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/build.yml)
 [![CodeQL](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml)
-[![Runtime dependency audit](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/release-npm.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/release-npm.yml)
+[![Runtime dependency audit](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/publish-dbt-tools.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/publish-dbt-tools.yml)
 
 Published from GitHub Actions with npm trusted publishing and **verified provenance** when npm Trusted Publisher is configured for `@dbt-tools/web`.
 

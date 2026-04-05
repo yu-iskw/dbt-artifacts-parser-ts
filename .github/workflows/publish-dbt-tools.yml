@@ -57,6 +57,33 @@ jobs:
         run: |
           pnpm --filter @dbt-tools/core test
           pnpm --filter @dbt-tools/cli test
+      - name: Tarball runtime dependency audit (@dbt-tools/web)
+        run: |
+          set -euo pipefail
+
+          rm -f ./dbt-tools-web-*.tgz
+          pnpm --filter @dbt-tools/web pack
+
+          TARBALL="$(ls -t ./dbt-tools-web-*.tgz | head -n 1)"
+          if [[ -z "${TARBALL}" ]]; then
+            echo "Expected @dbt-tools/web tarball was not created." >&2
+            exit 1
+          fi
+
+          echo "Packed tarball: ${TARBALL}"
+          tar -tzf "${TARBALL}"
+
+          TMP_DIR="$(mktemp -d)"
+          cleanup() {
+            rm -rf "${TMP_DIR}"
+          }
+          trap cleanup EXIT
+
+          pushd "${TMP_DIR}" >/dev/null
+          npm init -y
+          npm install "${GITHUB_WORKSPACE}/${TARBALL}" --omit=dev
+          npm audit --omit=dev --audit-level=high
+          popd >/dev/null
       - name: Publish to npm (trusted publishing + provenance)
         run: |
           pnpm publish --filter @dbt-tools/core --no-git-checks --access public --provenance
