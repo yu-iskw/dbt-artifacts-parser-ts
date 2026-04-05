@@ -1,3 +1,5 @@
+import { GRAPH_RISK_RANKING_METRICS } from "../analysis/graph-risk-config";
+
 /**
  * Command schema definition for runtime introspection
  */
@@ -248,14 +250,7 @@ function getGraphRiskSchema(): CommandSchema {
       {
         name: "--metric",
         type: "enum",
-        values: [
-          "overallRiskScore",
-          "bottleneckScore",
-          "blastRadiusScore",
-          "fragilityScore",
-          "reconvergenceScore",
-          "pathConcentrationScore",
-        ],
+        values: [...GRAPH_RISK_RANKING_METRICS],
         default: "overallRiskScore",
         description: "Ranking metric",
       },

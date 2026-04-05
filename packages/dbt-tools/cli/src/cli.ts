@@ -19,8 +19,6 @@ import {
   getAllSchemas,
   exportGraphToFormat,
   writeGraphOutput,
-  type DbtResourceType,
-  type GraphRiskRankingMetric,
 } from "@dbt-tools/core";
 import { runReportAction, depsAction, graphRiskAction } from "./cli-actions";
 import { CLI_PACKAGE_VERSION } from "./version";
@@ -264,73 +262,14 @@ program
         noJson?: boolean;
       },
     ) => {
-      const allowedMetrics = new Set<GraphRiskRankingMetric>([
-        "overallRiskScore",
-        "bottleneckScore",
-        "blastRadiusScore",
-        "fragilityScore",
-        "reconvergenceScore",
-        "pathConcentrationScore",
-      ]);
-      const allowedResourceTypes = new Set<DbtResourceType>([
-        "model",
-        "source",
-        "seed",
-        "snapshot",
-        "test",
-        "analysis",
-        "macro",
-        "exposure",
-        "metric",
-        "semantic_model",
-        "unit_test",
-        "field",
-        "function",
-      ]);
-
-      let metric: GraphRiskRankingMetric | undefined;
-      if (options.metric) {
-        if (!allowedMetrics.has(options.metric as GraphRiskRankingMetric)) {
-          handleError(
-            new Error(
-              `--metric must be one of: ${[...allowedMetrics].join(", ")}`,
-            ),
-            isTTY(),
-          );
-          return;
-        }
-        metric = options.metric as GraphRiskRankingMetric;
-      }
-
-      let resourceTypes: DbtResourceType[] | undefined;
-      if (options.resourceTypes) {
-        resourceTypes = options.resourceTypes
-          .split(",")
-          .map((value) => value.trim())
-          .filter((value): value is DbtResourceType => value.length > 0);
-
-        const invalidTypes = resourceTypes.filter(
-          (resourceType) => !allowedResourceTypes.has(resourceType),
-        );
-        if (invalidTypes.length > 0) {
-          handleError(
-            new Error(
-              `--resource-types contains unsupported values: ${invalidTypes.join(", ")}`,
-            ),
-            isTTY(),
-          );
-          return;
-        }
-      }
-
       graphRiskAction(
         manifestPath,
         {
           targetDir: options.targetDir,
           runResults: options.runResults,
           top: options.top,
-          metric,
-          resourceTypes,
+          metric: options.metric,
+          resourceTypes: options.resourceTypes,
           fields: options.fields,
           json: options.json,
           noJson: options.noJson,

@@ -1,9 +1,11 @@
 import type { AdapterTotalsSnapshot } from "../analysis/adapter-response-metrics";
 import type { AdapterHeavyResult } from "../analysis/run-results-search";
-import type {
-  GraphRiskRankingMetric,
-  GraphRiskSummary,
-  NodeRiskAssessment,
+import {
+  getGraphRiskMetricNumeric,
+  GRAPH_RISK_METRIC_LABELS,
+  type GraphRiskRankingMetric,
+  type GraphRiskSummary,
+  type NodeRiskAssessment,
 } from "../analysis/graph-risk-analyzer";
 
 type DepNode = {
@@ -332,43 +334,6 @@ export function formatRunReport(
   return lines.join("\n");
 }
 
-function formatRiskMetricLabel(metric: GraphRiskRankingMetric): string {
-  switch (metric) {
-    case "overallRiskScore":
-      return "overall risk";
-    case "bottleneckScore":
-      return "bottleneck";
-    case "blastRadiusScore":
-      return "blast radius";
-    case "fragilityScore":
-      return "fragility";
-    case "reconvergenceScore":
-      return "reconvergence";
-    case "pathConcentrationScore":
-      return "path concentration";
-  }
-}
-
-function formatRiskMetricValue(
-  node: NodeRiskAssessment,
-  metric: GraphRiskRankingMetric,
-): string {
-  switch (metric) {
-    case "overallRiskScore":
-      return node.composite.overallRiskScore.toFixed(1);
-    case "bottleneckScore":
-      return node.composite.bottleneckScore.toFixed(1);
-    case "blastRadiusScore":
-      return node.structural.blastRadiusScore.toFixed(1);
-    case "fragilityScore":
-      return node.structural.fragilityScore.toFixed(1);
-    case "reconvergenceScore":
-      return node.structural.reconvergenceScore.toFixed(1);
-    case "pathConcentrationScore":
-      return (node.structural.pathConcentrationScore ?? 0).toFixed(1);
-  }
-}
-
 export function formatGraphRiskSection(
   title: string,
   nodes: NodeRiskAssessment[],
@@ -382,10 +347,10 @@ export function formatGraphRiskSection(
     return lines.join("\n");
   }
 
-  const metricLabel = formatRiskMetricLabel(metric);
+  const metricLabel = GRAPH_RISK_METRIC_LABELS[metric];
   for (const [index, node] of nodes.entries()) {
     lines.push(
-      `  ${index + 1}. ${node.uniqueId} (${metricLabel}: ${formatRiskMetricValue(node, metric)})`,
+      `  ${index + 1}. ${node.uniqueId} (${metricLabel}: ${getGraphRiskMetricNumeric(node, metric).toFixed(1)})`,
     );
     lines.push(
       `     structural: in=${node.structural.inDegree}, out=${node.structural.outDegree}, downstream=${node.structural.transitiveDownstreamCount}, upstream=${node.structural.transitiveUpstreamCount}`,
@@ -429,7 +394,7 @@ export function formatGraphRiskReport(args: {
 
   lines.push(
     formatGraphRiskSection(
-      `Top ${formatRiskMetricLabel(selectedMetric)} nodes`,
+      `Top ${GRAPH_RISK_METRIC_LABELS[selectedMetric]} nodes`,
       topByMetric,
       selectedMetric,
     ),
