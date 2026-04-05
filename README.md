@@ -9,23 +9,6 @@ This repo contains two distinct but related ecosystems:
 | [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts |
 | [`@dbt-tools/*`](./packages/dbt-tools/)                    | Analysis tools suite (CLI, core library, web app) built on top of the parser                    |
 
----
-
-## Architecture
-
-```mermaid
-graph TD
-  DAP[dbt-artifacts-parser\nmanifest · catalog · run_results · sources]
-
-  DAP --> CORE["@dbt-tools/core\ngraph · execution analysis"]
-  DAP --> CLI["@dbt-tools/cli\ndbt-tools binary"]
-  DAP --> WEB["@dbt-tools/web\nReact app"]
-  CORE --> CLI
-  CORE --> WEB
-```
-
----
-
 ## Packages
 
 ### dbt-artifacts-parser

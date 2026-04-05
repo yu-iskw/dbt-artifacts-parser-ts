@@ -8,15 +8,15 @@ Command-line interface for dbt artifact analysis. Optimized for both human and A
 
 ```mermaid
 graph TD
-  CLI[dbt-tools]
+  CLI["dbt-tools"]
   CLI --> summary["summary\nmanifest statistics"]
-  CLI --> graph["graph\nexport dependency graph"]
+  CLI --> graphCmd["graph\nexport dependency graph"]
   CLI --> rr["run-report\nexecution report"]
   CLI --> deps["deps\nupstream / downstream deps"]
   CLI --> schema["schema\nruntime introspection"]
 
   summary -->|manifest.json| MG[ManifestGraph]
-  graph -->|manifest.json| MG
+  graphCmd -->|manifest.json| MG
   rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
   deps -->|manifest.json| DS[DependencyService]
   schema -.->|describes| CLI
