@@ -2,6 +2,7 @@ import type { NodeExecutionSemantics } from "@web/types";
 import {
   buildMaterializationTooltipText,
   materializationKindShortLabel,
+  shouldShowMaterializationSemanticsBadge,
 } from "@web/lib/analysis-workspace/materializationSemanticsUi";
 
 /**
@@ -16,6 +17,10 @@ export function MaterializationSemanticsBadge({
   /** `compact` trims padding for dense tables / explorer rows. */
   variant?: "default" | "compact";
 }) {
+  if (!shouldShowMaterializationSemanticsBadge(semantics)) {
+    return null;
+  }
+
   const label =
     semantics.materialization === "unknown" && semantics.rawMaterialization
       ? semantics.rawMaterialization.length > 14

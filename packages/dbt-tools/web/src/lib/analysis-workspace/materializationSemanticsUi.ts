@@ -1,5 +1,38 @@
 import type { MaterializationKind, NodeExecutionSemantics } from "@web/types";
 
+/**
+ * dbt resource types that are not models and do not use `config.materialized`
+ * like models do ([resource type selection](https://docs.getdbt.com/reference/global-configs/resource-type)).
+ * For these, `materialization: "unknown"` is expected noise — omit the badge.
+ */
+const RESOURCE_TYPES_WITHOUT_MODEL_MATERIALIZATION_BADGE = new Set([
+  "analysis",
+  "exposure",
+  "macro",
+  "metric",
+  "saved_query",
+  "semantic_model",
+  "source",
+]);
+
+function normalizedResourceTypeKey(resourceType: string): string {
+  return resourceType.trim().toLowerCase() || "unknown";
+}
+
+/**
+ * Whether to show a materialization chip for this node. Hides meaningless
+ * "Unknown" labels on sources, metrics, semantic models, etc.
+ */
+export function shouldShowMaterializationSemanticsBadge(
+  semantics: NodeExecutionSemantics,
+): boolean {
+  if (semantics.materialization !== "unknown") {
+    return true;
+  }
+  const rt = normalizedResourceTypeKey(semantics.resourceType);
+  return !RESOURCE_TYPES_WITHOUT_MODEL_MATERIALIZATION_BADGE.has(rt);
+}
+
 /** Stable ordering for filters and health aggregates. */
 export const MATERIALIZATION_KIND_ORDER: MaterializationKind[] = [
   "table",

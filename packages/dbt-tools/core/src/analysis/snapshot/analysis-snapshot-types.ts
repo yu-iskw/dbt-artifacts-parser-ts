@@ -85,6 +85,10 @@ export interface ResourceNode {
   executionTime: number | null;
   threadId: string | null;
   semantics?: NodeExecutionSemantics;
+  /** Model/column target from manifest (`attached_node`, `column_name`, etc.) for tests. */
+  testAttachedTarget?: string | null;
+  /** Non-empty `run_results.results[].message` when present. */
+  runResultMessage?: string | null;
 }
 
 export interface ResourceGroup {

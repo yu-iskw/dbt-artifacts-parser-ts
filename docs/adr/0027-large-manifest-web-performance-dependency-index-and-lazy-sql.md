@@ -22,7 +22,7 @@ Two patterns prevented scaling to very large projects (many models, tests, and o
 
 - Build `dependencyIndex` previews with `getUpstream(id, 1)` and `getDownstream(id, 1)`.
 - Set `upstreamCount` and `downstreamCount` to the **number of direct** upstream/downstream neighbors (not transitive closure).
-- UI copy uses **“Direct upstream”** / **“Direct downstream”** where counts are shown.
+- UI copy uses **“Direct upstream”** / **“Direct downstream”** in the lineage panel where direct neighbor counts are shown (not duplicated in the asset summary).
 
 Lineage exploration over multiple hops continues to work by walking successive 1-hop entries in `dependencyIndex` within capped depth (existing `lineageModel` behavior).
 

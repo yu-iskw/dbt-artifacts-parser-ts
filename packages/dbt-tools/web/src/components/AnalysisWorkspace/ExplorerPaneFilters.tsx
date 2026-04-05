@@ -2,7 +2,7 @@ import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
 import type { DashboardStatusFilter } from "@web/lib/analysis-workspace/types";
 import { formatResourceTypeLabel } from "./shared";
 import type { MaterializationKind } from "@web/types";
-import { materializationKindShortLabel } from "@web/lib/analysis-workspace/materializationSemanticsUi";
+import { MaterializationKindPillRow } from "./MaterializationKindPillRow";
 import {
   EXPLORER_UI_COPY,
   executionStatusFilterButtonTitle,
@@ -48,9 +48,9 @@ export function ExplorerPaneFilters({
   availableResourceTypes: string[];
   activeResourceTypes: Set<string>;
   toggleResourceType: (value: string) => void;
-  availableMaterializationKinds: string[];
-  activeMaterializationKinds: Set<string>;
-  toggleMaterializationKind: (value: string) => void;
+  availableMaterializationKinds: MaterializationKind[];
+  activeMaterializationKinds: Set<MaterializationKind>;
+  toggleMaterializationKind: (value: MaterializationKind) => void;
 }) {
   return (
     <section className="explorer-filters" aria-label="Explorer filters">
@@ -186,26 +186,12 @@ export function ExplorerPaneFilters({
               <span className="explorer-filter-group__label">
                 Materialization (manifest)
               </span>
-              <div className="pill-row">
-                {availableMaterializationKinds.map((kind) => {
-                  const active =
-                    activeMaterializationKinds.size === 0 ||
-                    activeMaterializationKinds.has(kind);
-                  return (
-                    <button
-                      key={kind}
-                      type="button"
-                      className={active ? PILL_ACTIVE : PILL_BASE}
-                      title="Filter by normalized config.materialized / resource kind"
-                      onClick={() => toggleMaterializationKind(kind)}
-                    >
-                      {materializationKindShortLabel(
-                        kind as MaterializationKind,
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <MaterializationKindPillRow
+                kinds={availableMaterializationKinds}
+                activeKinds={activeMaterializationKinds}
+                onToggleKind={toggleMaterializationKind}
+                buttonTitle="Filter by normalized config.materialized / resource kind"
+              />
             </div>
           )}
         </div>

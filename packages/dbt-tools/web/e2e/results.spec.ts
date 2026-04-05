@@ -25,7 +25,7 @@ test.describe("runs workspace", () => {
     await expect(page.locator(".workspace-scaffold__leading")).toHaveCount(0);
     await expect(page.locator(".workspace-scaffold__inspector")).toHaveCount(0);
     await expect(
-      page.getByPlaceholder("Filter by name, type, status, thread…"),
+      page.getByPlaceholder("Name, resource type, status, thread…"),
     ).toBeVisible();
     await expect(page.locator(".results-table__header")).toContainText(
       /Item.*Type.*Status.*Duration.*Thread/s,
@@ -70,7 +70,7 @@ test.describe("runs quick jump navigation", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: /^Models \(\d+\)$/ }).click();
     await page
-      .getByPlaceholder("Filter by name, type, status, thread…")
+      .getByPlaceholder("Name, resource type, status, thread…")
       .fill("stg_orders");
     const modelRow = page
       .locator(RESULTS_TABLE_ROW)

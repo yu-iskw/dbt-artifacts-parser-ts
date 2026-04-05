@@ -6,6 +6,7 @@ import type {
 } from "./adapter-response-metrics";
 import {
   adapterMetricsHasData,
+  coerceAdapterResponseInput,
   extractAdapterResponseFields,
   isAdapterResponseObject,
   normalizeAdapterResponse,
@@ -16,6 +17,7 @@ type RunResultLike = {
   status: string;
   execution_time: number;
   thread_id?: string | null;
+  message?: string | null;
   adapter_response?: unknown;
   timing: Array<{
     name: string;
@@ -33,6 +35,8 @@ export interface NodeExecution {
   started_at?: string;
   completed_at?: string;
   thread_id?: string;
+  /** dbt `results[].message` when non-empty (often failure / warning detail). */
+  message?: string;
   /** Present when run_results included a non-empty adapter_response. */
   adapterMetrics?: AdapterResponseMetrics;
   /** Present when adapter_response was an object, even if it was empty. */
@@ -81,16 +85,19 @@ export function buildNodeExecutionsFromRunResults(
     const compileTiming = timingArray.find((t) => t.name === "compile");
     const timing = executeTiming || compileTiming || timingArray[0];
 
-    const adapterMetrics = normalizeAdapterResponse(result.adapter_response);
-    const adapterResponseFields = extractAdapterResponseFields(
-      result.adapter_response,
-    );
+    const adapterRaw = coerceAdapterResponseInput(result.adapter_response);
+    const adapterMetrics = normalizeAdapterResponse(adapterRaw);
+    const adapterResponseFields = extractAdapterResponseFields(adapterRaw);
     const includeAdapter =
       adapterMetrics.rawKeys.length > 0 ||
       adapterMetricsHasData(adapterMetrics);
-    const includeAdapterFields = isAdapterResponseObject(
-      result.adapter_response,
-    );
+    const includeAdapterFields = isAdapterResponseObject(adapterRaw);
+
+    const messageRaw = result.message;
+    const message =
+      typeof messageRaw === "string" && messageRaw.trim() !== ""
+        ? messageRaw.trim()
+        : undefined;
 
     return {
       unique_id: result.unique_id || "",
@@ -99,6 +106,7 @@ export function buildNodeExecutionsFromRunResults(
       started_at: timing?.started_at ?? undefined,
       completed_at: timing?.completed_at ?? undefined,
       thread_id: result.thread_id ?? undefined,
+      ...(message != null ? { message } : {}),
       ...(includeAdapter ? { adapterMetrics } : {}),
       ...(includeAdapterFields ? { adapterResponseFields } : {}),
     };

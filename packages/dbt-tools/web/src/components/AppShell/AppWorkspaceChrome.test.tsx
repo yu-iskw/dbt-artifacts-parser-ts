@@ -70,6 +70,7 @@ function makeWorkspace() {
       threadIds: new Set(),
       durationBand: "all",
       sortBy: "name",
+      sortDirection: "asc",
       groupBy: "none",
       selectedExecutionId: null,
       showAdapterMetrics: true,

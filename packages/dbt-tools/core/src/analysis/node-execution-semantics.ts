@@ -264,27 +264,38 @@ export function buildNodeExecutionSemantics(
 
   const flags = deriveSemanticsFlags(kind, resourceType);
 
+  const optional: Partial<
+    Pick<
+      NodeExecutionSemantics,
+      | "relationName"
+      | "adapterType"
+      | "incrementalStrategy"
+      | "uniqueKey"
+      | "onSchemaChange"
+      | "fullRefreshCapable"
+      | "rawMaterialization"
+    >
+  > = {};
+  if (relationName != null) optional.relationName = relationName;
+  if (adapterType != null && adapterType.length > 0)
+    optional.adapterType = adapterType;
+  if (inc.incrementalStrategy != null)
+    optional.incrementalStrategy = inc.incrementalStrategy;
+  if (uniqueKey != null) optional.uniqueKey = uniqueKey;
+  if (inc.onSchemaChange != null) optional.onSchemaChange = inc.onSchemaChange;
+  if (inc.fullRefreshCapable != null)
+    optional.fullRefreshCapable = inc.fullRefreshCapable;
+  if (raw != null && raw.length > 0) optional.rawMaterialization = raw;
+
   return {
     resourceType,
     materialization: kind,
     ...flags,
-    ...(relationName != null ? { relationName } : {}),
-    ...(adapterType != null && adapterType.length > 0 ? { adapterType } : {}),
-    ...(inc.incrementalStrategy != null
-      ? { incrementalStrategy: inc.incrementalStrategy }
-      : {}),
-    ...(uniqueKey != null ? { uniqueKey } : {}),
-    ...(inc.onSchemaChange != null
-      ? { onSchemaChange: inc.onSchemaChange }
-      : {}),
-    ...(inc.fullRefreshCapable != null
-      ? { fullRefreshCapable: inc.fullRefreshCapable }
-      : {}),
+    ...optional,
     materializationSource: provenanceFromEntry(
       entry,
       hadMaterializedConfig || hadGraphMaterialized,
       inc.hasAnyIncrementalHint,
     ),
-    ...(raw != null && raw.length > 0 ? { rawMaterialization: raw } : {}),
   };
 }

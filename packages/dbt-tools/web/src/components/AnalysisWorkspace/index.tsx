@@ -9,6 +9,7 @@ export type {
   RunsKind,
   RunsAdapterColumnId,
   RunsSortBy,
+  RunsSortDirection,
   RunsGroupBy,
   RunsViewState,
   LineageViewState,

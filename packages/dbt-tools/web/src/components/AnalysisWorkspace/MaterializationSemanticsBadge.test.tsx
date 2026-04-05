@@ -42,6 +42,30 @@ describe("MaterializationSemanticsBadge", () => {
     container.remove();
   });
 
+  it("renders nothing for unknown materialization on non-model resource types", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <MaterializationSemanticsBadge
+          semantics={makeSemantics({
+            resourceType: "semantic_model",
+            materialization: "unknown",
+            persisted: false,
+            createsRelation: false,
+            materializationSource: "derived",
+          })}
+        />,
+      );
+    });
+    expect(
+      container.querySelector(".materialization-semantics-badge"),
+    ).toBeNull();
+    root.unmount();
+    container.remove();
+  });
+
   it("shows raw fragment for unknown custom materializations", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

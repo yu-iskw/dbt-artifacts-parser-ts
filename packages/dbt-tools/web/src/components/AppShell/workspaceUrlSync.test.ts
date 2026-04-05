@@ -35,6 +35,7 @@ const baseRuns = (): RunsViewState => ({
   threadIds: new Set(),
   durationBand: "all",
   sortBy: "attention",
+  sortDirection: "desc",
   groupBy: "none",
   selectedExecutionId: null,
   showAdapterMetrics: true,

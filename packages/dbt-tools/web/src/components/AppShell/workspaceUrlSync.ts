@@ -72,6 +72,7 @@ const defaultRunsViewState = (search: string): RunsViewState => {
     threadIds: new Set(),
     durationBand: "all",
     sortBy: "attention",
+    sortDirection: "desc",
     groupBy: "none",
     selectedExecutionId:
       view === "runs" ? parseSelectedExecutionId(search) : null,

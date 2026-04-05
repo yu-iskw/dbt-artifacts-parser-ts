@@ -1,5 +1,9 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { AnalysisState, StatusTone } from "@web/types";
+import type {
+  AnalysisState,
+  MaterializationKind,
+  StatusTone,
+} from "@web/types";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 
 /**
@@ -35,9 +39,12 @@ export type RunsBaseSortBy =
   | "name"
   | "status"
   | "start"
-  | "materialization";
+  | "materialization"
+  | "resourceType"
+  | "thread";
 export type RunsAdapterColumnId = `adapter:${string}`;
 export type RunsSortBy = RunsBaseSortBy | RunsAdapterColumnId;
+export type RunsSortDirection = "asc" | "desc";
 export type RunsGroupBy = "none" | "type" | "status" | "thread";
 
 /** `issues` = failed execution on the asset or dbt test attention rollup (explorer); runs table uses danger+warning rows. */
@@ -98,8 +105,8 @@ export interface AssetViewState {
   explorerMode: AssetExplorerMode;
   status: DashboardStatusFilter;
   resourceTypes: Set<string>;
-  /** Manifest-derived materialization kinds (`MaterializationKind`); empty = all. */
-  materializationKinds: Set<string>;
+  /** Manifest-derived materialization kinds; empty = all. */
+  materializationKinds: Set<MaterializationKind>;
   resourceQuery: string;
   upstreamDepth: number;
   downstreamDepth: number;
@@ -114,10 +121,11 @@ export interface RunsViewState {
   query: string;
   resourceTypes: Set<string>;
   /** Subset of manifest-derived materialization kinds; empty = all. */
-  materializationKinds: Set<string>;
+  materializationKinds: Set<MaterializationKind>;
   threadIds: Set<string>;
   durationBand: "all" | "fast" | "medium" | "slow";
   sortBy: RunsSortBy;
+  sortDirection: RunsSortDirection;
   groupBy: RunsGroupBy;
   selectedExecutionId: string | null;
   /** When true, show adapter metric columns when the run includes parseable metrics. */

@@ -213,10 +213,7 @@ export function AssetsView({
             }}
             className="asset-workspace__section"
           >
-            <AssetSummarySection
-              resource={resource}
-              dependencySummary={dependencySummary}
-            />
+            <AssetSummarySection resource={resource} />
           </section>
 
           <section

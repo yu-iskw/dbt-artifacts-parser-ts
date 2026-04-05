@@ -161,6 +161,7 @@ describe("queryRunsResultsIndex", () => {
       threadIds: [],
       durationBand: "all",
       sortBy: "attention",
+      sortDirection: "desc",
       limit: 100,
     });
 
@@ -214,6 +215,7 @@ describe("queryRunsResultsIndex", () => {
       threadIds: [],
       durationBand: "all",
       sortBy: "adapter:warehouse.bytes_processed",
+      sortDirection: "desc",
       limit: 20,
     });
 
@@ -267,6 +269,7 @@ describe("queryRunsResultsIndex", () => {
       threadIds: [],
       durationBand: "all",
       sortBy: "adapter:warehouse.job_id",
+      sortDirection: "asc",
       limit: 20,
     });
 

@@ -731,9 +731,7 @@
 .resource-spotlight__header,
 .explorer-item__title-row,
 .thread-list__row,
-.dependency-list__row,
-.results-table__header,
-.results-table__row {
+.dependency-list__row {
   display: flex;
   justify-content: space-between;
   gap: 0.8rem;
@@ -1103,6 +1101,21 @@
   display: block;
   margin-top: 0.24rem;
   font-size: 0.88rem;
+}
+
+.asset-summary__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.asset-summary__group-title {
+  margin: 0 0 0.6rem;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .rank-list {
@@ -1598,19 +1611,73 @@ details.timeline-filter-accordion .timeline-controls {
   display: grid;
   grid-template-columns: var(--results-table-columns);
   align-items: center;
+  gap: 0.8rem;
+  justify-content: start;
+}
+
+.results-table__scroll {
+  min-height: 0;
+  overflow-x: hidden;
 }
 
 .results-table__header {
-  padding: 0 0.6rem 0.4rem;
+  /* Match row horizontal padding so header columns line up with cell content */
+  padding: 0 1rem 0.4rem;
   color: var(--text-soft);
   font-size: 0.83rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
+.results-table__header--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-surface);
+  box-shadow: 0 1px 0 var(--border-subtle);
+}
+
+.results-table__sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.results-table__sort-button:hover,
+.results-table__sort-button:focus-visible {
+  color: var(--text-primary);
+}
+
+.results-table__sort-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.results-table__sort-button--align-end {
+  justify-content: flex-end;
+}
+
+.results-table__sort-indicator {
+  flex-shrink: 0;
+  width: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .results-table__body {
-  /* Now a virtualized scroll container — layout is managed by @tanstack/react-virtual */
-  overflow-y: auto;
+  /* Scroll lives on .results-table__scroll so header + rows share one content width */
+  min-width: 0;
 }
 
 .results-table__progress {
@@ -1620,12 +1687,14 @@ details.timeline-filter-accordion .timeline-controls {
 }
 
 .results-table__row {
-  gap: 0.8rem;
+  margin: 0;
   padding: 0.95rem 1rem;
   border-radius: 18px;
   background: var(--bg-surface-muted);
   border: 1px solid var(--border-subtle);
   text-align: left;
+  appearance: none;
+  font-family: inherit;
 }
 
 .results-table__cell {

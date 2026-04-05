@@ -197,6 +197,29 @@ export function isAdapterResponseObject(
 }
 
 /**
+ * Some exports / loaders stringify `adapter_response` even though artifacts are
+ * normally objects. Parse JSON object/array strings so we can extract fields.
+ */
+export function coerceAdapterResponseInput(raw: unknown): unknown {
+  if (typeof raw !== "string") {
+    return raw;
+  }
+  const t = raw.trim();
+  if (t === "" || t === "null") {
+    return null;
+  }
+  const first = t[0];
+  if (first !== "{" && first !== "[") {
+    return raw;
+  }
+  try {
+    return JSON.parse(t) as unknown;
+  } catch {
+    return raw;
+  }
+}
+
+/**
  * Normalize adapter_response from a single run_results result row.
  */
 export function normalizeAdapterResponse(

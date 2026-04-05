@@ -2,6 +2,7 @@ import type {
   AnalysisState,
   ExecutionRow,
   GanttItem,
+  MaterializationKind,
   ResourceNode,
   StatusTone,
 } from "@web/types";
@@ -74,6 +75,26 @@ export function normalizeManifestFilePath(path: string | null): string | null {
   return sanitized.length > 0 ? sanitized : null;
 }
 
+/**
+ * Strip SQL-style double quotes from manifest relation names for display
+ * (e.g. `"db"."schema"."table"` → `db.schema.table`). Per-segment only;
+ * escaped `""` inside a quoted segment becomes a single `"`.
+ */
+export function formatRelationNameForDisplay(relation: string): string {
+  const trimmed = relation.trim();
+  if (trimmed === "") return trimmed;
+  return trimmed
+    .split(".")
+    .map((segment) => {
+      const s = segment.trim();
+      if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+        return s.slice(1, -1).replace(/""/g, '"');
+      }
+      return s;
+    })
+    .join(".");
+}
+
 export function matchesResource(
   resource: ResourceNode,
   query: string,
@@ -116,7 +137,7 @@ export function matchesAssetResourceType(
 
 export function matchesAssetMaterializationKind(
   resource: ResourceNode,
-  activeKinds: Set<string>,
+  activeKinds: ReadonlySet<MaterializationKind>,
 ): boolean {
   if (activeKinds.size === 0) return true;
   const kind = resource.semantics?.materialization ?? "unknown";
