@@ -49,8 +49,8 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^15.3.4",
-    "@types/node": "^25.5.0",
+    "@apidevtools/json-schema-ref-parser": "^15.3.5",
+    "@types/node": "^25.5.2",
     "vitest": "^4.1.2"
   },
   "publishConfig": {

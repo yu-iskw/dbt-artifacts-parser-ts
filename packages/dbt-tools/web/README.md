@@ -36,10 +36,17 @@ npx @dbt-tools/web --target /path/to/your/dbt/target
 | ----------------------- | ---------------------------------------------------- |
 | `--target <dir>` / `-t` | dbt `target` directory (sets `DBT_TOOLS_TARGET_DIR`) |
 | `--port <n>` / `-p`     | Listen port (default **3000**)                       |
-| `--no-open`             | Do not open a browser                                |
 | `--help` / `-h`         | Usage                                                |
 
-The server listens on **127.0.0.1** and prints the URL (e.g. `http://127.0.0.1:3000`).
+The server listens on **127.0.0.1** and prints the URL (e.g. `http://127.0.0.1:3000`). Open that URL in your browser manually (`open`, `xdg-open`, or your desktop environment).
+
+### Security note (capabilities / Socket-style auditing)
+
+For **supply-chain and capability** tooling (e.g. [Socket.dev alerts](https://socket.dev)):
+
+- **`networkAccess` — expected.** The published app is a **local HTTP server** (`node:http` on loopback), the UI uses **`fetch`** to same-origin `/api/...` routes, and **optional** remote artifact mode uses **AWS S3** and **Google Cloud Storage** client libraries when you configure `DBT_TOOLS_REMOTE_SOURCE` (see [ADR-0029](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)). There is no separate telemetry channel.
+- **`shellAccess` (first-party) — none.** The CLI does **not** spawn a shell or external `open`/`xdg-open` helpers; it only starts the server and prints the URL.
+- **`usesEval` — not in our shipped `dist` / `dist-serve` bundles** from this repository’s build. If a scanner still flags `usesEval`, it is usually from **transitive dependencies** in the full npm graph rather than first-party TypeScript.
 
 You can also set **`DBT_TOOLS_TARGET_DIR`** (or legacy `DBT_TARGET_DIR` / `DBT_TARGET`) in the environment instead of `--target`.
 

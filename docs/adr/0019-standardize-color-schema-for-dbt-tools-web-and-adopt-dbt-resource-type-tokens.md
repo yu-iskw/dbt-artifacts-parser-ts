@@ -4,7 +4,7 @@ Date: 2026-03-24
 
 ## Status
 
-Accepted
+Superseded
 
 Superseded-by [20. Neutral Slate color rebrand for dbt-tools web](0020-neutral-slate-color-rebrand-for-dbt-tools-web.md)
 

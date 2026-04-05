@@ -5,7 +5,6 @@ Usage: dbt-tools-web [options]
 
   --target <dir>   Path to dbt target directory (sets DBT_TOOLS_TARGET_DIR)
   --port   <n>     Port to listen on (default: 3000)
-  --no-open        Do not open the browser automatically
   --help           Show this help message
 `.trimStart();
 
@@ -16,13 +15,11 @@ export type ParsedCli =
       kind: "ok";
       targetDir: string | undefined;
       port: number;
-      open: boolean;
     };
 
 type MutableCliState = {
   targetDir: string | undefined;
   port: number;
-  open: boolean;
 };
 
 type RequiredValue =
@@ -58,8 +55,8 @@ function consumeOne(argv: string[], i: number, state: MutableCliState): Step {
   if (arg === "--help" || arg === "-h") {
     return { status: "done", result: { kind: "help" } };
   }
+  // Backward compatibility: browser auto-open was removed (no child_process).
   if (arg === "--no-open") {
-    state.open = false;
     return { status: "advance", nextIndex: i + 1 };
   }
   if (arg === "--target" || arg === "-t") {
@@ -101,7 +98,6 @@ export function parseCliArgs(argv: string[]): ParsedCli {
   const state: MutableCliState = {
     targetDir: undefined,
     port: 3000,
-    open: true,
   };
   let i = 0;
   while (i < argv.length) {
@@ -115,6 +111,5 @@ export function parseCliArgs(argv: string[]): ParsedCli {
     kind: "ok",
     targetDir: state.targetDir,
     port: state.port,
-    open: state.open,
   };
 }
