@@ -52,6 +52,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build package
         run: pnpm --filter ./packages/dbt-artifacts-parser build
+      - name: Run unit tests
+        run: pnpm test
       - name: Lint (ESLint report)
         run: pnpm lint:report
       - name: Upload lint report

@@ -19,27 +19,43 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "30 2 * * 1"
 
 concurrency:
   group: codeql-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
-  security-events: write
   actions: read
   contents: read
+  security-events: write
 
 jobs:
   analyze:
-    name: CodeQL Analysis
+    name: Analyze (javascript-typescript)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build project
+        run: pnpm build
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

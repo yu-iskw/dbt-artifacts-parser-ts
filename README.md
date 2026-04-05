@@ -1,5 +1,9 @@
 # dbt-artifacts-parser-ts
 
+[![Build](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/build.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/build.yml)
+[![CodeQL](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml)
+[![Dependency Review](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/dependency-review.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/yu-iskw/dbt-artifacts-parser-ts/badge)](https://securityscorecards.dev/viewer/?uri=github.com/yu-iskw/dbt-artifacts-parser-ts)
 A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts.
 
 This repo contains two distinct but related ecosystems:
@@ -63,6 +67,23 @@ dbt-tools-web --target ./target   # or: npx @dbt-tools/web --target ./target
 ```
 
 See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for configuration (`DBT_TOOLS_REMOTE_SOURCE`, debugging, Docker pointers).
+
+---
+
+
+## Security & package trust
+
+This project is published with **verified provenance**, continuously **code-scanned**, and checked for **known runtime dependency vulnerabilities** during release workflows.
+
+Current trust signals:
+
+- npm packages can be published from GitHub Actions with npm trusted publishing and provenance.
+- CodeQL code scanning is enabled for PRs, `main`, and a weekly scheduled run.
+- Dependency Review runs on pull requests to prevent introduction of known vulnerable dependencies.
+- OpenSSF Scorecard publishes repository supply-chain posture checks.
+- `@dbt-tools/web` release flow audits packed tarball runtime dependencies (`npm audit --omit=dev --audit-level=high`) before publish.
+
+These controls reduce risk and improve transparency, but they are **not** a guarantee of absolute safety and do not prove the absence of malicious code. See [SECURITY.md](./SECURITY.md) for details and limitations.
 
 ---
 

@@ -1,0 +1,139 @@
+# Copyright 2026 yu-iskw
+#
+# npm trusted publishing workflow (OIDC):
+# - Uses GitHub Actions identity (id-token) instead of long-lived npm tokens.
+# - Public packages published from this public repository can include npm provenance.
+# - Configure each package's Trusted Publisher in npm package settings before use.
+
+name: Release npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package name to publish
+        required: true
+        type: choice
+        options:
+          - dbt-artifacts-parser
+          - '@dbt-tools/core'
+          - '@dbt-tools/cli'
+          - '@dbt-tools/web'
+      npm_tag:
+        description: npm dist-tag
+        required: false
+        default: latest
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.package }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package and required workspace dependencies
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_NAME" in
+            dbt-artifacts-parser)
+              pnpm --filter ./packages/dbt-artifacts-parser build
+              ;;
+            @dbt-tools/core)
+              pnpm --filter ./packages/dbt-artifacts-parser build
+              pnpm --filter @dbt-tools/core build
+              ;;
+            @dbt-tools/cli)
+              pnpm --filter ./packages/dbt-artifacts-parser build
+              pnpm --filter @dbt-tools/core build
+              pnpm --filter @dbt-tools/cli build
+              ;;
+            @dbt-tools/web)
+              pnpm --filter ./packages/dbt-artifacts-parser build
+              pnpm --filter @dbt-tools/core build
+              pnpm --filter @dbt-tools/web build
+              ;;
+            *)
+              echo "Unsupported package: $PACKAGE_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Tarball runtime dependency audit (@dbt-tools/web)
+        if: ${{ inputs.package == '@dbt-tools/web' }}
+        run: |
+          set -euo pipefail
+
+          rm -f ./dbt-tools-web-*.tgz
+          pnpm --filter @dbt-tools/web pack
+
+          TARBALL="$(ls -t ./dbt-tools-web-*.tgz | head -n 1)"
+          if [[ -z "${TARBALL}" ]]; then
+            echo "Expected @dbt-tools/web tarball was not created." >&2
+            exit 1
+          fi
+
+          echo "Packed tarball: ${TARBALL}"
+          tar -tzf "${TARBALL}"
+
+          TMP_DIR="$(mktemp -d)"
+          cleanup() {
+            rm -rf "${TMP_DIR}"
+          }
+          trap cleanup EXIT
+
+          pushd "${TMP_DIR}" >/dev/null
+          npm init -y
+          npm install "${GITHUB_WORKSPACE}/${TARBALL}" --omit=dev
+          npm audit --omit=dev --audit-level=high
+          popd >/dev/null
+
+      - name: Publish package (npm trusted publishing + provenance)
+        env:
+          PACKAGE_NAME: ${{ inputs.package }}
+          NPM_TAG: ${{ inputs.npm_tag }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_NAME" in
+            dbt-artifacts-parser)
+              PACKAGE_DIR="packages/dbt-artifacts-parser"
+              ;;
+            @dbt-tools/core)
+              PACKAGE_DIR="packages/dbt-tools/core"
+              ;;
+            @dbt-tools/cli)
+              PACKAGE_DIR="packages/dbt-tools/cli"
+              ;;
+            @dbt-tools/web)
+              PACKAGE_DIR="packages/dbt-tools/web"
+              ;;
+            *)
+              echo "Unsupported package: $PACKAGE_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          pushd "$PACKAGE_DIR" >/dev/null
+          npm publish --provenance --access public --tag "$NPM_TAG"
+          popd >/dev/null

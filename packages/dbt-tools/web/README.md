@@ -1,10 +1,29 @@
 # @dbt-tools/web
 
+[![npm version](https://img.shields.io/npm/v/%40dbt-tools%2Fweb?logo=npm)](https://www.npmjs.com/package/@dbt-tools/web)
+[![Build](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/build.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/build.yml)
+[![CodeQL](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml)
+[![Runtime dependency audit](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/release-npm.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/release-npm.yml)
+
+Published from GitHub Actions with npm trusted publishing and **verified provenance** when npm Trusted Publisher is configured for `@dbt-tools/web`.
+
 React application for visual dbt artifact analysis: dependency graphs, execution timelines, inventory views, and optional remote runs from S3 or GCS.
 
 **End users:** install from npm and run **`dbt-tools-web`** (see below). **Contributors:** clone the monorepo and use Vite — see [Developing from source](#developing-from-source) and [CONTRIBUTING.md](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/CONTRIBUTING.md).
 
 Full operator topics (Docker, GHCR, remote sources, Vite-only options) live in the [user guide](../../../docs/user-guide-dbt-tools-web.md).
+
+---
+
+## Package trust
+
+`@dbt-tools/web` release automation is designed for npm trusted publishing (OIDC) with provenance.
+
+- The package can be published from GitHub Actions with npm provenance metadata.
+- The release workflow performs a tarball-based runtime dependency audit before publish (`npm audit --omit=dev --audit-level=high`).
+- Consumers can inspect provenance information on npm and apply their own verification policies.
+
+These checks improve transparency and reduce risk, but they are not a guarantee of absolute safety and do not prove the absence of malicious code.
 
 ---
 
