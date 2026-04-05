@@ -5,11 +5,11 @@ import {
   createInitialNavigationState,
   mergeTimelineSelection,
 } from "./workspaceUrlSync";
-import type { TimelineFilterState } from "@web/lib/analysis-workspace/types";
 import type {
   AssetViewState,
   LineageViewState,
   RunsViewState,
+  TimelineFilterState,
 } from "@web/lib/analysis-workspace/types";
 
 const baseAsset = (): AssetViewState => ({
