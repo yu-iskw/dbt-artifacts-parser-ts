@@ -53,11 +53,11 @@ Supported artifacts:
 
 A suite of analysis tools for dbt artifacts. Built on `dbt-artifacts-parser`.
 
-| Package                                                  | Description                                                                        |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                   |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis, AI-agent-friendly                    |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS) |
+| Package                                                  | Description                                                                         |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                    |
+| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis, graph risk ranking, AI-agent-friendly |
+| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS)  |
 
 [Suite overview →](./packages/dbt-tools/README.md)
 
@@ -73,6 +73,7 @@ npm install dbt-artifacts-parser
 npm install -g @dbt-tools/cli
 dbt-tools summary          # requires ./target/manifest.json
 dbt-tools run-report       # requires ./target/run_results.json
+dbt-tools graph-risk       # manifest-first graph bottlenecks / blast radius
 
 # Visual analyzer in the browser (published server binary)
 npm install -g @dbt-tools/web

@@ -8,6 +8,8 @@ import {
   formatRunReport,
   formatBottlenecks,
   formatHumanReadable,
+  formatGraphRiskReport,
+  formatGraphRiskSection,
 } from "./output-formatter";
 
 describe("OutputFormatter", () => {
@@ -386,6 +388,94 @@ describe("OutputFormatter", () => {
       };
       const output = formatHumanReadable(data, "run-report");
       expect(output).toContain("dbt Execution Report");
+    });
+
+    it("should format graph-risk output", () => {
+      const data = {
+        summary: {
+          totalNodes: 5,
+          analyzedNodes: 5,
+          resourceTypes: ["model"],
+          topBottlenecks: [],
+          topFragileNodes: [],
+          topBlastRadiusNodes: [],
+        },
+        selectedMetric: "overallRiskScore" as const,
+        topByMetric: [],
+      };
+      const output = formatHumanReadable(data, "graph-risk");
+      expect(output).toContain("dbt Graph Risk Report");
+    });
+  });
+
+  describe("formatGraphRiskSection", () => {
+    it("formats graph-risk nodes with findings", () => {
+      const output = formatGraphRiskSection(
+        "Top overall risk nodes",
+        [
+          {
+            uniqueId: "model.pkg.shared_int",
+            resourceType: "model",
+            name: "shared_int",
+            packageName: "pkg",
+            structural: {
+              inDegree: 2,
+              outDegree: 3,
+              transitiveUpstreamCount: 4,
+              transitiveDownstreamCount: 3,
+              longestUpstreamDepth: 2,
+              longestDownstreamDepth: 1,
+              blastRadiusScore: 100,
+              fragilityScore: 95,
+              reconvergenceScore: 90,
+              pathConcentrationScore: 100,
+            },
+            execution: {
+              durationMs: 5400,
+              criticalPath: true,
+              slackMs: 0,
+              weightedImpactScore: 91,
+              status: "success",
+            },
+            composite: {
+              bottleneckScore: 92,
+              overallRiskScore: 96,
+            },
+            findings: ["Likely single transformation chokepoint"],
+            recommendations: [],
+          },
+        ],
+        "overallRiskScore",
+      );
+
+      expect(output).toContain("Top overall risk nodes:");
+      expect(output).toContain("model.pkg.shared_int");
+      expect(output).toContain(
+        "findings: Likely single transformation chokepoint",
+      );
+    });
+  });
+
+  describe("formatGraphRiskReport", () => {
+    it("formats graph risk summary and ranking sections", () => {
+      const report = formatGraphRiskReport({
+        summary: {
+          totalNodes: 8,
+          analyzedNodes: 6,
+          resourceTypes: ["model"],
+          executionCoveragePct: 50,
+          topBottlenecks: [],
+          topFragileNodes: [],
+          topBlastRadiusNodes: [],
+        },
+        selectedMetric: "overallRiskScore",
+        topByMetric: [],
+      });
+
+      expect(report).toContain("dbt Graph Risk Report");
+      expect(report).toContain("Execution Coverage: 50.0% of analyzed nodes");
+      expect(report).toContain("Top overall risk nodes:");
+      expect(report).toContain("Top bottlenecks:");
     });
   });
 });

@@ -12,6 +12,7 @@ export {
   detectBottlenecks,
   detectAdapterHeavyNodes,
 } from "./analysis/run-results-search";
+export { GraphRiskAnalyzer } from "./analysis/graph-risk-analyzer";
 export {
   buildAdapterTotals,
   normalizeAdapterResponse,
@@ -21,6 +22,16 @@ export {
   buildAnalysisSnapshotFromArtifacts,
   buildAnalysisSnapshotFromParsedArtifacts,
 } from "./analysis/analysis-snapshot";
+export type {
+  GraphRiskAnalyzerArgs,
+  GraphRiskAnalyzerOptions,
+  GraphRiskRankingMetric,
+  GraphRiskSummary,
+  GraphRiskThresholds,
+  NodeExecutionMetrics,
+  NodeRiskAssessment,
+  NodeStructuralMetrics,
+} from "./analysis/graph-risk-analyzer";
 export type {
   NodeExecution,
   ExecutionSummary,

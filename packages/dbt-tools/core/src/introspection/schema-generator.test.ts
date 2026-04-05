@@ -33,6 +33,12 @@ describe("SchemaGenerator", () => {
       expect(schema?.command).toBe("run-report");
     });
 
+    it("should return schema for graph-risk command", () => {
+      const schema = getCommandSchema("graph-risk");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("graph-risk");
+    });
+
     it("should return schema for schema command", () => {
       const schema = getCommandSchema("schema");
       expect(schema).not.toBeNull();
@@ -51,6 +57,7 @@ describe("SchemaGenerator", () => {
       expect(schemas).toHaveProperty("summary");
       expect(schemas).toHaveProperty("deps");
       expect(schemas).toHaveProperty("graph");
+      expect(schemas).toHaveProperty("graph-risk");
       expect(schemas).toHaveProperty("run-report");
       expect(schemas).toHaveProperty("schema");
     });

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import http from "node:http";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,7 +102,23 @@ describe("resolveStaticPath", () => {
   });
 });
 
-describe("startServer", () => {
+async function canListenOnLoopback(host: string): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once("error", () => {
+      resolve(false);
+    });
+
+    server.listen(0, host, () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+const loopbackListenSupported = await canListenOnLoopback("127.0.0.1");
+
+describe.skipIf(!loopbackListenSupported)("startServer", () => {
   let srv: http.Server | undefined;
   let listenPort: number;
   let listenHost: string;

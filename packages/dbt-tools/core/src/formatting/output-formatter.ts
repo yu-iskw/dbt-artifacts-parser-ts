@@ -1,5 +1,12 @@
 import type { AdapterTotalsSnapshot } from "../analysis/adapter-response-metrics";
 import type { AdapterHeavyResult } from "../analysis/run-results-search";
+import {
+  getGraphRiskMetricNumeric,
+  GRAPH_RISK_METRIC_LABELS,
+  type GraphRiskRankingMetric,
+  type GraphRiskSummary,
+  type NodeRiskAssessment,
+} from "../analysis/graph-risk-analyzer";
 
 type DepNode = {
   unique_id: string;
@@ -327,12 +334,102 @@ export function formatRunReport(
   return lines.join("\n");
 }
 
+export function formatGraphRiskSection(
+  title: string,
+  nodes: NodeRiskAssessment[],
+  metric: GraphRiskRankingMetric,
+): string {
+  const lines: string[] = [];
+  lines.push(`\n${title}:`);
+
+  if (nodes.length === 0) {
+    lines.push("  (none)");
+    return lines.join("\n");
+  }
+
+  const metricLabel = GRAPH_RISK_METRIC_LABELS[metric];
+  for (const [index, node] of nodes.entries()) {
+    lines.push(
+      `  ${index + 1}. ${node.uniqueId} (${metricLabel}: ${getGraphRiskMetricNumeric(node, metric).toFixed(1)})`,
+    );
+    lines.push(
+      `     structural: in=${node.structural.inDegree}, out=${node.structural.outDegree}, downstream=${node.structural.transitiveDownstreamCount}, upstream=${node.structural.transitiveUpstreamCount}`,
+    );
+
+    if (node.execution?.durationMs !== undefined) {
+      const slackMs =
+        node.execution.slackMs !== undefined
+          ? `${node.execution.slackMs}ms`
+          : "n/a";
+      lines.push(
+        `     execution: duration=${(node.execution.durationMs / 1000).toFixed(2)}s, critical=${node.execution.criticalPath ? "yes" : "no"}, slack=${slackMs}`,
+      );
+    }
+
+    if (node.findings.length > 0) {
+      lines.push(`     findings: ${node.findings.join("; ")}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+export function formatGraphRiskReport(args: {
+  summary: GraphRiskSummary;
+  selectedMetric: GraphRiskRankingMetric;
+  topByMetric: NodeRiskAssessment[];
+}): string {
+  const { summary, selectedMetric, topByMetric } = args;
+  const lines: string[] = [];
+  lines.push("dbt Graph Risk Report");
+  lines.push("=====================");
+  lines.push(`Total Nodes: ${summary.totalNodes}`);
+  lines.push(`Analyzed Nodes: ${summary.analyzedNodes}`);
+  lines.push(`Resource Types: ${summary.resourceTypes.join(", ") || "(none)"}`);
+  if (summary.executionCoveragePct !== undefined) {
+    lines.push(
+      `Execution Coverage: ${summary.executionCoveragePct.toFixed(1)}% of analyzed nodes`,
+    );
+  }
+
+  lines.push(
+    formatGraphRiskSection(
+      `Top ${GRAPH_RISK_METRIC_LABELS[selectedMetric]} nodes`,
+      topByMetric,
+      selectedMetric,
+    ),
+  );
+  lines.push(
+    formatGraphRiskSection(
+      "Top bottlenecks",
+      summary.topBottlenecks,
+      "bottleneckScore",
+    ),
+  );
+  lines.push(
+    formatGraphRiskSection(
+      "Top fragile nodes",
+      summary.topFragileNodes,
+      "fragilityScore",
+    ),
+  );
+  lines.push(
+    formatGraphRiskSection(
+      "Top blast-radius nodes",
+      summary.topBlastRadiusNodes,
+      "blastRadiusScore",
+    ),
+  );
+
+  return lines.join("\n");
+}
+
 /**
  * Format human-readable output for a specific command type
  */
 export function formatHumanReadable(
   data: unknown,
-  format: "summary" | "deps" | "run-report",
+  format: "summary" | "deps" | "run-report" | "graph-risk",
 ): string {
   switch (format) {
     case "summary":
@@ -341,6 +438,10 @@ export function formatHumanReadable(
       return formatDeps(data as Parameters<typeof formatDeps>[0]);
     case "run-report":
       return formatRunReport(data as Parameters<typeof formatRunReport>[0]);
+    case "graph-risk":
+      return formatGraphRiskReport(
+        data as Parameters<typeof formatGraphRiskReport>[0],
+      );
     default:
       return String(data);
   }

@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/cli
 
-Extended notes for automation and AI agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
+Extended notes for automation and AI agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `graph-risk`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
 
 ---
 
@@ -40,12 +40,33 @@ dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 
 ## Field filtering
 
-Use **`--fields`** on `summary`, `deps`, `graph` (JSON), and `run-report` to shrink payloads:
+Use **`--fields`** on `summary`, `deps`, `graph` (JSON), `graph-risk` (JSON), and `run-report` to shrink payloads:
 
 ```bash
 dbt-tools deps model.my_project.customers --fields "unique_id,name"
 dbt-tools deps model.my_project.customers --fields "unique_id,name,attributes.resource_type"
 ```
+
+---
+
+## Graph risk
+
+Use **`graph-risk`** when you want DAG-native hotspots rather than a raw execution summary:
+
+```bash
+dbt-tools graph-risk
+dbt-tools graph-risk --run-results ./target/run_results.json
+dbt-tools graph-risk --metric bottleneckScore --top 20
+dbt-tools graph-risk --resource-types model,source --json
+```
+
+Interpretation notes:
+
+- Structural mode works from `manifest.json` alone.
+- Execution-aware mode is only as complete as the provided `run_results.json`.
+- `executionCoveragePct` matters: missing runtime metrics are absent, not zero.
+- Path concentration is computed in log-space for numerical stability on large DAGs.
+- Blast radius, fragility, and bottleneck scores are prioritization heuristics for refactoring, not absolute truth.
 
 ---
 
