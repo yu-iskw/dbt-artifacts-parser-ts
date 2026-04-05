@@ -25,6 +25,7 @@ interface QueryMessage {
   status: DashboardStatusFilter;
   query: string;
   resourceTypes: string[];
+  materializationKinds: string[];
   threadIds: string[];
   durationBand: RunsViewState["durationBand"];
   sortBy: RunsViewState["sortBy"];
@@ -83,6 +84,7 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
     payload.status,
     payload.query.trim().toLowerCase(),
     payload.resourceTypes.sort().join(","),
+    payload.materializationKinds.sort().join(","),
     payload.threadIds.sort().join(","),
     payload.durationBand,
     payload.sortBy,
@@ -94,6 +96,7 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
       status: payload.status,
       query: payload.query,
       resourceTypes: payload.resourceTypes,
+      materializationKinds: payload.materializationKinds,
       threadIds: payload.threadIds,
       durationBand: payload.durationBand,
       sortBy: payload.sortBy,

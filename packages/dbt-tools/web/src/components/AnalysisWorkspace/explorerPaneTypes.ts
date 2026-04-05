@@ -17,6 +17,9 @@ export interface ExplorerPaneProps {
   availableResourceTypes: string[];
   activeResourceTypes: Set<string>;
   toggleResourceType: (value: string) => void;
+  availableMaterializationKinds: string[];
+  activeMaterializationKinds: Set<string>;
+  toggleMaterializationKind: (value: string) => void;
   resourceQuery: string;
   setResourceQuery: (value: string) => void;
   selectedResourceId: string | null;

@@ -74,12 +74,14 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   const ganttById = new Map(ganttData.map((item) => [item.unique_id, item]));
   const executionById = new Map(nodeExecutions.map((e) => [e.unique_id, e]));
 
+  const graphologyGraph = graph.getGraph();
+
   const { resources, dependencyIndex } = buildResourcesAndDependencyIndex(
     graph as unknown as GraphLike,
     executionById,
+    manifestEntryLookup,
+    warehouseType,
   );
-
-  const graphologyGraph = graph.getGraph();
   const timelineProjectName = buildTimelineProjectName(
     manifestJson,
     nodeExecutions,
@@ -91,11 +93,14 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
       graph as unknown as GraphLike,
       graphologyGraph as GraphologyAttrsGraph,
       manifestEntryLookup,
+      warehouseType,
     ),
   );
   const syntheticSourceRows = buildSyntheticSourceRows(
     enrichedGanttData,
     graphologyGraph as GraphologyAttrsGraph,
+    manifestEntryLookup,
+    warehouseType,
   );
   const combinedAfterSourceTests = [
     ...enrichedGanttData,
@@ -108,6 +113,8 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
         typeof buildSyntheticSourceRowsFromExecutedDependents
       >[1],
       timelineProjectName,
+      manifestEntryLookup,
+      warehouseType,
     );
   const timelineGanttData = [
     ...enrichedGanttData,
@@ -120,12 +127,17 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
     timelineGanttData.map((g) => g.unique_id),
   );
 
+  const semanticsByResourceId = new Map(
+    resources.map((r) => [r.uniqueId, r.semantics]),
+  );
+
   const executions = nodeExecutions
     .map((execution) => {
       const attrs = graphologyGraph.hasNode(execution.unique_id)
         ? graphologyGraph.getNodeAttributes(execution.unique_id)
         : undefined;
       const gantt = ganttById.get(execution.unique_id);
+      const semantics = semanticsByResourceId.get(execution.unique_id);
       return {
         uniqueId: execution.unique_id,
         name: String(attrs?.name || execution.unique_id),
@@ -156,6 +168,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
         ...(execution.adapterResponseFields != null
           ? { adapterResponseFields: execution.adapterResponseFields }
           : {}),
+        ...(semantics != null ? { semantics } : {}),
       };
     })
     .sort((a, b) => b.executionTime - a.executionTime);

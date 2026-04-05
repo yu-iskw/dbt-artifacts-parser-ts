@@ -96,6 +96,7 @@ function baseRunsViewState(over: Partial<RunsViewState> = {}): RunsViewState {
     status: "all",
     query: "",
     resourceTypes: new Set(),
+    materializationKinds: new Set(),
     threadIds: new Set(),
     durationBand: "all",
     sortBy: "attention",

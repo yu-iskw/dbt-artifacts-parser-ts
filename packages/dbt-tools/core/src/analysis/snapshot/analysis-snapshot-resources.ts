@@ -1,5 +1,9 @@
 import type { AnalysisSnapshot } from "./analysis-snapshot-types";
-import type { GraphLike } from "./analysis-snapshot-internal";
+import type {
+  GraphLike,
+  ManifestEntryLookup,
+} from "./analysis-snapshot-internal";
+import { buildNodeExecutionSemantics } from "../node-execution-semantics";
 import {
   buildResourceDefinition,
   sortResources,
@@ -13,6 +17,8 @@ export function buildResourcesAndDependencyIndex(
     string,
     { status?: string; execution_time?: number; thread_id?: string }
   >,
+  manifestEntryLookup: ManifestEntryLookup,
+  adapterType: string | null | undefined,
 ): {
   resources: AnalysisSnapshot["resources"];
   dependencyIndex: AnalysisSnapshot["dependencyIndex"];
@@ -24,10 +30,22 @@ export function buildResourcesAndDependencyIndex(
   graphologyGraph.forEachNode(
     (uniqueId: string, attributes: Record<string, unknown>) => {
       const execution = executionById.get(uniqueId);
+      const resourceType = String(attributes.resource_type || "unknown");
+      const mat =
+        typeof attributes.materialized === "string" &&
+        attributes.materialized.trim() !== ""
+          ? attributes.materialized
+          : null;
+      const semantics = buildNodeExecutionSemantics({
+        resourceType,
+        materialized: mat,
+        manifestEntry: manifestEntryLookup.get(uniqueId) ?? null,
+        adapterType: adapterType ?? null,
+      });
       resources.push({
         uniqueId,
         name: String(attributes.name || uniqueId),
-        resourceType: String(attributes.resource_type || "unknown"),
+        resourceType,
         packageName: String(attributes.package_name || ""),
         path: typeof attributes.path === "string" ? attributes.path : null,
         originalFilePath:
@@ -60,6 +78,7 @@ export function buildResourcesAndDependencyIndex(
             : null,
         threadId:
           typeof execution?.thread_id === "string" ? execution.thread_id : null,
+        semantics,
       });
 
       const upstream = graph.getUpstream(uniqueId, 1);

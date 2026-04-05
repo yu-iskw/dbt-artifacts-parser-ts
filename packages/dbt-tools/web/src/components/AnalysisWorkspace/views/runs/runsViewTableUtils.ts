@@ -10,6 +10,7 @@ export function getRunsTableTemplate(
   const baseColumns = [
     "minmax(280px, 2.5fr)",
     "minmax(108px, 0.85fr)",
+    "minmax(92px, 0.7fr)",
     "minmax(132px, 0.95fr)",
     "minmax(96px, 0.72fr)",
   ];

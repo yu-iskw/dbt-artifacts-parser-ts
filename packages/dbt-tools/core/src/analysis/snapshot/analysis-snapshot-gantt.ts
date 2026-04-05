@@ -5,6 +5,8 @@ import type {
   ManifestEntryLookup,
   NeighborGraph,
 } from "./analysis-snapshot-internal";
+import type { NodeExecutionSemantics } from "../node-execution-semantics";
+import { buildNodeExecutionSemantics } from "../node-execution-semantics";
 import {
   inferPackageNameFromUniqueId,
   inferResourceTypeFromId,
@@ -135,6 +137,29 @@ function manifestDisplayPath(
   return null;
 }
 
+export function buildSemanticsForTimelineNode(
+  uniqueId: string,
+  attrs: Record<string, unknown> | undefined,
+  manifestEntryLookup: ManifestEntryLookup,
+  adapterType: string | null | undefined,
+): NodeExecutionSemantics {
+  const entry = manifestEntryLookup.get(uniqueId) ?? null;
+  const resourceType =
+    typeof attrs?.resource_type === "string" && attrs.resource_type
+      ? attrs.resource_type
+      : inferResourceTypeFromId(uniqueId);
+  const mat =
+    typeof attrs?.materialized === "string" && attrs.materialized.trim() !== ""
+      ? attrs.materialized
+      : null;
+  return buildNodeExecutionSemantics({
+    resourceType,
+    materialized: mat,
+    manifestEntry: entry,
+    adapterType: adapterType ?? null,
+  });
+}
+
 export function enrichGanttItemRow(
   item: {
     unique_id: string;
@@ -151,6 +176,7 @@ export function enrichGanttItemRow(
   graph: GraphLike,
   graphologyGraph: GraphologyAttrsGraph,
   manifestEntryLookup: ManifestEntryLookup,
+  adapterType: string | null | undefined,
 ): GanttItem {
   const attrs = getManifestAttrs(
     item.unique_id,
@@ -182,6 +208,13 @@ export function enrichGanttItemRow(
   const materialized =
     typeof mat === "string" && mat.trim() !== "" ? mat : null;
 
+  const semantics = buildSemanticsForTimelineNode(
+    item.unique_id,
+    attrs,
+    manifestEntryLookup,
+    adapterType,
+  );
+
   return {
     ...item,
     resourceType,
@@ -189,6 +222,7 @@ export function enrichGanttItemRow(
     path: manifestDisplayPath(attrs),
     parentId,
     materialized,
+    semantics,
   };
 }
 
@@ -235,6 +269,8 @@ export function compareGanttItems(a: GanttItem, b: GanttItem): number {
 export function buildSyntheticSourceRows(
   enrichedGanttData: GanttItem[],
   graphologyGraph: GraphologyAttrsGraph,
+  manifestEntryLookup: ManifestEntryLookup,
+  adapterType: string | null | undefined,
 ): GanttItem[] {
   const existingIds = new Set(enrichedGanttData.map((item) => item.unique_id));
   const testsBySourceId = new Map<string, GanttItem[]>();
@@ -269,6 +305,13 @@ export function buildSyntheticSourceRows(
     const start = Math.min(...sortedTests.map((item) => item.start));
     const end = Math.max(...sortedTests.map((item) => item.end));
 
+    const semantics = buildSemanticsForTimelineNode(
+      sourceId,
+      sourceAttrs,
+      manifestEntryLookup,
+      adapterType,
+    );
+
     syntheticRows.push({
       unique_id: sourceId,
       name:
@@ -292,6 +335,7 @@ export function buildSyntheticSourceRows(
       executeStart: null,
       executeEnd: null,
       materialized: null,
+      semantics,
     });
   }
 
@@ -307,6 +351,8 @@ export function buildSyntheticSourceRowsFromExecutedDependents(
   combinedGanttData: GanttItem[],
   graphologyGraph: GraphologySourceDependentsGraph,
   projectName: string | null,
+  manifestEntryLookup: ManifestEntryLookup,
+  adapterType: string | null | undefined,
 ): GanttItem[] {
   const existingIds = new Set(combinedGanttData.map((item) => item.unique_id));
   const itemById = new Map(
@@ -339,6 +385,13 @@ export function buildSyntheticSourceRowsFromExecutedDependents(
     const start = Math.min(...sortedDependents.map((item) => item.start));
     const end = Math.max(...sortedDependents.map((item) => item.end));
 
+    const semantics = buildSemanticsForTimelineNode(
+      nodeId,
+      attrs,
+      manifestEntryLookup,
+      adapterType,
+    );
+
     syntheticRows.push({
       unique_id: nodeId,
       name:
@@ -358,6 +411,7 @@ export function buildSyntheticSourceRowsFromExecutedDependents(
       executeStart: null,
       executeEnd: null,
       materialized: null,
+      semantics,
     });
   });
 

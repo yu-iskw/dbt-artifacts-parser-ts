@@ -129,6 +129,7 @@ function renderAssetsView({
           explorerMode: "project",
           status: "all",
           resourceTypes: new Set(),
+          materializationKinds: new Set(),
           resourceQuery: "",
           upstreamDepth: 2,
           downstreamDepth: 2,

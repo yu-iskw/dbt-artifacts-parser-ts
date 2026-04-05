@@ -41,6 +41,7 @@ export interface RunsResultsQuery {
   status: DashboardStatusFilter;
   query: string;
   resourceTypes: string[];
+  materializationKinds: string[];
   threadIds: string[];
   durationBand: RunsViewState["durationBand"];
   sortBy: RunsViewState["sortBy"];
@@ -95,6 +96,15 @@ function buildSearchText(row: ExecutionRow): string {
         ]
       : []),
   ];
+  const sem = row.semantics;
+  const semBits = sem
+    ? [
+        sem.materialization,
+        sem.rawMaterialization ?? "",
+        sem.incrementalStrategy ?? "",
+        sem.relationName ?? "",
+      ]
+    : [];
   return [
     row.name,
     row.resourceType,
@@ -103,6 +113,7 @@ function buildSearchText(row: ExecutionRow): string {
     row.uniqueId,
     row.status,
     row.threadId ?? "",
+    ...semBits,
     ...adapterBits,
   ]
     .join(" ")
@@ -181,6 +192,13 @@ function compareRows(
       return left.status.localeCompare(right.status);
     case "start":
       return (right.start ?? 0) - (left.start ?? 0);
+    case "materialization": {
+      const lk = left.semantics?.materialization ?? "unknown";
+      const rk = right.semantics?.materialization ?? "unknown";
+      const c = lk.localeCompare(rk);
+      if (c !== 0) return c;
+      return left.name.localeCompare(right.name);
+    }
     default:
       if (isRunsAdapterSortBy(sortBy)) {
         const key = getRunsAdapterColumnKey(sortBy);
@@ -272,6 +290,7 @@ export function filterRunsResultsIndex(
 ): RunsResultsIndexEntry[] {
   const normalizedQuery = normalizeQuery(query.query);
   const activeResourceTypes = new Set(query.resourceTypes);
+  const activeMaterializationKinds = new Set(query.materializationKinds);
   const activeThreadIds = new Set(query.threadIds);
 
   const matches = index.entries.filter((entry) => {
@@ -285,6 +304,10 @@ export function filterRunsResultsIndex(
       !activeResourceTypes.has(row.resourceType)
     )
       return false;
+    if (activeMaterializationKinds.size > 0) {
+      const mk = row.semantics?.materialization ?? "unknown";
+      if (!activeMaterializationKinds.has(mk)) return false;
+    }
     if (activeThreadIds.size > 0 && !activeThreadIds.has(row.threadId ?? ""))
       return false;
     if (!isDurationBandMatch(row, query.durationBand)) return false;

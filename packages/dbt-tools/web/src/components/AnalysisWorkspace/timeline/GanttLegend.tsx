@@ -10,6 +10,11 @@ import {
 } from "@web/constants/themeColors";
 import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
 import { GANTT_LEGEND_PRIMARY_TYPES } from "@web/lib/analysis-workspace/constants";
+import {
+  MATERIALIZATION_KIND_ORDER,
+  materializationKindShortLabel,
+} from "@web/lib/analysis-workspace/materializationSemanticsUi";
+import type { MaterializationKind } from "@web/types";
 
 interface GanttLegendProps {
   /** Count per status key (lowercase). Only entries with count > 0 are shown. */
@@ -33,6 +38,8 @@ interface GanttLegendProps {
   showBarEncodingKey?: boolean;
   /** Show compile vs execute phase swatches when run_results include both phases. */
   showCompileExecuteLegend?: boolean;
+  /** Count per normalized materialization kind in scoped timeline rows (read-only legend). */
+  materializationCounts?: Record<string, number>;
 }
 
 const SWATCH_STYLE: CSSProperties = {
@@ -148,6 +155,7 @@ export function GanttLegend({
   onToggleFailuresOnly,
   showBarEncodingKey = true,
   showCompileExecuteLegend = false,
+  materializationCounts,
 }: GanttLegendProps) {
   const theme = useSyncedDocumentTheme();
   const themeHex = getThemeHex(theme);
@@ -158,11 +166,19 @@ export function GanttLegend({
     ...new Set([...GANTT_LEGEND_PRIMARY_TYPES, ...Object.keys(typeCounts)]),
   ].sort((a, b) => a.localeCompare(b));
 
+  const materializationRows =
+    materializationCounts != null
+      ? MATERIALIZATION_KIND_ORDER.filter(
+          (kind) => (materializationCounts[kind] ?? 0) > 0,
+        )
+      : [];
+
   const hasAnything =
     visibleStatuses.length > 0 ||
     visibleTypes.length > 0 ||
     onToggleShowTests != null ||
-    onToggleFailuresOnly != null;
+    onToggleFailuresOnly != null ||
+    materializationRows.length > 0;
 
   if (!hasAnything) return null;
 
@@ -263,6 +279,40 @@ export function GanttLegend({
           )}
         </div>
       )}
+
+      {materializationRows.length > 0 ? (
+        <div className="gantt-legend__group gantt-legend__group--materialization">
+          <span className="gantt-legend__label">Materialization</span>
+          <span className="gantt-legend__hint">
+            Manifest-derived; not a bar color.
+          </span>
+          {materializationRows.map((kind) => {
+            const count = materializationCounts![kind] ?? 0;
+            return (
+              <div
+                key={kind}
+                className="gantt-legend__item gantt-legend__item--static"
+                title="Normalized from manifest config.materialized and resource type"
+              >
+                <span
+                  className="gantt-legend__mat-icon"
+                  aria-hidden
+                  style={{
+                    ...SWATCH_STYLE,
+                    borderRadius: 0,
+                    border: `2px dashed ${themeHex.borderDefault}`,
+                    background: themeHex.bgSoft,
+                  }}
+                />
+                <span className="gantt-legend__name">
+                  {materializationKindShortLabel(kind as MaterializationKind)}
+                </span>
+                <span className="gantt-legend__count">{count}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

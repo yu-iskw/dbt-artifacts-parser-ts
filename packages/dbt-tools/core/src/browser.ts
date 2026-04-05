@@ -47,7 +47,10 @@ export type {
   ExecutionRow,
   GanttItem,
   GraphSnapshot,
+  MaterializationKind,
+  MaterializationProvenance,
   MetricDefinition,
+  NodeExecutionSemantics,
   ResourceConnectionSummary,
   ResourceDefinition,
   ResourceGroup,
@@ -57,4 +60,10 @@ export type {
   StatusTone,
   ThreadStat,
   TimelineAdjacencyEntry,
+} from "./analysis/analysis-snapshot";
+
+export {
+  buildNodeExecutionSemantics,
+  deriveSemanticsFlags,
+  normalizeMaterializationKind,
 } from "./analysis/analysis-snapshot";

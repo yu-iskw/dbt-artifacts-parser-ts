@@ -34,7 +34,8 @@ export type RunsBaseSortBy =
   | "duration"
   | "name"
   | "status"
-  | "start";
+  | "start"
+  | "materialization";
 export type RunsAdapterColumnId = `adapter:${string}`;
 export type RunsSortBy = RunsBaseSortBy | RunsAdapterColumnId;
 export type RunsGroupBy = "none" | "type" | "status" | "thread";
@@ -97,6 +98,8 @@ export interface AssetViewState {
   explorerMode: AssetExplorerMode;
   status: DashboardStatusFilter;
   resourceTypes: Set<string>;
+  /** Manifest-derived materialization kinds (`MaterializationKind`); empty = all. */
+  materializationKinds: Set<string>;
   resourceQuery: string;
   upstreamDepth: number;
   downstreamDepth: number;
@@ -110,6 +113,8 @@ export interface RunsViewState {
   status: DashboardStatusFilter;
   query: string;
   resourceTypes: Set<string>;
+  /** Subset of manifest-derived materialization kinds; empty = all. */
+  materializationKinds: Set<string>;
   threadIds: Set<string>;
   durationBand: "all" | "fast" | "medium" | "slow";
   sortBy: RunsSortBy;

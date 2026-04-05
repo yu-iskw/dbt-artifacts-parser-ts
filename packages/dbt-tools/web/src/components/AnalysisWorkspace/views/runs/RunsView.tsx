@@ -20,6 +20,7 @@ import { WorkspaceScaffold } from "../../shared";
 import { RunsAdapterInspector } from "./RunsViewAdapterInspector";
 import { RunsResultsTable } from "./RunsViewResultsTable";
 import { RunsToolbar } from "./RunsViewToolbar";
+import { collectMaterializationKindsFromSemantics } from "@web/lib/analysis-workspace/materializationSemanticsUi";
 
 export function RunsView({
   analysis,
@@ -61,6 +62,14 @@ export function RunsView({
       runsViewState.showAdapterMetrics,
     ],
   );
+  const availableMaterializationKinds = useMemo(
+    () =>
+      collectMaterializationKindsFromSemantics(
+        analysis.executions.map((e) => e.semantics),
+      ),
+    [analysis.executions],
+  );
+
   const overflowAdapterColumns = useMemo(
     () =>
       runsViewState.showAdapterMetrics && adapterMetricsAvailable
@@ -135,6 +144,7 @@ export function RunsView({
           runsResults={runsResults}
           adapterColumnLayout={adapterColumnLayout}
           adapterMetricsAvailable={adapterMetricsAvailable}
+          availableMaterializationKinds={availableMaterializationKinds}
           onRunsViewStateChange={onRunsViewStateChange}
         />
       }

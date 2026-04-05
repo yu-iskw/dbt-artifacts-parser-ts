@@ -989,6 +989,28 @@
   flex-shrink: 0;
 }
 
+/* Execution / materialization semantics (distinct from status color coding) */
+.materialization-semantics-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, var(--text-soft));
+  background: var(--bg-muted, var(--bg-soft));
+  border: 1px dashed var(--border-strong, var(--border-default));
+  line-height: 1.2;
+}
+
+.materialization-semantics-badge--compact {
+  padding: 0.08rem 0.32rem;
+  font-size: 0.62rem;
+}
+
 /* Lens selector — compact pill group with label */
 .lens-selector {
   display: flex;

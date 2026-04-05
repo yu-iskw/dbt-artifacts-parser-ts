@@ -8,10 +8,12 @@ import type {
 } from "@web/lib/analysis-workspace/types";
 import {
   isMainProjectResource,
+  matchesAssetMaterializationKind,
   matchesAssetResourceType,
   matchesAssetStatus,
   matchesResource,
 } from "@web/lib/analysis-workspace/utils";
+import { collectMaterializationKindsFromSemantics } from "@web/lib/analysis-workspace/materializationSemanticsUi";
 import {
   buildExplorerTree,
   buildResourceTestStats,
@@ -62,6 +64,14 @@ export function useAnalysisWorkspaceExplorerPane({
     [scopedExplorerResources],
   );
 
+  const availableMaterializationKinds = useMemo(
+    () =>
+      collectMaterializationKindsFromSemantics(
+        scopedExplorerResources.map((r) => r.semantics),
+      ),
+    [scopedExplorerResources],
+  );
+
   const resourceTestRollupById = useMemo(
     () =>
       buildResourceTestStats(scopedExplorerResources, analysis.dependencyIndex),
@@ -78,9 +88,14 @@ export function useAnalysisWorkspaceExplorerPane({
             resourceTestRollupById,
           ) &&
           matchesAssetResourceType(resource, assetViewState.resourceTypes) &&
+          matchesAssetMaterializationKind(
+            resource,
+            assetViewState.materializationKinds,
+          ) &&
           matchesResource(resource, assetViewState.resourceQuery),
       ),
     [
+      assetViewState.materializationKinds,
       assetViewState.resourceQuery,
       assetViewState.resourceTypes,
       assetViewState.status,
@@ -163,6 +178,16 @@ export function useAnalysisWorkspaceExplorerPane({
           if (next.has(value)) next.delete(value);
           else next.add(value);
           return { ...current, resourceTypes: next };
+        })
+      }
+      availableMaterializationKinds={availableMaterializationKinds}
+      activeMaterializationKinds={assetViewState.materializationKinds}
+      toggleMaterializationKind={(value) =>
+        onAssetViewStateChange((current) => {
+          const next = new Set(current.materializationKinds);
+          if (next.has(value)) next.delete(value);
+          else next.add(value);
+          return { ...current, materializationKinds: next };
         })
       }
       resourceQuery={assetViewState.resourceQuery}

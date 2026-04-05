@@ -20,6 +20,7 @@ import {
   getAdapterCellValue,
   getRunsTableTemplate,
 } from "./runsViewTableUtils";
+import { MaterializationSemanticsBadge } from "../../MaterializationSemanticsBadge";
 
 type RunsResultsState = RunsResultsSourceState;
 
@@ -55,6 +56,7 @@ export function RunsResultsTable({
           Item
         </div>
         <div className="results-table__cell">Type</div>
+        <div className="results-table__cell">Materialization</div>
         <div className="results-table__cell">Status</div>
         <div className="results-table__cell results-table__cell--align-end">
           Duration
@@ -128,6 +130,19 @@ export function RunsResultsTable({
                   title={row.resourceType}
                 >
                   {row.resourceType}
+                </div>
+                <div
+                  className="results-table__cell"
+                  data-label="Materialization"
+                >
+                  {row.semantics ? (
+                    <MaterializationSemanticsBadge
+                      semantics={row.semantics}
+                      variant="compact"
+                    />
+                  ) : (
+                    "—"
+                  )}
                 </div>
                 <div className="results-table__cell" data-label="Status">
                   <span className={badgeClassName(row.statusTone)}>

@@ -5,6 +5,9 @@ import {
   isRunsAdapterSortBy,
   type RunsAdapterColumnLayout,
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
+import type { MaterializationKind } from "@web/types";
+import { materializationKindShortLabel } from "@web/lib/analysis-workspace/materializationSemanticsUi";
 
 type RunsResultsState = RunsResultsSourceState;
 
@@ -35,12 +38,14 @@ export function RunsToolbar({
   runsResults,
   adapterColumnLayout,
   adapterMetricsAvailable,
+  availableMaterializationKinds,
   onRunsViewStateChange,
 }: {
   runsViewState: RunsViewState;
   runsResults: RunsResultsState;
   adapterColumnLayout: RunsAdapterColumnLayout;
   adapterMetricsAvailable: boolean;
+  availableMaterializationKinds: MaterializationKind[];
   onRunsViewStateChange: Dispatch<SetStateAction<RunsViewState>>;
 }) {
   const visibleSortableColumns = adapterColumnLayout.visibleColumns.filter(
@@ -81,6 +86,7 @@ export function RunsToolbar({
             <option value="name">Name</option>
             <option value="status">Status</option>
             <option value="start">Start</option>
+            <option value="materialization">Materialization</option>
             {showAdapterSortOptions
               ? visibleSortableColumns.map((column) => (
                   <option key={column.id} value={column.id}>
@@ -117,6 +123,42 @@ export function RunsToolbar({
           <span>Warehouse response</span>
         </label>
       </div>
+      {availableMaterializationKinds.length > 0 ? (
+        <div
+          className="runs-toolbar__mat-filters"
+          role="group"
+          aria-label="Materialization filters"
+        >
+          <span className="runs-toolbar__mat-filters-label">
+            Materialization (manifest)
+          </span>
+          <div className="pill-row">
+            {availableMaterializationKinds.map((kind) => {
+              const active =
+                runsViewState.materializationKinds.size === 0 ||
+                runsViewState.materializationKinds.has(kind);
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  className={active ? PILL_ACTIVE : PILL_BASE}
+                  title="Filter run rows by normalized manifest materialization"
+                  onClick={() =>
+                    onRunsViewStateChange((current) => {
+                      const next = new Set(current.materializationKinds);
+                      if (next.has(kind)) next.delete(kind);
+                      else next.add(kind);
+                      return { ...current, materializationKinds: next };
+                    })
+                  }
+                >
+                  {materializationKindShortLabel(kind)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
       {runsViewState.showAdapterMetrics &&
       adapterColumnLayout.overflowColumns.length > 0 ? (
         <p className="runs-toolbar__meta">

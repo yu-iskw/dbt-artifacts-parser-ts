@@ -30,6 +30,8 @@ export const EXPLORER_UI_COPY = {
   treeEmptySearchSubtext: "Try clearing or changing the resource search box.",
   treeEmptyResourceTypesSubtext:
     "One or more dbt resource types are narrowed; add types or reset type filters to see more assets.",
+  treeEmptyMaterializationSubtext:
+    "Materialization filters are narrowing the tree; clear or broaden them to see more assets (values come from manifest metadata).",
   treeEmptyExecutionFilterSubtext(status: DashboardStatusFilter): string {
     switch (status) {
       case "danger":
@@ -95,6 +97,7 @@ export function buildExplorerTreeEmptySubtext(options: {
   status: DashboardStatusFilter;
   resourceQuery: string;
   activeResourceTypeCount: number;
+  activeMaterializationKindCount?: number;
 }): string {
   const parts: string[] = [];
   if (options.status !== "all") {
@@ -107,6 +110,9 @@ export function buildExplorerTreeEmptySubtext(options: {
   }
   if (options.activeResourceTypeCount > 0) {
     parts.push(EXPLORER_UI_COPY.treeEmptyResourceTypesSubtext);
+  }
+  if ((options.activeMaterializationKindCount ?? 0) > 0) {
+    parts.push(EXPLORER_UI_COPY.treeEmptyMaterializationSubtext);
   }
   if (parts.length === 0) {
     return EXPLORER_UI_COPY.treeEmptyDefaultSubtext;

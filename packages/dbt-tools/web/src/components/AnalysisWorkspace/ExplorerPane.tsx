@@ -42,6 +42,9 @@ export function ExplorerPane({
   availableResourceTypes,
   activeResourceTypes,
   toggleResourceType,
+  availableMaterializationKinds,
+  activeMaterializationKinds,
+  toggleMaterializationKind,
   resourceQuery,
   setResourceQuery,
   selectedResourceId,
@@ -63,7 +66,8 @@ export function ExplorerPane({
   const activeFilterCount =
     (resourceQuery.trim() ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
-    (activeResourceTypes.size > 0 ? 1 : 0);
+    (activeResourceTypes.size > 0 ? 1 : 0) +
+    (activeMaterializationKinds.size > 0 ? 1 : 0);
   const filterSummary =
     activeFilterCount > 0
       ? `${activeFilterCount} active`
@@ -124,6 +128,9 @@ export function ExplorerPane({
         availableResourceTypes={availableResourceTypes}
         activeResourceTypes={activeResourceTypes}
         toggleResourceType={toggleResourceType}
+        availableMaterializationKinds={availableMaterializationKinds}
+        activeMaterializationKinds={activeMaterializationKinds}
+        toggleMaterializationKind={toggleMaterializationKind}
       />
 
       <ResourceTypeSummaryBar resources={filteredResources} />
@@ -143,6 +150,8 @@ export function ExplorerPane({
                   status,
                   resourceQuery,
                   activeResourceTypeCount: activeResourceTypes.size,
+                  activeMaterializationKindCount:
+                    activeMaterializationKinds.size,
                 }),
               }
             : undefined

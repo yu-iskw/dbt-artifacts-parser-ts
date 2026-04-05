@@ -114,10 +114,28 @@ export function matchesAssetResourceType(
   return activeTypes.size === 0 || activeTypes.has(resource.resourceType);
 }
 
+export function matchesAssetMaterializationKind(
+  resource: ResourceNode,
+  activeKinds: Set<string>,
+): boolean {
+  if (activeKinds.size === 0) return true;
+  const kind = resource.semantics?.materialization ?? "unknown";
+  return activeKinds.has(kind);
+}
+
 export function matchesExecution(row: ExecutionRow, query: string): boolean {
   if (!query) return true;
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
+  const sem = row.semantics;
+  const semBits = sem
+    ? [
+        sem.materialization,
+        sem.rawMaterialization ?? "",
+        sem.incrementalStrategy ?? "",
+        sem.relationName ?? "",
+      ]
+    : [];
   return [
     row.name,
     row.resourceType,
@@ -126,6 +144,7 @@ export function matchesExecution(row: ExecutionRow, query: string): boolean {
     row.uniqueId,
     row.status,
     row.threadId ?? "",
+    ...semBits,
   ].some((value) => value.toLowerCase().includes(normalized));
 }
 

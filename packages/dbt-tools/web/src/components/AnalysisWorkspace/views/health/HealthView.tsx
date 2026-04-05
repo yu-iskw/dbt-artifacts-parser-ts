@@ -24,6 +24,7 @@ import { InvocationResourceStats } from "../../InvocationResourceStatsTable";
 import { HealthPostureBlock } from "./overview/HealthPostureBlock";
 import { HealthMetricRow } from "./overview/HealthMetricRow";
 import { HealthExecutionStatusPills } from "./overview/HealthExecutionStatusPills";
+import { HealthMaterializationCard } from "./overview/HealthMaterializationCard";
 
 /**
  * Health — "what needs attention now?" with an above-the-fold triage strip
@@ -157,6 +158,9 @@ export function HealthView({
           <div className="health-detail__grid">
             <OverviewCoverageCard analysis={analysis} filtered={filtered} />
             <div className="health-structure-composition">
+              <HealthMaterializationCard
+                executions={derived.filteredExecutions}
+              />
               <div className="overview-module__header">
                 <h3>Graph composition</h3>
                 <p>Node type breakdown in the manifest graph.</p>
