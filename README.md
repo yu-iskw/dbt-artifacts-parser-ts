@@ -1,5 +1,15 @@
 # dbt-artifacts-parser-ts
 
+[![Test](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/test.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/test.yml)
+[![CodeQL](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/codeql.yml)
+[![Supply chain checks](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/supply-chain-checks.yml/badge.svg)](https://github.com/yu-iskw/dbt-artifacts-parser-ts/actions/workflows/supply-chain-checks.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/yu-iskw/dbt-artifacts-parser-ts/badge)](https://scorecard.dev/viewer/?uri=github.com/yu-iskw/dbt-artifacts-parser-ts)
+[![npm dbt-artifacts-parser](https://img.shields.io/npm/v/dbt-artifacts-parser)](https://www.npmjs.com/package/dbt-artifacts-parser)
+[![npm @dbt-tools/cli](https://img.shields.io/npm/v/%40dbt-tools%2Fcli)](https://www.npmjs.com/package/@dbt-tools/cli)
+[![npm @dbt-tools/web](https://img.shields.io/npm/v/%40dbt-tools%2Fweb)](https://www.npmjs.com/package/@dbt-tools/web)
+
+> Security signals shown here are evidence of current release and scanning workflows, not proof of absence of defects or malicious behavior. npm releases are configured for provenance via GitHub Actions OIDC trusted publishing, repository code is continuously analyzed, and dependency changes are checked before merge.
+
 A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts.
 
 This repo contains two distinct but related ecosystems:
@@ -63,6 +73,14 @@ dbt-tools-web --target ./target   # or: npx @dbt-tools/web --target ./target
 ```
 
 See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for configuration (`DBT_TOOLS_REMOTE_SOURCE`, debugging, Docker pointers).
+
+---
+
+## Release provenance (npm)
+
+Public npm packages published from this repository are intended to use npm trusted publishing from GitHub Actions with OIDC and provenance enabled. This helps consumers trace a published package back to this repository and workflow run, but it does not prove that software is defect-free or non-malicious on its own.
+
+See [docs/security-signals.md](./docs/security-signals.md) for the security signal model, workflow coverage, and manual setup steps.
 
 ---
 

@@ -57,10 +57,8 @@ jobs:
         run: |
           pnpm --filter @dbt-tools/core test
           pnpm --filter @dbt-tools/cli test
-      - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (trusted publishing + provenance)
         run: |
-          pnpm publish --filter @dbt-tools/core --no-git-checks --access public
-          pnpm publish --filter @dbt-tools/cli --no-git-checks --access public
-          pnpm publish --filter @dbt-tools/web --no-git-checks --access public
+          pnpm publish --filter @dbt-tools/core --no-git-checks --access public --provenance
+          pnpm publish --filter @dbt-tools/cli --no-git-checks --access public --provenance
+          pnpm publish --filter @dbt-tools/web --no-git-checks --access public --provenance

@@ -17,6 +17,14 @@ graph LR
 
 ---
 
+## Trust & security signals
+
+Published npm releases for **dbt-artifacts-parser** are intended to be produced by GitHub Actions using npm trusted publishing (OIDC) with provenance enabled. Repository code is continuously scanned (CodeQL), pull requests are checked for newly introduced vulnerable dependencies, and scheduled dependency scans run against the monorepo lockfile. These are evidence signals about process and traceability, not proof that defects or malicious behavior are impossible.
+
+Details: [Security signals](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/security-signals.md)
+
+---
+
 ## Installation
 
 ```bash
