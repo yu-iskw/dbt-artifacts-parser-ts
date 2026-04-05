@@ -139,6 +139,8 @@ describe("runReportAction", () => {
     expect(bottlenecks.nodes.length).toBeGreaterThan(0);
     expect(bottlenecks.nodes[0]).toHaveProperty("unique_id");
     expect(bottlenecks.nodes[0]).toHaveProperty("execution_time");
+    expect(bottlenecks.nodes[0]).toHaveProperty("bottleneck_score");
+    expect(bottlenecks.nodes[0]).toHaveProperty("reasons");
   });
 
   it("includes adapter_totals in JSON when --adapter-summary", () => {

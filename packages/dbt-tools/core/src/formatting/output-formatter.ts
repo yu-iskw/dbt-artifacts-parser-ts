@@ -175,6 +175,8 @@ export interface BottleneckNodeForFormat {
   rank: number;
   pct_of_total: number;
   status: string;
+  bottleneck_score?: number;
+  reasons?: string[];
 }
 
 /**
@@ -195,8 +197,16 @@ export function formatBottlenecks(
   const criteriaLabel =
     topLabel ?? (bottlenecks.criteria_used === "top_n" ? "top N" : "threshold");
   const lines: string[] = [];
-  lines.push(`\nBottlenecks (${criteriaLabel} by execution time):`);
-  lines.push("  Rank  Node                              Time (s)  % of Total");
+  const withScore = bottlenecks.nodes.some(
+    (node) => typeof node.bottleneck_score === "number",
+  );
+  const headingSuffix = withScore ? "" : " by execution time";
+  lines.push(`\nBottlenecks (${criteriaLabel}${headingSuffix}):`);
+  lines.push(
+    withScore
+      ? "  Rank  Node                              Time (s)  % of Total  Score"
+      : "  Rank  Node                              Time (s)  % of Total",
+  );
 
   const maxIdLen = 34;
   for (const node of bottlenecks.nodes) {
@@ -205,9 +215,11 @@ export function formatBottlenecks(
       label.length > maxIdLen ? label.slice(0, maxIdLen - 3) + "..." : label;
     const padded = idDisplay.padEnd(maxIdLen);
     const timeStr = node.execution_time.toFixed(2).padStart(8);
-    lines.push(
-      `  ${String(node.rank).padStart(2)}     ${padded}  ${timeStr}    ${node.pct_of_total.toFixed(1)}%`,
-    );
+    const scoreText =
+      withScore && typeof node.bottleneck_score === "number"
+        ? `   ${node.bottleneck_score.toFixed(3)}`
+        : "";
+    lines.push(`  ${String(node.rank).padStart(2)}     ${padded}  ${timeStr}    ${node.pct_of_total.toFixed(1)}%${scoreText}`);
   }
 
   return lines.join("\n") + "\n";

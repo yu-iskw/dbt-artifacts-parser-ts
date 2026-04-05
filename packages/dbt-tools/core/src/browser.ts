@@ -7,6 +7,7 @@ export {
   ExecutionAnalyzer,
   buildNodeExecutionsFromRunResults,
 } from "./analysis/execution-analyzer";
+export { GraphBottleneckAnalyzer } from "./analysis/graph-bottleneck-analyzer";
 export {
   searchRunResults,
   detectBottlenecks,
@@ -26,6 +27,11 @@ export type {
   ExecutionSummary,
   CriticalPath,
 } from "./analysis/execution-analyzer";
+export type {
+  BottleneckNodeScore,
+  BottleneckReport,
+  BottleneckOptions,
+} from "./analysis/graph-bottleneck-analyzer";
 export type {
   BottleneckNode,
   BottleneckResult,

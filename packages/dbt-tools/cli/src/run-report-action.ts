@@ -10,6 +10,7 @@ import {
   validateSafePath,
   FieldFilter,
   detectBottlenecks,
+  GraphBottleneckAnalyzer,
   buildAdapterTotals,
   buildNodeExecutionsFromRunResults,
   detectAdapterHeavyNodes,
@@ -84,6 +85,10 @@ function computeBottlenecksSection(
     return { bottlenecks: undefined, bottlenecksTopLabel: undefined };
   }
 
+  const executionStatusById = new Map(
+    summary.node_executions.map((execution) => [execution.unique_id, execution]),
+  );
+
   const topN = options.bottlenecksTop ?? 10;
   const threshold = options.bottlenecksThreshold;
 
@@ -97,12 +102,80 @@ function computeBottlenecksSection(
   }
 
   if (threshold !== undefined && threshold > 0) {
+    if (graph) {
+      const report = new GraphBottleneckAnalyzer(
+        graph,
+        summary.node_executions,
+      ).analyze();
+      const nodes = report.ranked_nodes
+        .filter((node) => (node.execution_time ?? 0) >= threshold)
+        .map((node, index) => {
+          const time = node.execution_time ?? 0;
+          const pct =
+            summary.total_execution_time > 0
+              ? (time / summary.total_execution_time) * 100
+              : 0;
+          return {
+            unique_id: node.unique_id,
+            name: node.name,
+            execution_time: time,
+            rank: index + 1,
+            pct_of_total: Math.round(pct * 10) / 10,
+            status:
+              executionStatusById.get(node.unique_id)?.status ?? "unknown",
+            bottleneck_score: node.bottleneck_score,
+            reasons: node.reasons,
+          };
+        });
+      return {
+        bottlenecks: {
+          nodes,
+          total_execution_time: summary.total_execution_time,
+          criteria_used: "threshold",
+        },
+        bottlenecksTopLabel: `>= ${threshold}s`,
+      };
+    }
     const bottlenecks = detectBottlenecks(summary.node_executions, {
       mode: "threshold",
       min_seconds: threshold,
       graph,
     });
     return { bottlenecks, bottlenecksTopLabel: `>= ${threshold}s` };
+  }
+
+  if (graph) {
+    const report = new GraphBottleneckAnalyzer(graph, summary.node_executions)
+      .analyze({
+        topN: topN > 0 ? topN : 10,
+      })
+      .ranked_nodes;
+    const nodes = report.map((node, index) => {
+      const time = node.execution_time ?? 0;
+      const pct =
+        summary.total_execution_time > 0
+          ? (time / summary.total_execution_time) * 100
+          : 0;
+      return {
+        unique_id: node.unique_id,
+        name: node.name,
+        execution_time: time,
+        rank: index + 1,
+        pct_of_total: Math.round(pct * 10) / 10,
+        status: executionStatusById.get(node.unique_id)?.status ?? "unknown",
+        bottleneck_score: node.bottleneck_score,
+        reasons: node.reasons,
+      };
+    });
+
+    return {
+      bottlenecks: {
+        nodes,
+        total_execution_time: summary.total_execution_time,
+        criteria_used: "top_n",
+      },
+      bottlenecksTopLabel: `top ${topN} by graph bottleneck score`,
+    };
   }
 
   const bottlenecks = detectBottlenecks(summary.node_executions, {
