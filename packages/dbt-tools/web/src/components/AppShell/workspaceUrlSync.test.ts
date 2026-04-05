@@ -3,7 +3,9 @@ import {
   applySearchToWorkspaceState,
   buildNextUrlFromWorkspaceState,
   createInitialNavigationState,
+  mergeTimelineSelection,
 } from "./workspaceUrlSync";
+import type { TimelineFilterState } from "@web/lib/analysis-workspace/types";
 import type {
   AssetViewState,
   LineageViewState,
@@ -236,6 +238,32 @@ describe("applySearchToWorkspaceState", () => {
       showAdapterMetrics: true,
     });
     expect(runs.showAdapterMetrics).toBe(true);
+  });
+});
+
+const baseTimelineFilters = (): TimelineFilterState => ({
+  query: "",
+  activeStatuses: new Set(),
+  activeTypes: new Set(),
+  selectedExecutionId: "a",
+  showTests: false,
+  failuresOnly: false,
+  dependencyDirection: "both",
+  dependencyDepthHops: 2,
+  timeWindow: null,
+  neighborhoodRowsShowAll: true,
+});
+
+describe("mergeTimelineSelection", () => {
+  it("resets neighborhoodRowsShowAll when selected execution changes", () => {
+    const next = mergeTimelineSelection(baseTimelineFilters(), "b");
+    expect(next.selectedExecutionId).toBe("b");
+    expect(next.neighborhoodRowsShowAll).toBe(false);
+  });
+
+  it("preserves neighborhoodRowsShowAll when selected execution unchanged", () => {
+    const next = mergeTimelineSelection(baseTimelineFilters(), "a");
+    expect(next.neighborhoodRowsShowAll).toBe(true);
   });
 });
 

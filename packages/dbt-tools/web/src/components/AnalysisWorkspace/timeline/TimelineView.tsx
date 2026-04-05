@@ -33,6 +33,48 @@ import {
   type TimelineTypeFilterHint,
 } from "./TimelineSearchControls";
 
+function TimelineNeighborhoodBanner({
+  ui,
+  setFilters,
+}: {
+  ui: TimelineNeighborhoodUi;
+  setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+}) {
+  if (ui.mode === "narrowed") {
+    return (
+      <>
+        Showing {ui.shown.toLocaleString()} of {ui.total.toLocaleString()}{" "}
+        timeline rows (dependency neighborhood)
+        {" — "}
+        <button
+          type="button"
+          className="timeline-neighborhood-action"
+          onClick={() =>
+            setFilters((c) => ({ ...c, neighborhoodRowsShowAll: true }))
+          }
+        >
+          Show all rows
+        </button>
+      </>
+    );
+  }
+  return (
+    <>
+      Showing all {ui.total.toLocaleString()} timeline rows
+      {" — "}
+      <button
+        type="button"
+        className="timeline-neighborhood-action"
+        onClick={() =>
+          setFilters((c) => ({ ...c, neighborhoodRowsShowAll: false }))
+        }
+      >
+        Neighborhood only ({ui.narrowedCount.toLocaleString()} rows)
+      </button>
+    </>
+  );
+}
+
 function setsEqual(left: Set<string>, right: Set<string>): boolean {
   if (left.size !== right.size) return false;
   for (const value of left) {
@@ -145,38 +187,10 @@ function TimelineSurface({
       )}
       {neighborhoodUi != null && (
         <p className="timeline-neighborhood-active" role="status">
-          {neighborhoodUi.mode === "narrowed" ? (
-            <>
-              Showing {neighborhoodUi.shown.toLocaleString()} of{" "}
-              {neighborhoodUi.total.toLocaleString()} timeline rows (dependency
-              neighborhood)
-              {" — "}
-              <button
-                type="button"
-                className="timeline-neighborhood-action"
-                onClick={() =>
-                  setFilters((c) => ({ ...c, neighborhoodRowsShowAll: true }))
-                }
-              >
-                Show all rows
-              </button>
-            </>
-          ) : (
-            <>
-              Showing all {neighborhoodUi.total.toLocaleString()} timeline rows
-              {" — "}
-              <button
-                type="button"
-                className="timeline-neighborhood-action"
-                onClick={() =>
-                  setFilters((c) => ({ ...c, neighborhoodRowsShowAll: false }))
-                }
-              >
-                Neighborhood only (
-                {neighborhoodUi.narrowedCount.toLocaleString()} rows)
-              </button>
-            </>
-          )}
+          <TimelineNeighborhoodBanner
+            ui={neighborhoodUi}
+            setFilters={setFilters}
+          />
         </p>
       )}
       {bundleRowCount >= TIMELINE_BUNDLE_COUNT_WARNING ? (
@@ -202,9 +216,8 @@ function TimelineSurface({
           setFilters((current) => {
             const selCleared = id == null;
             const selChanged = id !== current.selectedExecutionId;
-            const neighborhoodRowsShowAll = selCleared
-              ? false
-              : selChanged
+            const neighborhoodRowsShowAll =
+              selCleared || selChanged
                 ? false
                 : current.neighborhoodRowsShowAll;
             return {

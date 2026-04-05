@@ -546,24 +546,16 @@ export function collectTimelineNeighborhoodIds({
   const includeDownstream = dependencyDirection !== "upstream";
 
   const merged = new Set<string>();
-  if (includeUpstream) {
-    for (const id of bfsTimelineNeighborhoodHalf(
-      focusId,
-      timelineAdjacency,
-      candidateIds,
-      maxHops,
-      "upstream",
-    )) {
-      merged.add(id);
+  for (const direction of ["upstream", "downstream"] as const) {
+    if (direction === "upstream" ? !includeUpstream : !includeDownstream) {
+      continue;
     }
-  }
-  if (includeDownstream) {
     for (const id of bfsTimelineNeighborhoodHalf(
       focusId,
       timelineAdjacency,
       candidateIds,
       maxHops,
-      "downstream",
+      direction,
     )) {
       merged.add(id);
     }

@@ -26,6 +26,7 @@ import {
   applySearchToWorkspaceState,
   buildNextUrlFromWorkspaceState,
   createInitialNavigationState,
+  mergeTimelineSelection,
 } from "../components/AppShell/workspaceUrlSync";
 
 export interface UseWorkspaceUrlStateResult {
@@ -162,15 +163,12 @@ export function useWorkspaceUrlState(
           selectedExecutionId:
             options.executionId ?? current.selectedExecutionId,
         }));
-        setTimelineFilters((current) => {
-          const nextSel = options.executionId ?? current.selectedExecutionId;
-          const selChanged = nextSel !== current.selectedExecutionId;
-          return {
-            ...current,
-            selectedExecutionId: nextSel,
-            ...(selChanged ? { neighborhoodRowsShowAll: false } : {}),
-          };
-        });
+        setTimelineFilters((current) =>
+          mergeTimelineSelection(
+            current,
+            options.executionId ?? current.selectedExecutionId,
+          ),
+        );
       }
       if (view === "runs" && options?.resourceId) {
         setRunsViewState((current) => ({

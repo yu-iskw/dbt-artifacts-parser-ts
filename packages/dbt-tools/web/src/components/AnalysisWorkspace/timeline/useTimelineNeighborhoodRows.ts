@@ -81,10 +81,7 @@ export function useTimelineNeighborhoodRows(
 
   const neighborhoodParentCount = useMemo(
     () =>
-      filteredParents.reduce(
-        (n, p) => n + (neighborhoodIds.has(p.unique_id) ? 1 : 0),
-        0,
-      ),
+      filteredParents.filter((p) => neighborhoodIds.has(p.unique_id)).length,
     [filteredParents, neighborhoodIds],
   );
 
