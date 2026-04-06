@@ -16,7 +16,6 @@ import {
   formatDeps,
   shouldOutputJSON,
 } from "@dbt-tools/core";
-import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 
 type DepsOptions = {
   direction?: string;
@@ -34,7 +33,7 @@ type DepsOptions = {
 
 /** Add field-level lineage to graph and return targetId */
 function addFieldLevelLineage(
-  manifest: ParsedManifest,
+  manifest: ReturnType<typeof loadManifest>,
   graph: ManifestGraph,
   paths: { catalog?: string },
   resourceId: string,
@@ -61,7 +60,7 @@ function addFieldLevelLineage(
     const nodes = manifest.nodes;
     if (nodes) {
       for (const [uniqueId, node] of Object.entries(nodes)) {
-        const compiledCode = node.compiled_code;
+        const compiledCode = (node as { compiled_code?: unknown }).compiled_code;
         if (typeof compiledCode === "string") {
           const fieldDeps = analyzer.analyze(compiledCode, sqlDialect);
           graph.addFieldEdges(uniqueId, fieldDeps);

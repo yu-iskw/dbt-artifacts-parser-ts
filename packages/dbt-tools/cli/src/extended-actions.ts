@@ -18,7 +18,6 @@ import {
   SQLAnalyzer,
   sqlDialectFromDbtAdapterType,
 } from "@dbt-tools/core";
-import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 
 type CliEnv = {
   handleError: (error: unknown, isTTY: boolean) => void;
@@ -134,7 +133,9 @@ function deriveOwner(node: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
-function collectInventoryRows(manifest: ParsedManifest): InventoryRow[] {
+function collectInventoryRows(
+  manifest: ReturnType<typeof loadManifest>,
+): InventoryRow[] {
   const rows: InventoryRow[] = [];
 
   const addEntries = (
@@ -185,7 +186,7 @@ function collectInventoryRows(manifest: ParsedManifest): InventoryRow[] {
     "exposure",
   );
 
-  const optionalManifest = manifest as ParsedManifest & {
+  const optionalManifest = manifest as ReturnType<typeof loadManifest> & {
     metrics?: Record<string, unknown>;
   };
   addEntries(optionalManifest.metrics, "metric");
