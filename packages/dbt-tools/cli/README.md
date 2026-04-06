@@ -10,14 +10,22 @@ Command-line interface for dbt artifact analysis. Optimized for both human and A
 graph TD
   CLI["dbt-tools"]
   CLI --> summary["summary\nmanifest statistics"]
+  CLI --> inventory["inventory\nresource inventory + filters"]
   CLI --> graphCmd["graph\nexport dependency graph"]
+  CLI --> timeline["timeline\nrow-level execution timeline"]
+  CLI --> search["search\nmanifest resource search"]
   CLI --> rr["run-report\nexecution report"]
+  CLI --> status["status/freshness\nartifact readiness + recency"]
   CLI --> deps["deps\nupstream / downstream deps"]
   CLI --> schema["schema\nruntime introspection"]
 
   summary -->|manifest.json| MG[ManifestGraph]
   graphCmd -->|manifest.json| MG
+  inventory -->|manifest.json| MG
+  search -->|manifest.json| MG
   rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
+  timeline -->|run_results.json| EA
+  status -->|artifact files| FS[Local filesystem]
   deps -->|manifest.json| DS[DependencyService]
   schema -.->|describes| CLI
 ```
@@ -40,6 +48,9 @@ pnpm add -g @dbt-tools/cli
 - **Field filtering**: Reduce context window usage with `--fields` option
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
+- **Inventory and search**: Discover/filter dbt resources from manifest metadata
+- **Timeline rows**: Inspect per-node execution entries (`timeline`) beyond aggregated `run-report`
+- **Artifact readiness**: Check local artifact presence/freshness via `status` / `freshness`
 
 ---
 
@@ -93,6 +104,12 @@ dbt-tools graph --format json --fields "name,resource_type"
 
 # Custom target directory
 dbt-tools graph --target-dir ./custom-target
+
+# Focus to a node-centered subgraph
+dbt-tools graph --focus model.my_project.orders --depth 2 --direction upstream
+
+# Focus by selector and keep selected resource types
+dbt-tools graph --focus tag:finance --direction both --resource-types model,test
 ```
 
 **Options:**
@@ -102,6 +119,12 @@ dbt-tools graph --target-dir ./custom-target
 - `--output <path>` - Output file path (default: stdout)
 - `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include (affects JSON nodes)
+- `--field-level` - Include field-level lineage (requires catalog.json)
+- `--catalog-path <path>` - Path to catalog.json file
+- `--focus <selector>` - Focus graph export on a node or selector (`tag:...`, `type:...`, `package:...`, `path:...`)
+- `--depth <number>` - Max traversal depth for focused export
+- `--direction <direction>` - Focus traversal direction: `upstream`, `downstream`, or `both`
+- `--resource-types <types>` - Comma-separated resource type filter for focused export
 
 ### run-report
 
@@ -129,6 +152,8 @@ dbt-tools run-report ./custom/run_results.json ./custom/manifest.json
 # JSON output
 dbt-tools run-report --json
 ```
+
+`run-report` is aggregate-first (totals/status/bottlenecks). Use `timeline` for row-level per-node execution entries.
 
 **Options:**
 
@@ -199,6 +224,97 @@ dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
   "count": 1
 }
 ```
+
+### inventory
+
+List/filter dbt resources in `manifest.json`.
+
+```bash
+dbt-tools inventory
+dbt-tools inventory --type model
+dbt-tools inventory --type test --status fail
+dbt-tools inventory --tag finance --fields unique_id,name,path
+dbt-tools inventory --package my_project --format table
+```
+
+**Options:**
+
+- `--manifest-path <path>` - Path to manifest.json
+- `--run-results-path <path>` - Path to run_results.json (optional; enables `--status`)
+- `--target-dir <dir>` - Custom target directory
+- `--type <type>` - Filter by resource type
+- `--package <package>` - Filter by package name
+- `--tag <tag>` - Filter by tag
+- `--path <path>` - Filter by path substring
+- `--owner <owner>` - Filter by owner metadata (when available)
+- `--group <group>` - Filter by group metadata (when available)
+- `--status <status>` - Filter by run status (when run_results is available)
+- `--fields <fields>` - Projected fields (comma-separated)
+- `--format <format>` - `json` or `table`
+- `--json` / `--no-json` - Force output style
+
+### timeline
+
+Show row-level execution timeline entries from `run_results.json`.
+
+```bash
+dbt-tools timeline
+dbt-tools timeline --sort duration --top 20
+dbt-tools timeline --failed-only
+dbt-tools timeline --status error,fail --format table
+dbt-tools timeline --format csv
+```
+
+**Options:**
+
+- `--manifest-path <path>` - Optional manifest path for name/type enrichment
+- `--run-results-path <path>` - Path to run_results.json
+- `--target-dir <dir>` - Custom target directory
+- `--sort <sort>` - `duration` (default) or `start`
+- `--top <n>` - Top N rows after sorting
+- `--failed-only` - Keep failed/error/warn rows
+- `--status <status>` - Status filter (comma-separated)
+- `--format <format>` - `json`, `table`, or `csv`
+- `--json` / `--no-json` - Force output style
+
+### search
+
+Search manifest entities by ID/name/package/tag/path.
+
+```bash
+dbt-tools search orders
+dbt-tools search tag:finance
+dbt-tools search type:model orders
+dbt-tools search package:core source:stripe
+```
+
+**Options:**
+
+- `[terms...]` - Free-text and/or scoped terms (`type:`, `package:`, `tag:`, `path:`)
+- `--manifest-path <path>` - Path to manifest.json
+- `--target-dir <dir>` - Custom target directory
+- `--type <type>` / `--package <package>` / `--tag <tag>` / `--path <path>` - Structured filters
+- `--top <n>` - Limit results
+- `--format <format>` - `json` or `table`
+- `--json` / `--no-json` - Force output style
+
+### status / freshness
+
+Report local artifact file presence, readiness, and recency.
+
+```bash
+dbt-tools status
+dbt-tools status --target-dir ./target
+dbt-tools freshness --json
+```
+
+Interpretation:
+
+- `not-ready`: no manifest found
+- `manifest-ready`: manifest exists; execution analysis requiring run_results is unavailable
+- `execution-ready`: both manifest and run_results are present
+
+The command also returns `modified_at` / `age_seconds` for each artifact and the freshest available artifact.
 
 ### schema
 

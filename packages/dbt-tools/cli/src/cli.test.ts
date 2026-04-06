@@ -37,6 +37,11 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("graph");
       expect(schemas).toHaveProperty("run-report");
       expect(schemas).toHaveProperty("schema");
+      expect(schemas).toHaveProperty("inventory");
+      expect(schemas).toHaveProperty("timeline");
+      expect(schemas).toHaveProperty("search");
+      expect(schemas).toHaveProperty("status");
+      expect(schemas).toHaveProperty("freshness");
     });
 
     it("should have correct deps command schema", () => {

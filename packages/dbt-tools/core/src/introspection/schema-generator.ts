@@ -121,9 +121,148 @@ function getGraphSchema(): CommandSchema {
         type: TYPE_STRING,
         description: "Path to catalog.json file",
       },
+      {
+        name: "--focus",
+        type: TYPE_STRING,
+        description: "Focus graph export on a node or selector (e.g., tag:finance)",
+      },
+      {
+        name: "--depth",
+        type: "number",
+        description: "Max traversal depth for --focus",
+      },
+      {
+        name: "--direction",
+        type: "enum",
+        values: ["upstream", "downstream", "both"],
+        default: "both",
+        description: "Traversal direction for --focus",
+      },
+      {
+        name: "--resource-types",
+        type: TYPE_STRING,
+        description: "Comma-separated resource types for focused graph",
+      },
     ],
     output_format: "json, dot, or gexf",
     example: "dbt-tools graph --format dot --output graph.dot",
+  };
+}
+
+function getInventorySchema(): CommandSchema {
+  return {
+    command: "inventory",
+    description: "List and filter dbt resources from manifest",
+    arguments: [],
+    options: [
+      { name: "--manifest-path", type: TYPE_STRING, description: DESC_MANIFEST_PATH },
+      { name: "--run-results-path", type: TYPE_STRING, description: DESC_RUN_RESULTS_PATH },
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      { name: "--type", type: TYPE_STRING, description: "Filter by resource type" },
+      { name: "--package", type: TYPE_STRING, description: "Filter by package name" },
+      { name: "--tag", type: TYPE_STRING, description: "Filter by tag" },
+      { name: "--path", type: TYPE_STRING, description: "Filter by file path segment" },
+      { name: "--owner", type: TYPE_STRING, description: "Filter by owner" },
+      { name: "--group", type: TYPE_STRING, description: "Filter by group" },
+      { name: "--status", type: TYPE_STRING, description: "Filter by run status" },
+      { name: "--fields", type: TYPE_STRING, description: DESC_FIELDS },
+      {
+        name: "--format",
+        type: "enum",
+        values: ["json", "table"],
+        description: "Output format",
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools inventory --type model --tag finance",
+  };
+}
+
+function getTimelineSchema(): CommandSchema {
+  return {
+    command: "timeline",
+    description: "Show per-node execution timeline rows from run_results.json",
+    arguments: [],
+    options: [
+      { name: "--manifest-path", type: TYPE_STRING, description: DESC_MANIFEST_PATH },
+      { name: "--run-results-path", type: TYPE_STRING, description: DESC_RUN_RESULTS_PATH },
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      {
+        name: "--sort",
+        type: "enum",
+        values: ["duration", "start"],
+        default: "duration",
+        description: "Sort order",
+      },
+      { name: "--top", type: "number", description: "Top N rows after sorting" },
+      { name: "--failed-only", type: TYPE_BOOLEAN, description: "Only failed/error/warn rows" },
+      { name: "--status", type: TYPE_STRING, description: "Filter by status" },
+      {
+        name: "--format",
+        type: "enum",
+        values: ["json", "table", "csv"],
+        description: "Output format",
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: "json, table, or csv",
+    example: "dbt-tools timeline --sort duration --top 20",
+  };
+}
+
+function getSearchSchema(): CommandSchema {
+  return {
+    command: "search",
+    description: "Search dbt manifest resources",
+    arguments: [
+      {
+        name: "terms",
+        required: false,
+        description: "Search terms (supports scoped tokens like tag:finance)",
+      },
+    ],
+    options: [
+      { name: "--manifest-path", type: TYPE_STRING, description: DESC_MANIFEST_PATH },
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      { name: "--type", type: TYPE_STRING, description: "Filter by resource type" },
+      { name: "--package", type: TYPE_STRING, description: "Filter by package name" },
+      { name: "--tag", type: TYPE_STRING, description: "Filter by tag" },
+      { name: "--path", type: TYPE_STRING, description: "Filter by file path segment" },
+      { name: "--top", type: "number", description: "Limit number of results" },
+      {
+        name: "--format",
+        type: "enum",
+        values: ["json", "table"],
+        description: "Output format",
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools search type:model orders",
+  };
+}
+
+function getStatusSchema(command = "status"): CommandSchema {
+  return {
+    command,
+    description:
+      command === "freshness"
+        ? "Alias for status"
+        : "Report local artifact availability/readiness/freshness",
+    arguments: [],
+    options: [
+      { name: "--manifest-path", type: TYPE_STRING, description: DESC_MANIFEST_PATH },
+      { name: "--run-results-path", type: TYPE_STRING, description: DESC_RUN_RESULTS_PATH },
+      { name: OPT_TARGET_DIR, type: TYPE_STRING, description: DESC_TARGET_DIR },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: `dbt-tools ${command}`,
   };
 }
 
@@ -339,6 +478,11 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     graph: getGraphSchema(),
     "run-report": getRunReportSchema(),
     deps: getDepsSchema(),
+    inventory: getInventorySchema(),
+    timeline: getTimelineSchema(),
+    search: getSearchSchema(),
+    status: getStatusSchema("status"),
+    freshness: getStatusSchema("freshness"),
     schema: getSchemaCommandSchema(),
   };
 }

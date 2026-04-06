@@ -5,7 +5,6 @@ import {
   ManifestGraph,
   resolveArtifactPaths,
   loadManifest,
-  loadCatalog,
   validateSafePath,
   isTTY,
   shouldOutputJSON,
@@ -13,14 +12,18 @@ import {
   formatSummary,
   FieldFilter,
   ErrorHandler,
-  SQLAnalyzer,
-  sqlDialectFromDbtAdapterType,
   getCommandSchema,
   getAllSchemas,
-  exportGraphToFormat,
-  writeGraphOutput,
 } from "@dbt-tools/core";
-import { runReportAction, depsAction } from "./cli-actions";
+import {
+  runReportAction,
+  depsAction,
+  inventoryAction,
+  timelineAction,
+  searchAction,
+  statusAction,
+  graphAction,
+} from "./cli-actions";
 import { CLI_PACKAGE_VERSION } from "./version";
 
 const program = new Command();
@@ -60,46 +63,6 @@ function handleError(error: unknown, isTTY: boolean): void {
     console.error(JSON.stringify(formatted, null, 2));
   }
   process.exit(1);
-}
-
-function tryApplyFieldLevelLineageToGraph(
-  graph: ManifestGraph,
-  manifest: ReturnType<typeof loadManifest>,
-  catalogPath: string,
-): void {
-  validateSafePath(catalogPath);
-  let catalog: ReturnType<typeof loadCatalog> | undefined;
-  try {
-    catalog = loadCatalog(catalogPath);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "";
-    if (msg.startsWith("Catalog file not found:")) {
-      console.warn(
-        "Warning: --field-level requires catalog.json, but it was not found. Falling back to resource-level lineage.",
-      );
-      return;
-    }
-    throw error;
-  }
-  graph.addFieldNodes(catalog);
-
-  const analyzer = new SQLAnalyzer();
-  const adapterType = (
-    manifest.metadata as { adapter_type?: string } | undefined
-  )?.adapter_type;
-  const sqlDialect = sqlDialectFromDbtAdapterType(adapterType);
-
-  if (manifest.nodes) {
-    for (const [uniqueId, node] of Object.entries(manifest.nodes)) {
-      const compiledCode = (node as Record<string, unknown>).compiled_code as
-        | string
-        | undefined;
-      if (compiledCode) {
-        const fieldDeps = analyzer.analyze(compiledCode, sqlDialect);
-        graph.addFieldEdges(uniqueId, fieldDeps);
-      }
-    }
-  }
 }
 
 /**
@@ -173,6 +136,17 @@ program
   .option(OPT_FIELDS, DESC_FIELDS)
   .option("--field-level", "Include field-level (column-level) lineage")
   .option("--catalog-path <path>", "Path to catalog.json file")
+  .option("--focus <selector>", "Focus graph export on a node or selector")
+  .option("--depth <number>", "Max depth for --focus traversal", parseInt)
+  .option(
+    "--direction <direction>",
+    "Direction for --focus traversal: upstream|downstream|both",
+    "both",
+  )
+  .option(
+    "--resource-types <types>",
+    "Comma-separated resource types for focused graph",
+  )
   .action(
     (
       manifestPath: string | undefined,
@@ -183,42 +157,12 @@ program
         fields?: string;
         fieldLevel?: boolean;
         catalogPath?: string;
+        focus?: string;
+        depth?: number;
+        direction?: "upstream" | "downstream" | "both";
+        resourceTypes?: string;
       },
-    ) => {
-      try {
-        // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          manifestPath,
-          undefined,
-          options.targetDir,
-          options.catalogPath,
-        );
-
-        // Validate path
-        validateSafePath(paths.manifest);
-        if (options.output) {
-          validateSafePath(options.output);
-        }
-
-        // Load manifest
-        const manifest = loadManifest(paths.manifest);
-        const graph = new ManifestGraph(manifest);
-
-        // Enhance with field-level lineage if requested
-        if (options.fieldLevel && paths.catalog) {
-          tryApplyFieldLevelLineageToGraph(graph, manifest, paths.catalog);
-        }
-
-        const output = exportGraphToFormat(graph.getGraph(), {
-          format: options.format,
-          output: options.output,
-          fields: options.fields,
-        });
-        writeGraphOutput(output, options.output);
-      } catch (error) {
-        handleError(error, isTTY());
-      }
-    },
+    ) => graphAction(manifestPath, options, { handleError, isTTY }),
   );
 
 /**
@@ -422,6 +366,78 @@ program
       handleError(error, isTTY());
     }
   });
+
+program
+  .command("inventory")
+  .description("List and filter dbt resources from manifest")
+  .option("--manifest-path <path>", "Path to manifest.json file")
+  .option("--run-results-path <path>", "Path to run_results.json file")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--type <type>", "Filter by resource type")
+  .option("--package <package>", "Filter by package name")
+  .option("--tag <tag>", "Filter by tag")
+  .option("--path <path>", "Filter by file path segment")
+  .option("--owner <owner>", "Filter by owner")
+  .option("--group <group>", "Filter by group")
+  .option("--status <status>", "Filter by run status")
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option("--format <format>", "Output format: json or table")
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action((options) => inventoryAction(options, { handleError, isTTY }));
+
+program
+  .command("timeline")
+  .description("Show per-node execution timeline rows from run_results.json")
+  .option("--manifest-path <path>", "Path to manifest.json file")
+  .option("--run-results-path <path>", "Path to run_results.json file")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--sort <sort>", "Sort by duration or start", "duration")
+  .option("--top <n>", "Top N rows after sorting", parseInt)
+  .option("--failed-only", "Show only failed/error/warn entries")
+  .option("--status <status>", "Filter by status (comma-separated)")
+  .option("--format <format>", "Output format: json, table, csv")
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action((options) => timelineAction(options, { handleError, isTTY }));
+
+program
+  .command("search")
+  .description("Search dbt manifest resources")
+  .argument("[terms...]", "Search terms (supports scoped tokens like tag:finance)")
+  .option("--manifest-path <path>", "Path to manifest.json file")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--type <type>", "Filter by resource type")
+  .option("--package <package>", "Filter by package name")
+  .option("--tag <tag>", "Filter by tag")
+  .option("--path <path>", "Filter by file path segment")
+  .option("--top <n>", "Limit number of results", parseInt)
+  .option("--format <format>", "Output format: json or table")
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action((terms: string[], options) =>
+    searchAction(terms, options, { handleError, isTTY }),
+  );
+
+program
+  .command("status")
+  .description("Report local artifact availability/readiness/freshness")
+  .option("--manifest-path <path>", "Path to manifest.json file")
+  .option("--run-results-path <path>", "Path to run_results.json file")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--json", DESC_JSON)
+  .option("--no-json", DESC_NO_JSON)
+  .action((options) => statusAction(options, { handleError, isTTY }));
+
+program
+  .command("freshness")
+  .description("Alias for status")
+  .option("--manifest-path <path>", "Path to manifest.json file")
+  .option("--run-results-path <path>", "Path to run_results.json file")
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--json", DESC_JSON)
+  .option("--no-json", DESC_NO_JSON)
+  .action((options) => statusAction(options, { handleError, isTTY }));
 
 // Parse command line arguments
 program.parse();
