@@ -296,12 +296,12 @@ Show **per-node execution entries** from run_results.json, sorted by duration. T
 
 **How `timeline` differs from `run-report`:**
 
-| | `run-report` | `timeline` |
-|---|---|---|
-| Output | Aggregated stats (totals, critical path, bottlenecks) | One row per executed node |
-| Use case | Overall health summary | Inspect individual execution timings |
-| CSV output | No | Yes |
-| Filtering by status | No | Yes (`--failed-only`, `--status`) |
+|                     | `run-report`                                          | `timeline`                           |
+| ------------------- | ----------------------------------------------------- | ------------------------------------ |
+| Output              | Aggregated stats (totals, critical path, bottlenecks) | One row per executed node            |
+| Use case            | Overall health summary                                | Inspect individual execution timings |
+| CSV output          | No                                                    | Yes                                  |
+| Filtering by status | No                                                    | Yes (`--failed-only`, `--status`)    |
 
 Requires: `run_results.json`. Optionally enriched by `manifest.json` (adds `name` and `resource_type`).
 
@@ -396,6 +396,7 @@ dbt-tools search orders --json
 ```
 
 **Supported inline tokens in query:**
+
 - `type:<value>` — filter by resource type
 - `package:<value>` — filter by package
 - `tag:<value>` — filter by tag
@@ -457,11 +458,11 @@ dbt-tools freshness --target-dir ./custom-target
 
 **Readiness values:**
 
-| Value | Meaning |
-|---|---|
-| `full` | Both `manifest.json` and `run_results.json` are present. All commands available. |
-| `manifest-only` | `manifest.json` found; `run_results.json` missing. `timeline`, `run-report`, and `timeline` are unavailable. |
-| `unavailable` | `manifest.json` not found. Most commands will fail. |
+| Value           | Meaning                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| `full`          | Both `manifest.json` and `run_results.json` are present. All commands available.                |
+| `manifest-only` | `manifest.json` found; `run_results.json` missing. `timeline` and `run-report` are unavailable. |
+| `unavailable`   | `manifest.json` not found. Most commands will fail.                                             |
 
 **Options:**
 

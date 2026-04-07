@@ -68,8 +68,12 @@ describe("statusAction", () => {
   });
 
   it("reports unavailable when target dir has no artifacts", () => {
+    const nonexistentTarget = path.join(
+      os.tmpdir(),
+      `dbt-tools-status-missing-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+    );
     statusAction(
-      { targetDir: "/tmp/nonexistent_dbt_target_xyz", json: true },
+      { targetDir: nonexistentTarget, json: true },
       handleError,
       isTTY,
     );

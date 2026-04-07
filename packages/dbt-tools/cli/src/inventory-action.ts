@@ -18,7 +18,6 @@ export type InventoryOptions = {
   tag?: string;
   path?: string;
   fields?: string;
-  format?: string;
   targetDir?: string;
   json?: boolean;
   noJson?: boolean;
