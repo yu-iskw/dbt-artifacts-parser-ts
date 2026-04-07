@@ -67,7 +67,12 @@ describe("searchAction", () => {
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
-      results: Array<{ name: string; unique_id: string; path?: string; package_name: string }>;
+      results: Array<{
+        name: string;
+        unique_id: string;
+        path?: string;
+        package_name: string;
+      }>;
     };
     expect(parsed.results.length).toBeGreaterThan(0);
     // All results should have 'customers' in one of the indexed fields
@@ -83,16 +88,20 @@ describe("searchAction", () => {
   });
 
   it("supports inline type: filter in query", () => {
-    searchAction("type:model", manifestPath, { json: true }, handleError, isTTY);
+    searchAction(
+      "type:model",
+      manifestPath,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
       results: Array<{ resource_type: string }>;
     };
     expect(parsed.results.length).toBeGreaterThan(0);
-    expect(
-      parsed.results.every((r) => r.resource_type === "model"),
-    ).toBe(true);
+    expect(parsed.results.every((r) => r.resource_type === "model")).toBe(true);
   });
 
   it("supports --type flag", () => {
@@ -109,9 +118,9 @@ describe("searchAction", () => {
       results: Array<{ resource_type: string }>;
     };
     expect(parsed.results.length).toBeGreaterThan(0);
-    expect(
-      parsed.results.every((r) => r.resource_type === "source"),
-    ).toBe(true);
+    expect(parsed.results.every((r) => r.resource_type === "source")).toBe(
+      true,
+    );
   });
 
   it("supports --package flag", () => {
@@ -128,9 +137,9 @@ describe("searchAction", () => {
       results: Array<{ package_name: string }>;
     };
     expect(parsed.results.length).toBeGreaterThan(0);
-    expect(
-      parsed.results.every((r) => r.package_name === "jaffle_shop"),
-    ).toBe(true);
+    expect(parsed.results.every((r) => r.package_name === "jaffle_shop")).toBe(
+      true,
+    );
   });
 
   it("returns empty results for unmatched query", () => {
@@ -167,9 +176,7 @@ describe("searchAction", () => {
     const parsed = JSON.parse(output) as {
       results: Array<{ resource_type: string }>;
     };
-    expect(
-      parsed.results.every((r) => r.resource_type !== "field"),
-    ).toBe(true);
+    expect(parsed.results.every((r) => r.resource_type !== "field")).toBe(true);
   });
 
   it("throws for control characters in query", () => {

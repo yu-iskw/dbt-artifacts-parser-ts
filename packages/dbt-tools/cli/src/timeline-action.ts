@@ -93,9 +93,7 @@ export function formatTimeline(result: TimelineResult): string {
   }
 
   lines.push("");
-  lines.push(
-    "  #     Status     Time (s)  Type              Name / unique_id",
-  );
+  lines.push("  #     Status     Time (s)  Type              Name / unique_id");
   lines.push(
     "  ----  ---------  --------  ----------------  ----------------------------------------",
   );
@@ -168,12 +166,13 @@ export function timelineAction(
     validateSafePath(paths.runResults);
 
     const runResults = loadRunResults(paths.runResults);
-    let executions: NodeExecution[] = buildNodeExecutionsFromRunResults(
-      runResults,
-    );
+    let executions: NodeExecution[] =
+      buildNodeExecutionsFromRunResults(runResults);
 
     // Optionally enrich with manifest metadata
-    let lookup: Map<string, { name: string; resource_type: string }> | undefined;
+    let lookup:
+      | Map<string, { name: string; resource_type: string }>
+      | undefined;
     if (manifestPath) {
       validateSafePath(paths.manifest);
       try {
@@ -224,7 +223,10 @@ export function timelineAction(
 
     if (outputFormat === "csv") {
       console.log(formatTimelineCsv(entries));
-    } else if (outputFormat === "table" || (!useJson && outputFormat !== "json")) {
+    } else if (
+      outputFormat === "table" ||
+      (!useJson && outputFormat !== "json")
+    ) {
       console.log(formatTimeline(result));
     } else {
       console.log(formatOutput(result, true));

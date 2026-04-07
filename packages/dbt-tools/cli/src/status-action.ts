@@ -116,11 +116,7 @@ export function statusAction(
   isTTY: () => boolean,
 ): void {
   try {
-    const paths = resolveArtifactPaths(
-      undefined,
-      undefined,
-      options.targetDir,
-    );
+    const paths = resolveArtifactPaths(undefined, undefined, options.targetDir);
 
     // Validate paths before accessing filesystem
     validateSafePath(paths.manifest);

@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import { getTestResourcePath } from "dbt-artifacts-parser/test-utils";
-import { timelineAction, formatTimeline, formatTimelineCsv } from "./timeline-action";
+import {
+  timelineAction,
+  formatTimeline,
+  formatTimelineCsv,
+} from "./timeline-action";
 
 describe("timelineAction", () => {
   const runResultsPath = getTestResourcePath(
@@ -35,7 +39,13 @@ describe("timelineAction", () => {
   });
 
   it("outputs JSON timeline with required fields", () => {
-    timelineAction(runResultsPath, undefined, { json: true }, handleError, isTTY);
+    timelineAction(
+      runResultsPath,
+      undefined,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -58,7 +68,13 @@ describe("timelineAction", () => {
   });
 
   it("is sorted by duration descending by default", () => {
-    timelineAction(runResultsPath, undefined, { json: true }, handleError, isTTY);
+    timelineAction(
+      runResultsPath,
+      undefined,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -115,7 +131,9 @@ describe("timelineAction", () => {
       entries: Array<{ status: string }>;
     };
     expect(
-      parsed.entries.every((e) => e.status !== "success" && e.status !== "pass"),
+      parsed.entries.every(
+        (e) => e.status !== "success" && e.status !== "pass",
+      ),
     ).toBe(true);
   });
 
@@ -143,7 +161,9 @@ describe("timelineAction", () => {
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
-    expect(output).toContain("unique_id,name,resource_type,status,execution_time");
+    expect(output).toContain(
+      "unique_id,name,resource_type,status,execution_time",
+    );
     const lines = output.split("\n");
     expect(lines.length).toBeGreaterThan(1);
   });

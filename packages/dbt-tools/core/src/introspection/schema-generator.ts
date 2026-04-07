@@ -130,8 +130,7 @@ function getGraphSchema(): CommandSchema {
       {
         name: "--focus-depth",
         type: "number",
-        description:
-          "Max traversal hops for --focus (default: unlimited)",
+        description: "Max traversal hops for --focus (default: unlimited)",
       },
       {
         name: "--focus-direction",
@@ -370,7 +369,8 @@ function getInventorySchema(): CommandSchema {
       {
         name: "--type",
         type: TYPE_STRING,
-        description: "Filter by resource type(s), comma-separated (e.g. model,test)",
+        description:
+          "Filter by resource type(s), comma-separated (e.g. model,test)",
       },
       {
         name: "--package",
@@ -467,8 +467,7 @@ function getTimelineSchema(): CommandSchema {
 function getSearchSchema(): CommandSchema {
   return {
     command: "search",
-    description:
-      "Search for dbt resources by name, tag, type, or free text",
+    description: "Search for dbt resources by name, tag, type, or free text",
     arguments: [
       {
         name: "query",
@@ -554,7 +553,12 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     timeline: getTimelineSchema(),
     search: getSearchSchema(),
     status: getStatusSchema(),
-    freshness: { ...getStatusSchema(), command: "freshness", description: "Alias for status – shows artifact recency and readiness", example: "dbt-tools freshness --target-dir ./target" },
+    freshness: {
+      ...getStatusSchema(),
+      command: "freshness",
+      description: "Alias for status – shows artifact recency and readiness",
+      example: "dbt-tools freshness --target-dir ./target",
+    },
     schema: getSchemaCommandSchema(),
   };
 }

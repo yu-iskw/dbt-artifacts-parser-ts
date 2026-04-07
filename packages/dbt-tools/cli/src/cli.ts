@@ -234,9 +234,7 @@ program
           validateSafePath(options.output);
         }
 
-        const focusDirection = (
-          options.focusDirection ?? "both"
-        ).toLowerCase();
+        const focusDirection = (options.focusDirection ?? "both").toLowerCase();
         if (!["upstream", "downstream", "both"].includes(focusDirection)) {
           throw new Error(
             `--focus-direction must be one of: upstream, downstream, both`,
@@ -581,9 +579,8 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
-    (options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-      statusAction(options, handleError, isTTY),
+  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
+    statusAction(options, handleError, isTTY),
   );
 
 /**
@@ -595,9 +592,8 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
-    (options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-      statusAction(options, handleError, isTTY),
+  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
+    statusAction(options, handleError, isTTY),
   );
 
 /**

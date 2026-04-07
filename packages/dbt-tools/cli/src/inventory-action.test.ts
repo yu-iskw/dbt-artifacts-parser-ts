@@ -52,9 +52,7 @@ describe("inventoryAction", () => {
     const parsed = JSON.parse(output) as {
       entries: Array<{ resource_type: string }>;
     };
-    expect(
-      parsed.entries.every((e) => e.resource_type === "model"),
-    ).toBe(true);
+    expect(parsed.entries.every((e) => e.resource_type === "model")).toBe(true);
     expect(parsed.entries.length).toBeGreaterThan(0);
   });
 
@@ -73,7 +71,9 @@ describe("inventoryAction", () => {
     const types = new Set(parsed.entries.map((e) => e.resource_type));
     expect(types.has("field")).toBe(false);
     expect(
-      parsed.entries.every((e) => ["model", "source"].includes(e.resource_type)),
+      parsed.entries.every((e) =>
+        ["model", "source"].includes(e.resource_type),
+      ),
     ).toBe(true);
   });
 
@@ -90,9 +90,9 @@ describe("inventoryAction", () => {
       entries: Array<{ package_name: string }>;
     };
     expect(parsed.entries.length).toBeGreaterThan(0);
-    expect(
-      parsed.entries.every((e) => e.package_name === "jaffle_shop"),
-    ).toBe(true);
+    expect(parsed.entries.every((e) => e.package_name === "jaffle_shop")).toBe(
+      true,
+    );
   });
 
   it("filters by tag (no match returns empty)", () => {
@@ -124,12 +124,7 @@ describe("inventoryAction", () => {
   });
 
   it("outputs human-readable format when noJson is set", () => {
-    inventoryAction(
-      manifestPath,
-      { noJson: true },
-      handleError,
-      () => true,
-    );
+    inventoryAction(manifestPath, { noJson: true }, handleError, () => true);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;

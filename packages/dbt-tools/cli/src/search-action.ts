@@ -166,7 +166,9 @@ export function formatSearch(output: SearchOutput): string {
   for (const r of output.results) {
     const tags = r.tags?.length ? `  tags: ${r.tags.join(", ")}` : "";
     lines.push(`  ${r.unique_id}`);
-    lines.push(`    type: ${r.resource_type}  package: ${r.package_name}${tags}`);
+    lines.push(
+      `    type: ${r.resource_type}  package: ${r.package_name}${tags}`,
+    );
     if (r.path) lines.push(`    path: ${r.path}`);
   }
 
