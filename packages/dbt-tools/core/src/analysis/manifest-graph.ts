@@ -830,4 +830,70 @@ export class ManifestGraph {
 
     return undefined;
   }
+
+  /**
+   * Build a focused subgraph centred on a single node.
+   *
+   * @param focusId - unique_id of the focal node (must exist in the graph)
+   * @param direction - which edges to traverse: "upstream", "downstream", or "both"
+   * @param depth - optional max traversal hops (undefined = unlimited)
+   * @param resourceTypes - optional set of resource_type values to keep (undefined = keep all)
+   * @returns A new DirectedGraph containing only the focal node, the reachable
+   *          nodes in the requested direction(s), and the edges between them.
+   * @throws Error if focusId is not found in the graph
+   */
+  buildSubgraph(
+    focusId: string,
+    direction: "upstream" | "downstream" | "both",
+    depth?: number,
+    resourceTypes?: Set<string>,
+  ): DirectedGraph<GraphNodeAttributes, GraphEdgeAttributes> {
+    if (!this.graph.hasNode(focusId)) {
+      throw new Error(`Focus node not found in manifest: ${focusId}`);
+    }
+
+    const included = new Set<string>([focusId]);
+
+    if (direction === "upstream" || direction === "both") {
+      for (const { nodeId } of this.getUpstream(focusId, depth)) {
+        included.add(nodeId);
+      }
+    }
+    if (direction === "downstream" || direction === "both") {
+      for (const { nodeId } of this.getDownstream(focusId, depth)) {
+        included.add(nodeId);
+      }
+    }
+
+    const subgraph = new DirectedGraph<
+      GraphNodeAttributes,
+      GraphEdgeAttributes
+    >();
+
+    for (const nodeId of included) {
+      if (!this.graph.hasNode(nodeId)) continue;
+      const attrs = this.graph.getNodeAttributes(nodeId);
+      // Always include the focal node itself; resource-type filter only applies to
+      // traversed neighbours so the subgraph is never empty when the node exists.
+      const isFocusNode = nodeId === focusId;
+      if (
+        !isFocusNode &&
+        resourceTypes &&
+        !resourceTypes.has(attrs.resource_type.toLowerCase())
+      ) {
+        continue;
+      }
+      subgraph.addNode(nodeId, attrs);
+    }
+
+    this.graph.forEachEdge((_edgeId, attrs, source, target) => {
+      if (subgraph.hasNode(source) && subgraph.hasNode(target)) {
+        if (!subgraph.hasEdge(source, target)) {
+          subgraph.addEdge(source, target, attrs);
+        }
+      }
+    });
+
+    return subgraph;
+  }
 }

@@ -13,12 +13,20 @@ graph TD
   CLI --> graphCmd["graph\nexport dependency graph"]
   CLI --> rr["run-report\nexecution report"]
   CLI --> deps["deps\nupstream / downstream deps"]
+  CLI --> inventory["inventory\nlist / filter resources"]
+  CLI --> timeline["timeline\nper-node execution timeline"]
+  CLI --> search["search\ndiscover resources"]
+  CLI --> status["status / freshness\nartifact readiness"]
   CLI --> schema["schema\nruntime introspection"]
 
   summary -->|manifest.json| MG[ManifestGraph]
   graphCmd -->|manifest.json| MG
   rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
   deps -->|manifest.json| DS[DependencyService]
+  inventory -->|manifest.json| MG
+  timeline -->|run_results.json\n+ manifest.json| EA
+  search -->|manifest.json| MG
+  status -.->|filesystem| FS[File stats]
   schema -.->|describes| CLI
 ```
 
@@ -40,6 +48,11 @@ pnpm add -g @dbt-tools/cli
 - **Field filtering**: Reduce context window usage with `--fields` option
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
+- **Inventory**: Browse and filter all dbt resources in one view
+- **Timeline**: Inspect per-node execution timing (row-level, unlike `run-report`)
+- **Search**: Discover resources by name, tag, type, or free-text query
+- **Status / Freshness**: Check if artifacts are present and how recent they are
+- **Subgraph focus**: Export a focused subgraph for any node via `graph --focus`
 
 ---
 
@@ -74,12 +87,16 @@ dbt-tools summary --json
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 
+---
+
 ### graph
 
 Export dependency graph in various formats.
 
+Supports optional subgraph focus via `--focus` to export a node-centred slice of the graph.
+
 ```bash
-# Uses ./target/manifest.json by default
+# Full graph (uses ./target/manifest.json by default)
 dbt-tools graph
 
 # Export as DOT format
@@ -90,6 +107,16 @@ dbt-tools graph --format gexf --output graph.gexf
 
 # With field filtering (only affects JSON format)
 dbt-tools graph --format json --fields "name,resource_type"
+
+# Subgraph: focus on one node, 2 hops in both directions
+dbt-tools graph --focus model.my_project.orders --focus-depth 2
+
+# Upstream subgraph only
+dbt-tools graph --focus model.my_project.orders --focus-direction upstream
+
+# Downstream subgraph filtered to models and tests
+dbt-tools graph --focus model.my_project.orders \
+  --focus-direction downstream --resource-types model,test
 
 # Custom target directory
 dbt-tools graph --target-dir ./custom-target
@@ -102,10 +129,19 @@ dbt-tools graph --target-dir ./custom-target
 - `--output <path>` - Output file path (default: stdout)
 - `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include (affects JSON nodes)
+- `--focus <resource-id>` - Focus the export on a single node; produces a subgraph only
+- `--focus-depth <n>` - Max traversal hops when `--focus` is set (default: unlimited)
+- `--focus-direction <direction>` - Traversal direction: `upstream`, `downstream`, or `both` (default: `both`)
+- `--resource-types <types>` - Comma-separated resource types to keep (e.g. `model,test`)
+- `--field-level` - Include field-level (column-level) lineage
+- `--catalog-path <path>` - Path to catalog.json (used with `--field-level`)
+
+---
 
 ### run-report
 
-Generate execution report from run_results.json.
+Generate **aggregated** execution report from run_results.json (totals, critical path, bottlenecks).
+For **row-level** per-node timings, use [`timeline`](#timeline) instead.
 
 ```bash
 # Uses ./target/run_results.json and ./target/manifest.json by default
@@ -137,10 +173,12 @@ dbt-tools run-report --json
 - `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include
 - `--bottlenecks` - Include bottleneck section in report
-- `--bottlenecks-top <n>` - Top N slowest nodes (default: 10 when --bottlenecks)
-- `--bottlenecks-threshold <s>` - Nodes exceeding s seconds (alternative to top-N; cannot use with --bottlenecks-top)
+- `--bottlenecks-top <n>` - Top N slowest nodes (default: 10 when `--bottlenecks`)
+- `--bottlenecks-threshold <s>` - Nodes exceeding s seconds (cannot combine with `--bottlenecks-top`)
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
+
+---
 
 ### deps
 
@@ -182,23 +220,286 @@ dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
 - `--json` - Force JSON output
 - `--no-json` - Force human-readable output
 
-**Example Output:**
+---
+
+### inventory
+
+List and filter all dbt resources from the manifest. Useful for browsing what's in the project, or feeding results into downstream commands.
+
+Requires: `manifest.json`
+
+```bash
+# All resources
+dbt-tools inventory
+
+# Filter by type
+dbt-tools inventory --type model
+
+# Multiple types
+dbt-tools inventory --type model,test
+
+# Filter by package
+dbt-tools inventory --package my_project
+
+# Filter by tag
+dbt-tools inventory --tag finance
+
+# Filter by file path substring
+dbt-tools inventory --path models/staging
+
+# Combine filters
+dbt-tools inventory --type model --tag finance --package my_project
+
+# Only return specific fields
+dbt-tools inventory --type model --fields "entries"
+
+# Force JSON (default in non-TTY)
+dbt-tools inventory --json
+```
+
+**Options:**
+
+- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
+- `--type <type>` - Filter by resource type(s), comma-separated (e.g. `model`, `model,test`)
+- `--package <package>` - Filter by exact package name
+- `--tag <tag>` - Filter by tag(s), comma-separated (any match)
+- `--path <path>` - Filter by file path substring
+- `--fields <fields>` - Comma-separated fields to include
+- `--target-dir <dir>` - Custom target directory
+- `--json` - Force JSON output
+- `--no-json` - Force human-readable output
+
+**Example JSON output:**
 
 ```json
 {
-  "resource_id": "model.my_project.customers",
-  "direction": "downstream",
-  "dependencies": [
+  "total": 42,
+  "entries": [
     {
       "unique_id": "model.my_project.orders",
       "resource_type": "model",
       "name": "orders",
-      "package_name": "my_project"
+      "package_name": "my_project",
+      "path": "models/marts/orders.sql",
+      "tags": ["finance"],
+      "description": "Core orders model"
     }
-  ],
-  "count": 1
+  ]
 }
 ```
+
+---
+
+### timeline
+
+Show **per-node execution entries** from run_results.json, sorted by duration. This is the row-level complement to `run-report`.
+
+**How `timeline` differs from `run-report`:**
+
+|                     | `run-report`                                          | `timeline`                           |
+| ------------------- | ----------------------------------------------------- | ------------------------------------ |
+| Output              | Aggregated stats (totals, critical path, bottlenecks) | One row per executed node            |
+| Use case            | Overall health summary                                | Inspect individual execution timings |
+| CSV output          | No                                                    | Yes                                  |
+| Filtering by status | No                                                    | Yes (`--failed-only`, `--status`)    |
+
+Requires: `run_results.json`. Optionally enriched by `manifest.json` (adds `name` and `resource_type`).
+
+```bash
+# All nodes sorted by duration (slowest first)
+dbt-tools timeline
+
+# With manifest enrichment (adds name and type to each row)
+dbt-tools timeline /path/to/run_results.json /path/to/manifest.json
+
+# Top 20 slowest
+dbt-tools timeline --top 20
+
+# Only failures
+dbt-tools timeline --failed-only
+
+# Filter by specific status
+dbt-tools timeline --status error,warn
+
+# Sort by start time
+dbt-tools timeline --sort start
+
+# CSV output
+dbt-tools timeline --format csv > timeline.csv
+
+# JSON output
+dbt-tools timeline --json
+```
+
+**Options:**
+
+- `[run-results-path]` - Path to run_results.json (defaults to `./target/run_results.json`)
+- `[manifest-path]` - Path to manifest.json (optional, enriches rows with name and resource_type)
+- `--sort <key>` - Sort order: `duration` (default, slowest first) or `start` (chronological)
+- `--top <n>` - Show top N entries only
+- `--failed-only` - Show only non-successful entries (excludes `success` and `pass`)
+- `--status <status>` - Filter by status, comma-separated (e.g. `error,warn`)
+- `--format <format>` - Output format: `json`, `table`, or `csv` (default: `json` non-TTY, `table` TTY)
+- `--target-dir <dir>` - Custom target directory
+- `--json` - Force JSON output
+- `--no-json` - Force human-readable output
+
+**Example JSON output:**
+
+```json
+{
+  "total": 3,
+  "entries": [
+    {
+      "unique_id": "model.my_project.orders",
+      "name": "orders",
+      "resource_type": "model",
+      "status": "success",
+      "execution_time": 12.45,
+      "started_at": "2024-01-15T10:00:00Z",
+      "completed_at": "2024-01-15T10:00:12Z"
+    }
+  ]
+}
+```
+
+---
+
+### search
+
+Discover dbt resources by name, tag, type, or free-text query. Acts as a starting point before running `deps`, `inventory`, or other commands.
+
+Requires: `manifest.json`
+
+```bash
+# Free-text search (substring matches on name, unique_id, tags, path)
+dbt-tools search orders
+
+# Inline key:value tokens in query
+dbt-tools search "type:model orders"
+dbt-tools search "tag:finance"
+dbt-tools search "package:core source:stripe"
+
+# Flag-based filters
+dbt-tools search --type model
+dbt-tools search --tag finance
+dbt-tools search --package my_project
+
+# Combine query with flags (flags take precedence over inline tokens)
+dbt-tools search orders --type model
+
+# Human-readable output (TTY default)
+dbt-tools search orders --no-json
+
+# Force JSON
+dbt-tools search orders --json
+```
+
+**Supported inline tokens in query:**
+
+- `type:<value>` — filter by resource type
+- `package:<value>` — filter by package
+- `tag:<value>` — filter by tag
+- `owner:<value>` / `source:<value>` — matched as plain text terms
+
+**Options:**
+
+- `[query]` - Free-text search query with optional `key:value` tokens
+- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
+- `--type <type>` - Filter by resource type(s), comma-separated
+- `--package <package>` - Filter by package name
+- `--tag <tag>` - Filter by tag(s), comma-separated
+- `--path <path>` - Filter by file path substring
+- `--fields <fields>` - Comma-separated fields to include
+- `--target-dir <dir>` - Custom target directory
+- `--json` - Force JSON output
+- `--no-json` - Force human-readable output
+
+**Example JSON output:**
+
+```json
+{
+  "query": "orders",
+  "total": 2,
+  "results": [
+    {
+      "unique_id": "model.my_project.orders",
+      "resource_type": "model",
+      "name": "orders",
+      "package_name": "my_project",
+      "path": "models/marts/orders.sql"
+    }
+  ]
+}
+```
+
+---
+
+### status / freshness
+
+Report dbt artifact presence, file modification times, and analysis readiness. `freshness` is an alias for `status`.
+
+This command does **not** parse artifact content — it only checks the filesystem. It is safe to run even when artifacts are missing or invalid.
+
+```bash
+# Check default ./target directory
+dbt-tools status
+
+# Custom target directory
+dbt-tools status --target-dir ./custom-target
+
+# JSON output (machine-readable)
+dbt-tools status --json
+
+# Freshness alias
+dbt-tools freshness
+dbt-tools freshness --target-dir ./custom-target
+```
+
+**Readiness values:**
+
+| Value           | Meaning                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| `full`          | Both `manifest.json` and `run_results.json` are present. All commands available.                |
+| `manifest-only` | `manifest.json` found; `run_results.json` missing. `timeline` and `run-report` are unavailable. |
+| `unavailable`   | `manifest.json` not found. Most commands will fail.                                             |
+
+**Options:**
+
+- `--target-dir <dir>` - Custom target directory (defaults to `./target`)
+- `--json` - Force JSON output
+- `--no-json` - Force human-readable output
+
+**Example JSON output:**
+
+```json
+{
+  "target_dir": "./target",
+  "manifest": {
+    "path": "/project/target/manifest.json",
+    "exists": true,
+    "modified_at": "2024-01-15T10:00:00Z",
+    "age_seconds": 3600
+  },
+  "run_results": {
+    "path": "/project/target/run_results.json",
+    "exists": true,
+    "modified_at": "2024-01-15T10:01:00Z",
+    "age_seconds": 3540
+  },
+  "readiness": "full",
+  "latest_modified_at": "2024-01-15T10:01:00Z",
+  "age_seconds": 3540,
+  "summary": "All artifacts present. Manifest and execution analysis available."
+}
+```
+
+**Caveats:**
+
+- Remote artifact sources (S3, GCS) are not checked; only local filesystem paths are inspected.
+- Age values are computed at the time of the command, not relative to any dbt run.
+
+---
 
 ### schema
 
@@ -235,7 +536,7 @@ All commands default to the `./target` directory where dbt stores artifacts:
 Override with:
 
 - `--target-dir <directory>` flag
-- `DBT_TOOLS_TARGET_DIR` environment variable (legacy: `DBT_TARGET_DIR`)
+- `DBT_TOOLS_TARGET_DIR` environment variable (legacy: `DBT_TARGET_DIR`, `DBT_TARGET`)
 
 ---
 
@@ -252,7 +553,7 @@ The CLI automatically outputs JSON when stdout is not a TTY (non-interactive env
 
 ## Field Filtering
 
-Use `--fields` to limit response size and reduce context window usage. Supported in `summary`, `deps`, `graph` (JSON), and `run-report`.
+Use `--fields` to limit response size and reduce context window usage. Supported in `summary`, `deps`, `graph` (JSON), `run-report`, `inventory`, and `search`.
 
 ```bash
 # Only return specific fields
@@ -309,19 +610,27 @@ Errors are formatted as JSON in non-TTY environments:
 
 ## Best Practices for AI Agents
 
-1. **Always use field filtering** for dependency queries and analysis to reduce context window usage.
-2. **Use default `./target` directory** unless you have a specific reason not to.
-3. **Validate resource IDs** before querying (use schema introspection if unsure).
-4. **Handle errors programmatically** using error codes in non-interactive environments.
-5. **Use schema introspection** to discover command capabilities at runtime.
+1. **Run `status` first** to check which artifacts are available before running analysis commands.
+2. **Use `search` to discover resources** before running `deps` or `inventory`.
+3. **Always use field filtering** for dependency queries and analysis to reduce context window usage.
+4. **Use default `./target` directory** unless you have a specific reason not to.
+5. **Validate resource IDs** before querying (use schema introspection if unsure).
+6. **Handle errors programmatically** using error codes in non-interactive environments.
+7. **Use schema introspection** to discover command capabilities at runtime.
 
 ---
 
 ## Examples
 
 ```bash
-# Basic summary (uses ./target/manifest.json)
-dbt-tools summary
+# Check artifact readiness before doing any analysis
+dbt-tools status
+
+# Find a resource before querying its deps
+dbt-tools search orders --json | jq '.results[0].unique_id'
+
+# List all models with the finance tag
+dbt-tools inventory --type model --tag finance
 
 # Find downstream dependencies
 dbt-tools deps model.my_project.customers
@@ -329,10 +638,19 @@ dbt-tools deps model.my_project.customers
 # Find upstream dependencies with minimal output
 dbt-tools deps model.my_project.customers --direction upstream --fields "unique_id"
 
-# Export graph for visualization
+# Execution timeline (slowest 10 nodes)
+dbt-tools timeline --top 10
+
+# Failed executions only
+dbt-tools timeline --failed-only
+
+# Export full graph for visualization
 dbt-tools graph --format dot --output graph.dot
 
-# Execution report with critical path
+# Export focused subgraph around one node
+dbt-tools graph --focus model.my_project.orders --focus-depth 2 --format dot --output orders_subgraph.dot
+
+# Aggregated execution report with critical path
 dbt-tools run-report
 
 # Get command schema
@@ -360,7 +678,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full developer guide.
 
 ## License
 
-The `@dbt-tools/*` packages use a **custom source-available license**; they are **not** OSI “open source.” The following is a **short summary** — the binding terms are in the **`LICENSE`** file at the root of each published npm package (`package.json` uses `SEE LICENSE IN LICENSE`).
+The `@dbt-tools/*` packages use a **custom source-available license**; they are **not** OSI "open source." The following is a **short summary** — the binding terms are in the **`LICENSE`** file at the root of each published npm package (`package.json` uses `SEE LICENSE IN LICENSE`).
 
 - **You may** use and modify the software for **personal use** and for **internal use** within your organization for your own business purposes, **provided** you do not offer a **commercial service** where the software (or a derivative intended to replace or substantially replicate the published `@dbt-tools/*` packages) is a material part of the value you sell or deliver to third parties (for example hosted access, resale, or client production work centered on operating the software — see `LICENSE` for definitions).
 - **You may not**, without **prior written permission** from the copyright holder, offer such a **commercial service**, or **publish** the software or that kind of derivative to a **package registry** (npm, GitHub Packages, and similar) for third-party consumption.

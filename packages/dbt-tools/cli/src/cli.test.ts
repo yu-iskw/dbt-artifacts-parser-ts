@@ -37,6 +37,56 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("graph");
       expect(schemas).toHaveProperty("run-report");
       expect(schemas).toHaveProperty("schema");
+      // New commands
+      expect(schemas).toHaveProperty("inventory");
+      expect(schemas).toHaveProperty("timeline");
+      expect(schemas).toHaveProperty("search");
+      expect(schemas).toHaveProperty("status");
+      expect(schemas).toHaveProperty("freshness");
+    });
+
+    it("should have correct inventory schema", () => {
+      const schema = getCommandSchema("inventory");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("inventory");
+      const typeOpt = schema?.options?.find((o) => o.name === "--type");
+      expect(typeOpt).toBeDefined();
+      const tagOpt = schema?.options?.find((o) => o.name === "--tag");
+      expect(tagOpt).toBeDefined();
+    });
+
+    it("should have correct timeline schema", () => {
+      const schema = getCommandSchema("timeline");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("timeline");
+      const sortOpt = schema?.options?.find((o) => o.name === "--sort");
+      expect(sortOpt?.type).toBe("enum");
+      const topOpt = schema?.options?.find((o) => o.name === "--top");
+      expect(topOpt?.type).toBe("number");
+    });
+
+    it("should have correct search schema", () => {
+      const schema = getCommandSchema("search");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("search");
+      expect(schema?.arguments[0]?.name).toBe("query");
+      expect(schema?.arguments[0]?.required).toBe(false);
+    });
+
+    it("should have correct status schema", () => {
+      const schema = getCommandSchema("status");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("status");
+      const targetDirOpt = schema?.options?.find(
+        (o) => o.name === "--target-dir",
+      );
+      expect(targetDirOpt).toBeDefined();
+    });
+
+    it("freshness schema should have command = freshness", () => {
+      const schema = getCommandSchema("freshness");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("freshness");
     });
 
     it("should have correct deps command schema", () => {
