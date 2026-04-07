@@ -15,6 +15,21 @@ Operate from the **repository root** so **`pnpm-lock.yaml`** is updated consiste
 
 `-r` / `--recursive` applies the command to **all workspace packages** that participate in the operation (for `update`, packages that list the dependency; for bare `pnpm -r update`, all packages get their ranges honored).
 
+## Vulnerability audit (pnpm)
+
+Use these from the **repository root** when the goal is **security findings**, not just “newer” versions.
+
+| Goal                         | Command             | Notes                                                                      |
+| ---------------------------- | ------------------- | -------------------------------------------------------------------------- |
+| Human-readable audit         | `pnpm audit`        | Lists vulnerable dependency paths; non-zero exit when issues reported.     |
+| JSON (for scripting)         | `pnpm audit --json` | If unsupported, use plain `pnpm audit` and parse text or use a newer pnpm. |
+| Attempt auto-fix (careful)   | `pnpm audit --fix`  | Treat like a broad lockfile change; review diff; re-run quality gates.     |
+| Explain why a package exists | `pnpm why <pkg>`    | Add `--filter <workspace>` to scope to one workspace package.              |
+
+**Workflow:** `pnpm audit` → open **GHSA/CVE/advisory** for each finding → note **patched version** → **`pnpm -r update <pkg>@<patched>`** (or explicit semver) → verify **`pnpm audit`** is clean (or only accepted risk) → same [verification](#verification-this-repository) as other upgrades.
+
+**Caveats:** Advisory databases and GitHub’s UI can disagree on timing; the **lockfile on your branch** plus **`pnpm audit`** define what to fix locally. Multiple advisories on one package (e.g. several Vite GHSAs) may share one **patched** release—confirm on the official advisory.
+
 ## Examples
 
 ```bash
@@ -45,7 +60,7 @@ pnpm --filter @dbt-tools/web add react@latest
 
 ## Verification (this repository)
 
-From repo root after upgrades:
+From repo root after upgrades or **security-driven** lockfile fixes:
 
 1. `pnpm lint:report` (must exit 0)
 2. `pnpm coverage:report` (must exit 0; if coverage thresholds fail, add or adjust tests)
