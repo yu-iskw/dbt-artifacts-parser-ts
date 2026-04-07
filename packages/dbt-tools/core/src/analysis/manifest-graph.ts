@@ -870,7 +870,10 @@ export class ManifestGraph {
     for (const nodeId of included) {
       if (!this.graph.hasNode(nodeId)) continue;
       const attrs = this.graph.getNodeAttributes(nodeId);
-      if (resourceTypes && !resourceTypes.has(attrs.resource_type.toLowerCase())) {
+      // Always include the focal node itself; resource-type filter only applies to
+      // traversed neighbours so the subgraph is never empty when the node exists.
+      const isFocusNode = nodeId === focusId;
+      if (!isFocusNode && resourceTypes && !resourceTypes.has(attrs.resource_type.toLowerCase())) {
         continue;
       }
       subgraph.addNode(nodeId, attrs);

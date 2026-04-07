@@ -3,6 +3,7 @@
  * Reports artifact presence, modification times, and analysis readiness.
  */
 import * as fs from "fs";
+import * as path from "path";
 import {
   resolveArtifactPaths,
   validateSafePath,
@@ -128,11 +129,8 @@ export function statusAction(
     const manifestStatus = getFileStatus(paths.manifest);
     const runResultsStatus = getFileStatus(paths.runResults);
 
-    // Determine target dir from the manifest path (strip filename)
-    const targetDir = paths.manifest
-      .split(/[\\/]/)
-      .slice(0, -1)
-      .join("/") || ".";
+    // Determine target dir from the manifest path using path.dirname for portability
+    const targetDir = path.dirname(paths.manifest) || ".";
 
     let readiness: StatusResult["readiness"];
     if (!manifestStatus.exists) {

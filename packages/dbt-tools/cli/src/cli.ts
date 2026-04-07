@@ -8,7 +8,7 @@ import {
   loadCatalog,
   validateSafePath,
   validateDepth,
-  validateNoControlChars,
+  validateResourceId,
   isTTY,
   shouldOutputJSON,
   formatOutput,
@@ -260,7 +260,7 @@ program
 
         // Apply subgraph focus if requested
         if (options.focus) {
-          validateNoControlChars(options.focus);
+          validateResourceId(options.focus);
           const allowedTypes = options.resourceTypes
             ? new Set(
                 options.resourceTypes

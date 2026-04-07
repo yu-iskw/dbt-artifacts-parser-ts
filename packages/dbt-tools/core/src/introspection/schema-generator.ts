@@ -121,9 +121,34 @@ function getGraphSchema(): CommandSchema {
         type: TYPE_STRING,
         description: "Path to catalog.json file",
       },
+      {
+        name: "--focus",
+        type: TYPE_STRING,
+        description:
+          "Focus on a single node (unique_id); exports only its subgraph",
+      },
+      {
+        name: "--focus-depth",
+        type: "number",
+        description:
+          "Max traversal hops for --focus (default: unlimited)",
+      },
+      {
+        name: "--focus-direction",
+        type: "enum",
+        values: ["upstream", "downstream", "both"],
+        default: "both",
+        description: "Traversal direction for --focus",
+      },
+      {
+        name: "--resource-types",
+        type: TYPE_STRING,
+        description:
+          "Comma-separated resource types to keep in the subgraph (e.g. model,test); focus node is always included",
+      },
     ],
     output_format: "json, dot, or gexf",
-    example: "dbt-tools graph --format dot --output graph.dot",
+    example: "dbt-tools graph --focus model.my_project.orders --focus-depth 2",
   };
 }
 
@@ -434,7 +459,7 @@ function getTimelineSchema(): CommandSchema {
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
     ],
-    output_format: OUTPUT_JSON_OR_HUMAN,
+    output_format: "json, table, or csv",
     example: "dbt-tools timeline --sort duration --top 20 --failed-only",
   };
 }
@@ -529,7 +554,7 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     timeline: getTimelineSchema(),
     search: getSearchSchema(),
     status: getStatusSchema(),
-    freshness: { ...getStatusSchema(), command: "freshness", description: "Alias for status – shows artifact recency and readiness" },
+    freshness: { ...getStatusSchema(), command: "freshness", description: "Alias for status – shows artifact recency and readiness", example: "dbt-tools freshness --target-dir ./target" },
     schema: getSchemaCommandSchema(),
   };
 }
