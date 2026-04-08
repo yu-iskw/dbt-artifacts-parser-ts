@@ -9,8 +9,8 @@ import {
   coerceAdapterResponseInput,
   extractAdapterResponseFields,
   isAdapterResponseObject,
-  normalizeAdapterResponse,
 } from "./adapter-response-metrics";
+import { normalizeAdapterResponseWithContext } from "./adapter-response/index";
 
 type RunResultLike = {
   unique_id: string;
@@ -69,9 +69,13 @@ export interface ExecutionSummary {
 /**
  * Build node execution rows from parsed run_results (no manifest required).
  * Used by the CLI when only run_results.json is provided.
+ *
+ * @param runResults - Parsed run_results.json
+ * @param adapterType - Optional adapter type from manifest metadata for parser dispatch
  */
 export function buildNodeExecutionsFromRunResults(
   runResults: ParsedRunResults,
+  adapterType?: string | null,
 ): NodeExecution[] {
   if (!runResults.results || !Array.isArray(runResults.results)) {
     return [];
@@ -86,7 +90,10 @@ export function buildNodeExecutionsFromRunResults(
     const timing = executeTiming || compileTiming || timingArray[0];
 
     const adapterRaw = coerceAdapterResponseInput(result.adapter_response);
-    const adapterMetrics = normalizeAdapterResponse(adapterRaw);
+    // Use context-aware parser with adapter type hint
+    const adapterMetrics = normalizeAdapterResponseWithContext(adapterRaw, {
+      adapterType,
+    });
     const adapterResponseFields = extractAdapterResponseFields(adapterRaw);
     const includeAdapter =
       adapterMetrics.rawKeys.length > 0 ||
@@ -116,10 +123,16 @@ export function buildNodeExecutionsFromRunResults(
 export class ExecutionAnalyzer {
   private runResults: ParsedRunResults;
   private graph: ManifestGraph;
+  private adapterType?: string | null;
 
-  constructor(runResults: ParsedRunResults, graph: ManifestGraph) {
+  constructor(
+    runResults: ParsedRunResults,
+    graph: ManifestGraph,
+    adapterType?: string | null,
+  ) {
     this.runResults = runResults;
     this.graph = graph;
+    this.adapterType = adapterType;
   }
 
   /**
@@ -155,7 +168,7 @@ export class ExecutionAnalyzer {
    * Extract execution information for each node
    */
   getNodeExecutions(): NodeExecution[] {
-    return buildNodeExecutionsFromRunResults(this.runResults);
+    return buildNodeExecutionsFromRunResults(this.runResults, this.adapterType);
   }
 
   /**
