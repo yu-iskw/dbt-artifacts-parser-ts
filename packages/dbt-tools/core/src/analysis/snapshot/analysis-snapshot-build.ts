@@ -48,13 +48,13 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   timings: AnalysisSnapshotBuildTimings;
   graph: ManifestGraph;
 } {
+  const warehouseType = buildWarehouseType(manifestJson);
   const graphStart = now();
   const graph = new ManifestGraph(manifest);
-  const analyzer = new ExecutionAnalyzer(runResults, graph);
+  const analyzer = new ExecutionAnalyzer(runResults, graph, { adapterType: warehouseType });
   const graphBuildMs = now() - graphStart;
 
   const snapshotStart = now();
-  const warehouseType = buildWarehouseType(manifestJson);
   const summary = analyzer.getSummary();
   const manifestEntryLookup = buildManifestEntryLookup(manifestJson);
   const ganttData = analyzer.getGanttData();

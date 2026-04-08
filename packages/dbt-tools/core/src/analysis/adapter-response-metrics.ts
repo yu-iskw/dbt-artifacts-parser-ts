@@ -5,6 +5,12 @@
  * arbitrary UI rendering.
  */
 
+import {
+  normalizeAdapterResponse,
+  normalizeAdapterResponseWithContext,
+  normalizeGenericAdapterResponse,
+} from "./adapter-response";
+
 export type AdapterResponseFieldKind =
   | "number"
   | "string"
@@ -33,6 +39,10 @@ export interface AdapterResponseMetrics {
   queryId?: string;
   projectId?: string;
   location?: string;
+  rowsInserted?: number;
+  rowsDeleted?: number;
+  rowsUpdated?: number;
+  rowsDuplicates?: number;
   /** Top-level keys present on the raw object (for debugging). */
   rawKeys: string[];
 }
@@ -43,34 +53,6 @@ export interface AdapterTotalsSnapshot {
   totalBytesBilled?: number;
   totalSlotMs?: number;
   totalRowsAffected?: number;
-}
-
-function readFiniteNumber(
-  obj: Record<string, unknown>,
-  key: string,
-): number | undefined {
-  const v = obj[key];
-  if (typeof v === "number" && Number.isFinite(v)) {
-    return v;
-  }
-  if (typeof v === "string" && v.trim() !== "") {
-    const n = Number(v);
-    if (Number.isFinite(n)) {
-      return n;
-    }
-  }
-  return undefined;
-}
-
-function readNonEmptyString(
-  obj: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const v = obj[key];
-  if (typeof v === "string" && v.trim() !== "") {
-    return v;
-  }
-  return undefined;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -186,7 +168,11 @@ export function adapterMetricsHasData(
     metrics.adapterMessage !== undefined ||
     metrics.queryId !== undefined ||
     metrics.projectId !== undefined ||
-    metrics.location !== undefined
+    metrics.location !== undefined ||
+    metrics.rowsInserted !== undefined ||
+    metrics.rowsDeleted !== undefined ||
+    metrics.rowsUpdated !== undefined ||
+    metrics.rowsDuplicates !== undefined
   );
 }
 
@@ -200,6 +186,12 @@ export function isAdapterResponseObject(
  * Some exports / loaders stringify `adapter_response` even though artifacts are
  * normally objects. Parse JSON object/array strings so we can extract fields.
  */
+export {
+  normalizeAdapterResponse,
+  normalizeAdapterResponseWithContext,
+  normalizeGenericAdapterResponse,
+};
+
 export function coerceAdapterResponseInput(raw: unknown): unknown {
   if (typeof raw !== "string") {
     return raw;
@@ -217,48 +209,6 @@ export function coerceAdapterResponseInput(raw: unknown): unknown {
   } catch {
     return raw;
   }
-}
-
-/**
- * Normalize adapter_response from a single run_results result row.
- */
-export function normalizeAdapterResponse(
-  adapterResponse: unknown,
-): AdapterResponseMetrics {
-  if (!isPlainObject(adapterResponse)) {
-    return { rawKeys: [] };
-  }
-
-  const rawKeys = Object.keys(adapterResponse).filter(
-    (k) => typeof k === "string",
-  );
-
-  const bytesProcessed = readFiniteNumber(adapterResponse, "bytes_processed");
-  const bytesBilled = readFiniteNumber(adapterResponse, "bytes_billed");
-  const slotMs = readFiniteNumber(adapterResponse, "slot_ms");
-  const rowsAffected = readFiniteNumber(adapterResponse, "rows_affected");
-
-  const adapterCode = readNonEmptyString(adapterResponse, "code");
-  const adapterMessage = readNonEmptyString(adapterResponse, "_message");
-
-  const queryId =
-    readNonEmptyString(adapterResponse, "query_id") ??
-    readNonEmptyString(adapterResponse, "job_id");
-  const projectId = readNonEmptyString(adapterResponse, "project_id");
-  const location = readNonEmptyString(adapterResponse, "location");
-
-  return {
-    ...(bytesProcessed !== undefined ? { bytesProcessed } : {}),
-    ...(bytesBilled !== undefined ? { bytesBilled } : {}),
-    ...(slotMs !== undefined ? { slotMs } : {}),
-    ...(rowsAffected !== undefined ? { rowsAffected } : {}),
-    ...(adapterCode !== undefined ? { adapterCode } : {}),
-    ...(adapterMessage !== undefined ? { adapterMessage } : {}),
-    ...(queryId !== undefined ? { queryId } : {}),
-    ...(projectId !== undefined ? { projectId } : {}),
-    ...(location !== undefined ? { location } : {}),
-    rawKeys,
-  };
 }
 
 /**

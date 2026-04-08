@@ -143,6 +143,64 @@ describe("ExecutionAnalyzer", () => {
       ).toEqual(["bytes_processed", "job_id"]);
     });
 
+
+    it("uses adapter type context when provided", () => {
+      const runResults = parseRunResults({
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "model.pkg.athena",
+            status: "success",
+            execution_time: 1,
+            thread_id: "Thread-1",
+            adapter_response: {
+              data_scanned_in_bytes: 123,
+              _message: "OK 1",
+            },
+            timing: [],
+          },
+        ],
+      } as Record<string, unknown>);
+
+      const executions = buildNodeExecutionsFromRunResults(runResults, {
+        adapterType: "athena",
+      });
+
+      expect(executions[0]?.adapterMetrics?.bytesProcessed).toBe(123);
+    });
+
+    it("remains resilient with wrong adapter type via fallback heuristics", () => {
+      const runResults = parseRunResults({
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        },
+        results: [
+          {
+            unique_id: "model.pkg.mislabeled",
+            status: "success",
+            execution_time: 1,
+            thread_id: "Thread-1",
+            adapter_response: {
+              bytes_processed: 44,
+              job_id: "job-44",
+            },
+            timing: [],
+          },
+        ],
+      } as Record<string, unknown>);
+
+      const executions = buildNodeExecutionsFromRunResults(runResults, {
+        adapterType: "snowflake",
+      });
+
+      expect(executions[0]?.adapterMetrics?.bytesProcessed).toBe(44);
+      expect(executions[0]?.adapterMetrics?.queryId).toBe("job-44");
+    });
+
     it("maps non-empty run result message onto node executions", () => {
       const runResults = parseRunResults({
         metadata: {

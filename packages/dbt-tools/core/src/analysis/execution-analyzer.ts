@@ -9,7 +9,7 @@ import {
   coerceAdapterResponseInput,
   extractAdapterResponseFields,
   isAdapterResponseObject,
-  normalizeAdapterResponse,
+  normalizeAdapterResponseWithContext,
 } from "./adapter-response-metrics";
 
 type RunResultLike = {
@@ -72,6 +72,7 @@ export interface ExecutionSummary {
  */
 export function buildNodeExecutionsFromRunResults(
   runResults: ParsedRunResults,
+  options?: { adapterType?: string | null },
 ): NodeExecution[] {
   if (!runResults.results || !Array.isArray(runResults.results)) {
     return [];
@@ -86,7 +87,9 @@ export function buildNodeExecutionsFromRunResults(
     const timing = executeTiming || compileTiming || timingArray[0];
 
     const adapterRaw = coerceAdapterResponseInput(result.adapter_response);
-    const adapterMetrics = normalizeAdapterResponse(adapterRaw);
+    const adapterMetrics = normalizeAdapterResponseWithContext(adapterRaw, {
+      adapterType: options?.adapterType,
+    });
     const adapterResponseFields = extractAdapterResponseFields(adapterRaw);
     const includeAdapter =
       adapterMetrics.rawKeys.length > 0 ||
@@ -116,10 +119,16 @@ export function buildNodeExecutionsFromRunResults(
 export class ExecutionAnalyzer {
   private runResults: ParsedRunResults;
   private graph: ManifestGraph;
+  private adapterType?: string | null;
 
-  constructor(runResults: ParsedRunResults, graph: ManifestGraph) {
+  constructor(
+    runResults: ParsedRunResults,
+    graph: ManifestGraph,
+    options?: { adapterType?: string | null },
+  ) {
     this.runResults = runResults;
     this.graph = graph;
+    this.adapterType = options?.adapterType;
   }
 
   /**
@@ -155,7 +164,9 @@ export class ExecutionAnalyzer {
    * Extract execution information for each node
    */
   getNodeExecutions(): NodeExecution[] {
-    return buildNodeExecutionsFromRunResults(this.runResults);
+    return buildNodeExecutionsFromRunResults(this.runResults, {
+      adapterType: this.adapterType,
+    });
   }
 
   /**
