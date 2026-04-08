@@ -5,16 +5,13 @@
  * - _message: from cursor.statusmessage
  * - rows_affected: from cursor.rowcount
  * - code: status message with numeric tokens removed
- * - No special adapter-specific fields beyond the base contract.
+ * - May also include other generic fields like query_id.
  */
 
 import type { AdapterResponseMetrics } from "../../adapter-response-metrics";
 import type { AdapterResponseParser } from "../types";
-import {
-  readFiniteNumber,
-  readNonEmptyString,
-  isPlainObject,
-} from "../../adapter-response-metrics";
+import { isPlainObject } from "../../adapter-response-metrics";
+import { extractBaseFields } from "./base";
 
 export const postgresAdapterResponseParser: AdapterResponseParser = {
   name: "postgres",
@@ -26,15 +23,11 @@ export const postgresAdapterResponseParser: AdapterResponseParser = {
 
     const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
 
-    // Base response fields only
-    const rowsAffected = readFiniteNumber(input, "rows_affected");
-    const adapterCode = readNonEmptyString(input, "code");
-    const adapterMessage = readNonEmptyString(input, "_message");
+    // Extract generic/base fields (includes _message, code, rows_affected, query_id, etc.)
+    const baseFields = extractBaseFields(input);
 
     return {
-      ...(rowsAffected !== undefined ? { rowsAffected } : {}),
-      ...(adapterCode !== undefined ? { adapterCode } : {}),
-      ...(adapterMessage !== undefined ? { adapterMessage } : {}),
+      ...baseFields,
       rawKeys,
     };
   },

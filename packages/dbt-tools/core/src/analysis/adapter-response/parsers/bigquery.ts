@@ -8,6 +8,8 @@
  * - project_id: GCP project ID
  * - location: dataset location
  * - job_id: BigQuery job ID (maps to canonical queryId)
+ *
+ * Also preserves generic fields via base field extraction.
  */
 
 import type { AdapterResponseMetrics } from "../../adapter-response-metrics";
@@ -17,6 +19,7 @@ import {
   readNonEmptyString,
   isPlainObject,
 } from "../../adapter-response-metrics";
+import { extractBaseFields } from "./base";
 
 export const bigqueryAdapterResponseParser: AdapterResponseParser = {
   name: "bigquery",
@@ -28,7 +31,10 @@ export const bigqueryAdapterResponseParser: AdapterResponseParser = {
 
     const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
 
-    // BigQuery-specific fields
+    // Extract generic/base fields first
+    const baseFields = extractBaseFields(input);
+
+    // BigQuery-specific fields (override base if both present)
     const bytesProcessed = readFiniteNumber(input, "bytes_processed");
     const bytesBilled = readFiniteNumber(input, "bytes_billed");
     const slotMs = readFiniteNumber(input, "slot_ms");
@@ -41,18 +47,11 @@ export const bigqueryAdapterResponseParser: AdapterResponseParser = {
       readNonEmptyString(input, "query_id") ??
       readNonEmptyString(input, "job_id");
 
-    // Base response fields (still present in BigQuery)
-    const rowsAffected = readFiniteNumber(input, "rows_affected");
-    const adapterCode = readNonEmptyString(input, "code");
-    const adapterMessage = readNonEmptyString(input, "_message");
-
     return {
+      ...baseFields,
       ...(bytesProcessed !== undefined ? { bytesProcessed } : {}),
       ...(bytesBilled !== undefined ? { bytesBilled } : {}),
       ...(slotMs !== undefined ? { slotMs } : {}),
-      ...(rowsAffected !== undefined ? { rowsAffected } : {}),
-      ...(adapterCode !== undefined ? { adapterCode } : {}),
-      ...(adapterMessage !== undefined ? { adapterMessage } : {}),
       ...(queryId !== undefined ? { queryId } : {}),
       ...(projectId !== undefined ? { projectId } : {}),
       ...(location !== undefined ? { location } : {}),

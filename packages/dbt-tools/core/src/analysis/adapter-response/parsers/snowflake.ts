@@ -4,15 +4,16 @@
  * SnowflakeAdapterResponse includes:
  * - Base AdapterResponse fields: _message, code, rows_affected, query_id
  * - DML stats: rows_inserted, rows_deleted, rows_updated, rows_duplicates
+ * - Generic fields via base field extraction
  */
 
 import type { AdapterResponseMetrics } from "../../adapter-response-metrics";
 import type { AdapterResponseParser } from "../types";
 import {
   readFiniteNumber,
-  readNonEmptyString,
   isPlainObject,
 } from "../../adapter-response-metrics";
+import { extractBaseFields } from "./base";
 
 export const snowflakeAdapterResponseParser: AdapterResponseParser = {
   name: "snowflake",
@@ -24,11 +25,8 @@ export const snowflakeAdapterResponseParser: AdapterResponseParser = {
 
     const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
 
-    // Base response fields
-    const rowsAffected = readFiniteNumber(input, "rows_affected");
-    const adapterCode = readNonEmptyString(input, "code");
-    const adapterMessage = readNonEmptyString(input, "_message");
-    const queryId = readNonEmptyString(input, "query_id");
+    // Extract generic/base fields first
+    const baseFields = extractBaseFields(input);
 
     // Snowflake-specific DML stats
     const rowsInserted = readFiniteNumber(input, "rows_inserted");
@@ -37,10 +35,7 @@ export const snowflakeAdapterResponseParser: AdapterResponseParser = {
     const rowsDuplicated = readFiniteNumber(input, "rows_duplicates");
 
     return {
-      ...(rowsAffected !== undefined ? { rowsAffected } : {}),
-      ...(adapterCode !== undefined ? { adapterCode } : {}),
-      ...(adapterMessage !== undefined ? { adapterMessage } : {}),
-      ...(queryId !== undefined ? { queryId } : {}),
+      ...baseFields,
       ...(rowsInserted !== undefined ? { rowsInserted } : {}),
       ...(rowsDeleted !== undefined ? { rowsDeleted } : {}),
       ...(rowsUpdated !== undefined ? { rowsUpdated } : {}),

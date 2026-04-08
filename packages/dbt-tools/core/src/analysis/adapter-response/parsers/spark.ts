@@ -3,15 +3,13 @@
  *
  * Spark returns a minimal response:
  * - _message: typically "OK"
- * - No explicit code, rows_affected, or query_id in current implementation
+ * - May also include generic fields like code, rows_affected, query_id, etc.
  */
 
 import type { AdapterResponseMetrics } from "../../adapter-response-metrics";
 import type { AdapterResponseParser } from "../types";
-import {
-  readNonEmptyString,
-  isPlainObject,
-} from "../../adapter-response-metrics";
+import { isPlainObject } from "../../adapter-response-metrics";
+import { extractBaseFields } from "./base";
 
 export const sparkAdapterResponseParser: AdapterResponseParser = {
   name: "spark",
@@ -23,11 +21,11 @@ export const sparkAdapterResponseParser: AdapterResponseParser = {
 
     const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
 
-    // Minimal response: just message in most cases
-    const adapterMessage = readNonEmptyString(input, "_message");
+    // Extract generic/base fields (includes _message, code, rows_affected, query_id, etc.)
+    const baseFields = extractBaseFields(input);
 
     return {
-      ...(adapterMessage !== undefined ? { adapterMessage } : {}),
+      ...baseFields,
       rawKeys,
     };
   },

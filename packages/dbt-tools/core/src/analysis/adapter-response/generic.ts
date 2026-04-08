@@ -6,11 +6,8 @@
 
 import type { AdapterResponseMetrics } from "../adapter-response-metrics";
 import type { AdapterResponseParser } from "./types";
-import {
-  readFiniteNumber,
-  readNonEmptyString,
-  isPlainObject,
-} from "../adapter-response-metrics";
+import { isPlainObject } from "../adapter-response-metrics";
+import { extractBaseFields } from "./parsers/base";
 
 /**
  * Generic fallback parser: normalizes keys common across all adapters.
@@ -27,33 +24,11 @@ export const genericAdapterResponseParser: AdapterResponseParser = {
 
     const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
 
-    // Base fields present in all adapters
-    const bytesProcessed = readFiniteNumber(input, "bytes_processed");
-    const bytesBilled = readFiniteNumber(input, "bytes_billed");
-    const slotMs = readFiniteNumber(input, "slot_ms");
-    const rowsAffected = readFiniteNumber(input, "rows_affected");
-
-    const adapterCode = readNonEmptyString(input, "code");
-    const adapterMessage = readNonEmptyString(input, "_message");
-
-    // Query/job ID: prefer query_id but fall back to job_id (BigQuery pattern)
-    const queryId =
-      readNonEmptyString(input, "query_id") ??
-      readNonEmptyString(input, "job_id");
-
-    const projectId = readNonEmptyString(input, "project_id");
-    const location = readNonEmptyString(input, "location");
+    // Extract generic/base fields using shared utility
+    const baseFields = extractBaseFields(input);
 
     return {
-      ...(bytesProcessed !== undefined ? { bytesProcessed } : {}),
-      ...(bytesBilled !== undefined ? { bytesBilled } : {}),
-      ...(slotMs !== undefined ? { slotMs } : {}),
-      ...(rowsAffected !== undefined ? { rowsAffected } : {}),
-      ...(adapterCode !== undefined ? { adapterCode } : {}),
-      ...(adapterMessage !== undefined ? { adapterMessage } : {}),
-      ...(queryId !== undefined ? { queryId } : {}),
-      ...(projectId !== undefined ? { projectId } : {}),
-      ...(location !== undefined ? { location } : {}),
+      ...baseFields,
       rawKeys,
     };
   },
