@@ -274,13 +274,14 @@ describe("Adapter Response Parsers", () => {
 
     it("falls back to generic for empty object even with adapter type", () => {
       const parser = adapterResponseParserRegistry.selectParser("bigquery", {});
-      // Will still use BigQuery parser (exact match), which should return empty metrics
-      expect(parser.name).toBe("bigquery");
+      // BigQuery parser's canParse() returns false for empty object.
+      // No heuristics match either, so falls back to generic.
+      expect(parser.name).toBe("generic");
       const result = parser.parse({});
       expect(result.rawKeys.length).toBe(0);
     });
 
-    it("when adapter type is explicitly wrong, uses that parser (not heuristic)", () => {
+    it("when adapter type is explicitly wrong and incompatible, falls back to heuristics", () => {
       const snowflakePayload = {
         rows_inserted: 100,
         rows_deleted: 5,
@@ -290,12 +291,13 @@ describe("Adapter Response Parsers", () => {
       const result = normalizeAdapterResponseWithContext(snowflakePayload, {
         adapterType: "bigquery", // Wrong adapter type!
       });
-      // BigQuery parser will only parse base fields, not Snowflake DML stats
-      // This is correct behavior: explicit type match takes precedence
+      // BigQuery parser's canParse() returns false because payload lacks BigQuery fields
+      // (bytes_processed, bytes_billed, slot_ms, job_id, location).
+      // Falls back to heuristics, which detects Snowflake via rows_inserted/rows_deleted.
       expect(result.queryId).toBe("sf-1");
-      // Snowflake-specific fields are NOT parsed when BigQuery parser is used
-      expect(result.rowsInserted).toBeUndefined();
-      expect(result.rowsDeleted).toBeUndefined();
+      // Snowflake-specific fields ARE parsed because Snowflake parser is used (heuristic)
+      expect(result.rowsInserted).toBe(100);
+      expect(result.rowsDeleted).toBe(5);
     });
 
     it("when adapter type is missing, heuristic detects Snowflake fields correctly", () => {

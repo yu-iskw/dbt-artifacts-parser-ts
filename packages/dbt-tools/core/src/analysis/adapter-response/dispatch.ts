@@ -52,12 +52,16 @@ class AdapterResponseParserRegistryImpl implements AdapterResponseParserRegistry
     adapterType: string | null | undefined,
     adapterResponse: unknown,
   ): AdapterResponseParser {
-    // 1. Try exact adapter type match
+    // 1. Try exact adapter type match (if compatible)
     if (adapterType && typeof adapterType === "string") {
       const normalizedType = adapterType.toLowerCase().trim();
       const exactParser = parsersByAdapterType.get(normalizedType);
       if (exactParser) {
-        return exactParser;
+        // If the parser has a canParse method, verify compatibility
+        // before using it. If incompatible, fall through to heuristics.
+        if (!exactParser.canParse || exactParser.canParse(adapterResponse)) {
+          return exactParser;
+        }
       }
     }
 
