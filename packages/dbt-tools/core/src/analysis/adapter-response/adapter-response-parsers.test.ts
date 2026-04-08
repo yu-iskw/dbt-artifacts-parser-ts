@@ -273,10 +273,7 @@ describe("Adapter Response Parsers", () => {
     });
 
     it("falls back to generic for empty object even with adapter type", () => {
-      const parser = adapterResponseParserRegistry.selectParser(
-        "bigquery",
-        {},
-      );
+      const parser = adapterResponseParserRegistry.selectParser("bigquery", {});
       // Will still use BigQuery parser (exact match), which should return empty metrics
       expect(parser.name).toBe("bigquery");
       const result = parser.parse({});

@@ -10,7 +10,10 @@
  * we still parse correctly via heuristics or fallback.
  */
 
-import type { AdapterResponseParser, AdapterResponseParserRegistry } from "./types";
+import type {
+  AdapterResponseParser,
+  AdapterResponseParserRegistry,
+} from "./types";
 import { genericAdapterResponseParser } from "./generic";
 import { athenaAdapterResponseParser } from "./parsers/athena";
 import { bigqueryAdapterResponseParser } from "./parsers/bigquery";
