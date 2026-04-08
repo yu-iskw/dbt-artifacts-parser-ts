@@ -51,7 +51,9 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   const warehouseType = buildWarehouseType(manifestJson);
   const graphStart = now();
   const graph = new ManifestGraph(manifest);
-  const analyzer = new ExecutionAnalyzer(runResults, graph, { adapterType: warehouseType });
+  const analyzer = new ExecutionAnalyzer(runResults, graph, {
+    adapterType: warehouseType,
+  });
   const graphBuildMs = now() - graphStart;
 
   const snapshotStart = now();

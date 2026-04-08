@@ -17,8 +17,7 @@ export const genericAdapterResponseParser: AdapterResponseParser = {
     const bytesBilled = readFiniteNumber(adapterResponse, "bytes_billed");
     const slotMs = readFiniteNumber(adapterResponse, "slot_ms");
     const queryId =
-      base.queryId ??
-      readNonEmptyString(adapterResponse, "job_id");
+      base.queryId ?? readNonEmptyString(adapterResponse, "job_id");
     const projectId = readNonEmptyString(adapterResponse, "project_id");
     const location = readNonEmptyString(adapterResponse, "location");
 

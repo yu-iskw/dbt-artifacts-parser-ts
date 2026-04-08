@@ -19,7 +19,9 @@ const ADAPTER_PARSERS: readonly AdapterResponseParser[] = [
 
 const PARSER_BY_TYPE = new Map<string, AdapterResponseParser>(
   ADAPTER_PARSERS.flatMap((parser) =>
-    parser.adapterTypes.map((adapterType) => [normalizeAdapterType(adapterType), parser] as const),
+    parser.adapterTypes.map(
+      (adapterType) => [normalizeAdapterType(adapterType), parser] as const,
+    ),
   ),
 );
 

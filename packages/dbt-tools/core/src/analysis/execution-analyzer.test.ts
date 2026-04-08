@@ -143,7 +143,6 @@ describe("ExecutionAnalyzer", () => {
       ).toEqual(["bytes_processed", "job_id"]);
     });
 
-
     it("uses adapter type context when provided", () => {
       const runResults = parseRunResults({
         metadata: {

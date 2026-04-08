@@ -161,7 +161,10 @@ describe("adapter parser dispatch", () => {
   });
 
   it("keeps empty objects safe even with adapter type context", () => {
-    const m = normalizeAdapterResponseWithContext({}, { adapterType: "athena" });
+    const m = normalizeAdapterResponseWithContext(
+      {},
+      { adapterType: "athena" },
+    );
     expect(m).toEqual({ rawKeys: [] });
   });
 });

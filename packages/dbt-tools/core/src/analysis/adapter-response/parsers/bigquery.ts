@@ -21,7 +21,8 @@ export const bigqueryAdapterResponseParser: AdapterResponseParser = {
     const bytesProcessed = readFiniteNumber(adapterResponse, "bytes_processed");
     const bytesBilled = readFiniteNumber(adapterResponse, "bytes_billed");
     const slotMs = readFiniteNumber(adapterResponse, "slot_ms");
-    const queryId = base.queryId ?? readNonEmptyString(adapterResponse, "job_id");
+    const queryId =
+      base.queryId ?? readNonEmptyString(adapterResponse, "job_id");
     const projectId = readNonEmptyString(adapterResponse, "project_id");
     const location = readNonEmptyString(adapterResponse, "location");
 

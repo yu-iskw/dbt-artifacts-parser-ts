@@ -13,8 +13,12 @@ export type AdapterResponseParseContext = {
   adapterType?: string | null;
 };
 
-export function normalizeAdapterType(adapterType: string | null | undefined): string {
-  return typeof adapterType === "string" ? adapterType.trim().toLowerCase() : "";
+export function normalizeAdapterType(
+  adapterType: string | null | undefined,
+): string {
+  return typeof adapterType === "string"
+    ? adapterType.trim().toLowerCase()
+    : "";
 }
 
 export function readFiniteNumber(
@@ -45,7 +49,9 @@ export function readNonEmptyString(
   return undefined;
 }
 
-export function isPlainObject(value: unknown): value is Record<string, unknown> {
+export function isPlainObject(
+  value: unknown,
+): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 

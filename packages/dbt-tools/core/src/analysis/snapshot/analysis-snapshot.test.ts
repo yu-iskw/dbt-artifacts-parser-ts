@@ -94,7 +94,6 @@ describe("analysis snapshot facade", () => {
     expect(model?.rawCode).toBeNull();
   });
 
-
   it("passes manifest warehouse type into adapter-response normalization context", () => {
     const manifestJson = loadTestManifest(
       "v12",
