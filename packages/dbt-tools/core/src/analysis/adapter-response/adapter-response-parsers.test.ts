@@ -219,6 +219,23 @@ describe("Adapter Response Parsers", () => {
       expect(result.rowsAffected).toBe(5);
       expect(result.adapterCode).toBeUndefined();
     });
+
+    it("preserves generic fields like query_id in Redshift response", () => {
+      const result = normalizeAdapterResponseWithContext(
+        {
+          _message: "INSERT",
+          code: "INSERT",
+          rows_affected: 10,
+          query_id: "redshift-query-123",
+        },
+        { adapterType: "redshift" },
+      );
+      // Should preserve all generic fields, not just adapter-specific ones
+      expect(result.adapterMessage).toBe("INSERT");
+      expect(result.adapterCode).toBe("INSERT");
+      expect(result.rowsAffected).toBe(10);
+      expect(result.queryId).toBe("redshift-query-123");
+    });
   });
 
   describe("Spark adapter", () => {
