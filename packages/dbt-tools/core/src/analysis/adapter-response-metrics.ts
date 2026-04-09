@@ -33,6 +33,14 @@ export interface AdapterResponseMetrics {
   queryId?: string;
   projectId?: string;
   location?: string;
+  /** Snowflake DML stats: rows inserted in this statement. */
+  rowsInserted?: number;
+  /** Snowflake DML stats: rows deleted in this statement. */
+  rowsDeleted?: number;
+  /** Snowflake DML stats: rows updated in this statement. */
+  rowsUpdated?: number;
+  /** Snowflake DML stats: rows duplicated in this statement. */
+  rowsDuplicated?: number;
   /** Top-level keys present on the raw object (for debugging). */
   rawKeys: string[];
 }
@@ -45,7 +53,7 @@ export interface AdapterTotalsSnapshot {
   totalRowsAffected?: number;
 }
 
-function readFiniteNumber(
+export function readFiniteNumber(
   obj: Record<string, unknown>,
   key: string,
 ): number | undefined {
@@ -62,7 +70,7 @@ function readFiniteNumber(
   return undefined;
 }
 
-function readNonEmptyString(
+export function readNonEmptyString(
   obj: Record<string, unknown>,
   key: string,
 ): string | undefined {
@@ -73,7 +81,9 @@ function readNonEmptyString(
   return undefined;
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+export function isPlainObject(
+  value: unknown,
+): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -186,7 +196,11 @@ export function adapterMetricsHasData(
     metrics.adapterMessage !== undefined ||
     metrics.queryId !== undefined ||
     metrics.projectId !== undefined ||
-    metrics.location !== undefined
+    metrics.location !== undefined ||
+    metrics.rowsInserted !== undefined ||
+    metrics.rowsDeleted !== undefined ||
+    metrics.rowsUpdated !== undefined ||
+    metrics.rowsDuplicated !== undefined
   );
 }
 
