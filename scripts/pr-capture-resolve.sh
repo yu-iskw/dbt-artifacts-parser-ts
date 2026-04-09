@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT"
+cd "${ROOT}"
 
 BASE_REF="${BASE_REF:-main}"
 CHANGED="${ROOT}/packages/dbt-tools/web/pr-capture-changed-files.txt"
