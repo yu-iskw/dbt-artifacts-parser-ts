@@ -37,6 +37,34 @@ Avoid long CSS selectors tied to layout or third-party class names.
 - [`e2e/helpers/preload.ts`](../../../../packages/dbt-tools/web/e2e/helpers/preload.ts) registers `/api/*` mocks with **`page.route`** (Vite preview + Playwright). **`mockPreloadContext`** applies the same handlers to each **existing** `Page` on a `BrowserContext`; new pages still need **`mockPreload(page)`** before navigating to the app.
 - Catalog **explorer filters** (search box, execution status pills) start **collapsed** — expand the **Explorer filters** region first when a spec targets those controls.
 
+## Visual regression snapshots
+
+- **Spec:** [`packages/dbt-tools/web/e2e/visual-smoke.spec.ts`](../../../../packages/dbt-tools/web/e2e/visual-smoke.spec.ts) uses `expect(locator).toHaveScreenshot(...)` with committed PNG baselines under `e2e/visual-smoke.spec.ts-snapshots/` (filenames omit OS; see `snapshotPathTemplate` in `playwright.config.ts`).
+- **Global defaults:** `expect.toHaveScreenshot` sets `animations: "disabled"` plus `maxDiffPixels` / `threshold` for small raster drift (including Linux CI vs local macOS).
+- **After intentional UI changes**, refresh baselines and commit the updated `*.png` files:
+
+```bash
+pnpm build
+pnpm --filter @dbt-tools/web exec playwright test e2e/visual-smoke.spec.ts --update-snapshots
+```
+
+- **If CI (`ubuntu-latest`) fails** on snapshot diff but local passes, regenerate baselines in a **Linux** environment so pixels match CI (e.g. GitHub Codespaces, a Linux VM, or Docker using the Playwright image version that matches `@playwright/test` in this repo). Example shape (mount the repo and run the same `pnpm build` + `playwright test ... --update-snapshots` inside the container).
+- Prefer **locator** screenshots (e.g. `getByRole("main")`) over full-page shots unless the whole viewport must be covered—fewer flakes and smaller diffs.
+
+## Visual regression snapshots
+
+- **Spec:** [`packages/dbt-tools/web/e2e/visual-smoke.spec.ts`](../../../../packages/dbt-tools/web/e2e/visual-smoke.spec.ts) uses `expect(locator).toHaveScreenshot(...)` with committed PNG baselines under `e2e/visual-smoke.spec.ts-snapshots/` (filenames omit OS; see `snapshotPathTemplate` in `playwright.config.ts`).
+- **Global defaults:** `expect.toHaveScreenshot` sets `animations: "disabled"` plus `maxDiffPixels` / `threshold` for small raster drift (including Linux CI vs local macOS).
+- **After intentional UI changes**, refresh baselines and commit the updated `*.png` files:
+
+```bash
+pnpm build
+pnpm --filter @dbt-tools/web exec playwright test e2e/visual-smoke.spec.ts --update-snapshots
+```
+
+- **If CI (`ubuntu-latest`) fails** on snapshot diff but local passes, regenerate baselines in a **Linux** environment so pixels match CI (e.g. GitHub Codespaces, a Linux VM, or Docker using the Playwright image version that matches `@playwright/test` in this repo). Example shape (mount the repo and run the same `pnpm build` + `playwright test ... --update-snapshots` inside the container).
+- Prefer **locator** screenshots (e.g. `getByRole("main")`) over full-page shots unless the whole viewport must be covered—fewer flakes and smaller diffs.
+
 ## Anti-patterns
 
 - Relying on **dev-server-only** behavior while CI uses preview.

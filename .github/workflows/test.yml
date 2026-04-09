@@ -119,3 +119,119 @@ jobs:
         run: pnpm build
       - name: Run Playwright (shard)
         run: pnpm --filter @dbt-tools/web exec playwright test --shard=${{ matrix.shard }}/2
+
+  e2e-pr-visual:
+    name: E2E PR UI capture
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright Chromium
+        run: pnpm --filter @dbt-tools/web exec playwright install chromium --with-deps
+      - name: Build (vite preview needs dist)
+        run: pnpm build
+      - name: Capture UI screenshots for PR comment
+        working-directory: packages/dbt-tools/web
+        env:
+          CI: true
+          RUN_PR_COMMENT_CAPTURE: "1"
+        run: pnpm exec playwright test e2e/pr-comment-capture.spec.ts
+      - name: Upload PR capture artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-ui-capture-${{ github.event.pull_request.number }}-${{ github.run_id }}
+          path: packages/dbt-tools/web/test-results/pr-visual/
+          if-no-files-found: warn
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets.AWS_ROLE_ARN != '' && secrets.PR_VISUAL_BUCKET != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Sync captures to object storage
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets.AWS_ROLE_ARN != '' && secrets.PR_VISUAL_BUCKET != '' }}
+        env:
+          BUCKET: ${{ secrets.PR_VISUAL_BUCKET }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          aws s3 sync "packages/dbt-tools/web/test-results/pr-visual/" \
+            "s3://${BUCKET}/pr/${PR_NUMBER}/${RUN_ID}/" \
+            --cache-control "max-age=300,public"
+          echo "S3_UPLOAD_PERFORMED=true" >> "$GITHUB_ENV"
+      - name: Upsert PR comment with screenshots
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        env:
+          PR_VISUAL_PUBLIC_BASE_URL: ${{ secrets.PR_VISUAL_PUBLIC_BASE_URL }}
+        with:
+          script: |
+            const marker = "<!-- dbt-tools-ui-capture -->";
+            const sha = context.sha.substring(0, 7);
+            const pr = context.payload.pull_request.number;
+            const runId = context.runId;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+            const uploaded = process.env.S3_UPLOAD_PERFORMED === "true";
+            const base = (process.env.PR_VISUAL_PUBLIC_BASE_URL || "").replace(/\/$/, "");
+            const showImages = uploaded && base.length > 0;
+            let body = `${marker}\n### UI capture (\`${sha}\`)\n\n`;
+            if (showImages) {
+              const prefix = `${base}/pr/${pr}/${runId}`;
+              body += `![](${prefix}/health-overview.png)\n\n`;
+              body += `![](${prefix}/timeline-main.png)\n\n`;
+            } else {
+              body +=
+                "PNG captures are attached as **workflow artifacts** " +
+                `([download from the run](${runUrl})). ` +
+                "Configure repository secrets `AWS_ROLE_ARN`, `PR_VISUAL_BUCKET`, and `PR_VISUAL_PUBLIC_BASE_URL` " +
+                "(plus an IAM trust policy for GitHub OIDC) for HTTPS URLs and inline images in this comment.\n\n";
+            }
+            body += `[Workflow run](${runUrl})`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: pr,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pr,
+                body,
+              });
+            }

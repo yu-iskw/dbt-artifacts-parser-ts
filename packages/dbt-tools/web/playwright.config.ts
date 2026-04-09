@@ -9,8 +9,14 @@ const webPackageDir = path.dirname(fileURLToPath(import.meta.url));
 const e2ePort = Number(process.env.PLAYWRIGHT_E2E_PORT ?? "4173");
 const e2eOrigin = `http://127.0.0.1:${e2ePort}`;
 
+/** When set, `e2e/pr-comment-capture.spec.ts` runs; otherwise it is skipped so sharded E2E does not duplicate PR capture. */
+const runPrCommentCapture = process.env.RUN_PR_COMMENT_CAPTURE === "1";
+
 export default defineConfig({
   testDir: "./e2e",
+  ...(runPrCommentCapture
+    ? {}
+    : { testIgnore: ["**/pr-comment-capture.spec.ts"] }),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // One retry keeps CI resilient without tripling wall time on every flake (was 2).
