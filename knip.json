@@ -30,6 +30,7 @@
     "packages/dbt-tools/web": {
       "entry": [
         "e2e/**/*.ts",
+        "scripts/**/*.ts",
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
         "src/server/cli.ts"

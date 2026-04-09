@@ -31,6 +31,7 @@
     "dev:target": "DBT_TOOLS_TARGET_DIR=./target vite",
     "preview": "vite preview",
     "test:e2e": "pnpm build && playwright test",
+    "capture:record": "pnpm build && playwright test --config playwright.capture.config.ts",
     "lint": "pnpm lint:eslint && pnpm lint:stylelint",
     "lint:eslint": "eslint ../../../eslint.config.mjs",
     "lint:stylelint": "stylelint -c ../../../stylelint.config.mjs **/*.css",
@@ -49,6 +50,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "minimatch": "^10.2.5",
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",

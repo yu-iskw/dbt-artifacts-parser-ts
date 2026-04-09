@@ -164,5 +164,9 @@ codeql-db/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# PR visual capture output (CI + local `capture:pr`)
+packages/dbt-tools/web/pr-capture-artifacts/
+packages/dbt-tools/web/pr-capture-changed-files.txt
 .worktrees/
 .claude/worktrees/

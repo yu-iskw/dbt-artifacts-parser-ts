@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "globs": [
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/views/health/**",
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/views/overview/**"
+      ],
+      "targets": ["health"]
+    },
+    {
+      "globs": [
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/timeline/**"
+      ],
+      "targets": ["timeline"]
+    },
+    {
+      "globs": [
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/views/inventory/**"
+      ],
+      "targets": ["inventory", "inventory-lineage"]
+    },
+    {
+      "globs": [
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/views/runs/**"
+      ],
+      "targets": ["runs"]
+    },
+    {
+      "globs": [
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/lineage/**"
+      ],
+      "targets": ["inventory-lineage", "inventory"]
+    },
+    {
+      "globs": [
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/ExplorerPane*.tsx",
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/AnalysisWorkspace.tsx",
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/shared.tsx",
+        "packages/dbt-tools/web/src/components/AnalysisWorkspace/index.tsx"
+      ],
+      "targets": ["health", "timeline", "inventory", "runs"]
+    },
+    {
+      "globs": ["packages/dbt-tools/web/src/components/AppShell/**"],
+      "targets": ["health", "timeline", "inventory", "runs"]
+    },
+    {
+      "globs": ["packages/dbt-tools/core/src/**"],
+      "targets": ["health", "timeline"]
+    }
+  ]
+}

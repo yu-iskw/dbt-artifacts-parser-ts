@@ -55,6 +55,7 @@ codeql-results.sarif
 test-results/
 playwright-report/
 playwright/.cache/
+packages/dbt-tools/web/pr-capture-artifacts/
 
 # Git worktrees and scratch
 .worktrees/

@@ -1,0 +1,198 @@
+# Copyright 2025 yu-iskw
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: PR visual captures
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-captures-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Record screenshots and demo videos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      has_targets: ${{ steps.resolve.outputs.has_targets }}
+      screenshot_artifact_url: ${{ steps.capture_urls.outputs.screenshot }}
+      video_artifact_url: ${{ steps.capture_urls.outputs.video }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: List changed files and resolve capture targets
+        id: resolve
+        run: |
+          git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            > changed-files.txt
+          pnpm exec tsx packages/dbt-tools/web/scripts/resolve-pr-capture-targets.ts \
+            --changed changed-files.txt
+          COUNT=$(jq '.targets | length' packages/dbt-tools/web/pr-capture-artifacts/capture-manifest.json)
+          if [[ "$COUNT" -gt 0 ]]; then
+            echo "has_targets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload PR capture metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-captures-meta
+          path: |
+            changed-files.txt
+            packages/dbt-tools/web/pr-capture-artifacts/capture-manifest.json
+
+      - name: Cache Playwright browsers
+        if: steps.resolve.outputs.has_targets == 'true'
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        if: steps.resolve.outputs.has_targets == 'true'
+        run: pnpm --filter @dbt-tools/web exec playwright install chromium --with-deps
+
+      - name: Build (vite preview needs dist)
+        if: steps.resolve.outputs.has_targets == 'true'
+        run: pnpm build
+
+      - name: Run PR capture (Playwright)
+        if: steps.resolve.outputs.has_targets == 'true'
+        env:
+          PR_CAPTURE_MANIFEST: ${{ github.workspace }}/packages/dbt-tools/web/pr-capture-artifacts/capture-manifest.json
+          PR_CAPTURE_OUTPUT: ${{ github.workspace }}/packages/dbt-tools/web/pr-capture-artifacts
+        run: pnpm --filter @dbt-tools/web exec playwright test --config playwright.capture.config.ts
+
+      - name: Upload screenshots artifact
+        id: upload_screenshots
+        if: steps.resolve.outputs.has_targets == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-captures-screenshots
+          path: packages/dbt-tools/web/pr-capture-artifacts/screenshots/
+          if-no-files-found: error
+
+      - name: Upload demo videos artifact
+        id: upload_videos
+        if: steps.resolve.outputs.has_targets == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-captures-videos
+          path: packages/dbt-tools/web/pr-capture-artifacts/videos/
+          if-no-files-found: error
+
+      - name: Export artifact URLs for notify job
+        id: capture_urls
+        if: steps.resolve.outputs.has_targets == 'true'
+        run: |
+          echo "screenshot=${{ steps.upload_screenshots.outputs['artifact-url'] }}" >> "$GITHUB_OUTPUT"
+          echo "video=${{ steps.upload_videos.outputs['artifact-url'] }}" >> "$GITHUB_OUTPUT"
+
+  notify:
+    name: Post PR comment
+    runs-on: ubuntu-latest
+    needs: capture
+    if: needs.capture.outputs.has_targets == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download capture metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-captures-meta
+          path: pr-capture-meta
+
+      - name: Compose PR comment body
+        env:
+          PR_CAPTURE_SCREENSHOT_ARTIFACT_URL: ${{ needs.capture.outputs.screenshot_artifact_url }}
+          PR_CAPTURE_VIDEO_ARTIFACT_URL: ${{ needs.capture.outputs.video_artifact_url }}
+          PR_CAPTURE_RULES_BLOB_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/packages/dbt-tools/web/capture-rules.json
+        run: |
+          pnpm exec tsx packages/dbt-tools/web/scripts/compose-pr-capture-comment.ts \
+            --manifest pr-capture-meta/packages/dbt-tools/web/pr-capture-artifacts/capture-manifest.json \
+            --out pr-capture-comment.md
+
+      - name: Find previous capture comment
+        uses: peter-evans/find-comment@v3
+        id: find_comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- pr-captures -->"
+
+      - name: Create PR comment
+        if: steps.find_comment.outputs.comment-id == ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: pr-capture-comment.md
+
+      - name: Update PR comment
+        if: steps.find_comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          body-path: pr-capture-comment.md
+          edit-mode: replace
