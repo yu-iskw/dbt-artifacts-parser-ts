@@ -1,6 +1,8 @@
 # @dbt-tools/web
 
-React application for visual dbt artifact analysis: dependency graphs, execution timelines, inventory views, and optional remote runs from S3 or GCS.
+React application for deterministic dbt artifact investigation: dependency graphs, execution timelines, and inventory views, with optional remote runs from S3 or GCS.
+
+`@dbt-tools/web` is designed to be actionable **without AI**: it helps operators answer what failed, what is slow, what is on the critical path, what depends on a node, and what to inspect next from artifacts alone.
 
 **End users:** install from npm and run **`dbt-tools-web`** (see below). **Contributors:** clone the monorepo and use Vite — see [Developing from source](#developing-from-source) and [CONTRIBUTING.md](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/CONTRIBUTING.md).
 
@@ -54,8 +56,8 @@ You can also set **`DBT_TOOLS_TARGET_DIR`** (or legacy `DBT_TARGET_DIR` / `DBT_T
 
 ## Features
 
-- **Dependency graph** — interactive lineage
-- **Execution timeline** — Gantt-style `run_results` with critical path
+- **Dependency graph** — interactive lineage and blast-radius investigation
+- **Execution timeline** — Gantt-style `run_results` with critical path and bottleneck inspection
 - **Local artifacts** — read `manifest.json` / `run_results.json` from a target directory via server-side routes
 - **Remote sources (S3 / GCS)** — optional `DBT_TOOLS_REMOTE_SOURCE`; server-side credentials; UI prompts before switching runs ([ADR-0029](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md))
 - **Large manifests** — web workers and virtualization for very large projects

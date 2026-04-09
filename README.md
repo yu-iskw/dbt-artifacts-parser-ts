@@ -2,12 +2,14 @@
 
 A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts.
 
+For `@dbt-tools/*`, the product positioning is **a dbt operational intelligence layer**: dbt-tools turns dbt artifacts into deterministic operational intelligence for humans and agents.
+
 This repo contains two distinct but related ecosystems:
 
 | Ecosystem                                                  | Description                                                                                     |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts |
-| [`@dbt-tools/*`](./packages/dbt-tools/)                    | Analysis tools suite (CLI, core library, web app) built on top of the parser                    |
+| [`@dbt-tools/*`](./packages/dbt-tools/)                    | dbt operational intelligence layer (core substrate, CLI interface, actionable web app)           |
 
 ## Packages
 
@@ -38,9 +40,9 @@ A suite of analysis tools for dbt artifacts. Built on `dbt-artifacts-parser`.
 
 | Package                                                  | Description                                                                        |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                   |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis, AI-agent-friendly                    |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS) |
+| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Composable analysis substrate — reusable dependency/execution/inventory intelligence engine |
+| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | Structured interface (`dbt-tools`) for operators, automation, and agent workflows           |
+| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | Deterministic investigation UI for dependency, execution, and inventory analysis             |
 
 [Suite overview →](./packages/dbt-tools/README.md)
 

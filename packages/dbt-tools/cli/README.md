@@ -1,8 +1,8 @@
 # @dbt-tools/cli
 
-Command-line interface for dbt artifact analysis. Optimized for both human and AI agent consumption.
+Command-line interface for dbt artifact analysis. Provides a structured, machine-readable contract for operators, automation, and coding agents.
 
-**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended agent-focused topics (errors, validation, `schema` introspection) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md).
+**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended automation topics (errors, validation, `schema` introspection) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md).
 
 ## Commands
 
@@ -44,8 +44,8 @@ pnpm add -g @dbt-tools/cli
 
 - **Default `./target` directory**: Commands default to dbt's standard artifact location
 - **JSON-by-default**: Machine-readable JSON output in non-interactive environments
-- **Input validation**: Hardened against common agent mistakes (path traversals, control chars, etc.)
-- **Field filtering**: Reduce context window usage with `--fields` option
+- **Input validation**: Hardened against common automation mistakes (path traversals, control chars, etc.)
+- **Field filtering**: Reduce payload/context size with `--fields` option
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
 - **Inventory**: Browse and filter all dbt resources in one view
@@ -608,7 +608,7 @@ Errors are formatted as JSON in non-TTY environments:
 
 ---
 
-## Best Practices for AI Agents
+## Best Practices for Operators, Automation, and Agents
 
 1. **Run `status` first** to check which artifacts are available before running analysis commands.
 2. **Use `search` to discover resources** before running `deps` or `inventory`.

@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/web
 
-Operator-focused documentation for the dbt-tools web analyzer. For a short npm-first overview, see the [package README](../packages/dbt-tools/web/README.md). For development setup, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+Operator-focused documentation for the dbt-tools web analyzer. The web app is an artifact-driven investigation surface that remains useful without an AI assistant. For a short npm-first overview, see the [package README](../packages/dbt-tools/web/README.md). For development setup, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ---
 

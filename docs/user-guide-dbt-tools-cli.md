@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/cli
 
-Extended notes for automation and AI agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
+Extended notes for automation, CI, and coding agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
 
 ---
 
@@ -23,7 +23,7 @@ npx @dbt-tools/cli --help
 
 ## Schema introspection
 
-Discover commands and flags at runtime (useful for agents):
+Discover commands and flags at runtime (useful for scripts and agents):
 
 ```bash
 dbt-tools schema
@@ -62,7 +62,7 @@ The CLI rejects unsafe or ambiguous inputs:
 
 ---
 
-## Error handling (non-TTY / agents)
+## Error handling (non-TTY / automation)
 
 Errors are JSON with a stable **`code`** field:
 
@@ -87,7 +87,7 @@ Errors are JSON with a stable **`code`** field:
 
 ---
 
-## Best practices for AI agents
+## Best practices for operators and agents
 
 1. Prefer **`--fields`** on large outputs.
 2. Use default **`./target`** unless paths must differ.
