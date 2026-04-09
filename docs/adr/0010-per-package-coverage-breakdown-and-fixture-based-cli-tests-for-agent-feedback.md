@@ -6,7 +6,7 @@ Date: 2026-03-13
 
 Accepted
 
-Depends-on [6. Artifact-first and agent-compatible positioning of dbt-tools](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
+Depends-on [6. Artifact-first and agent-compatible positioning of dbt-tools (superseded in part)](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
 
 Depends-on [8. Stricter ESLint complexity rules for AI agent feedback](0008-stricter-eslint-complexity-rules-for-ai-agent-feedback.md)
 
