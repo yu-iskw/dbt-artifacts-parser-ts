@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { EmptyState } from "../../EmptyState";
-import type { AnalysisState, ResourceNode } from "@web/types";
+import type { AnalysisState, ExecutionRow, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
   LineageViewState,
@@ -60,6 +60,14 @@ export function AssetsView({
     () => new Map(analysis.resources.map((entry) => [entry.uniqueId, entry])),
     [analysis.resources],
   );
+
+  const executionRowForSummary: ExecutionRow | null = useMemo(() => {
+    if (resource == null) return null;
+    return (
+      analysis.executions.find((row) => row.uniqueId === resource.uniqueId) ??
+      null
+    );
+  }, [analysis.executions, resource]);
 
   const upstreamDepth = lineageViewState.upstreamDepth;
   const downstreamDepth = lineageViewState.downstreamDepth;
@@ -213,7 +221,10 @@ export function AssetsView({
             }}
             className="asset-workspace__section"
           >
-            <AssetSummarySection resource={resource} />
+            <AssetSummarySection
+              resource={resource}
+              executionRow={executionRowForSummary}
+            />
           </section>
 
           <section

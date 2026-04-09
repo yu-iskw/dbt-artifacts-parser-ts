@@ -21,6 +21,7 @@ export {
   ADAPTER_METRIC_DESCRIPTORS,
   formatAdapterMetricValue,
   getAdapterMetricValue,
+  getAdapterResponseFieldsBeyondNormalized,
   getPresentAdapterMetricDescriptors,
   getPresentAdapterTotalDescriptors,
 } from "./analysis/adapter-metric-descriptors";

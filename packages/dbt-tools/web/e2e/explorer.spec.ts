@@ -34,7 +34,13 @@ test.describe("inventory workspace", () => {
     await expect(page.getByText(INVENTORY_BROWSE_COPY)).toHaveCount(0);
     await expect(page.locator(".workspace-scaffold__inspector")).toHaveCount(0);
     await expect(page.getByLabel("Asset sections")).toHaveCount(0);
-    await expect(page.getByText("Asset summary")).toBeVisible();
+    const summaryRegion = page.locator("#asset-section-summary");
+    await expect(
+      summaryRegion.getByRole("heading", { name: "Resource" }),
+    ).toBeVisible();
+    await expect(
+      summaryRegion.getByRole("heading", { name: "This run" }),
+    ).toBeVisible();
     await expect(page.getByText("Asset details")).toHaveCount(0);
     const assetActions = page.locator(".asset-hero__actions");
     await expect(assetActions).not.toContainText("Open in Runs");
@@ -220,7 +226,13 @@ test.describe("inventory workspace", () => {
     );
 
     await expect(page).toHaveURL(/assetTab=runtime/);
-    await expect(page.getByText("Asset summary")).toBeVisible();
+    const summaryRegion = page.locator("#asset-section-summary");
+    await expect(
+      summaryRegion.getByRole("heading", { name: "Resource" }),
+    ).toBeVisible();
+    await expect(
+      summaryRegion.getByRole("heading", { name: "This run" }),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Runtime" })).toHaveCount(0);
     await expect(page.getByText("Execution time")).toBeVisible();
   });

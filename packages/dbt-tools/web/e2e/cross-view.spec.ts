@@ -76,7 +76,13 @@ test.describe("inventory to timeline cross-view", () => {
     await expandExplorerBranchIfCollapsed(page, "marts");
     await expect(page.locator(LEAF_SELECTOR).first()).toBeVisible();
     await page.locator(LEAF_SELECTOR).first().click();
-    await expect(page.getByText("Asset summary")).toBeVisible();
+    const summaryRegion = page.locator("#asset-section-summary");
+    await expect(
+      summaryRegion.getByRole("heading", { name: "Resource" }),
+    ).toBeVisible();
+    await expect(
+      summaryRegion.getByRole("heading", { name: "This run" }),
+    ).toBeVisible();
 
     await page
       .getByRole("button", { name: OPEN_IN_TIMELINE_LABEL, exact: true })

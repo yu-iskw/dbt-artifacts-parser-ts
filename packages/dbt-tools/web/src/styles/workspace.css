@@ -2203,7 +2203,7 @@
   scroll-margin-top: 1rem;
 }
 
-/* Markdown asset description (Asset summary) */
+/* Markdown asset description (Resource card) */
 .resource-description-md {
   margin-top: 0.75rem;
   min-width: 0;

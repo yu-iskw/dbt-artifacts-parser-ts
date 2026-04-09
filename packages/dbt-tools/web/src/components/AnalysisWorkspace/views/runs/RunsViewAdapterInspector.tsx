@@ -1,4 +1,5 @@
 import type { ExecutionRow } from "@web/types";
+import { getAdapterResponseFieldsBeyondNormalized } from "@dbt-tools/core/browser";
 import {
   getRunsAdapterField,
   type RunsAdapterColumn,
@@ -42,6 +43,10 @@ export function RunsAdapterInspector({
   if (!row) return null;
 
   const adapterFieldCount = row.adapterResponseFields?.length ?? 0;
+  const extraAdapterRawFields = getAdapterResponseFieldsBeyondNormalized(
+    row.adapterMetrics,
+    row.adapterResponseFields,
+  );
   const normalizedSections =
     visibleColumns.length > 0 || overflowColumns.length > 0
       ? [
@@ -72,21 +77,23 @@ export function RunsAdapterInspector({
           ]
         : [];
   const rawFieldSection =
-    adapterFieldCount > 0
+    adapterFieldCount === 0
       ? [
-          {
-            label: RAW_ADAPTER_RESPONSE_FIELDS_LABEL,
-            value: row.adapterResponseFields
-              ?.map((field) => `${field.label}: ${field.displayValue}`)
-              .join("\n"),
-          },
-        ]
-      : [
           {
             label: RAW_ADAPTER_RESPONSE_FIELDS_LABEL,
             value: "This row has no adapter_response fields.",
           },
-        ];
+        ]
+      : extraAdapterRawFields.length > 0
+        ? [
+            {
+              label: RAW_ADAPTER_RESPONSE_FIELDS_LABEL,
+              value: extraAdapterRawFields
+                .map((field) => `${field.label}: ${field.displayValue}`)
+                .join("\n"),
+            },
+          ]
+        : [];
   const sections = [...normalizedSections, ...rawFieldSection];
 
   return (
@@ -102,7 +109,10 @@ export function RunsAdapterInspector({
           label: ADAPTER_METRICS_LABEL,
           value: String(visibleColumns.length + overflowColumns.length),
         },
-        { label: "Raw fields", value: String(adapterFieldCount) },
+        {
+          label: "Extra raw fields",
+          value: String(extraAdapterRawFields.length),
+        },
       ]}
       sections={sections}
       actions={[

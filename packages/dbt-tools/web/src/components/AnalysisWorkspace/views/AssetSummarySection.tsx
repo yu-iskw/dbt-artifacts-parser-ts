@@ -1,4 +1,10 @@
-import type { ResourceNode } from "@web/types";
+import type { ExecutionRow, ResourceNode } from "@web/types";
+import {
+  formatAdapterMetricValue,
+  getAdapterMetricValue,
+  getAdapterResponseFieldsBeyondNormalized,
+  getPresentAdapterMetricDescriptors,
+} from "@dbt-tools/core/browser";
 import { NOT_EXECUTED } from "@web/lib/analysis-workspace/catalogCopy";
 import {
   displayResourcePath,
@@ -7,6 +13,20 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import { ResourceMarkdownDescription } from "../ResourceMarkdownDescription";
 import { SectionCard } from "../shared";
+
+function hasAdapterSummaryContent(
+  adapterMetrics: ExecutionRow["adapterMetrics"],
+  adapterResponseFields: ExecutionRow["adapterResponseFields"],
+): boolean {
+  const extraRaw = getAdapterResponseFieldsBeyondNormalized(
+    adapterMetrics,
+    adapterResponseFields,
+  );
+  if (extraRaw.length > 0) return true;
+  const m = adapterMetrics;
+  if (m == null) return false;
+  return getPresentAdapterMetricDescriptors([m]).length > 0;
+}
 
 function warehouseRelationLabel(resource: ResourceNode): string {
   const rel = resource.semantics?.relationName?.trim();
@@ -19,32 +39,71 @@ function warehouseRelationLabel(resource: ResourceNode): string {
   return "n/a";
 }
 
-export function AssetSummarySection({ resource }: { resource: ResourceNode }) {
+export function AssetSummarySection({
+  resource,
+  executionRow = null,
+}: {
+  resource: ResourceNode;
+  /** When set, adapter fields fall back from the run row if missing on `resource`. */
+  executionRow?: ExecutionRow | null;
+}) {
+  const adapterMetrics =
+    resource.adapterMetrics ?? executionRow?.adapterMetrics;
+  const adapterResponseFields =
+    resource.adapterResponseFields ?? executionRow?.adapterResponseFields;
+  const adapterMetricDescriptors =
+    adapterMetrics != null
+      ? getPresentAdapterMetricDescriptors([adapterMetrics])
+      : [];
+
+  const extraAdapterRawFields = getAdapterResponseFieldsBeyondNormalized(
+    adapterMetrics,
+    adapterResponseFields,
+  );
+
+  const showAdapter = hasAdapterSummaryContent(
+    adapterMetrics,
+    adapterResponseFields,
+  );
+
   return (
-    <SectionCard
-      title="Asset summary"
-      subtitle="Manifest metadata and execution details from the captured run."
-    >
-      <div className="asset-summary__groups">
-        <div className="asset-summary__group">
-          <p className="asset-summary__group-title">Resource</p>
-          <div className="detail-grid">
-            <div className="detail-stat">
-              <span>Project</span>
-              <strong>{resource.packageName?.trim() || "n/a"}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Path</span>
-              <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
-            </div>
-            <div className="detail-stat">
-              <span>Relation</span>
-              <strong>{warehouseRelationLabel(resource)}</strong>
-            </div>
+    <div className="asset-summary-stack">
+      <SectionCard
+        title="Resource"
+        subtitle="Path, relation, and description from the project manifest."
+      >
+        <div className="detail-grid">
+          <div className="detail-stat">
+            <span>Project</span>
+            <strong>{resource.packageName?.trim() || "n/a"}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Path</span>
+            <strong>{displayResourcePath(resource) ?? "n/a"}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Relation</span>
+            <strong>{warehouseRelationLabel(resource)}</strong>
           </div>
         </div>
-        <div className="asset-summary__group">
-          <p className="asset-summary__group-title">This run</p>
+        {resource.description ? (
+          <ResourceMarkdownDescription
+            markdown={resource.description}
+            className="resource-spotlight__description"
+          />
+        ) : (
+          <p className="resource-spotlight__description resource-spotlight__description--muted">
+            No description was captured for this asset. Catalog-oriented
+            metadata can surface here when present in the manifest.
+          </p>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="This run"
+        subtitle="Status, timing, and warehouse feedback from the captured run."
+      >
+        <div className="asset-summary__groups">
           <div className="detail-grid">
             <div className="detail-stat">
               <span>Status</span>
@@ -59,19 +118,43 @@ export function AssetSummarySection({ resource }: { resource: ResourceNode }) {
               <strong>{resource.threadId ?? "n/a"}</strong>
             </div>
           </div>
+          {showAdapter ? (
+            <div className="asset-summary__group">
+              <p className="asset-summary__group-title">Adapter response</p>
+              {adapterMetrics != null && adapterMetricDescriptors.length > 0 ? (
+                <div className="detail-grid">
+                  {adapterMetricDescriptors.map((descriptor) => {
+                    const value = getAdapterMetricValue(
+                      adapterMetrics,
+                      descriptor.key,
+                    );
+                    return (
+                      <div className="detail-stat" key={descriptor.key}>
+                        <span>{descriptor.shortLabel}</span>
+                        <strong>
+                          {value !== undefined
+                            ? formatAdapterMetricValue(descriptor, value)
+                            : "—"}
+                        </strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {extraAdapterRawFields.length > 0 ? (
+                <div
+                  className="asset-summary__adapter-raw"
+                  aria-label="Additional adapter response fields"
+                >
+                  {extraAdapterRawFields
+                    .map((field) => `${field.label}: ${field.displayValue}`)
+                    .join("\n")}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </div>
-      {resource.description ? (
-        <ResourceMarkdownDescription
-          markdown={resource.description}
-          className="resource-spotlight__description"
-        />
-      ) : (
-        <p className="resource-spotlight__description resource-spotlight__description--muted">
-          No description was captured for this asset. Catalog-oriented metadata
-          can surface here when present in the manifest.
-        </p>
-      )}
-    </SectionCard>
+      </SectionCard>
+    </div>
   );
 }

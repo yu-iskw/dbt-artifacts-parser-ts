@@ -1,4 +1,5 @@
 import type {
+  AdapterResponseField,
   AdapterResponseMetrics,
   AdapterTotalsSnapshot,
 } from "./adapter-response-metrics";
@@ -183,4 +184,54 @@ export function getPresentAdapterTotalDescriptors(
     if (descriptor.summaryTotalKey == null) return false;
     return totals[descriptor.summaryTotalKey] !== undefined;
   });
+}
+
+/**
+ * Maps top-level `adapter_response` JSON keys (as produced by
+ * `extractAdapterResponseFields`) to normalized {@link AdapterMetricKey}.
+ * Nested keys (`foo.bar`) are not listed and are always treated as extra.
+ */
+const RAW_ADAPTER_FIELD_KEY_TO_METRIC_KEY: Record<string, AdapterMetricKey> = {
+  bytes_processed: "bytesProcessed",
+  bytes_billed: "bytesBilled",
+  slot_ms: "slotMs",
+  rows_affected: "rowsAffected",
+  code: "adapterCode",
+  _message: "adapterMessage",
+  query_id: "queryId",
+  job_id: "queryId",
+  project_id: "projectId",
+  location: "location",
+  data_scanned_in_bytes: "bytesProcessed",
+  rows_inserted: "rowsInserted",
+  rows_deleted: "rowsDeleted",
+  rows_updated: "rowsUpdated",
+  rows_duplicated: "rowsDuplicated",
+  rows_duplicates: "rowsDuplicated",
+};
+
+function rawAdapterFieldCapturedByNormalizedMetrics(
+  field: AdapterResponseField,
+  metrics: AdapterResponseMetrics | undefined,
+): boolean {
+  if (metrics == null) return false;
+  const key = field.key;
+  if (key.includes(".")) return false;
+  const metricKey = RAW_ADAPTER_FIELD_KEY_TO_METRIC_KEY[key];
+  if (metricKey === undefined) return false;
+  return getAdapterMetricValue(metrics, metricKey) !== undefined;
+}
+
+/**
+ * Raw `adapter_response` fields that are not already represented in normalized
+ * metrics (unknown keys, nested paths, or values the parser did not lift).
+ */
+export function getAdapterResponseFieldsBeyondNormalized(
+  metrics: AdapterResponseMetrics | undefined,
+  fields: AdapterResponseField[] | undefined,
+): AdapterResponseField[] {
+  if (fields == null || fields.length === 0) return [];
+  return fields.filter(
+    (field) => !rawAdapterFieldCapturedByNormalizedMetrics(field, metrics),
+  );
 }

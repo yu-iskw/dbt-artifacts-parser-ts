@@ -116,6 +116,12 @@ function buildResourceNode(
     semantics,
     ...(testAttachedTarget != null ? { testAttachedTarget } : {}),
     ...(runResultMessage != null ? { runResultMessage } : {}),
+    ...(execution?.adapterMetrics != null
+      ? { adapterMetrics: execution.adapterMetrics }
+      : {}),
+    ...(execution?.adapterResponseFields != null
+      ? { adapterResponseFields: execution.adapterResponseFields }
+      : {}),
   };
 }
 
