@@ -102,8 +102,8 @@ export function RunsToolbar({
           className="runs-toolbar__toggle"
           title={
             adapterMetricsAvailable
-              ? "Show raw adapter_response columns derived from the current run"
-              : "No adapter_response fields are available in this run"
+              ? "Show normalized adapter metrics derived from the current run"
+              : "No normalized adapter metrics are available in this run"
           }
         >
           <input
@@ -126,7 +126,7 @@ export function RunsToolbar({
               }));
             }}
           />
-          <span>Warehouse response</span>
+          <span>Adapter metrics</span>
         </label>
       </div>
       {availableMaterializationKinds.length > 0 ? (
@@ -157,7 +157,7 @@ export function RunsToolbar({
       adapterColumnLayout.overflowColumns.length > 0 ? (
         <p className="runs-toolbar__meta">
           Showing {adapterColumnLayout.visibleColumns.length} of{" "}
-          {adapterColumnLayout.allColumns.length} adapter fields. Select a row
+          {adapterColumnLayout.allColumns.length} adapter metrics. Select a row
           to inspect the remaining {adapterColumnLayout.overflowColumns.length}.
         </p>
       ) : null}

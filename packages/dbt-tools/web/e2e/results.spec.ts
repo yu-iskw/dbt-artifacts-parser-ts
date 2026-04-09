@@ -113,7 +113,13 @@ test.describe("runs quick jump navigation", () => {
       new RegExp(`[?&]resource=${escapeRegExp(MODEL_UNIQUE_ID)}(&|$)`),
     );
     await expect(page).toHaveURL(/[?&]assetTab=summary/);
-    await expect(page.getByText("Asset summary")).toBeVisible();
+    const summaryRegion = page.locator("#asset-section-summary");
+    await expect(
+      summaryRegion.getByRole("heading", { name: "Resource" }),
+    ).toBeVisible();
+    await expect(
+      summaryRegion.getByRole("heading", { name: "This run" }),
+    ).toBeVisible();
   });
 
   test("selected run item shows an Open in Lineage action", async ({

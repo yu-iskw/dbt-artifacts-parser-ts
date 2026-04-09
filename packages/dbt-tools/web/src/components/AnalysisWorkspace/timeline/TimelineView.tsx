@@ -13,7 +13,7 @@ import {
   type TimelineNeighborhoodUi,
   useTimelineNeighborhoodRows,
 } from "./useTimelineNeighborhoodRows";
-import type { AnalysisState, GanttItem } from "@web/types";
+import type { AnalysisState, GanttItem, ResourceNode } from "@web/types";
 import type {
   InvestigationSelectionState,
   TimelineFilterState,
@@ -109,6 +109,7 @@ function TimelineSurface({
   hasActiveFilters,
   typeFilterHint,
   testStatsById,
+  resourceByUniqueId,
   setFilters,
   toggleStatus,
   toggleType,
@@ -127,6 +128,7 @@ function TimelineSurface({
   hasActiveFilters: boolean;
   typeFilterHint: TimelineTypeFilterHint | null;
   testStatsById: ReturnType<typeof buildResourceTestStats>;
+  resourceByUniqueId: ReadonlyMap<string, ResourceNode>;
   setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
   toggleStatus: (status: string) => void;
   toggleType: (type: string) => void;
@@ -204,6 +206,7 @@ function TimelineSurface({
         runStartedAt={analysis.runStartedAt}
         timelineAdjacency={analysis.timelineAdjacency}
         testStatsById={testStatsById}
+        resourceByUniqueId={resourceByUniqueId}
         showTests={filters.showTests}
         dependencyDirection={filters.dependencyDirection}
         dependencyDepthHops={filters.dependencyDepthHops}
@@ -302,6 +305,11 @@ export function TimelineView({
   const testStatsById = useMemo(
     () => buildResourceTestStats(analysis.resources, analysis.dependencyIndex),
     [analysis.dependencyIndex, analysis.resources],
+  );
+
+  const resourceByUniqueId = useMemo(
+    () => new Map(analysis.resources.map((r) => [r.uniqueId, r] as const)),
+    [analysis.resources],
   );
 
   const testsByParentId = useMemo(() => {
@@ -474,6 +482,7 @@ export function TimelineView({
         hasActiveFilters={hasActiveFilters}
         typeFilterHint={typeFilterHint}
         testStatsById={testStatsById}
+        resourceByUniqueId={resourceByUniqueId}
         setFilters={setFilters}
         toggleStatus={toggleStatus}
         toggleType={toggleType}

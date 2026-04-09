@@ -18,6 +18,14 @@ export {
   adapterMetricsHasData,
 } from "./analysis/adapter-response-metrics";
 export {
+  ADAPTER_METRIC_DESCRIPTORS,
+  formatAdapterMetricValue,
+  getAdapterMetricValue,
+  getAdapterResponseFieldsBeyondNormalized,
+  getPresentAdapterMetricDescriptors,
+  getPresentAdapterTotalDescriptors,
+} from "./analysis/adapter-metric-descriptors";
+export {
   buildAnalysisSnapshotFromArtifacts,
   buildAnalysisSnapshotFromParsedArtifacts,
 } from "./analysis/analysis-snapshot";
@@ -40,6 +48,12 @@ export type {
   AdapterResponseMetrics,
   AdapterTotalsSnapshot,
 } from "./analysis/adapter-response-metrics";
+export type {
+  AdapterMetricDescriptor,
+  AdapterMetricKey,
+  AdapterMetricSortKey,
+  AdapterMetricValue,
+} from "./analysis/adapter-metric-descriptors";
 export type {
   AnalysisSnapshot,
   AnalysisSnapshotBuildTimings,

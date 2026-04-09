@@ -51,6 +51,10 @@ export interface AdapterTotalsSnapshot {
   totalBytesBilled?: number;
   totalSlotMs?: number;
   totalRowsAffected?: number;
+  totalRowsInserted?: number;
+  totalRowsUpdated?: number;
+  totalRowsDeleted?: number;
+  totalRowsDuplicated?: number;
 }
 
 export function readFiniteNumber(
@@ -298,34 +302,36 @@ export function extractAdapterResponseFields(
 export function buildAdapterTotals(
   metricsList: Array<AdapterResponseMetrics | undefined>,
 ): AdapterTotalsSnapshot | undefined {
+  const metricConfig = [
+    { metricKey: "bytesProcessed", totalKey: "totalBytesProcessed" },
+    { metricKey: "bytesBilled", totalKey: "totalBytesBilled" },
+    { metricKey: "slotMs", totalKey: "totalSlotMs" },
+    { metricKey: "rowsAffected", totalKey: "totalRowsAffected" },
+    { metricKey: "rowsInserted", totalKey: "totalRowsInserted" },
+    { metricKey: "rowsUpdated", totalKey: "totalRowsUpdated" },
+    { metricKey: "rowsDeleted", totalKey: "totalRowsDeleted" },
+    { metricKey: "rowsDuplicated", totalKey: "totalRowsDuplicated" },
+  ] as const satisfies Array<{
+    metricKey: Exclude<keyof AdapterResponseMetrics, "rawKeys">;
+    totalKey: keyof AdapterTotalsSnapshot;
+  }>;
   let nodesWithAdapterData = 0;
-  let totalBytesProcessed = 0;
-  let totalBytesBilled = 0;
-  let totalSlotMs = 0;
-  let totalRowsAffected = 0;
-  let sawBytesProcessed = false;
-  let sawBytesBilled = false;
-  let sawSlotMs = false;
-  let sawRowsAffected = false;
+  const totals = Object.fromEntries(
+    metricConfig.map(({ totalKey }) => [totalKey, 0]),
+  ) as Record<keyof AdapterTotalsSnapshot, number>;
+  const seen = Object.fromEntries(
+    metricConfig.map(({ totalKey }) => [totalKey, false]),
+  ) as Record<keyof AdapterTotalsSnapshot, boolean>;
 
   for (const m of metricsList) {
     if (m == null || !adapterMetricsHasData(m)) continue;
     nodesWithAdapterData += 1;
-    if (m.bytesProcessed !== undefined) {
-      totalBytesProcessed += m.bytesProcessed;
-      sawBytesProcessed = true;
-    }
-    if (m.bytesBilled !== undefined) {
-      totalBytesBilled += m.bytesBilled;
-      sawBytesBilled = true;
-    }
-    if (m.slotMs !== undefined) {
-      totalSlotMs += m.slotMs;
-      sawSlotMs = true;
-    }
-    if (m.rowsAffected !== undefined) {
-      totalRowsAffected += m.rowsAffected;
-      sawRowsAffected = true;
+    for (const { metricKey, totalKey } of metricConfig) {
+      const value = m[metricKey];
+      if (typeof value === "number") {
+        totals[totalKey] += value;
+        seen[totalKey] = true;
+      }
     }
   }
 
@@ -333,11 +339,13 @@ export function buildAdapterTotals(
     return undefined;
   }
 
-  return {
+  const snapshot: AdapterTotalsSnapshot = {
     nodesWithAdapterData,
-    ...(sawBytesProcessed ? { totalBytesProcessed } : {}),
-    ...(sawBytesBilled ? { totalBytesBilled } : {}),
-    ...(sawSlotMs ? { totalSlotMs } : {}),
-    ...(sawRowsAffected ? { totalRowsAffected } : {}),
   };
+  for (const { totalKey } of metricConfig) {
+    if (seen[totalKey]) {
+      snapshot[totalKey] = totals[totalKey];
+    }
+  }
+  return snapshot;
 }

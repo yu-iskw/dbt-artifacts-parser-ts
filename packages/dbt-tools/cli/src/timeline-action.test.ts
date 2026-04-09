@@ -168,6 +168,24 @@ describe("timelineAction", () => {
     expect(lines.length).toBeGreaterThan(1);
   });
 
+  it("includes normalized adapter metrics in JSON entries when available", () => {
+    timelineAction(
+      runResultsPath,
+      manifestPath,
+      { json: true },
+      handleError,
+      isTTY,
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0] as string;
+    const parsed = JSON.parse(output) as {
+      entries: Array<{ adapter_metrics?: { rawKeys: string[] } }>;
+    };
+    expect(
+      parsed.entries.some((entry) => entry.adapter_metrics?.rawKeys != null),
+    ).toBe(true);
+  });
+
   it("throws for invalid sort option", () => {
     expect(() =>
       timelineAction(

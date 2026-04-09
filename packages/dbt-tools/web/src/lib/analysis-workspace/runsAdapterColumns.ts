@@ -1,6 +1,8 @@
-import type {
-  AdapterResponseField,
-  AdapterResponseFieldKind,
+import type { AdapterMetricDescriptor } from "@dbt-tools/core/browser";
+import {
+  formatAdapterMetricValue,
+  getAdapterMetricValue,
+  getPresentAdapterMetricDescriptors,
 } from "@dbt-tools/core/browser";
 import type { ExecutionRow } from "@web/types";
 import type { RunsAdapterColumnId, RunsSortBy } from "./types";
@@ -11,9 +13,9 @@ export interface RunsAdapterColumn {
   id: RunsAdapterColumnId;
   key: string;
   label: string;
-  kind: AdapterResponseFieldKind;
+  kind: AdapterMetricDescriptor["kind"];
   align: "start" | "end";
-  isScalar: boolean;
+  isScalar: true;
   presenceCount: number;
 }
 
@@ -23,10 +25,8 @@ export interface RunsAdapterColumnLayout {
   allColumns: RunsAdapterColumn[];
 }
 
-function getFieldPriority(
-  field: Pick<AdapterResponseField, "isScalar">,
-): number {
-  return field.isScalar ? 0 : 1;
+function getFieldPriority(field: Pick<RunsAdapterColumn, "kind">): number {
+  return field.kind === "number" ? 0 : 1;
 }
 
 export function getRunsAdapterColumnId(key: string): RunsAdapterColumnId {
@@ -46,42 +46,48 @@ export function isRunsAdapterSortBy(
 export function getRunsAdapterField(
   row: ExecutionRow,
   key: string,
-): AdapterResponseField | undefined {
-  return row.adapterResponseFields?.find((field) => field.key === key);
+):
+  | { displayValue: string; sortValue?: number | string; isScalar: true }
+  | undefined {
+  const descriptors = getPresentAdapterMetricDescriptors([row.adapterMetrics]);
+  const descriptor = descriptors.find((item) => item.key === key);
+  const value = descriptor
+    ? getAdapterMetricValue(row.adapterMetrics, descriptor.key)
+    : undefined;
+  if (descriptor == null || value === undefined) {
+    return undefined;
+  }
+  return {
+    displayValue: formatAdapterMetricValue(descriptor, value),
+    sortValue:
+      typeof value === "number" || typeof value === "string"
+        ? value
+        : undefined,
+    isScalar: true,
+  };
 }
 
 export function getRunsAdapterColumnLayout(
   rows: ExecutionRow[],
 ): RunsAdapterColumnLayout {
-  const counts = new Map<
-    string,
-    { field: AdapterResponseField; presenceCount: number }
-  >();
+  const descriptors = getPresentAdapterMetricDescriptors(
+    rows.map((row) => row.adapterMetrics),
+  );
 
-  for (const row of rows) {
-    const seen = new Set<string>();
-    for (const field of row.adapterResponseFields ?? []) {
-      if (seen.has(field.key)) continue;
-      seen.add(field.key);
-      const current = counts.get(field.key);
-      if (current) {
-        current.presenceCount += 1;
-      } else {
-        counts.set(field.key, { field, presenceCount: 1 });
-      }
-    }
-  }
-
-  const allColumns = [...counts.entries()]
+  const allColumns = descriptors
     .map(
-      ([key, value]): RunsAdapterColumn => ({
-        id: getRunsAdapterColumnId(key),
-        key,
-        label: value.field.label,
-        kind: value.field.kind,
-        align: value.field.kind === "number" ? "end" : "start",
-        isScalar: value.field.isScalar,
-        presenceCount: value.presenceCount,
+      (descriptor): RunsAdapterColumn => ({
+        id: getRunsAdapterColumnId(descriptor.key),
+        key: descriptor.key,
+        label: descriptor.shortLabel,
+        kind: descriptor.kind,
+        align: descriptor.kind === "number" ? "end" : "start",
+        isScalar: true,
+        presenceCount: rows.filter(
+          (row) =>
+            getAdapterMetricValue(row.adapterMetrics, descriptor.key) !==
+            undefined,
+        ).length,
       }),
     )
     .sort((left, right) => {

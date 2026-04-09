@@ -1,5 +1,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import type { ResourceTestStats } from "@web/types";
+import {
+  formatAdapterMetricValue,
+  getAdapterMetricValue,
+  getAdapterResponseFieldsBeyondNormalized,
+  getPresentAdapterMetricDescriptors,
+  type AdapterResponseMetrics,
+} from "@dbt-tools/core/browser";
+import type { ResourceNode, ResourceTestStats } from "@web/types";
 import { TOOLTIP_LABEL_STYLE } from "./constants";
 import { formatMs, formatTimestamp } from "./formatting";
 import type { HoverState } from "./hitTest";
@@ -63,6 +70,93 @@ export function computeTooltipPlacement({
   return { left, top };
 }
 
+function resourceHasTimelineTooltipAdapter(
+  resource: ResourceNode | undefined,
+): boolean {
+  if (!resource) return false;
+  const adapterMetrics = resource.adapterMetrics;
+  const adapterResponseFields = resource.adapterResponseFields;
+  if (
+    getAdapterResponseFieldsBeyondNormalized(
+      adapterMetrics,
+      adapterResponseFields,
+    ).length > 0
+  ) {
+    return true;
+  }
+  if (adapterMetrics == null) return false;
+  return getPresentAdapterMetricDescriptors([adapterMetrics]).length > 0;
+}
+
+function GanttTooltipAdapterResponse({
+  resource,
+}: {
+  resource: ResourceNode | undefined;
+}) {
+  if (!resource) return null;
+  const adapterMetrics = resource.adapterMetrics;
+  const adapterResponseFields = resource.adapterResponseFields;
+  const extraAdapterRawFields = getAdapterResponseFieldsBeyondNormalized(
+    adapterMetrics,
+    adapterResponseFields,
+  );
+  const adapterMetricDescriptors =
+    adapterMetrics != null
+      ? getPresentAdapterMetricDescriptors([adapterMetrics])
+      : [];
+  if (
+    extraAdapterRawFields.length === 0 &&
+    adapterMetricDescriptors.length === 0
+  ) {
+    return null;
+  }
+
+  const metrics: AdapterResponseMetrics | undefined = adapterMetrics;
+
+  return (
+    <div style={{ marginTop: "0.25rem", maxWidth: 340 }}>
+      <div style={{ marginBottom: "0.15rem" }}>
+        <span style={TOOLTIP_LABEL_STYLE}>Adapter response</span>
+      </div>
+      {adapterMetricDescriptors.length > 0 && metrics != null ? (
+        <div
+          style={{
+            whiteSpace: "pre-wrap",
+            fontSize: "0.82rem",
+            lineHeight: 1.35,
+          }}
+        >
+          {adapterMetricDescriptors
+            .map((descriptor) => {
+              const value = getAdapterMetricValue(metrics, descriptor.key);
+              const text =
+                value !== undefined
+                  ? formatAdapterMetricValue(descriptor, value)
+                  : "—";
+              return `${descriptor.shortLabel}: ${text}`;
+            })
+            .join("\n")}
+        </div>
+      ) : null}
+      {extraAdapterRawFields.length > 0 ? (
+        <div
+          style={{
+            marginTop: adapterMetricDescriptors.length > 0 ? "0.35rem" : 0,
+            whiteSpace: "pre-wrap",
+            fontSize: "0.82rem",
+            lineHeight: 1.35,
+          }}
+          aria-label="Additional adapter response fields"
+        >
+          {extraAdapterRawFields
+            .map((field) => `${field.label}: ${field.displayValue}`)
+            .join("\n")}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function GanttTooltip({
   hover,
   frameWidth,
@@ -71,6 +165,7 @@ export function GanttTooltip({
   canShowTimestamps,
   timeZone,
   testStats,
+  resourceByUniqueId,
 }: {
   hover: HoverState;
   frameWidth: number;
@@ -79,6 +174,8 @@ export function GanttTooltip({
   canShowTimestamps: boolean;
   timeZone: string;
   testStats?: ResourceTestStats;
+  /** Snapshot resources — used to show adapter_response on hover without duplicating fields on `GanttItem`. */
+  resourceByUniqueId?: ReadonlyMap<string, ResourceNode>;
 }) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(() =>
@@ -91,6 +188,9 @@ export function GanttTooltip({
       tooltipHeight: 160,
     }),
   );
+
+  const tooltipResource = resourceByUniqueId?.get(hover.item.unique_id);
+  const showAdapterBlock = resourceHasTimelineTooltipAdapter(tooltipResource);
 
   useLayoutEffect(() => {
     const tooltipEl = tooltipRef.current;
@@ -106,7 +206,14 @@ export function GanttTooltip({
     setPosition((current) =>
       current.left === next.left && current.top === next.top ? current : next,
     );
-  }, [frameHeight, frameWidth, hover.x, hover.y, hover.item.unique_id]);
+  }, [
+    frameHeight,
+    frameWidth,
+    hover.x,
+    hover.y,
+    hover.item.unique_id,
+    showAdapterBlock,
+  ]);
 
   return (
     <div
@@ -217,6 +324,7 @@ export function GanttTooltip({
               .join(" · ")}
           </div>
         )}
+      <GanttTooltipAdapterResponse resource={tooltipResource} />
     </div>
   );
 }

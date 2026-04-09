@@ -180,4 +180,16 @@ describe("buildAdapterTotals", () => {
     expect(t?.totalSlotMs).toBe(10);
     expect(t?.totalRowsAffected).toBe(3);
   });
+
+  it("sums snowflake-style DML totals when present", () => {
+    const t = buildAdapterTotals([
+      { rawKeys: ["rows_inserted"], rowsInserted: 10, rowsUpdated: 2 },
+      { rawKeys: ["rows_deleted"], rowsDeleted: 3, rowsDuplicated: 1 },
+    ]);
+    expect(t?.nodesWithAdapterData).toBe(2);
+    expect(t?.totalRowsInserted).toBe(10);
+    expect(t?.totalRowsUpdated).toBe(2);
+    expect(t?.totalRowsDeleted).toBe(3);
+    expect(t?.totalRowsDuplicated).toBe(1);
+  });
 });

@@ -320,7 +320,7 @@ program
   )
   .option(
     "--adapter-top-by <metric>",
-    "Rank nodes by adapter metric: bytes_processed | slot_ms | rows_affected",
+    "Rank nodes by adapter metric: bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
   )
   .option(
     "--adapter-top-n <n>",
@@ -335,6 +335,11 @@ program
   .option(
     "--adapter-min-slot-ms <n>",
     "When using --adapter-top-by, require slot_ms >= n",
+    parseFloat,
+  )
+  .option(
+    "--adapter-min-rows-affected <n>",
+    "When using --adapter-top-by, require rows_affected >= n",
     parseFloat,
   )
   .option(OPT_JSON, DESC_JSON)
@@ -354,15 +359,30 @@ program
         adapterTopN?: number;
         adapterMinBytes?: number;
         adapterMinSlotMs?: number;
+        adapterMinRowsAffected?: number;
         json?: boolean;
         noJson?: boolean;
       },
     ) => {
-      const allowed = new Set(["bytes_processed", "slot_ms", "rows_affected"]);
+      const allowed = new Set([
+        "bytes_processed",
+        "bytes_billed",
+        "slot_ms",
+        "rows_affected",
+        "rows_inserted",
+        "rows_updated",
+        "rows_deleted",
+        "rows_duplicated",
+      ]);
       let adapterTopBy:
         | "bytes_processed"
+        | "bytes_billed"
         | "slot_ms"
         | "rows_affected"
+        | "rows_inserted"
+        | "rows_updated"
+        | "rows_deleted"
+        | "rows_duplicated"
         | undefined;
       if (options.adapterTopBy != null && options.adapterTopBy !== "") {
         if (!allowed.has(options.adapterTopBy)) {
@@ -376,8 +396,13 @@ program
         }
         adapterTopBy = options.adapterTopBy as
           | "bytes_processed"
+          | "bytes_billed"
           | "slot_ms"
-          | "rows_affected";
+          | "rows_affected"
+          | "rows_inserted"
+          | "rows_updated"
+          | "rows_deleted"
+          | "rows_duplicated";
       }
       runReportAction(
         runResultsPath,
@@ -393,6 +418,7 @@ program
           adapterTopN: options.adapterTopN,
           adapterMinBytes: options.adapterMinBytes,
           adapterMinSlotMs: options.adapterMinSlotMs,
+          adapterMinRowsAffected: options.adapterMinRowsAffected,
           json: options.json,
           noJson: options.noJson,
         },
@@ -500,12 +526,20 @@ program
     "[manifest-path]",
     "Path to manifest.json (optional, enriches entries with name and type)",
   )
-  .option("--sort <key>", "Sort key: duration (default) or start", "duration")
+  .option(
+    "--sort <key>",
+    "Sort key: duration | start | query_id | adapter_code | adapter_message | bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
+    "duration",
+  )
   .option("--top <n>", "Show top N entries only", parseInt)
   .option("--failed-only", "Show only non-successful executions")
   .option(
     "--status <status>",
     "Filter by status (comma-separated, e.g. error,warn)",
+  )
+  .option(
+    "--adapter-text <text>",
+    "Filter by normalized adapter text (query ID, code, message, location, project)",
   )
   .option(
     OPT_FORMAT,
@@ -523,6 +557,7 @@ program
         top?: number;
         failedOnly?: boolean;
         status?: string;
+        adapterText?: string;
         format?: string;
         targetDir?: string;
         json?: boolean;

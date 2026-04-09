@@ -176,33 +176,15 @@ describe("queryRunsResultsIndex", () => {
     const index = createRunsResultsIndex([
       makeExecution({
         uniqueId: "model_a",
-        adapterResponseFields: [
-          {
-            key: "warehouse.bytes_processed",
-            label: "warehouse.bytes_processed",
-            kind: "number",
-            displayValue: "20",
-            isScalar: true,
-            sortValue: 20,
-          },
-        ],
+        adapterMetrics: { rawKeys: ["bytes_processed"], bytesProcessed: 20 },
       }),
       makeExecution({
         uniqueId: "model_b",
-        adapterResponseFields: [
-          {
-            key: "warehouse.bytes_processed",
-            label: "warehouse.bytes_processed",
-            kind: "number",
-            displayValue: "200",
-            isScalar: true,
-            sortValue: 200,
-          },
-        ],
+        adapterMetrics: { rawKeys: ["bytes_processed"], bytesProcessed: 200 },
       }),
       makeExecution({
         uniqueId: "model_c",
-        adapterResponseFields: [],
+        adapterMetrics: undefined,
       }),
     ]);
 
@@ -214,7 +196,7 @@ describe("queryRunsResultsIndex", () => {
       materializationKinds: [],
       threadIds: [],
       durationBand: "all",
-      sortBy: "adapter:warehouse.bytes_processed",
+      sortBy: "adapter:bytesProcessed",
       sortDirection: "desc",
       limit: 20,
     });
@@ -230,33 +212,15 @@ describe("queryRunsResultsIndex", () => {
     const index = createRunsResultsIndex([
       makeExecution({
         uniqueId: "model_a",
-        adapterResponseFields: [
-          {
-            key: "warehouse.job_id",
-            label: "warehouse.job_id",
-            kind: "string",
-            displayValue: "job-20",
-            isScalar: true,
-            sortValue: "job-20",
-          },
-        ],
+        adapterMetrics: { rawKeys: ["query_id"], queryId: "job-20" },
       }),
       makeExecution({
         uniqueId: "model_b",
-        adapterResponseFields: [
-          {
-            key: "warehouse.job_id",
-            label: "warehouse.job_id",
-            kind: "string",
-            displayValue: "job-3",
-            isScalar: true,
-            sortValue: "job-3",
-          },
-        ],
+        adapterMetrics: { rawKeys: ["query_id"], queryId: "job-3" },
       }),
       makeExecution({
         uniqueId: "model_c",
-        adapterResponseFields: [],
+        adapterMetrics: undefined,
       }),
     ]);
 
@@ -268,7 +232,7 @@ describe("queryRunsResultsIndex", () => {
       materializationKinds: [],
       threadIds: [],
       durationBand: "all",
-      sortBy: "adapter:warehouse.job_id",
+      sortBy: "adapter:queryId",
       sortDirection: "asc",
       limit: 20,
     });

@@ -3,6 +3,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ResourceNode } from "@web/types";
 import type { HoverState } from "./hitTest";
 import { GanttTooltip, computeTooltipPlacement } from "./GanttTooltip";
 
@@ -10,10 +11,12 @@ function renderTooltip({
   hover,
   frameWidth = 600,
   frameHeight = 320,
+  resourceByUniqueId,
 }: {
   hover: HoverState;
   frameWidth?: number;
   frameHeight?: number;
+  resourceByUniqueId?: ReadonlyMap<string, ResourceNode>;
 }) {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -28,6 +31,7 @@ function renderTooltip({
         runStartedAt={null}
         canShowTimestamps={false}
         timeZone="UTC"
+        resourceByUniqueId={resourceByUniqueId}
       />,
     );
   });
@@ -139,6 +143,76 @@ describe("GanttTooltip", () => {
 
     expect(tooltip.style.left).toBe("344px");
     expect(tooltip.style.top).toBe("188px");
+
+    cleanupRoot(root, container);
+  });
+
+  it("shows Adapter response when the resource has normalized adapter metrics", () => {
+    const hover: HoverState = {
+      item: {
+        unique_id: "model.customers",
+        name: "customers",
+        start: 16_000,
+        end: 17_000,
+        duration: 1_000,
+        status: "success",
+        resourceType: "model",
+        packageName: "pkg",
+        path: null,
+        parentId: null,
+      },
+      x: 100,
+      y: 80,
+    };
+    const resource: ResourceNode = {
+      uniqueId: "model.customers",
+      name: "customers",
+      resourceType: "model",
+      packageName: "pkg",
+      path: null,
+      originalFilePath: null,
+      description: null,
+      status: "success",
+      statusTone: "positive",
+      executionTime: 1,
+      threadId: null,
+      adapterMetrics: {
+        rawKeys: ["bytes_processed"],
+        bytesProcessed: 12_345,
+      },
+    };
+    const resourceByUniqueId = new Map<string, ResourceNode>([
+      ["model.customers", resource],
+    ]);
+    const { container, root } = renderTooltip({ hover, resourceByUniqueId });
+
+    expect(container.textContent).toContain("Adapter response");
+    expect(container.textContent).toContain("Bytes processed");
+    expect(container.textContent).toContain("12,345");
+
+    cleanupRoot(root, container);
+  });
+
+  it("omits Adapter response when the map has no entry for the hovered node", () => {
+    const hover: HoverState = {
+      item: {
+        unique_id: "model.customers",
+        name: "customers",
+        start: 16_000,
+        end: 17_000,
+        duration: 1_000,
+        status: "success",
+        resourceType: "model",
+        packageName: "pkg",
+        path: null,
+        parentId: null,
+      },
+      x: 100,
+      y: 80,
+    };
+    const { container, root } = renderTooltip({ hover });
+
+    expect(container.textContent).not.toContain("Adapter response");
 
     cleanupRoot(root, container);
   });

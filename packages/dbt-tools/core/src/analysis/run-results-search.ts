@@ -1,5 +1,6 @@
 import type { NodeExecution } from "./execution-analyzer";
 import type { ManifestGraph } from "./manifest-graph";
+import type { AdapterMetricSortKey } from "./adapter-metric-descriptors";
 
 /**
  * Criteria for filtering run results executions
@@ -21,8 +22,16 @@ export interface RunResultsSearchCriteria {
     | "execution_time_desc"
     | "unique_id"
     | "bytes_processed_desc"
+    | "bytes_billed_desc"
     | "slot_ms_desc"
-    | "rows_affected_desc";
+    | "rows_affected_desc"
+    | "rows_inserted_desc"
+    | "rows_updated_desc"
+    | "rows_deleted_desc"
+    | "rows_duplicated_desc"
+    | "query_id"
+    | "adapter_code"
+    | "adapter_message";
   /** Minimum bytes_processed from adapter_response (when present) */
   min_bytes_processed?: number;
   /** Minimum slot_ms from adapter_response (when present) */
@@ -31,6 +40,8 @@ export interface RunResultsSearchCriteria {
   min_rows_affected?: number;
   /** Require adapter_response to contain this top-level key */
   has_adapter_key?: string;
+  /** Free text match against canonical adapter string fields */
+  adapter_text?: string;
 }
 
 /**
@@ -83,17 +94,104 @@ function matchesUniqueId(uniqueId: string, pattern: string | RegExp): boolean {
   return matchesGlob(uniqueId, pattern);
 }
 
-function bytesProcessedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.bytesProcessed ?? 0;
+export function getAdapterMetricSortValue(
+  execution: NodeExecution,
+  sortKey: AdapterMetricSortKey,
+): number | string | undefined {
+  switch (sortKey) {
+    case "query_id":
+      return execution.adapterMetrics?.queryId ?? "";
+    case "adapter_code":
+      return execution.adapterMetrics?.adapterCode ?? "";
+    case "adapter_message":
+      return execution.adapterMetrics?.adapterMessage ?? "";
+    case "bytes_processed":
+      return execution.adapterMetrics?.bytesProcessed;
+    case "bytes_billed":
+      return execution.adapterMetrics?.bytesBilled;
+    case "slot_ms":
+      return execution.adapterMetrics?.slotMs;
+    case "rows_affected":
+      return execution.adapterMetrics?.rowsAffected;
+    case "project_id":
+      return execution.adapterMetrics?.projectId;
+    case "location":
+      return execution.adapterMetrics?.location;
+    case "rows_inserted":
+      return execution.adapterMetrics?.rowsInserted;
+    case "rows_updated":
+      return execution.adapterMetrics?.rowsUpdated;
+    case "rows_deleted":
+      return execution.adapterMetrics?.rowsDeleted;
+    case "rows_duplicated":
+      return execution.adapterMetrics?.rowsDuplicated;
+  }
 }
 
-function slotMsOf(e: NodeExecution): number {
-  return e.adapterMetrics?.slotMs ?? 0;
+function compareOptionalMetric(
+  left: number | string | undefined,
+  right: number | string | undefined,
+): number {
+  const leftMissing = left === undefined || left === "";
+  const rightMissing = right === undefined || right === "";
+  if (leftMissing && rightMissing) return 0;
+  if (leftMissing) return 1;
+  if (rightMissing) return -1;
+  if (typeof left === "number" && typeof right === "number") {
+    return left - right;
+  }
+  return String(left).localeCompare(String(right), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
 }
 
-function rowsAffectedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.rowsAffected ?? 0;
+export type AdapterHeavyMetric =
+  | "bytes_processed"
+  | "bytes_billed"
+  | "slot_ms"
+  | "rows_affected"
+  | "rows_inserted"
+  | "rows_updated"
+  | "rows_deleted"
+  | "rows_duplicated";
+
+/** Numeric adapter fields used for top-N, filters, and *_desc sorts (treat missing as 0). */
+function adapterNumericHeavyOrZero(
+  execution: NodeExecution,
+  metric: AdapterHeavyMetric,
+): number {
+  const v = getAdapterMetricSortValue(execution, metric);
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
+
+const ADAPTER_HEAVY_DESC_KEYS = [
+  "bytes_processed",
+  "bytes_billed",
+  "slot_ms",
+  "rows_affected",
+  "rows_inserted",
+  "rows_updated",
+  "rows_deleted",
+  "rows_duplicated",
+] as const satisfies readonly AdapterHeavyMetric[];
+
+const NUMERIC_SORT_ACCESSORS = Object.fromEntries(
+  ADAPTER_HEAVY_DESC_KEYS.map((m) => [
+    `${m}_desc`,
+    (e: NodeExecution) => adapterNumericHeavyOrZero(e, m),
+  ]),
+) as Record<
+  | "bytes_processed_desc"
+  | "bytes_billed_desc"
+  | "slot_ms_desc"
+  | "rows_affected_desc"
+  | "rows_inserted_desc"
+  | "rows_updated_desc"
+  | "rows_deleted_desc"
+  | "rows_duplicated_desc",
+  (execution: NodeExecution) => number
+>;
 
 /**
  * Search and filter NodeExecution array by criteria.
@@ -136,15 +234,21 @@ export function searchRunResults(
 
   if (criteria.min_bytes_processed !== undefined) {
     result = result.filter(
-      (e) => bytesProcessedOf(e) >= criteria.min_bytes_processed!,
+      (e) =>
+        adapterNumericHeavyOrZero(e, "bytes_processed") >=
+        criteria.min_bytes_processed!,
     );
   }
   if (criteria.min_slot_ms !== undefined) {
-    result = result.filter((e) => slotMsOf(e) >= criteria.min_slot_ms!);
+    result = result.filter(
+      (e) => adapterNumericHeavyOrZero(e, "slot_ms") >= criteria.min_slot_ms!,
+    );
   }
   if (criteria.min_rows_affected !== undefined) {
     result = result.filter(
-      (e) => rowsAffectedOf(e) >= criteria.min_rows_affected!,
+      (e) =>
+        adapterNumericHeavyOrZero(e, "rows_affected") >=
+        criteria.min_rows_affected!,
     );
   }
   if (criteria.has_adapter_key !== undefined) {
@@ -153,23 +257,52 @@ export function searchRunResults(
       (e) => e.adapterMetrics?.rawKeys.includes(key) === true,
     );
   }
+  if (
+    criteria.adapter_text !== undefined &&
+    criteria.adapter_text.trim() !== ""
+  ) {
+    const token = criteria.adapter_text.toLowerCase();
+    result = result.filter((e) => {
+      const metrics = e.adapterMetrics;
+      if (metrics == null) return false;
+      return [
+        metrics.queryId,
+        metrics.adapterCode,
+        metrics.adapterMessage,
+        metrics.projectId,
+        metrics.location,
+      ].some((value) => value?.toLowerCase().includes(token) === true);
+    });
+  }
 
   // Sort
-  if (criteria.sort) {
+  const sortKey = criteria.sort;
+  if (sortKey) {
     result = [...result].sort((a, b) => {
-      switch (criteria.sort) {
+      if (sortKey in NUMERIC_SORT_ACCESSORS) {
+        const accessor =
+          NUMERIC_SORT_ACCESSORS[
+            sortKey as keyof typeof NUMERIC_SORT_ACCESSORS
+          ];
+        return accessor(b) - accessor(a);
+      }
+      if (
+        sortKey === "query_id" ||
+        sortKey === "adapter_code" ||
+        sortKey === "adapter_message"
+      ) {
+        return compareOptionalMetric(
+          getAdapterMetricSortValue(a, sortKey),
+          getAdapterMetricSortValue(b, sortKey),
+        );
+      }
+      switch (sortKey) {
         case "execution_time_asc":
           return (a.execution_time ?? 0) - (b.execution_time ?? 0);
         case "execution_time_desc":
           return (b.execution_time ?? 0) - (a.execution_time ?? 0);
         case "unique_id":
           return a.unique_id.localeCompare(b.unique_id);
-        case "bytes_processed_desc":
-          return bytesProcessedOf(b) - bytesProcessedOf(a);
-        case "slot_ms_desc":
-          return slotMsOf(b) - slotMsOf(a);
-        case "rows_affected_desc":
-          return rowsAffectedOf(b) - rowsAffectedOf(a);
         default:
           return 0;
       }
@@ -255,11 +388,6 @@ export function detectBottlenecks(
   };
 }
 
-export type AdapterHeavyMetric =
-  | "bytes_processed"
-  | "slot_ms"
-  | "rows_affected";
-
 export interface AdapterHeavyNode {
   unique_id: string;
   name?: string;
@@ -277,19 +405,6 @@ export interface AdapterHeavyResult {
   criteria_used: "top_n";
 }
 
-function metricValue(e: NodeExecution, metric: AdapterHeavyMetric): number {
-  switch (metric) {
-    case "bytes_processed":
-      return bytesProcessedOf(e);
-    case "slot_ms":
-      return slotMsOf(e);
-    case "rows_affected":
-      return rowsAffectedOf(e);
-    default:
-      return 0;
-  }
-}
-
 /**
  * Top-N nodes by an adapter-reported metric (bytes, slot ms, or rows affected).
  * Percentages use the sum of that metric across nodes with value &gt; 0.
@@ -302,20 +417,23 @@ export function detectAdapterHeavyNodes(
     graph?: ManifestGraph;
   },
 ): AdapterHeavyResult {
+  const m = options.metric;
   const totalMetric = executions.reduce(
-    (sum, e) => sum + Math.max(0, metricValue(e, options.metric)),
+    (sum, e) => sum + Math.max(0, adapterNumericHeavyOrZero(e, m)),
     0,
   );
 
   const topN = options.top > 0 ? options.top : 10;
-  const positive = executions.filter((e) => metricValue(e, options.metric) > 0);
+  const positive = executions.filter(
+    (e) => adapterNumericHeavyOrZero(e, m) > 0,
+  );
   const sorted = [...positive].sort(
-    (a, b) => metricValue(b, options.metric) - metricValue(a, options.metric),
+    (a, b) => adapterNumericHeavyOrZero(b, m) - adapterNumericHeavyOrZero(a, m),
   );
   const filtered = sorted.slice(0, topN);
 
   const nodes: AdapterHeavyNode[] = filtered.map((e, i) => {
-    const value = metricValue(e, options.metric);
+    const value = adapterNumericHeavyOrZero(e, m);
     const pct = totalMetric > 0 ? (value / totalMetric) * 100 : 0;
     return {
       unique_id: e.unique_id,

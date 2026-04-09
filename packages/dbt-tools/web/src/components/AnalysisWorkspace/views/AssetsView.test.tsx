@@ -3,7 +3,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AnalysisState, ResourceNode } from "@web/types";
+import type { AnalysisState, ExecutionRow, ResourceNode } from "@web/types";
 import { AssetsView } from "./AssetsView";
 
 const { useResourceCode } = vi.hoisted(() => ({
@@ -45,10 +45,19 @@ function makeResource(overrides: Partial<ResourceNode> = {}): ResourceNode {
     statusTone: overrides.statusTone ?? "positive",
     executionTime: overrides.executionTime ?? 3.63,
     threadId: overrides.threadId ?? "Thread-1 (worker)",
+    ...(overrides.adapterMetrics != null
+      ? { adapterMetrics: overrides.adapterMetrics }
+      : {}),
+    ...(overrides.adapterResponseFields != null
+      ? { adapterResponseFields: overrides.adapterResponseFields }
+      : {}),
   } as ResourceNode;
 }
 
-function makeAnalysis(resources: ResourceNode[]): AnalysisState {
+function makeAnalysis(
+  resources: ResourceNode[],
+  executions: ExecutionRow[] = [],
+): AnalysisState {
   return {
     summary: {
       total_execution_time: 0,
@@ -60,7 +69,7 @@ function makeAnalysis(resources: ResourceNode[]): AnalysisState {
     bundles: [],
     graph: { nodes: [], edges: [] },
     resourceGroups: [],
-    executions: [],
+    executions,
     dependencyIndex: {
       "model.jaffle_shop.orders": {
         upstreamCount: 2,
@@ -229,11 +238,12 @@ describe("AssetsView", () => {
       analysis: makeAnalysis([resource, ...tests]),
     });
 
-    expect(container.textContent).toContain("Asset summary");
     expect(
-      [...container.querySelectorAll(".asset-summary__group-title")].map(
-        (el) => el.textContent,
-      ),
+      [
+        ...container.querySelectorAll(
+          "#asset-section-summary .workspace-card h3",
+        ),
+      ].map((el) => el.textContent),
     ).toEqual(["Resource", "This run"]);
     expect(container.textContent).toContain("warehouse.analytics");
     expect(container.textContent).not.toContain("Direct upstream");
@@ -255,6 +265,112 @@ describe("AssetsView", () => {
       "asset-section-tests",
       "asset-section-sql",
     ]);
+
+    cleanupRoot(root, container);
+  });
+
+  it("shows adapter response on the asset summary when snapshot includes it", () => {
+    const resource = makeResource({
+      adapterMetrics: {
+        rawKeys: ["bytes_processed"],
+        bytesProcessed: 2048,
+      },
+      adapterResponseFields: [
+        {
+          key: "job_id",
+          label: "job_id",
+          kind: "string",
+          displayValue: "job-abc",
+          isScalar: true,
+        },
+      ],
+    });
+    const { container, root } = renderAssetsView({
+      resource,
+      analysis: makeAnalysis([resource]),
+    });
+
+    expect(
+      [...container.querySelectorAll(".asset-summary__group-title")].map(
+        (el) => el.textContent,
+      ),
+    ).toEqual(["Adapter response"]);
+    expect(container.textContent).toContain("Adapter response");
+    expect(container.textContent).toContain("2,048");
+    expect(
+      container.querySelector(
+        '[aria-label="Additional adapter response fields"]',
+      )?.textContent,
+    ).toContain("job_id: job-abc");
+
+    cleanupRoot(root, container);
+  });
+
+  it("omits the unstructured adapter dump when raw fields only repeat normalized metrics", () => {
+    const resource = makeResource({
+      adapterMetrics: {
+        rawKeys: ["bytes_processed", "location"],
+        bytesProcessed: 2048,
+        location: "asia-northeast1",
+      },
+      adapterResponseFields: [
+        {
+          key: "bytes_processed",
+          label: "bytes_processed",
+          kind: "number",
+          displayValue: "2,048",
+          isScalar: true,
+        },
+        {
+          key: "location",
+          label: "location",
+          kind: "string",
+          displayValue: "asia-northeast1",
+          isScalar: true,
+        },
+      ],
+    });
+    const { container, root } = renderAssetsView({
+      resource,
+      analysis: makeAnalysis([resource]),
+    });
+
+    expect(container.textContent).toContain("Adapter response");
+    expect(
+      container.querySelector(
+        '[aria-label="Additional adapter response fields"]',
+      ),
+    ).toBeNull();
+
+    cleanupRoot(root, container);
+  });
+
+  it("shows adapter response from the execution row when the resource omits it", () => {
+    const resource = makeResource();
+    const execution: ExecutionRow = {
+      uniqueId: resource.uniqueId,
+      name: resource.name,
+      resourceType: resource.resourceType,
+      packageName: resource.packageName,
+      path: resource.path,
+      status: "success",
+      statusTone: "positive",
+      executionTime: 1,
+      threadId: "Thread-1",
+      start: null,
+      end: null,
+      adapterMetrics: {
+        rawKeys: ["bytes_processed"],
+        bytesProcessed: 4096,
+      },
+    };
+    const { container, root } = renderAssetsView({
+      resource,
+      analysis: makeAnalysis([resource], [execution]),
+    });
+
+    expect(container.textContent).toContain("Adapter response");
+    expect(container.textContent).toContain("4,096");
 
     cleanupRoot(root, container);
   });
@@ -287,7 +403,8 @@ describe("AssetsView", () => {
       activeTab: "runtime",
     });
 
-    expect(container.textContent).toContain("Asset summary");
+    expect(container.textContent).toContain("Resource");
+    expect(container.textContent).toContain("This run");
     expect(scrollIntoView).toHaveBeenCalled();
 
     cleanupRoot(root, container);

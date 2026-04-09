@@ -89,6 +89,10 @@ export interface ResourceNode {
   testAttachedTarget?: string | null;
   /** Non-empty `run_results.results[].message` when present. */
   runResultMessage?: string | null;
+  /** Normalized `adapter_response` metrics when the captured run reported any. */
+  adapterMetrics?: AdapterResponseMetrics;
+  /** Flattened `adapter_response` fields for display when present. */
+  adapterResponseFields?: AdapterResponseField[];
 }
 
 export interface ResourceGroup {
