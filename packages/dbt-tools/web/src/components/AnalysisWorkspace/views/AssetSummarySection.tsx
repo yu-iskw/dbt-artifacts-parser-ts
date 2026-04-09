@@ -14,20 +14,6 @@ import {
 import { ResourceMarkdownDescription } from "../ResourceMarkdownDescription";
 import { SectionCard } from "../shared";
 
-function hasAdapterSummaryContent(
-  adapterMetrics: ExecutionRow["adapterMetrics"],
-  adapterResponseFields: ExecutionRow["adapterResponseFields"],
-): boolean {
-  const extraRaw = getAdapterResponseFieldsBeyondNormalized(
-    adapterMetrics,
-    adapterResponseFields,
-  );
-  if (extraRaw.length > 0) return true;
-  const m = adapterMetrics;
-  if (m == null) return false;
-  return getPresentAdapterMetricDescriptors([m]).length > 0;
-}
-
 function warehouseRelationLabel(resource: ResourceNode): string {
   const rel = resource.semantics?.relationName?.trim();
   if (rel) return formatRelationNameForDisplay(rel);
@@ -61,10 +47,8 @@ export function AssetSummarySection({
     adapterResponseFields,
   );
 
-  const showAdapter = hasAdapterSummaryContent(
-    adapterMetrics,
-    adapterResponseFields,
-  );
+  const showAdapter =
+    extraAdapterRawFields.length > 0 || adapterMetricDescriptors.length > 0;
 
   return (
     <div className="asset-summary-stack">

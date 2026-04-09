@@ -94,38 +94,10 @@ function matchesUniqueId(uniqueId: string, pattern: string | RegExp): boolean {
   return matchesGlob(uniqueId, pattern);
 }
 
-function bytesProcessedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.bytesProcessed ?? 0;
-}
-
-function slotMsOf(e: NodeExecution): number {
-  return e.adapterMetrics?.slotMs ?? 0;
-}
-
-function rowsAffectedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.rowsAffected ?? 0;
-}
-
-function rowsInsertedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.rowsInserted ?? 0;
-}
-
-function rowsUpdatedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.rowsUpdated ?? 0;
-}
-
-function rowsDeletedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.rowsDeleted ?? 0;
-}
-
-function rowsDuplicatedOf(e: NodeExecution): number {
-  return e.adapterMetrics?.rowsDuplicated ?? 0;
-}
-
-function adapterStringValue(
+export function getAdapterMetricSortValue(
   execution: NodeExecution,
-  sortKey: "query_id" | "adapter_code" | "adapter_message",
-): string {
+  sortKey: AdapterMetricSortKey,
+): number | string | undefined {
   switch (sortKey) {
     case "query_id":
       return execution.adapterMetrics?.queryId ?? "";
@@ -133,18 +105,6 @@ function adapterStringValue(
       return execution.adapterMetrics?.adapterCode ?? "";
     case "adapter_message":
       return execution.adapterMetrics?.adapterMessage ?? "";
-  }
-}
-
-export function getAdapterMetricSortValue(
-  execution: NodeExecution,
-  sortKey: AdapterMetricSortKey,
-): number | string | undefined {
-  switch (sortKey) {
-    case "query_id":
-    case "adapter_code":
-    case "adapter_message":
-      return adapterStringValue(execution, sortKey);
     case "bytes_processed":
       return execution.adapterMetrics?.bytesProcessed;
     case "bytes_billed":
@@ -186,24 +146,42 @@ function compareOptionalMetric(
   });
 }
 
-const NUMERIC_SORT_ACCESSORS = {
-  bytes_processed_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.bytesProcessed ?? 0,
-  bytes_billed_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.bytesBilled ?? 0,
-  slot_ms_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.slotMs ?? 0,
-  rows_affected_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.rowsAffected ?? 0,
-  rows_inserted_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.rowsInserted ?? 0,
-  rows_updated_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.rowsUpdated ?? 0,
-  rows_deleted_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.rowsDeleted ?? 0,
-  rows_duplicated_desc: (execution: NodeExecution) =>
-    execution.adapterMetrics?.rowsDuplicated ?? 0,
-} as const satisfies Record<
+export type AdapterHeavyMetric =
+  | "bytes_processed"
+  | "bytes_billed"
+  | "slot_ms"
+  | "rows_affected"
+  | "rows_inserted"
+  | "rows_updated"
+  | "rows_deleted"
+  | "rows_duplicated";
+
+/** Numeric adapter fields used for top-N, filters, and *_desc sorts (treat missing as 0). */
+function adapterNumericHeavyOrZero(
+  execution: NodeExecution,
+  metric: AdapterHeavyMetric,
+): number {
+  const v = getAdapterMetricSortValue(execution, metric);
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+const ADAPTER_HEAVY_DESC_KEYS = [
+  "bytes_processed",
+  "bytes_billed",
+  "slot_ms",
+  "rows_affected",
+  "rows_inserted",
+  "rows_updated",
+  "rows_deleted",
+  "rows_duplicated",
+] as const satisfies readonly AdapterHeavyMetric[];
+
+const NUMERIC_SORT_ACCESSORS = Object.fromEntries(
+  ADAPTER_HEAVY_DESC_KEYS.map((m) => [
+    `${m}_desc`,
+    (e: NodeExecution) => adapterNumericHeavyOrZero(e, m),
+  ]),
+) as Record<
   | "bytes_processed_desc"
   | "bytes_billed_desc"
   | "slot_ms_desc"
@@ -256,15 +234,21 @@ export function searchRunResults(
 
   if (criteria.min_bytes_processed !== undefined) {
     result = result.filter(
-      (e) => bytesProcessedOf(e) >= criteria.min_bytes_processed!,
+      (e) =>
+        adapterNumericHeavyOrZero(e, "bytes_processed") >=
+        criteria.min_bytes_processed!,
     );
   }
   if (criteria.min_slot_ms !== undefined) {
-    result = result.filter((e) => slotMsOf(e) >= criteria.min_slot_ms!);
+    result = result.filter(
+      (e) => adapterNumericHeavyOrZero(e, "slot_ms") >= criteria.min_slot_ms!,
+    );
   }
   if (criteria.min_rows_affected !== undefined) {
     result = result.filter(
-      (e) => rowsAffectedOf(e) >= criteria.min_rows_affected!,
+      (e) =>
+        adapterNumericHeavyOrZero(e, "rows_affected") >=
+        criteria.min_rows_affected!,
     );
   }
   if (criteria.has_adapter_key !== undefined) {
@@ -404,16 +388,6 @@ export function detectBottlenecks(
   };
 }
 
-export type AdapterHeavyMetric =
-  | "bytes_processed"
-  | "bytes_billed"
-  | "slot_ms"
-  | "rows_affected"
-  | "rows_inserted"
-  | "rows_updated"
-  | "rows_deleted"
-  | "rows_duplicated";
-
 export interface AdapterHeavyNode {
   unique_id: string;
   name?: string;
@@ -431,29 +405,6 @@ export interface AdapterHeavyResult {
   criteria_used: "top_n";
 }
 
-function metricValue(e: NodeExecution, metric: AdapterHeavyMetric): number {
-  switch (metric) {
-    case "bytes_processed":
-      return bytesProcessedOf(e);
-    case "bytes_billed":
-      return e.adapterMetrics?.bytesBilled ?? 0;
-    case "slot_ms":
-      return slotMsOf(e);
-    case "rows_affected":
-      return rowsAffectedOf(e);
-    case "rows_inserted":
-      return rowsInsertedOf(e);
-    case "rows_updated":
-      return rowsUpdatedOf(e);
-    case "rows_deleted":
-      return rowsDeletedOf(e);
-    case "rows_duplicated":
-      return rowsDuplicatedOf(e);
-    default:
-      return 0;
-  }
-}
-
 /**
  * Top-N nodes by an adapter-reported metric (bytes, slot ms, or rows affected).
  * Percentages use the sum of that metric across nodes with value &gt; 0.
@@ -466,20 +417,23 @@ export function detectAdapterHeavyNodes(
     graph?: ManifestGraph;
   },
 ): AdapterHeavyResult {
+  const m = options.metric;
   const totalMetric = executions.reduce(
-    (sum, e) => sum + Math.max(0, metricValue(e, options.metric)),
+    (sum, e) => sum + Math.max(0, adapterNumericHeavyOrZero(e, m)),
     0,
   );
 
   const topN = options.top > 0 ? options.top : 10;
-  const positive = executions.filter((e) => metricValue(e, options.metric) > 0);
+  const positive = executions.filter(
+    (e) => adapterNumericHeavyOrZero(e, m) > 0,
+  );
   const sorted = [...positive].sort(
-    (a, b) => metricValue(b, options.metric) - metricValue(a, options.metric),
+    (a, b) => adapterNumericHeavyOrZero(b, m) - adapterNumericHeavyOrZero(a, m),
   );
   const filtered = sorted.slice(0, topN);
 
   const nodes: AdapterHeavyNode[] = filtered.map((e, i) => {
-    const value = metricValue(e, options.metric);
+    const value = adapterNumericHeavyOrZero(e, m);
     const pct = totalMetric > 0 ? (value / totalMetric) * 100 : 0;
     return {
       unique_id: e.unique_id,
