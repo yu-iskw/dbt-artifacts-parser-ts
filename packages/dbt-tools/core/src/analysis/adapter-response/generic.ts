@@ -6,8 +6,7 @@
 
 import type { AdapterResponseMetrics } from "../adapter-response-metrics";
 import type { AdapterResponseParser } from "./types";
-import { isPlainObject } from "../adapter-response-metrics";
-import { extractBaseFields } from "./parsers/base";
+import { mergeWithBaseFields } from "./parsers/base";
 
 /**
  * Generic fallback parser: normalizes keys common across all adapters.
@@ -18,19 +17,7 @@ export const genericAdapterResponseParser: AdapterResponseParser = {
   name: "generic",
 
   parse(input: unknown): AdapterResponseMetrics {
-    if (!isPlainObject(input)) {
-      return { rawKeys: [] };
-    }
-
-    const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
-
-    // Extract generic/base fields using shared utility
-    const baseFields = extractBaseFields(input);
-
-    return {
-      ...baseFields,
-      rawKeys,
-    };
+    return mergeWithBaseFields(input, {});
   },
 
   // Generic parser has no heuristic; rely on exact type match or other parsers

@@ -57,3 +57,24 @@ export function extractBaseFields(
     ...(location !== undefined ? { location } : {}),
   };
 }
+
+/**
+ * Merge base fields, adapter-specific fields, and raw keys into a canonical
+ * adapter metrics object. Typed parsers should use this instead of rebuilding
+ * the base normalization contract independently.
+ */
+export function mergeWithBaseFields(
+  input: unknown,
+  extraFields: Partial<AdapterResponseMetrics>,
+): AdapterResponseMetrics {
+  if (!isPlainObject(input)) {
+    return { rawKeys: [] };
+  }
+
+  const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
+  return {
+    ...extractBaseFields(input),
+    ...extraFields,
+    rawKeys,
+  };
+}

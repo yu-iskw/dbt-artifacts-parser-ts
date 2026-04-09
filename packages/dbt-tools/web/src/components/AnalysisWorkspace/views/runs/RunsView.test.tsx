@@ -141,6 +141,11 @@ describe("RunsView", () => {
   it("renders capped adapter columns from raw adapter_response fields", () => {
     const row = makeRow({
       name: "a_very_long_model_name_that_should_not_overlap_adjacent_cells",
+      adapterMetrics: {
+        rawKeys: ["bytes_processed", "query_id"],
+        bytesProcessed: 123,
+        queryId: "job-1",
+      },
       adapterResponseFields: [
         makeField("bytes_processed", "123", "number", 123),
         makeField("job_id", "job-1", "string", "job-1"),
@@ -160,8 +165,8 @@ describe("RunsView", () => {
       );
     });
 
-    expect(container.textContent).toContain("bytes_processed");
-    expect(container.textContent).toContain("job_id");
+    expect(container.textContent).toContain("Bytes processed");
+    expect(container.textContent).toContain("Query ID");
     expect(container.textContent).toContain("123");
     expect(container.textContent).toContain("job-1");
     expect(
@@ -172,6 +177,24 @@ describe("RunsView", () => {
   it("caps visible columns and moves overflow into the inspector", () => {
     const row = makeRow({
       uniqueId: "model.pkg.cap",
+      adapterMetrics: {
+        rawKeys: [
+          "query_id",
+          "code",
+          "_message",
+          "bytes_processed",
+          "bytes_billed",
+          "slot_ms",
+          "rows_affected",
+        ],
+        queryId: "job-1",
+        adapterCode: "OK",
+        adapterMessage: "finished",
+        bytesProcessed: 1,
+        bytesBilled: 2,
+        slotMs: 3,
+        rowsAffected: 4,
+      },
       adapterResponseFields: [
         makeField("a", "1", "number", 1),
         makeField("b", "2", "number", 2),
@@ -198,8 +221,8 @@ describe("RunsView", () => {
       );
     });
 
-    expect(container.textContent).toContain("Showing 6 of 7 adapter fields");
-    expect(container.textContent).toContain("Overflow adapter fields");
+    expect(container.textContent).toContain("Showing 6 of 7 adapter metrics");
+    expect(container.textContent).toContain("More adapter metrics");
     expect(container.textContent).toContain("g: 7");
   });
 

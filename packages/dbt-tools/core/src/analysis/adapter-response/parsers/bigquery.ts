@@ -19,7 +19,7 @@ import {
   readNonEmptyString,
   isPlainObject,
 } from "../../adapter-response-metrics";
-import { extractBaseFields } from "./base";
+import { mergeWithBaseFields } from "./base";
 
 export const bigqueryAdapterResponseParser: AdapterResponseParser = {
   name: "bigquery",
@@ -28,11 +28,6 @@ export const bigqueryAdapterResponseParser: AdapterResponseParser = {
     if (!isPlainObject(input)) {
       return { rawKeys: [] };
     }
-
-    const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
-
-    // Extract generic/base fields first
-    const baseFields = extractBaseFields(input);
 
     // BigQuery-specific fields (override base if both present)
     const bytesProcessed = readFiniteNumber(input, "bytes_processed");
@@ -47,16 +42,14 @@ export const bigqueryAdapterResponseParser: AdapterResponseParser = {
       readNonEmptyString(input, "query_id") ??
       readNonEmptyString(input, "job_id");
 
-    return {
-      ...baseFields,
+    return mergeWithBaseFields(input, {
       ...(bytesProcessed !== undefined ? { bytesProcessed } : {}),
       ...(bytesBilled !== undefined ? { bytesBilled } : {}),
       ...(slotMs !== undefined ? { slotMs } : {}),
       ...(queryId !== undefined ? { queryId } : {}),
       ...(projectId !== undefined ? { projectId } : {}),
       ...(location !== undefined ? { location } : {}),
-      rawKeys,
-    };
+    });
   },
 
   canParse(input: unknown): boolean {

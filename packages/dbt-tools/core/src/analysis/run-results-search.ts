@@ -1,5 +1,6 @@
 import type { NodeExecution } from "./execution-analyzer";
 import type { ManifestGraph } from "./manifest-graph";
+import type { AdapterMetricSortKey } from "./adapter-metric-descriptors";
 
 /**
  * Criteria for filtering run results executions
@@ -21,8 +22,16 @@ export interface RunResultsSearchCriteria {
     | "execution_time_desc"
     | "unique_id"
     | "bytes_processed_desc"
+    | "bytes_billed_desc"
     | "slot_ms_desc"
-    | "rows_affected_desc";
+    | "rows_affected_desc"
+    | "rows_inserted_desc"
+    | "rows_updated_desc"
+    | "rows_deleted_desc"
+    | "rows_duplicated_desc"
+    | "query_id"
+    | "adapter_code"
+    | "adapter_message";
   /** Minimum bytes_processed from adapter_response (when present) */
   min_bytes_processed?: number;
   /** Minimum slot_ms from adapter_response (when present) */
@@ -31,6 +40,8 @@ export interface RunResultsSearchCriteria {
   min_rows_affected?: number;
   /** Require adapter_response to contain this top-level key */
   has_adapter_key?: string;
+  /** Free text match against canonical adapter string fields */
+  adapter_text?: string;
 }
 
 /**
@@ -95,6 +106,115 @@ function rowsAffectedOf(e: NodeExecution): number {
   return e.adapterMetrics?.rowsAffected ?? 0;
 }
 
+function rowsInsertedOf(e: NodeExecution): number {
+  return e.adapterMetrics?.rowsInserted ?? 0;
+}
+
+function rowsUpdatedOf(e: NodeExecution): number {
+  return e.adapterMetrics?.rowsUpdated ?? 0;
+}
+
+function rowsDeletedOf(e: NodeExecution): number {
+  return e.adapterMetrics?.rowsDeleted ?? 0;
+}
+
+function rowsDuplicatedOf(e: NodeExecution): number {
+  return e.adapterMetrics?.rowsDuplicated ?? 0;
+}
+
+function adapterStringValue(
+  execution: NodeExecution,
+  sortKey: "query_id" | "adapter_code" | "adapter_message",
+): string {
+  switch (sortKey) {
+    case "query_id":
+      return execution.adapterMetrics?.queryId ?? "";
+    case "adapter_code":
+      return execution.adapterMetrics?.adapterCode ?? "";
+    case "adapter_message":
+      return execution.adapterMetrics?.adapterMessage ?? "";
+  }
+}
+
+export function getAdapterMetricSortValue(
+  execution: NodeExecution,
+  sortKey: AdapterMetricSortKey,
+): number | string | undefined {
+  switch (sortKey) {
+    case "query_id":
+    case "adapter_code":
+    case "adapter_message":
+      return adapterStringValue(execution, sortKey);
+    case "bytes_processed":
+      return execution.adapterMetrics?.bytesProcessed;
+    case "bytes_billed":
+      return execution.adapterMetrics?.bytesBilled;
+    case "slot_ms":
+      return execution.adapterMetrics?.slotMs;
+    case "rows_affected":
+      return execution.adapterMetrics?.rowsAffected;
+    case "project_id":
+      return execution.adapterMetrics?.projectId;
+    case "location":
+      return execution.adapterMetrics?.location;
+    case "rows_inserted":
+      return execution.adapterMetrics?.rowsInserted;
+    case "rows_updated":
+      return execution.adapterMetrics?.rowsUpdated;
+    case "rows_deleted":
+      return execution.adapterMetrics?.rowsDeleted;
+    case "rows_duplicated":
+      return execution.adapterMetrics?.rowsDuplicated;
+  }
+}
+
+function compareOptionalMetric(
+  left: number | string | undefined,
+  right: number | string | undefined,
+): number {
+  const leftMissing = left === undefined || left === "";
+  const rightMissing = right === undefined || right === "";
+  if (leftMissing && rightMissing) return 0;
+  if (leftMissing) return 1;
+  if (rightMissing) return -1;
+  if (typeof left === "number" && typeof right === "number") {
+    return left - right;
+  }
+  return String(left).localeCompare(String(right), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+const NUMERIC_SORT_ACCESSORS = {
+  bytes_processed_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.bytesProcessed ?? 0,
+  bytes_billed_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.bytesBilled ?? 0,
+  slot_ms_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.slotMs ?? 0,
+  rows_affected_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsAffected ?? 0,
+  rows_inserted_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsInserted ?? 0,
+  rows_updated_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsUpdated ?? 0,
+  rows_deleted_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsDeleted ?? 0,
+  rows_duplicated_desc: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsDuplicated ?? 0,
+} as const satisfies Record<
+  | "bytes_processed_desc"
+  | "bytes_billed_desc"
+  | "slot_ms_desc"
+  | "rows_affected_desc"
+  | "rows_inserted_desc"
+  | "rows_updated_desc"
+  | "rows_deleted_desc"
+  | "rows_duplicated_desc",
+  (execution: NodeExecution) => number
+>;
+
 /**
  * Search and filter NodeExecution array by criteria.
  * Pure function: returns new array, no side effects.
@@ -153,23 +273,52 @@ export function searchRunResults(
       (e) => e.adapterMetrics?.rawKeys.includes(key) === true,
     );
   }
+  if (
+    criteria.adapter_text !== undefined &&
+    criteria.adapter_text.trim() !== ""
+  ) {
+    const token = criteria.adapter_text.toLowerCase();
+    result = result.filter((e) => {
+      const metrics = e.adapterMetrics;
+      if (metrics == null) return false;
+      return [
+        metrics.queryId,
+        metrics.adapterCode,
+        metrics.adapterMessage,
+        metrics.projectId,
+        metrics.location,
+      ].some((value) => value?.toLowerCase().includes(token) === true);
+    });
+  }
 
   // Sort
-  if (criteria.sort) {
+  const sortKey = criteria.sort;
+  if (sortKey) {
     result = [...result].sort((a, b) => {
-      switch (criteria.sort) {
+      if (sortKey in NUMERIC_SORT_ACCESSORS) {
+        const accessor =
+          NUMERIC_SORT_ACCESSORS[
+            sortKey as keyof typeof NUMERIC_SORT_ACCESSORS
+          ];
+        return accessor(b) - accessor(a);
+      }
+      if (
+        sortKey === "query_id" ||
+        sortKey === "adapter_code" ||
+        sortKey === "adapter_message"
+      ) {
+        return compareOptionalMetric(
+          getAdapterMetricSortValue(a, sortKey),
+          getAdapterMetricSortValue(b, sortKey),
+        );
+      }
+      switch (sortKey) {
         case "execution_time_asc":
           return (a.execution_time ?? 0) - (b.execution_time ?? 0);
         case "execution_time_desc":
           return (b.execution_time ?? 0) - (a.execution_time ?? 0);
         case "unique_id":
           return a.unique_id.localeCompare(b.unique_id);
-        case "bytes_processed_desc":
-          return bytesProcessedOf(b) - bytesProcessedOf(a);
-        case "slot_ms_desc":
-          return slotMsOf(b) - slotMsOf(a);
-        case "rows_affected_desc":
-          return rowsAffectedOf(b) - rowsAffectedOf(a);
         default:
           return 0;
       }
@@ -257,8 +406,13 @@ export function detectBottlenecks(
 
 export type AdapterHeavyMetric =
   | "bytes_processed"
+  | "bytes_billed"
   | "slot_ms"
-  | "rows_affected";
+  | "rows_affected"
+  | "rows_inserted"
+  | "rows_updated"
+  | "rows_deleted"
+  | "rows_duplicated";
 
 export interface AdapterHeavyNode {
   unique_id: string;
@@ -281,10 +435,20 @@ function metricValue(e: NodeExecution, metric: AdapterHeavyMetric): number {
   switch (metric) {
     case "bytes_processed":
       return bytesProcessedOf(e);
+    case "bytes_billed":
+      return e.adapterMetrics?.bytesBilled ?? 0;
     case "slot_ms":
       return slotMsOf(e);
     case "rows_affected":
       return rowsAffectedOf(e);
+    case "rows_inserted":
+      return rowsInsertedOf(e);
+    case "rows_updated":
+      return rowsUpdatedOf(e);
+    case "rows_deleted":
+      return rowsDeletedOf(e);
+    case "rows_duplicated":
+      return rowsDuplicatedOf(e);
     default:
       return 0;
   }

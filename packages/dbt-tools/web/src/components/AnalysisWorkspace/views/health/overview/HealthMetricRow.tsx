@@ -1,4 +1,8 @@
 import { useMemo } from "react";
+import {
+  ADAPTER_METRIC_DESCRIPTORS,
+  getPresentAdapterTotalDescriptors,
+} from "@dbt-tools/core/browser";
 import type { AnalysisState } from "@web/types";
 import {
   PRIMARY_PROJECT_SUMMARY_GROUPS,
@@ -62,6 +66,18 @@ export function HealthMetricRow({
         label: "Warehouse nodes",
         value: adapter.nodesWithAdapterData.toLocaleString(),
       });
+      for (const descriptor of getPresentAdapterTotalDescriptors(adapter)) {
+        const totalKey = descriptor.summaryTotalKey;
+        const value = totalKey != null ? adapter[totalKey] : undefined;
+        if (typeof value !== "number") continue;
+        row.push({
+          label:
+            ADAPTER_METRIC_DESCRIPTORS.find(
+              (item) => item.key === descriptor.key,
+            )?.shortLabel ?? descriptor.shortLabel,
+          value: value.toLocaleString(),
+        });
+      }
     }
 
     return row;

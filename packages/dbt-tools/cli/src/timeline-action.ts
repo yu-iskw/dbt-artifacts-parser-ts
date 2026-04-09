@@ -10,10 +10,14 @@ import {
   loadRunResults,
   validateSafePath,
   buildNodeExecutionsFromRunResults,
+  formatAdapterMetricValue,
+  getAdapterMetricValue,
+  getPresentAdapterMetricDescriptors,
   searchRunResults,
   formatOutput,
   shouldOutputJSON,
   type NodeExecution,
+  type AdapterResponseMetrics,
 } from "@dbt-tools/core";
 
 export type TimelineOptions = {
@@ -21,6 +25,7 @@ export type TimelineOptions = {
   top?: number;
   failedOnly?: boolean;
   status?: string;
+  adapterText?: string;
   format?: string;
   targetDir?: string;
   json?: boolean;
@@ -37,6 +42,7 @@ export type TimelineEntry = {
   completed_at?: string;
   thread_id?: string;
   message?: string;
+  adapter_metrics?: AdapterResponseMetrics;
 };
 
 export type TimelineResult = {
@@ -75,6 +81,7 @@ function toTimelineEntry(
     completed_at: exec.completed_at,
     thread_id: exec.thread_id,
     message: exec.message,
+    adapter_metrics: exec.adapterMetrics,
   };
 }
 
@@ -93,6 +100,13 @@ export function formatTimeline(result: TimelineResult): string {
   }
 
   lines.push("");
+  const descriptors = getPresentAdapterMetricDescriptors(
+    result.entries.map((entry) => entry.adapter_metrics),
+  ).filter(
+    (descriptor) =>
+      descriptor.key !== "adapterMessage" && descriptor.key !== "projectId",
+  );
+
   lines.push("  #     Status     Time (s)  Type              Name / unique_id");
   lines.push(
     "  ----  ---------  --------  ----------------  ----------------------------------------",
@@ -106,6 +120,16 @@ export function formatTimeline(result: TimelineResult): string {
     const rt = (e.resource_type || "").padEnd(16).slice(0, 16);
     const label = e.name ?? e.unique_id;
     lines.push(`  ${rank}  ${status}  ${time}  ${rt}  ${label}`);
+    for (const descriptor of descriptors) {
+      const value = getAdapterMetricValue(e.adapter_metrics, descriptor.key);
+      if (value === undefined) continue;
+      lines.push(
+        `        ${descriptor.label}: ${formatAdapterMetricValue(
+          descriptor,
+          value,
+        )}`,
+      );
+    }
   }
 
   return lines.join("\n");
@@ -113,8 +137,21 @@ export function formatTimeline(result: TimelineResult): string {
 
 /** Format timeline as CSV */
 export function formatTimelineCsv(entries: TimelineEntry[]): string {
-  const header =
-    "unique_id,name,resource_type,status,execution_time,started_at,completed_at,thread_id,message";
+  const descriptors = getPresentAdapterMetricDescriptors(
+    entries.map((entry) => entry.adapter_metrics),
+  );
+  const header = [
+    "unique_id",
+    "name",
+    "resource_type",
+    "status",
+    "execution_time",
+    "started_at",
+    "completed_at",
+    "thread_id",
+    "message",
+    ...descriptors.map((descriptor) => descriptor.key),
+  ].join(",");
   const escape = (v: string | undefined): string => {
     const s = v ?? "";
     if (s.includes(",") || s.includes('"') || s.includes("\n")) {
@@ -133,12 +170,37 @@ export function formatTimelineCsv(entries: TimelineEntry[]): string {
       escape(e.completed_at),
       escape(e.thread_id),
       escape(e.message),
+      ...descriptors.map((descriptor) =>
+        escape(
+          (() => {
+            const value = getAdapterMetricValue(
+              e.adapter_metrics,
+              descriptor.key,
+            );
+            return value === undefined ? undefined : String(value);
+          })(),
+        ),
+      ),
     ].join(","),
   );
   return [header, ...rows].join("\n");
 }
 
-const ALLOWED_SORTS = new Set(["duration", "start"]);
+const ALLOWED_SORTS = new Set([
+  "duration",
+  "start",
+  "query_id",
+  "adapter_code",
+  "adapter_message",
+  "bytes_processed",
+  "bytes_billed",
+  "slot_ms",
+  "rows_affected",
+  "rows_inserted",
+  "rows_updated",
+  "rows_deleted",
+  "rows_duplicated",
+]);
 
 /**
  * Timeline action handler
@@ -166,6 +228,7 @@ export function timelineAction(
     validateSafePath(paths.runResults);
 
     const runResults = loadRunResults(paths.runResults);
+    let adapterType: string | null | undefined;
     let executions: NodeExecution[] =
       buildNodeExecutionsFromRunResults(runResults);
 
@@ -179,6 +242,8 @@ export function timelineAction(
         const manifest = loadManifest(paths.manifest);
         const graph = new ManifestGraph(manifest);
         lookup = buildNodeLookup(graph);
+        adapterType = manifest.metadata?.adapter_type ?? null;
+        executions = buildNodeExecutionsFromRunResults(runResults, adapterType);
       } catch {
         // manifest loading is best-effort for enrichment
       }
@@ -196,6 +261,11 @@ export function timelineAction(
         .filter(Boolean);
       executions = searchRunResults(executions, { status: statuses });
     }
+    if (options.adapterText) {
+      executions = searchRunResults(executions, {
+        adapter_text: options.adapterText,
+      });
+    }
 
     // Sort
     if (sortKey === "duration") {
@@ -207,6 +277,28 @@ export function timelineAction(
         const aTs = a.started_at ?? "";
         const bTs = b.started_at ?? "";
         return aTs.localeCompare(bTs);
+      });
+    } else {
+      const searchSortKey = `${sortKey}${
+        sortKey === "query_id" ||
+        sortKey === "adapter_code" ||
+        sortKey === "adapter_message"
+          ? ""
+          : "_desc"
+      }` as
+        | "bytes_processed_desc"
+        | "bytes_billed_desc"
+        | "slot_ms_desc"
+        | "rows_affected_desc"
+        | "rows_inserted_desc"
+        | "rows_updated_desc"
+        | "rows_deleted_desc"
+        | "rows_duplicated_desc"
+        | "query_id"
+        | "adapter_code"
+        | "adapter_message";
+      executions = searchRunResults(executions, {
+        sort: searchSortKey,
       });
     }
 

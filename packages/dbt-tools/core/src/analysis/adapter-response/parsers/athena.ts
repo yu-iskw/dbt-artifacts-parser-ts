@@ -12,7 +12,7 @@ import {
   readFiniteNumber,
   isPlainObject,
 } from "../../adapter-response-metrics";
-import { extractBaseFields } from "./base";
+import { mergeWithBaseFields } from "./base";
 
 export const athenaAdapterResponseParser: AdapterResponseParser = {
   name: "athena",
@@ -22,19 +22,12 @@ export const athenaAdapterResponseParser: AdapterResponseParser = {
       return { rawKeys: [] };
     }
 
-    const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
-
-    // Extract generic/base fields first
-    const baseFields = extractBaseFields(input);
-
     // Athena-specific: data_scanned_in_bytes maps to canonical bytesProcessed
     const bytesProcessed = readFiniteNumber(input, "data_scanned_in_bytes");
 
-    return {
-      ...baseFields,
+    return mergeWithBaseFields(input, {
       ...(bytesProcessed !== undefined ? { bytesProcessed } : {}),
-      rawKeys,
-    };
+    });
   },
 
   canParse(input: unknown): boolean {

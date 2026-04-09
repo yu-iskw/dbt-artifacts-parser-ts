@@ -1,4 +1,9 @@
+import {
+  ADAPTER_METRIC_DESCRIPTORS,
+  formatAdapterMetricValue,
+} from "../analysis/adapter-metric-descriptors";
 import type { AdapterTotalsSnapshot } from "../analysis/adapter-response-metrics";
+import type { NodeExecution } from "../analysis/execution-analyzer";
 import type { AdapterHeavyResult } from "../analysis/run-results-search";
 
 type DepNode = {
@@ -239,6 +244,63 @@ export function formatAdapterTotalsHuman(
       `  Total rows affected: ${totals.totalRowsAffected.toLocaleString("en-US")}`,
     );
   }
+  if (totals.totalRowsInserted !== undefined) {
+    lines.push(
+      `  Total rows inserted: ${totals.totalRowsInserted.toLocaleString("en-US")}`,
+    );
+  }
+  if (totals.totalRowsUpdated !== undefined) {
+    lines.push(
+      `  Total rows updated: ${totals.totalRowsUpdated.toLocaleString("en-US")}`,
+    );
+  }
+  if (totals.totalRowsDeleted !== undefined) {
+    lines.push(
+      `  Total rows deleted: ${totals.totalRowsDeleted.toLocaleString("en-US")}`,
+    );
+  }
+  if (totals.totalRowsDuplicated !== undefined) {
+    lines.push(
+      `  Total rows duplicated: ${totals.totalRowsDuplicated.toLocaleString("en-US")}`,
+    );
+  }
+  return lines.join("\n") + "\n";
+}
+
+export function formatAdapterNodeDetailsHuman(
+  executions: NodeExecution[],
+  limit = 5,
+): string {
+  const rows = executions.filter(
+    (execution) => execution.adapterMetrics != null,
+  );
+  if (rows.length === 0) {
+    return "\nAdapter-aware nodes: (none)\n";
+  }
+
+  const lines: string[] = [];
+  lines.push("\nAdapter-aware nodes:");
+
+  for (const execution of rows.slice(0, Math.max(1, limit))) {
+    const label = execution.unique_id;
+    lines.push(`  - ${label}`);
+    const visibleMetrics = ADAPTER_METRIC_DESCRIPTORS.filter(
+      (descriptor) => execution.adapterMetrics?.[descriptor.key] !== undefined,
+    );
+    for (const descriptor of visibleMetrics) {
+      lines.push(
+        `      ${descriptor.label}: ${formatAdapterMetricValue(
+          descriptor,
+          execution.adapterMetrics?.[descriptor.key],
+        )}`,
+      );
+    }
+  }
+
+  if (rows.length > limit) {
+    lines.push(`  … ${rows.length - limit} more node(s) with adapter metrics`);
+  }
+
   return lines.join("\n") + "\n";
 }
 

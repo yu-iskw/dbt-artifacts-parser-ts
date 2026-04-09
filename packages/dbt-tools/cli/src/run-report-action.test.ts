@@ -208,4 +208,35 @@ describe("runReportAction", () => {
     };
     expect(top.nodes.length).toBeGreaterThan(0);
   });
+
+  it("renders human adapter sections when adapter summary is enabled", () => {
+    const manifestPath = getTestResourcePath(
+      "manifest",
+      "v12",
+      "resources",
+      "jaffle_shop",
+      "manifest_1.10.json",
+    );
+    const runResultsPath = getTestResourcePath(
+      "run_results",
+      "v6",
+      "resources",
+      "jaffle_shop",
+      "run_results.json",
+    );
+
+    runReportAction(
+      runResultsPath,
+      manifestPath,
+      { adapterSummary: true, noJson: true },
+      handleError,
+      () => true,
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0] as string;
+    expect(output).toContain(
+      "Adapter metrics (from run_results adapter_response):",
+    );
+    expect(output).toContain("Adapter-aware nodes:");
+  });
 });

@@ -98,7 +98,11 @@ function buildSearchText(row: ExecutionRow): string {
     ]),
     ...(row.adapterMetrics
       ? [
+          row.adapterMetrics.queryId ?? "",
+          row.adapterMetrics.adapterCode ?? "",
           row.adapterMetrics.adapterMessage ?? "",
+          row.adapterMetrics.projectId ?? "",
+          row.adapterMetrics.location ?? "",
           row.adapterMetrics.rawKeys.join(" "),
         ]
       : []),

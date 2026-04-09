@@ -17,6 +17,9 @@ function formatInspectorFields(
   return lines.join("\n");
 }
 
+const RAW_ADAPTER_RESPONSE_FIELDS_LABEL = "Raw adapter response fields";
+const ADAPTER_METRICS_LABEL = "Adapter metrics";
+
 export function RunsAdapterInspector({
   row,
   visibleColumns,
@@ -39,13 +42,13 @@ export function RunsAdapterInspector({
   if (!row) return null;
 
   const adapterFieldCount = row.adapterResponseFields?.length ?? 0;
-  const sections =
-    adapterFieldCount > 0
+  const normalizedSections =
+    visibleColumns.length > 0 || overflowColumns.length > 0
       ? [
           ...(visibleColumns.length > 0
             ? [
                 {
-                  label: "Visible adapter fields",
+                  label: ADAPTER_METRICS_LABEL,
                   value: formatInspectorFields(row, visibleColumns),
                 },
               ]
@@ -53,26 +56,38 @@ export function RunsAdapterInspector({
           ...(overflowColumns.length > 0
             ? [
                 {
-                  label: "Overflow adapter fields",
+                  label: "More adapter metrics",
                   value: formatInspectorFields(row, overflowColumns),
                 },
               ]
             : []),
-          ...(visibleColumns.length === 0 && overflowColumns.length === 0
-            ? [
-                {
-                  label: "Adapter response",
-                  value: "This row has no adapter_response fields.",
-                },
-              ]
-            : []),
+        ]
+      : row.adapterMetrics
+        ? [
+            {
+              label: ADAPTER_METRICS_LABEL,
+              value:
+                "This row has normalized adapter metrics but none are configured as visible columns.",
+            },
+          ]
+        : [];
+  const rawFieldSection =
+    adapterFieldCount > 0
+      ? [
+          {
+            label: RAW_ADAPTER_RESPONSE_FIELDS_LABEL,
+            value: row.adapterResponseFields
+              ?.map((field) => `${field.label}: ${field.displayValue}`)
+              .join("\n"),
+          },
         ]
       : [
           {
-            label: "Adapter response",
+            label: RAW_ADAPTER_RESPONSE_FIELDS_LABEL,
             value: "This row has no adapter_response fields.",
           },
         ];
+  const sections = [...normalizedSections, ...rawFieldSection];
 
   return (
     <EntityInspector
@@ -83,7 +98,11 @@ export function RunsAdapterInspector({
         { label: "Status", value: row.status },
         { label: "Duration", value: formatSeconds(row.executionTime) },
         { label: "Thread", value: row.threadId ?? "n/a" },
-        { label: "Adapter fields", value: String(adapterFieldCount) },
+        {
+          label: ADAPTER_METRICS_LABEL,
+          value: String(visibleColumns.length + overflowColumns.length),
+        },
+        { label: "Raw fields", value: String(adapterFieldCount) },
       ]}
       sections={sections}
       actions={[

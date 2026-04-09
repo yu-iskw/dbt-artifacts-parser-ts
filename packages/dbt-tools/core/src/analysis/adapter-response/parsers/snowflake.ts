@@ -13,7 +13,7 @@ import {
   readFiniteNumber,
   isPlainObject,
 } from "../../adapter-response-metrics";
-import { extractBaseFields } from "./base";
+import { mergeWithBaseFields } from "./base";
 
 export const snowflakeAdapterResponseParser: AdapterResponseParser = {
   name: "snowflake",
@@ -23,25 +23,18 @@ export const snowflakeAdapterResponseParser: AdapterResponseParser = {
       return { rawKeys: [] };
     }
 
-    const rawKeys = Object.keys(input).filter((k) => typeof k === "string");
-
-    // Extract generic/base fields first
-    const baseFields = extractBaseFields(input);
-
     // Snowflake-specific DML stats
     const rowsInserted = readFiniteNumber(input, "rows_inserted");
     const rowsDeleted = readFiniteNumber(input, "rows_deleted");
     const rowsUpdated = readFiniteNumber(input, "rows_updated");
     const rowsDuplicated = readFiniteNumber(input, "rows_duplicates");
 
-    return {
-      ...baseFields,
+    return mergeWithBaseFields(input, {
       ...(rowsInserted !== undefined ? { rowsInserted } : {}),
       ...(rowsDeleted !== undefined ? { rowsDeleted } : {}),
       ...(rowsUpdated !== undefined ? { rowsUpdated } : {}),
       ...(rowsDuplicated !== undefined ? { rowsDuplicated } : {}),
-      rawKeys,
-    };
+    });
   },
 
   canParse(input: unknown): boolean {

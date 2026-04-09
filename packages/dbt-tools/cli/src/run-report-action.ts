@@ -18,6 +18,7 @@ import {
   formatRunReport,
   formatAdapterTotalsHuman,
   formatAdapterHeavyHuman,
+  formatAdapterNodeDetailsHuman,
   shouldOutputJSON,
   type ExecutionSummary,
   type NodeExecution,
@@ -37,6 +38,7 @@ type RunReportOptions = {
   adapterTopN?: number;
   adapterMinBytes?: number;
   adapterMinSlotMs?: number;
+  adapterMinRowsAffected?: number;
 };
 
 /** Create a minimal summary when no analyzer is available */
@@ -128,6 +130,11 @@ function filterExecutionsForAdapterTop(
       min_slot_ms: options.adapterMinSlotMs,
     });
   }
+  if (options.adapterMinRowsAffected !== undefined) {
+    filtered = searchRunResults(filtered, {
+      min_rows_affected: options.adapterMinRowsAffected,
+    });
+  }
   return filtered;
 }
 
@@ -149,6 +156,7 @@ function buildAdapterSections(
   if (options.adapterSummary && adapterTotals != null) {
     jsonParts.adapter_totals = adapterTotals;
     humanParts.push(formatAdapterTotalsHuman(adapterTotals));
+    humanParts.push(formatAdapterNodeDetailsHuman(adapterSource));
 
     if (!options.adapterTopBy && adapterTotals.nodesWithAdapterData > 0) {
       const bySlot = detectAdapterHeavyNodes(adapterSource, {
@@ -158,6 +166,11 @@ function buildAdapterSections(
       });
       const byBytes = detectAdapterHeavyNodes(adapterSource, {
         metric: "bytes_processed",
+        top: 5,
+        graph,
+      });
+      const byRows = detectAdapterHeavyNodes(adapterSource, {
+        metric: "rows_affected",
         top: 5,
         graph,
       });
@@ -172,6 +185,11 @@ function buildAdapterSections(
             byBytes,
             "Top 5 by bytes_processed (summary)",
           ),
+        );
+      }
+      if (byRows.total_metric > 0) {
+        humanParts.push(
+          formatAdapterHeavyHuman(byRows, "Top 5 by rows_affected (summary)"),
         );
       }
     }
@@ -221,17 +239,22 @@ export function runReportAction(
 
     let analyzer: ExecutionAnalyzer | undefined;
     let graph: ManifestGraph | undefined;
+    let adapterType: string | null | undefined;
     if (manifestPath) {
       const manifest = loadManifest(paths.manifest);
       graph = new ManifestGraph(manifest);
-      analyzer = new ExecutionAnalyzer(runResults, graph);
+      adapterType = manifest.metadata?.adapter_type ?? null;
+      analyzer = new ExecutionAnalyzer(runResults, graph, adapterType);
     }
 
     const summary: ExecutionSummary = analyzer
       ? analyzer.getSummary()
       : {
           ...createMinimalSummary(runResults),
-          node_executions: buildNodeExecutionsFromRunResults(runResults),
+          node_executions: buildNodeExecutionsFromRunResults(
+            runResults,
+            adapterType,
+          ),
         };
 
     const adapterSource = summary.node_executions as NodeExecution[];

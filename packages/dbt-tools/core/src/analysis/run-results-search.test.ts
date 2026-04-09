@@ -10,7 +10,11 @@ import {
 } from "dbt-artifacts-parser/test-utils";
 import { ManifestGraph } from "./manifest-graph";
 import { ExecutionAnalyzer } from "./execution-analyzer";
-import { searchRunResults, detectBottlenecks } from "./run-results-search";
+import {
+  searchRunResults,
+  detectBottlenecks,
+  detectAdapterHeavyNodes,
+} from "./run-results-search";
 import type { NodeExecution } from "./execution-analyzer";
 
 function makeExecution(
@@ -139,6 +143,44 @@ describe("run-results-search", () => {
       expect(result).not.toBe(fixtures);
       expect(fixtures).toHaveLength(5);
     });
+
+    it("filters by canonical adapter text fields", () => {
+      const result = searchRunResults(
+        [
+          makeExecution({
+            unique_id: "model.a",
+            adapterMetrics: {
+              rawKeys: ["query_id", "code"],
+              queryId: "job-123",
+              adapterCode: "INSERT",
+            },
+          }),
+          makeExecution({ unique_id: "model.b" }),
+        ],
+        { adapter_text: "job-123" },
+      );
+      expect(result.map((entry) => entry.unique_id)).toEqual(["model.a"]);
+    });
+
+    it("sorts by newly supported adapter metrics", () => {
+      const result = searchRunResults(
+        [
+          makeExecution({
+            unique_id: "model.a",
+            adapterMetrics: { rawKeys: ["bytes_billed"], bytesBilled: 10 },
+          }),
+          makeExecution({
+            unique_id: "model.b",
+            adapterMetrics: { rawKeys: ["bytes_billed"], bytesBilled: 50 },
+          }),
+        ],
+        { sort: "bytes_billed_desc" },
+      );
+      expect(result.map((entry) => entry.unique_id)).toEqual([
+        "model.b",
+        "model.a",
+      ]);
+    });
   });
 
   describe("detectBottlenecks", () => {
@@ -230,6 +272,29 @@ describe("run-results-search", () => {
       const sumPct = result.nodes.reduce((s, n) => s + n.pct_of_total, 0);
       expect(sumPct).toBeGreaterThanOrEqual(99);
       expect(sumPct).toBeLessThanOrEqual(101);
+    });
+  });
+
+  describe("detectAdapterHeavyNodes", () => {
+    it("ranks rows by newly supported adapter metrics", () => {
+      const result = detectAdapterHeavyNodes(
+        [
+          makeExecution({
+            unique_id: "model.a",
+            adapterMetrics: { rawKeys: ["rows_inserted"], rowsInserted: 5 },
+          }),
+          makeExecution({
+            unique_id: "model.b",
+            adapterMetrics: { rawKeys: ["rows_inserted"], rowsInserted: 15 },
+          }),
+        ],
+        { metric: "rows_inserted", top: 5 },
+      );
+      expect(result.total_metric).toBe(20);
+      expect(result.nodes.map((entry) => entry.unique_id)).toEqual([
+        "model.b",
+        "model.a",
+      ]);
     });
   });
 });
