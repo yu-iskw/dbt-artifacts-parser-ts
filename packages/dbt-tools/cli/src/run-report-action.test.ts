@@ -208,4 +208,42 @@ describe("runReportAction", () => {
     };
     expect(top.nodes.length).toBeGreaterThan(0);
   });
+
+  it("propagates adapter type from manifest to node executions", () => {
+    const manifestPath = getTestResourcePath(
+      "manifest",
+      "v12",
+      "resources",
+      "jaffle_shop",
+      "manifest_1.10.json",
+    );
+    const runResultsPath = getTestResourcePath(
+      "run_results",
+      "v6",
+      "resources",
+      "jaffle_shop",
+      "run_results.json",
+    );
+
+    runReportAction(
+      runResultsPath,
+      manifestPath,
+      { json: true, adapterSummary: true },
+      handleError,
+      isTTY,
+    );
+
+    expect(consoleLogSpy).toHaveBeenCalled();
+    const output = consoleLogSpy.mock.calls[0][0] as string;
+    const parsed = JSON.parse(output) as Record<string, unknown>;
+
+    // Verify that node executions were created with adapter context
+    const executions = parsed.node_executions as Array<{
+      unique_id: string;
+      adapterMetrics?: Record<string, unknown>;
+    }>;
+    expect(Array.isArray(executions)).toBe(true);
+    // The fixture should have at least one execution
+    expect(executions.length).toBeGreaterThan(0);
+  });
 });

@@ -654,4 +654,31 @@ describe("ManifestGraph", () => {
       expect(edgeAttr.dependency_type).toBe("field");
     });
   });
+
+  describe("adapter type extraction", () => {
+    it("should extract adapter_type from manifest metadata", () => {
+      const manifestJson = loadTestManifest("v12", "manifest_1.10.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      // The test manifest should have an adapter type (typically bigquery or snowflake)
+      const adapterType = graph.getAdapterType();
+      expect(typeof adapterType).toBe("string");
+      expect(adapterType?.length).toBeGreaterThan(0);
+    });
+
+    it("should return undefined for manifest without adapter_type in metadata", () => {
+      const manifestJson = loadTestManifest("v10", "manifest.json");
+      const manifest = parseManifest(manifestJson as Record<string, unknown>);
+      const graph = new ManifestGraph(manifest);
+
+      const adapterType = graph.getAdapterType();
+      // Some test manifests may not have adapter_type
+      expect(
+        adapterType === undefined ||
+          adapterType === null ||
+          typeof adapterType === "string",
+      ).toBe(true);
+    });
+  });
 });

@@ -221,17 +221,19 @@ export function runReportAction(
 
     let analyzer: ExecutionAnalyzer | undefined;
     let graph: ManifestGraph | undefined;
+    let adapterType: string | null | undefined;
     if (manifestPath) {
       const manifest = loadManifest(paths.manifest);
       graph = new ManifestGraph(manifest);
-      analyzer = new ExecutionAnalyzer(runResults, graph);
+      adapterType = graph.getAdapterType();
+      analyzer = new ExecutionAnalyzer(runResults, graph, adapterType);
     }
 
     const summary: ExecutionSummary = analyzer
       ? analyzer.getSummary()
       : {
           ...createMinimalSummary(runResults),
-          node_executions: buildNodeExecutionsFromRunResults(runResults),
+          node_executions: buildNodeExecutionsFromRunResults(runResults, adapterType),
         };
 
     const adapterSource = summary.node_executions as NodeExecution[];

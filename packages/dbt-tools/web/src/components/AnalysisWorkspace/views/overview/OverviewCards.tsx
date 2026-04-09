@@ -1,6 +1,6 @@
 import type { AnalysisState } from "@web/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import { formatSeconds, formatBytes } from "@web/lib/analysis-workspace/utils";
 import { EmptyState } from "../../../EmptyState";
 import { OverviewScopeBadge } from "./OverviewPanel";
 
@@ -147,6 +147,58 @@ export function OverviewCoverageCard({
             ? "Next improvement: document core models first to improve catalog-style discovery."
             : "Add descriptions to core resources to improve catalog-style discovery."}
         </p>
+      </div>
+    </section>
+  );
+}
+
+export function OverviewAdapterMetricsCard({
+  analysis,
+}: {
+  analysis: AnalysisState;
+}) {
+  const adapterTotals = analysis.adapterTotals;
+  if (!adapterTotals) {
+    return null;
+  }
+
+  return (
+    <section className="overview-module overview-module--adapter">
+      <div className="overview-module__header">
+        <h3>Adapter metrics</h3>
+        <p>Warehouse performance and cost data.</p>
+      </div>
+      <div className="adapter-metrics-card">
+        <div className="adapter-metrics-card__headline">
+          <strong>{adapterTotals.nodesWithAdapterData}</strong>
+          <span>nodes with adapter data</span>
+        </div>
+        <div className="adapter-metrics-card__stats">
+          {adapterTotals.totalBytesProcessed !== undefined && (
+            <div>
+              <span>Bytes processed</span>
+              <strong>{formatBytes(adapterTotals.totalBytesProcessed)}</strong>
+            </div>
+          )}
+          {adapterTotals.totalBytesBilled !== undefined && (
+            <div>
+              <span>Bytes billed</span>
+              <strong>{formatBytes(adapterTotals.totalBytesBilled)}</strong>
+            </div>
+          )}
+          {adapterTotals.totalSlotMs !== undefined && (
+            <div>
+              <span>Slot milliseconds</span>
+              <strong>{adapterTotals.totalSlotMs.toLocaleString()}</strong>
+            </div>
+          )}
+          {adapterTotals.totalRowsAffected !== undefined && (
+            <div>
+              <span>Total rows affected</span>
+              <strong>{adapterTotals.totalRowsAffected.toLocaleString()}</strong>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

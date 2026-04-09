@@ -48,6 +48,7 @@ function getManifestUnitTests(
 export class ManifestGraph {
   private graph: DirectedGraph<GraphNodeAttributes, GraphEdgeAttributes>;
   private relationMap: Map<string, string> = new Map(); // relation_name -> unique_id
+  private adapterType?: string | null;
 
   constructor(manifest: ParsedManifest) {
     if (!isSupportedVersion(manifest)) {
@@ -60,6 +61,9 @@ export class ManifestGraph {
       );
     }
     this.graph = new DirectedGraph<GraphNodeAttributes, GraphEdgeAttributes>();
+    // Store adapter type from manifest metadata for parser dispatch
+    this.adapterType = (manifest as { metadata?: { adapter_type?: string } })
+      ?.metadata?.adapter_type;
     this.buildGraph(manifest);
   }
 
@@ -441,6 +445,14 @@ export class ManifestGraph {
    */
   getGraph(): DirectedGraph<GraphNodeAttributes, GraphEdgeAttributes> {
     return this.graph;
+  }
+
+  /**
+   * Get the adapter type from manifest metadata.
+   * Used for adapter-aware parsing of adapter_response objects.
+   */
+  getAdapterType(): string | null | undefined {
+    return this.adapterType;
   }
 
   /**

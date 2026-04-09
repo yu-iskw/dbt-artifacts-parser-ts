@@ -11,6 +11,7 @@ import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewS
 import { EmptyState } from "../../../EmptyState";
 import {
   OverviewActionListCard,
+  OverviewAdapterMetricsCard,
   OverviewCoverageCard,
   OverviewCriticalPathCard,
 } from "../overview/OverviewCards";
@@ -169,6 +170,18 @@ export function HealthView({
             </div>
           </div>
         </section>
+
+        {analysis.adapterTotals && (
+          <section className="health-section health-detail__adapter">
+            <div className="health-section__header">
+              <h3>Warehouse performance</h3>
+              <p>Adapter metrics and execution statistics.</p>
+            </div>
+            <div className="health-detail__grid">
+              <OverviewAdapterMetricsCard analysis={analysis} />
+            </div>
+          </section>
+        )}
 
         <details className="health-detail__resource-stats">
           <summary className="health-detail__resource-stats-summary">

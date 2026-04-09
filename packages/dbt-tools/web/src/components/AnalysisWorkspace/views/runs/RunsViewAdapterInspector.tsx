@@ -1,10 +1,11 @@
 import type { ExecutionRow } from "@web/types";
+import { adapterMetricsHasData } from "@dbt-tools/core/browser";
 import {
   getRunsAdapterField,
   type RunsAdapterColumn,
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
 import { EntityInspector, formatResourceTypeLabel } from "../../shared";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import { formatSeconds, formatBytes } from "@web/lib/analysis-workspace/utils";
 
 function formatInspectorFields(
   row: ExecutionRow,
@@ -15,6 +16,70 @@ function formatInspectorFields(
     return `${column.label}: ${field?.displayValue ?? "—"}`;
   });
   return lines.join("\n");
+}
+
+function formatAdapterMetrics(row: ExecutionRow): string {
+  const metrics = row.adapterMetrics;
+  if (!metrics || !adapterMetricsHasData(metrics)) {
+    return "No normalized adapter metrics available";
+  }
+
+  const lines: string[] = [];
+
+  // Message and code
+  if (metrics.adapterMessage) {
+    lines.push(`Message: ${metrics.adapterMessage}`);
+  }
+  if (metrics.adapterCode) {
+    lines.push(`Code: ${metrics.adapterCode}`);
+  }
+
+  // Query ID
+  if (metrics.queryId) {
+    lines.push(`Query ID: ${metrics.queryId}`);
+  }
+
+  // Rows affected
+  if (metrics.rowsAffected !== undefined) {
+    lines.push(`Rows affected: ${metrics.rowsAffected.toLocaleString()}`);
+  }
+
+  // Bytes processed / billed
+  if (metrics.bytesProcessed !== undefined) {
+    lines.push(`Bytes processed: ${formatBytes(metrics.bytesProcessed)}`);
+  }
+  if (metrics.bytesBilled !== undefined) {
+    lines.push(`Bytes billed: ${formatBytes(metrics.bytesBilled)}`);
+  }
+
+  // Slot milliseconds
+  if (metrics.slotMs !== undefined) {
+    lines.push(`Slot ms: ${metrics.slotMs.toLocaleString()}`);
+  }
+
+  // Project and location (BigQuery)
+  if (metrics.projectId) {
+    lines.push(`Project: ${metrics.projectId}`);
+  }
+  if (metrics.location) {
+    lines.push(`Location: ${metrics.location}`);
+  }
+
+  // Snowflake DML stats
+  if (metrics.rowsInserted !== undefined) {
+    lines.push(`Rows inserted: ${metrics.rowsInserted.toLocaleString()}`);
+  }
+  if (metrics.rowsDeleted !== undefined) {
+    lines.push(`Rows deleted: ${metrics.rowsDeleted.toLocaleString()}`);
+  }
+  if (metrics.rowsUpdated !== undefined) {
+    lines.push(`Rows updated: ${metrics.rowsUpdated.toLocaleString()}`);
+  }
+  if (metrics.rowsDuplicated !== undefined) {
+    lines.push(`Rows duplicated: ${metrics.rowsDuplicated.toLocaleString()}`);
+  }
+
+  return lines.length > 0 ? lines.join("\n") : "No normalized adapter metrics available";
 }
 
 export function RunsAdapterInspector({
@@ -39,8 +104,19 @@ export function RunsAdapterInspector({
   if (!row) return null;
 
   const adapterFieldCount = row.adapterResponseFields?.length ?? 0;
-  const sections =
-    adapterFieldCount > 0
+  const hasNormalizedMetrics =
+    row.adapterMetrics && adapterMetricsHasData(row.adapterMetrics);
+
+  const sections = [
+    ...(hasNormalizedMetrics
+      ? [
+          {
+            label: "Normalized adapter metrics",
+            value: formatAdapterMetrics(row),
+          },
+        ]
+      : []),
+    ...(adapterFieldCount > 0
       ? [
           ...(visibleColumns.length > 0
             ? [
@@ -58,21 +134,17 @@ export function RunsAdapterInspector({
                 },
               ]
             : []),
-          ...(visibleColumns.length === 0 && overflowColumns.length === 0
-            ? [
-                {
-                  label: "Adapter response",
-                  value: "This row has no adapter_response fields.",
-                },
-              ]
-            : []),
         ]
-      : [
+      : []),
+    ...(adapterFieldCount === 0 && !hasNormalizedMetrics
+      ? [
           {
             label: "Adapter response",
             value: "This row has no adapter_response fields.",
           },
-        ];
+        ]
+      : []),
+  ];
 
   return (
     <EntityInspector

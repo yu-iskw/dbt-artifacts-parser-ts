@@ -33,6 +33,21 @@ export function formatSeconds(value: number | null | undefined): string {
   return `${value.toFixed(2)}s`;
 }
 
+export function formatBytes(value: number | null | undefined): string {
+  if (typeof value !== "number" || Number.isNaN(value)) return "n/a";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = value;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  if (unitIndex === 0) {
+    return `${value.toLocaleString()} B`;
+  }
+  return `${size.toFixed(2)} ${units[unitIndex]}`;
+}
+
 export function formatResourceTypeLabel(resourceType: string): string {
   return resourceType
     .split("_")
