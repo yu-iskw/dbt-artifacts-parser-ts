@@ -233,7 +233,10 @@ export function runReportAction(
       ? analyzer.getSummary()
       : {
           ...createMinimalSummary(runResults),
-          node_executions: buildNodeExecutionsFromRunResults(runResults, adapterType),
+          node_executions: buildNodeExecutionsFromRunResults(
+            runResults,
+            adapterType,
+          ),
         };
 
     const adapterSource = summary.node_executions as NodeExecution[];

@@ -195,7 +195,9 @@ export function OverviewAdapterMetricsCard({
           {adapterTotals.totalRowsAffected !== undefined && (
             <div>
               <span>Total rows affected</span>
-              <strong>{adapterTotals.totalRowsAffected.toLocaleString()}</strong>
+              <strong>
+                {adapterTotals.totalRowsAffected.toLocaleString()}
+              </strong>
             </div>
           )}
         </div>

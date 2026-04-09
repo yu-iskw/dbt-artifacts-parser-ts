@@ -79,7 +79,9 @@ function formatAdapterMetrics(row: ExecutionRow): string {
     lines.push(`Rows duplicated: ${metrics.rowsDuplicated.toLocaleString()}`);
   }
 
-  return lines.length > 0 ? lines.join("\n") : "No normalized adapter metrics available";
+  return lines.length > 0
+    ? lines.join("\n")
+    : "No normalized adapter metrics available";
 }
 
 export function RunsAdapterInspector({

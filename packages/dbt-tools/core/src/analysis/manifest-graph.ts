@@ -62,8 +62,9 @@ export class ManifestGraph {
     }
     this.graph = new DirectedGraph<GraphNodeAttributes, GraphEdgeAttributes>();
     // Store adapter type from manifest metadata for parser dispatch
-    this.adapterType = (manifest as { metadata?: { adapter_type?: string } })
-      ?.metadata?.adapter_type;
+    this.adapterType = (
+      manifest as { metadata?: { adapter_type?: string } }
+    )?.metadata?.adapter_type;
     this.buildGraph(manifest);
   }
 
