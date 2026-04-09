@@ -6,9 +6,9 @@ For the `@dbt-tools/*` packages, the product thesis is: **dot-tools is a dbt ope
 
 This repo contains two distinct but related ecosystems:
 
-| Ecosystem                                                  | Description                                                                                     |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts |
+| Ecosystem                                                  | Description                                                                                                           |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts                       |
 | [`@dbt-tools/*`](./packages/dbt-tools/)                    | Operational intelligence layer (core substrate, CLI contract, web investigation workspace) built on top of the parser |
 
 ## Packages
@@ -38,11 +38,11 @@ Supported artifacts:
 
 A suite of analysis tools for dbt artifacts. Built on `dbt-artifacts-parser`.
 
-| Package                                                  | Description                                                                        |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Package                                                  | Description                                                                                            |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Composable analysis substrate — graph/dependency/execution primitives and schema/introspection exports |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | Stable machine-readable interface (`dbt-tools`) for deterministic automation and agent workflows |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | Investigation workspace for actionable artifact intelligence without requiring AI |
+| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | Stable machine-readable interface (`dbt-tools`) for deterministic automation and agent workflows       |
+| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | Investigation workspace for actionable artifact intelligence without requiring AI                      |
 
 [Suite overview →](./packages/dbt-tools/README.md)
 

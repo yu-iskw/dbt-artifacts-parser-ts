@@ -6,7 +6,6 @@ Internally, `@dbt-tools/*` is designed as a **composable analysis substrate for 
 
 ---
 
-
 ## Product thesis
 
 `@dbt-tools/*` turns dbt artifacts into deterministic operational intelligence:
@@ -25,11 +24,11 @@ Internally, `@dbt-tools/*` is designed as a **composable analysis substrate for 
 
 ## Packages
 
-| Package                               | Description                                                     |
-| ------------------------------------- | --------------------------------------------------------------- |
+| Package                               | Description                                                                       |
+| ------------------------------------- | --------------------------------------------------------------------------------- |
 | [`@dbt-tools/core`](./core/README.md) | Reusable analysis substrate (graph/dependency/execution/introspection primitives) |
-| [`@dbt-tools/cli`](./cli/README.md)   | Stable structured contract (`dbt-tools`) for automation and agent skills |
-| [`@dbt-tools/web`](./web/README.md)   | Actionable investigation workspace for operators (no AI required) |
+| [`@dbt-tools/cli`](./cli/README.md)   | Stable structured contract (`dbt-tools`) for automation and agent skills          |
+| [`@dbt-tools/web`](./web/README.md)   | Actionable investigation workspace for operators (no AI required)                 |
 
 ---
 
