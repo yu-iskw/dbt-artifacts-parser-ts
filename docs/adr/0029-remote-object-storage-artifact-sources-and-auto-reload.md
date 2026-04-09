@@ -6,7 +6,7 @@ Date: 2026-03-29
 
 Accepted
 
-Depends-on [6. Artifact-first agent-first positioning of dbt-tools](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
+Depends-on [6. Artifact-first and agent-compatible positioning of dbt-tools](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
 
 Depends-on [15. MVC-style layering for web app](0015-mvc-style-layering-for-web-app.md)
 
