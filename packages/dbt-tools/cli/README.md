@@ -1,8 +1,8 @@
 # @dbt-tools/cli
 
-Command-line interface for dbt artifact analysis. Optimized for both human and AI agent consumption.
+Command-line interface for dbt artifact analysis. Stable structured interface designed for humans, scripts, and agents.
 
-**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended agent-focused topics (errors, validation, `schema` introspection) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md).
+**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. For detailed guides on error handling, validation, schema introspection, and automation integrations, see the [user guide](../../../docs/user-guide-dbt-tools-cli.md).
 
 ## Commands
 
@@ -45,7 +45,7 @@ pnpm add -g @dbt-tools/cli
 - **Default `./target` directory**: Commands default to dbt's standard artifact location
 - **JSON-by-default**: Machine-readable JSON output in non-interactive environments
 - **Input validation**: Hardened against common agent mistakes (path traversals, control chars, etc.)
-- **Field filtering**: Reduce context window usage with `--fields` option
+- **Field filtering**: Project outputs to specific fields with `--fields` option for flexible optimization
 - **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
 - **Inventory**: Browse and filter all dbt resources in one view
@@ -72,7 +72,7 @@ dbt-tools summary --target-dir ./custom-target
 # Explicit path
 dbt-tools summary path/to/manifest.json
 
-# Field filtering to reduce context window usage
+# Field filtering to project output
 dbt-tools summary --fields "total_nodes,total_edges"
 
 # JSON output
@@ -553,7 +553,7 @@ The CLI automatically outputs JSON when stdout is not a TTY (non-interactive env
 
 ## Field Filtering
 
-Use `--fields` to limit response size and reduce context window usage. Supported in `summary`, `deps`, `graph` (JSON), `run-report`, `inventory`, and `search`.
+Use `--fields` to project output to specific fields—reduces payload size and enables flexible output optimization. Supported in `summary`, `deps`, `graph` (JSON), `run-report`, `inventory`, and `search`.
 
 ```bash
 # Only return specific fields
@@ -608,11 +608,13 @@ Errors are formatted as JSON in non-TTY environments:
 
 ---
 
-## Best Practices for AI Agents
+## Structured Output and Automation Integration
+
+Best practices for scripting, CI integration, and agent orchestration:
 
 1. **Run `status` first** to check which artifacts are available before running analysis commands.
 2. **Use `search` to discover resources** before running `deps` or `inventory`.
-3. **Always use field filtering** for dependency queries and analysis to reduce context window usage.
+3. **Use field filtering** (`--fields`) for targeted analysis to optimize payload size and response time.
 4. **Use default `./target` directory** unless you have a specific reason not to.
 5. **Validate resource IDs** before querying (use schema introspection if unsure).
 6. **Handle errors programmatically** using error codes in non-interactive environments.

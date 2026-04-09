@@ -1,6 +1,6 @@
 # @dbt-tools/core
 
-Core library for dbt artifact graph management and analysis. Provides the analysis engine used by [`@dbt-tools/cli`](../cli/README.md) and [`@dbt-tools/web`](../web/README.md).
+Reusable analysis substrate for dbt artifacts. Provides deterministic graph, execution, and dependency analysis for building tools, CLIs, web apps, and agent integrations. Used by [`@dbt-tools/cli`](../cli/README.md) and [`@dbt-tools/web`](../web/README.md); embeddable in other projects.
 
 ---
 
@@ -159,7 +159,7 @@ Validates user-supplied strings against common injection patterns (path traversa
 
 ### OutputFormatter / FieldFilter
 
-Formats analysis output as JSON or human-readable text. `FieldFilter` limits output to a specified set of fields (useful for reducing context window usage in AI agents).
+Formats analysis output as JSON or human-readable text. `FieldFilter` projects output to a specified set of fields—reduces payload size, enables field-level access control, and optimizes output for various consumer contexts (terminals, scripts, agents).
 
 ### GraphExport
 

@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/cli
 
-Extended notes for automation and AI agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
+Extended notes for using **`dbt-tools`** from scripts, CI workflows, and agent orchestration frameworks. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
 
 ---
 
@@ -23,7 +23,7 @@ npx @dbt-tools/cli --help
 
 ## Schema introspection
 
-Discover commands and flags at runtime (useful for agents):
+Discover commands and flags at runtime (useful for scripts, agents, and dynamic tools):
 
 ```bash
 dbt-tools schema
@@ -87,13 +87,14 @@ Errors are JSON with a stable **`code`** field:
 
 ---
 
-## Best practices for AI agents
+## Best practices for structured automation
 
-1. Prefer **`--fields`** on large outputs.
+1. Prefer **`--fields`** on large outputs to optimize payload size.
 2. Use default **`./target`** unless paths must differ.
-3. Use **`dbt-tools schema`** when argument shapes are unclear.
-4. Branch on **`code`** in JSON error bodies in scripts.
+3. Use **`dbt-tools schema`** when argument shapes are unclear (enables capability discovery at runtime).
+4. Branch on **`code`** in JSON error bodies for deterministic error handling.
 5. Keep resource IDs literal dbt **`unique_id`** strings — never URL-encode or append query parameters.
+6. Parse JSON with strict field expectations (values may change as artifacts update between dbt versions).
 
 ---
 

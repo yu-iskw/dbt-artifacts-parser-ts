@@ -4,6 +4,20 @@ Operator-focused documentation for the dbt-tools web analyzer. For a short npm-f
 
 ---
 
+## Operational intelligence workflows
+
+dbt-tools/web is designed as an investigative workspace. Common workflows:
+
+- **Identify execution bottlenecks**: Use the timeline and execution report to find the slowest nodes, then drill into their upstream dependencies to understand build blockers.
+- **Understand critical path**: The execution timeline shows which nodes are on the critical path; optimizing these provides the most value.
+- **Assess data readiness**: The inventory view shows materialization kinds and artifact freshness; the status view confirms which artifacts are present and current.
+- **Trace blast radius**: The dependency graph helps understand what downstream models are affected by a particular change or failure.
+- **Investigate performance metrics**: Per-node execution timings and warehouse-specific metrics (bytes, slots, rows) help diagnose slow or expensive runs.
+
+All analysis is deterministic and requires no external dependencies (local-first).
+
+---
+
 ## Vite dev server (monorepo)
 
 When you run `pnpm dev` / `pnpm dev:web` from the repository, **Vite** serves the app with middleware that mirrors the same **`/api/...`** artifact routes as the published **`dbt-tools-web`** server. Additional **file watching** behavior applies only here.

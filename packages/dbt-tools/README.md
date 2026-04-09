@@ -1,6 +1,29 @@
 # @dbt-tools
 
-A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md).
+A dbt operational intelligence layer: deterministic analysis tools for understanding dependencies, execution, performance, and readiness of dbt artifacts. Built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md).
+
+Designed as a composable analysis substrate: reusable by operators (web UI, CLI), agents (structured CLI outputs, library), and other tools.
+
+---
+
+## What dbt-tools provides
+
+**Deterministic artifact intelligence:**
+
+- **Dependency intelligence**: Build order, upstream/downstream graphs, subgraph focus
+- **Execution intelligence**: Critical path, bottleneck detection, timeline visualization
+- **Performance intelligence**: Per-warehouse cost and performance metrics from adapter responses
+- **Readiness intelligence**: Artifact freshness, completeness, materialization kinds
+
+**Actionable without AI:** All analysis is deterministic (same artifact → same output) and useful immediately for operators without requiring LLMs or external services.
+
+**For operators:** Web UI and CLI for investigating slow runs, understanding dependencies, assessing data readiness.
+
+**For agents / automation:** Structured JSON outputs, schema introspection, field filtering, error codes—enabling integration with orchestration frameworks, CI, and other tools.
+
+**Not:** dbt Cloud, observability SaaS, AI copilot, or merely a graph viewer.
+
+See [ADR-0034: Operational intelligence positioning](../../docs/adr/0034-operational-intelligence-positioning.md) for strategic positioning.
 
 ---
 
@@ -35,7 +58,7 @@ graph TD
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Parse dbt JSON artifacts in TypeScript with type safety                                                                                         | [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md)                                                                     |
 | Build a dependency graph or run execution analysis programmatically                                                                             | [`@dbt-tools/core`](./core/README.md)                                                                                           |
-| Analyze artifacts from the command line or feed results to an AI agent                                                                          | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
+| Get deterministic structured analysis from the command line (humans, scripts, agents)                                                           | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
 | Visually explore dependencies and execution timelines in a browser (local target, upload, or optional **S3/GCS** via `DBT_TOOLS_REMOTE_SOURCE`) | [`@dbt-tools/web`](./web/README.md) · [ADR-0029](../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) |
 
 ---

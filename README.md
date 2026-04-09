@@ -1,6 +1,6 @@
 # dbt-artifacts-parser-ts
 
-A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts.
+A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts. The monorepo contains two ecosystems: a lightweight parsing library and a suite of operational intelligence tools for dbt artifact analysis.
 
 This repo contains two distinct but related ecosystems:
 
@@ -34,15 +34,27 @@ Supported artifacts:
 
 > `packages/dbt-tools/` · npm scope: `@dbt-tools`
 
-A suite of analysis tools for dbt artifacts. Built on `dbt-artifacts-parser`.
+A dbt operational intelligence layer: deterministic analysis tools for understanding dependencies, execution, performance, and readiness of dbt artifacts. Built on `dbt-artifacts-parser`. Serves both operators (web UI, CLI) and agents (structured outputs, library).
 
-| Package                                                  | Description                                                                        |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                   |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis, AI-agent-friendly                    |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS) |
+| Package                                                  | Description                                                                               |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                          |
+| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for deterministic artifact analysis with stable structured outputs |
+| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS)        |
 
 [Suite overview →](./packages/dbt-tools/README.md)
+
+---
+
+## What is dbt-tools?
+
+dbt-tools turns dbt artifacts into deterministic operational intelligence for humans and agents.
+
+**For operators:** Investigate dependencies, identify execution bottlenecks, assess data readiness, and understand materialization strategies without leaving your terminal or opening dbt Cloud.
+
+**For agents and automation:** Structured, machine-readable outputs (JSON, schemas, field filtering) enable integration with agent orchestration frameworks, CI workflows, and other tools.
+
+**Key properties:** Deterministic (same artifact → same analysis), composable (reusable library and CLI), local-first (no external dependencies), no AI required.
 
 ---
 
