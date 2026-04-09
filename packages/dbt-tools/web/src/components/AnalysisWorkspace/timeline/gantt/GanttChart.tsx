@@ -7,6 +7,7 @@ import type {
 } from "@web/lib/analysis-workspace/types";
 import type {
   GanttItem,
+  ResourceNode,
   ResourceTestStats,
   TimelineAdjacencyEntry,
 } from "@web/types";
@@ -41,6 +42,8 @@ export interface GanttChartProps {
   /** Immediate manifest neighbors for executed timeline nodes (from analyze). */
   timelineAdjacency?: Record<string, TimelineAdjacencyEntry>;
   testStatsById?: Map<string, ResourceTestStats>;
+  /** For tooltip adapter_response — keyed by `uniqueId` (same as gantt `unique_id`). */
+  resourceByUniqueId?: ReadonlyMap<string, ResourceNode>;
   /** Whether to show test chips inside bundle rows. Default: false. */
   showTests?: boolean;
   dependencyDirection?: TimelineDependencyDirection;
@@ -57,6 +60,7 @@ export function GanttChart({
   runStartedAt,
   timelineAdjacency,
   testStatsById,
+  resourceByUniqueId,
   showTests = false,
   dependencyDirection = "both",
   dependencyDepthHops = 2,
@@ -312,6 +316,7 @@ export function GanttChart({
         canShowTimestamps={canShowTimestamps}
         timeZone={timeZone}
         testStatsById={testStatsById}
+        resourceByUniqueId={resourceByUniqueId}
         selectedId={selectedId}
         onSelect={onSelect}
         onPointer={handlePointerInteraction}

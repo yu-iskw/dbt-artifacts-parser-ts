@@ -5,7 +5,7 @@ import {
   type MouseEvent,
   type RefObject,
 } from "react";
-import type { GanttItem, ResourceTestStats } from "@web/types";
+import type { GanttItem, ResourceNode, ResourceTestStats } from "@web/types";
 import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
 import type { ThemeMode } from "@web/constants/themeColors";
 import type { FocusTimelineEdge } from "./edgeGeometry";
@@ -46,6 +46,7 @@ export function GanttChartFrame({
   canShowTimestamps,
   timeZone,
   testStatsById,
+  resourceByUniqueId,
   selectedId,
   onSelect,
   onPointer,
@@ -75,6 +76,7 @@ export function GanttChartFrame({
   canShowTimestamps: boolean;
   timeZone: string;
   testStatsById?: Map<string, ResourceTestStats>;
+  resourceByUniqueId?: ReadonlyMap<string, ResourceNode>;
   selectedId: string | null;
   onSelect?: (id: string | null) => void;
   onPointer: (e: MouseEvent<HTMLDivElement>, mode: "move" | "click") => void;
@@ -177,6 +179,7 @@ export function GanttChartFrame({
           canShowTimestamps={canShowTimestamps}
           timeZone={timeZone}
           testStats={testStatsById?.get(hover.item.unique_id)}
+          resourceByUniqueId={resourceByUniqueId}
         />
       )}
     </section>
