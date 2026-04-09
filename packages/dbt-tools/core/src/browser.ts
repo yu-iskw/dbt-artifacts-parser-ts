@@ -82,3 +82,10 @@ export {
   normalizeDbtResourceTypeKey,
   normalizeMaterializationKind,
 } from "./analysis/analysis-snapshot";
+
+export { SourceFreshnessAnalyzer } from "./analysis/source-freshness-analyzer";
+export type {
+  SourceFreshnessEntry,
+  SourceFreshnessSummary,
+  StaleImpactReport,
+} from "./analysis/source-freshness-analyzer";

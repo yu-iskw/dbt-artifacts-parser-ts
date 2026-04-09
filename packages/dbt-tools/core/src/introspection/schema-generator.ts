@@ -540,6 +540,101 @@ function getStatusSchema(): CommandSchema {
   };
 }
 
+function getFreshnessReportSchema(): CommandSchema {
+  return {
+    command: "freshness-report",
+    description: "Report normalized source freshness results from sources.json",
+    arguments: [
+      {
+        name: "sources-path",
+        required: false,
+        description:
+          "Path to sources.json file (defaults to ./target/sources.json)",
+      },
+      {
+        name: "manifest-path",
+        required: false,
+        description: "Path to manifest.json file (optional, for enrichment)",
+      },
+    ],
+    options: [
+      {
+        name: OPT_TARGET_DIR,
+        type: TYPE_STRING,
+        description: DESC_TARGET_DIR,
+      },
+      {
+        name: "--status",
+        type: TYPE_STRING,
+        description:
+          "Comma-separated filter by freshness status (e.g., pass,warn,error)",
+      },
+      {
+        name: "--stale-only",
+        type: TYPE_BOOLEAN,
+        description: "Filter to stale sources only (warn, error, runtime error)",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools freshness-report --stale-only --json",
+  };
+}
+
+function getStaleImpactSchema(): CommandSchema {
+  return {
+    command: "stale-impact",
+    description: "Analyze downstream impact of a stale source in the DAG",
+    arguments: [
+      {
+        name: "source-unique-id",
+        required: true,
+        description:
+          "Source unique_id (e.g., source.my_project.raw.orders)",
+      },
+    ],
+    options: [
+      {
+        name: "--manifest-path",
+        type: TYPE_STRING,
+        description: DESC_MANIFEST_PATH,
+      },
+      {
+        name: "--sources-path",
+        type: TYPE_STRING,
+        description:
+          "Path to sources.json file (optional, for freshness enrichment)",
+      },
+      {
+        name: OPT_TARGET_DIR,
+        type: TYPE_STRING,
+        description: DESC_TARGET_DIR,
+      },
+      {
+        name: "--depth",
+        type: "number",
+        description: "Max traversal depth",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example:
+      "dbt-tools stale-impact source.my_project.raw.orders --depth 2 --json",
+  };
+}
+
 /**
  * Get all command schemas
  */
@@ -559,6 +654,8 @@ export function getAllSchemas(): Record<string, CommandSchema> {
       description: "Alias for status – shows artifact recency and readiness",
       example: "dbt-tools freshness --target-dir ./target",
     },
+    "freshness-report": getFreshnessReportSchema(),
+    "stale-impact": getStaleImpactSchema(),
     schema: getSchemaCommandSchema(),
   };
 }

@@ -896,4 +896,63 @@ export class ManifestGraph {
 
     return subgraph;
   }
+
+  /**
+   * Get stale impact report for a source node.
+   * Returns impact analysis from a source unique_id.
+   */
+  getStaleImpact(sourceUniqueId: string): {
+    source: { unique_id: string; name?: string; source_name?: string; status?: string };
+    direct_downstream_count: number;
+    total_downstream_count: number;
+    impacted_counts_by_type: Record<string, number>;
+    impacted_nodes: Array<{
+      unique_id: string;
+      depth: number;
+      resource_type?: string;
+      name?: string;
+    }>;
+  } {
+    const downstream = this.getDownstream(sourceUniqueId);
+
+    const impacted_counts_by_type: Record<string, number> = {};
+    const impacted_nodes: Array<{
+      unique_id: string;
+      depth: number;
+      resource_type?: string;
+      name?: string;
+    }> = [];
+
+    // Count by type and collect nodes
+    for (const { nodeId, depth } of downstream) {
+      const node = this.graph.getNodeAttributes(nodeId);
+      const resourceType = (node?.resource_type as string) || "unknown";
+      impacted_counts_by_type[resourceType] =
+        (impacted_counts_by_type[resourceType] || 0) + 1;
+
+      impacted_nodes.push({
+        unique_id: nodeId,
+        depth,
+        resource_type: resourceType,
+        name: node?.name,
+      });
+    }
+
+    // Extract source name and name from unique_id
+    const parts = sourceUniqueId.split(".");
+    const source_name = parts[2];
+    const name = parts[3];
+
+    return {
+      source: {
+        unique_id: sourceUniqueId,
+        name,
+        source_name,
+      },
+      direct_downstream_count: downstream.filter((d) => d.depth === 1).length,
+      total_downstream_count: downstream.length,
+      impacted_counts_by_type,
+      impacted_nodes,
+    };
+  }
 }

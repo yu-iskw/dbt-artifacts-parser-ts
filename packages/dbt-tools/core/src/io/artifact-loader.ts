@@ -4,14 +4,17 @@ import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { resolveSafePath } from "../validation/input-validator";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import { parseCatalog } from "dbt-artifacts-parser/catalog";
+import { parseSources } from "dbt-artifacts-parser/sources";
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
+import type { ParsedSources } from "dbt-artifacts-parser/sources";
 import { getDbtToolsTargetDirFromEnv } from "../config/dbt-tools-env";
 import {
   DBT_CATALOG_JSON,
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
+  DBT_SOURCES_JSON,
 } from "./artifact-filenames";
 
 /**
@@ -21,6 +24,7 @@ export interface ArtifactPaths {
   manifest: string;
   runResults: string;
   catalog?: string;
+  sources?: string;
 }
 
 const DEFAULT_TARGET_DIR = "./target";
@@ -76,6 +80,21 @@ function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
   return path.join(resolveSafePath(effectiveTargetDir), DBT_CATALOG_JSON);
 }
 
+function resolveSourcesPath(sourcesPath?: string, targetDir?: string): string {
+  if (sourcesPath) {
+    if (sourcesPath.endsWith(".json")) {
+      return resolveSafePath(sourcesPath);
+    }
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates sourcesPath before join.
+    return path.join(resolveSafePath(sourcesPath), DBT_SOURCES_JSON);
+  }
+
+  const effectiveTargetDir =
+    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
+  return path.join(resolveSafePath(effectiveTargetDir), DBT_SOURCES_JSON);
+}
+
 /**
  * Resolve artifact paths, defaulting to ./target directory
  */
@@ -84,6 +103,7 @@ export function resolveArtifactPaths(
   runResultsPath?: string,
   targetDir?: string,
   catalogPath?: string,
+  sourcesPath?: string,
 ): ArtifactPaths {
   const effectiveTargetDir =
     targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
@@ -92,6 +112,7 @@ export function resolveArtifactPaths(
     manifest: resolveManifestPath(manifestPath, effectiveTargetDir),
     runResults: resolveRunResultsPath(runResultsPath, effectiveTargetDir),
     catalog: resolveCatalogPath(catalogPath, effectiveTargetDir),
+    sources: resolveSourcesPath(sourcesPath, effectiveTargetDir),
   };
 
   return resolved;
@@ -153,6 +174,26 @@ export function loadCatalog(catalogPath: string): ParsedCatalog {
   } catch (error) {
     throw new Error(
       `Failed to parse catalog file ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+/**
+ * Load and parse sources.json file
+ */
+export function loadSources(sourcesPath: string): ParsedSources {
+  const fullPath = resolveSafePath(sourcesPath);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Sources file not found: ${fullPath}`);
+  }
+
+  const content = fs.readFileSync(fullPath, "utf-8");
+  try {
+    const sourcesJson = JSON.parse(content) as Record<string, unknown>;
+    return parseSources(sourcesJson);
+  } catch (error) {
+    throw new Error(
+      `Failed to parse sources file ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }

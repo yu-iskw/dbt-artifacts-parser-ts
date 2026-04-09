@@ -8,12 +8,14 @@ Core library for dbt artifact graph management and analysis. Provides the analys
 
 ```mermaid
 graph TD
-  AF["dbt-artifacts-parser\nparseManifest · parseRunResults"]
+  AF["dbt-artifacts-parser\nparseManifest · parseRunResults · parseSources"]
   AF --> AL["ArtifactLoader"]
   AL --> MG["ManifestGraph\ngraphology DAG"]
   AL --> EA["ExecutionAnalyzer\ncritical path · Gantt"]
+  AL --> SFA["SourceFreshnessAnalyzer\nfreshness · stale impact"]
   MG --> DS["DependencyService\nupstream · downstream · build order"]
   MG --> GE["GraphExport\nJSON · DOT · GEXF"]
+  SFA --> MG
   EA --> OF["OutputFormatter\nfield filtering · JSON/text"]
   OF --> FF["FieldFilter"]
 ```
@@ -34,7 +36,12 @@ pnpm add @dbt-tools/core
 
 ```typescript
 import { parseManifest } from "dbt-artifacts-parser/manifest";
-import { ManifestGraph, ExecutionAnalyzer } from "@dbt-tools/core";
+import { parseSources } from "dbt-artifacts-parser/sources";
+import {
+  ManifestGraph,
+  ExecutionAnalyzer,
+  SourceFreshnessAnalyzer,
+} from "@dbt-tools/core";
 
 // Build dependency graph
 const manifest = parseManifest(manifestJson);
@@ -54,6 +61,21 @@ const report = analyzer.getSummary();
 console.log(
   `Critical path: ${report.critical_path.map((n) => n.name).join(" → ")}`,
 );
+
+// Source freshness analysis
+const sources = parseSources(sourcesJson);
+const freshnessAnalyzer = new SourceFreshnessAnalyzer(sources);
+const freshnessSummary = freshnessAnalyzer.summarize();
+console.log(
+  `Stale sources: ${freshnessSummary.counts_by_status["warn"] || 0}`,
+);
+
+// Stale impact analysis
+const staleSource = "source.my_project.raw.orders";
+const staleImpact = graph.getStaleImpact(staleSource);
+console.log(
+  `Source affects ${staleImpact.total_downstream_count} nodes downstream`,
+);
 ```
 
 ---
@@ -67,6 +89,7 @@ import {
   // Analysis
   ManifestGraph,
   ExecutionAnalyzer,
+  SourceFreshnessAnalyzer,
   DependencyService,
   SqlAnalyzer,
   RunResultsSearch,
@@ -83,6 +106,10 @@ import {
   ErrorHandler,
   // Introspection
   SchemaGenerator,
+  // Types
+  type SourceFreshnessEntry,
+  type SourceFreshnessSummary,
+  type StaleImpactReport,
 } from "@dbt-tools/core";
 ```
 
@@ -94,8 +121,12 @@ For use in browser environments (e.g. web workers in `@dbt-tools/web`):
 import {
   ManifestGraph,
   ExecutionAnalyzer,
+  SourceFreshnessAnalyzer,
   RunResultsSearch,
   AnalysisSnapshot,
+  type SourceFreshnessEntry,
+  type SourceFreshnessSummary,
+  type StaleImpactReport,
 } from "@dbt-tools/core/browser";
 ```
 

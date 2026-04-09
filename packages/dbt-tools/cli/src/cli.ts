@@ -29,6 +29,8 @@ import {
   timelineAction,
   searchAction,
   statusAction,
+  freshnessReportAction,
+  staleImpactAction,
 } from "./cli-actions";
 import { CLI_PACKAGE_VERSION } from "./version";
 
@@ -629,6 +631,77 @@ program
   .option(OPT_NO_JSON, DESC_NO_JSON)
   .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
     statusAction(options, handleError, isTTY),
+  );
+
+/**
+ * Freshness-report command: Analyze source freshness from sources.json
+ */
+program
+  .command("freshness-report")
+  .description("Report normalized source freshness results from sources.json")
+  .argument(
+    "[sources-path]",
+    "Path to sources.json file (defaults to ./target/sources.json)",
+  )
+  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(
+    "--status <values>",
+    "Comma-separated filter by freshness status (e.g., pass,warn,error)",
+  )
+  .option("--stale-only", "Filter to stale sources only (warn, error, runtime error)")
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      sourcesPath: string | undefined,
+      manifestPath: string | undefined,
+      options: {
+        targetDir?: string;
+        status?: string;
+        staleOnly?: boolean;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) =>
+      freshnessReportAction(sourcesPath, manifestPath, options, handleError, isTTY),
+  );
+
+/**
+ * Stale-impact command: Show downstream impact of stale source
+ */
+program
+  .command("stale-impact")
+  .description("Analyze downstream impact of a stale source in the DAG")
+  .argument("<source-unique-id>", "Source unique_id (e.g., source.my_project.raw.orders)")
+  .option(
+    "--manifest-path <path>",
+    "Path to manifest.json file (defaults to ./target/manifest.json)",
+  )
+  .option(
+    "--sources-path <path>",
+    "Path to sources.json file (optional, for freshness enrichment)",
+  )
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option("--depth <number>", "Max traversal depth", parseInt)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (
+      sourceUniqueId: string,
+      options: {
+        manifestPath?: string;
+        sourcesPath?: string;
+        targetDir?: string;
+        depth?: number;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) => staleImpactAction(sourceUniqueId, options, handleError, isTTY),
   );
 
 /**
