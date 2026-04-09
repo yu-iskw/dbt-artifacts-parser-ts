@@ -30,6 +30,7 @@ import { HealthMaterializationCard } from "./overview/HealthMaterializationCard"
  * Health — "what needs attention now?" with an above-the-fold triage strip
  * (posture, metrics, bottlenecks) and scrollable detail below.
  * Execution breakdown uses dashboard status pills only (no search/types slice).
+ * CI: path matches capture-rules health glob for pr-captures workflow smoke tests.
  */
 export function HealthView({
   analysis,
