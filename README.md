@@ -1,13 +1,15 @@
 # dbt-artifacts-parser-ts
 
-A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts.
+A TypeScript monorepo for parsing and operational analysis of [dbt](https://www.getdbt.com/) artifacts.
+
+For the `@dbt-tools/*` packages, the product thesis is: **dot-tools is a dbt operational intelligence layer**. It turns dbt artifacts into deterministic, structured intelligence for human operators and for automation/agents.
 
 This repo contains two distinct but related ecosystems:
 
 | Ecosystem                                                  | Description                                                                                     |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts |
-| [`@dbt-tools/*`](./packages/dbt-tools/)                    | Analysis tools suite (CLI, core library, web app) built on top of the parser                    |
+| [`@dbt-tools/*`](./packages/dbt-tools/)                    | Operational intelligence layer (core substrate, CLI contract, web investigation workspace) built on top of the parser |
 
 ## Packages
 
@@ -38,13 +40,29 @@ A suite of analysis tools for dbt artifacts. Built on `dbt-artifacts-parser`.
 
 | Package                                                  | Description                                                                        |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                   |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis, AI-agent-friendly                    |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS) |
+| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Composable analysis substrate — graph/dependency/execution primitives and schema/introspection exports |
+| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | Stable machine-readable interface (`dbt-tools`) for deterministic automation and agent workflows |
+| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | Investigation workspace for actionable artifact intelligence without requiring AI |
 
 [Suite overview →](./packages/dbt-tools/README.md)
 
 ---
+
+## Positioning and non-goals (`@dbt-tools/*`)
+
+- **External positioning:** a dbt operational intelligence layer.
+- **Internal architecture framing:** a composable analysis substrate for dbt artifacts serving both operators and agents.
+- **Deterministic-first:** core value comes from reproducible artifact analysis, not generated prose.
+- **AI-optional:** LLMs can consume outputs, but AI is not required for useful operator workflows.
+- **Local-first:** works with local artifacts and controlled environments, with optional remote object storage inputs.
+
+Explicit non-goals:
+
+- not a hosted dbt execution platform
+- not a replacement for dbt Cloud
+- not a replacement for Elementary
+- not a chat-first dbt copilot
+- not only a DAG viewer
 
 ## Quick Start
 
