@@ -43,23 +43,31 @@ From the repository root:
 
 ## Cloud agent bootstrap workflow
 
-When working in fresh cloud environments (Claude Code cloud, Codex cloud, etc.), the repository must be bootstrapped before running CI-like tasks. These environments start with minimal tooling (bash, git, curl, Node only) and do not assume `trunk` or `codeql` are preinstalled.
+When working in fresh cloud environments (Claude Code cloud, Codex cloud, etc.), the repository must be bootstrapped before running CI-like tasks. These environments start with minimal tooling (bash, git, curl, Node only).
 
 **Bootstrap command:**
 ```bash
 bash scripts/bootstrap-ci-tools.sh
 ```
 
-This script:
+This script installs and configures all required tools for cloud agents:
+
+**Critical tools (required):**
 1. Verifies Node.js version against [`.node-version`](.node-version)
 2. Enables Corepack (if available)
-3. Ensures `pnpm` is available (installs if missing)
-4. Runs `pnpm install --frozen-lockfile`
-5. Ensures `trunk` CLI is available (installs if missing)
-6. Runs `trunk install` (downloads runtimes and tool versions from [`.trunk/trunk.yaml`](.trunk/trunk.yaml))
-7. Detects `codeql` availability (informational; not a failure if missing)
+3. Installs `pnpm` if missing (package manager)
+4. Runs `pnpm install --frozen-lockfile` (dependencies)
+5. Installs `trunk` CLI if missing (linting/formatting)
+6. Runs `trunk install` (downloads runtimes from [`.trunk/trunk.yaml`](.trunk/trunk.yaml))
 
-The script is idempotent and safe to run multiple times.
+**Recommended tools (installed if missing):**
+7. Installs `codeql` if missing (security scanning via GitHub releases)
+8. Installs `jq` if missing (JSON CLI tool for agent operations)
+
+**Optional tools (checked but not installed):**
+9. Verifies `make` is available (useful for build automation)
+
+The script is **idempotent and safe to run multiple times**. It does not fail if optional tools cannot be installed; it reports status and continues.
 
 **Trunk-backed vs. fallback commands:**
 
@@ -70,22 +78,23 @@ The script is idempotent and safe to run multiple times.
 
 ### CodeQL policy for cloud agents
 
-**Missing CodeQL should NOT block unrelated code changes.** Only require CodeQL setup when your task explicitly involves:
+The bootstrap script now installs CodeQL automatically if missing. **However, CodeQL should NOT block unrelated code changes** if installation fails. Only require CodeQL when your task explicitly involves:
 - Running CodeQL workflows or SARIF generation
 - Local parity checks against the GitHub Actions [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) workflow
 - Debugging CodeQL scripts or configuration
 
-For all other code changes (features, bug fixes, refactoring):
+**For all other code changes (features, bug fixes, refactoring):**
 1. Bootstrap the repo: `bash scripts/bootstrap-ci-tools.sh`
+   - This automatically installs `codeql`, `jq`, and other agent tools
 2. Make code changes
 3. Run quality gates:
    - `pnpm format` (or `pnpm format:without-trunk`)
    - `pnpm lint` (or `pnpm lint:without-trunk`)
    - `pnpm test`
    - `pnpm coverage:report`
-4. Commit and push; CodeQL is GitHub Actions only (on PRs)
+4. Commit and push; CodeQL in GitHub Actions (on PRs) is separate
 
-If CodeQL is unavailable and your task is non-CodeQL, proceed with code changes and document the environment limitation if needed.
+If CodeQL installation fails and your task is non-CodeQL, the bootstrap script continues normally. The standard quality gates remain enforced regardless of CodeQL availability.
 
 ## Cursor (IDE)
 

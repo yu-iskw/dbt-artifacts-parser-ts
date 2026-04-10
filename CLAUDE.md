@@ -17,11 +17,19 @@ When starting work in a new cloud environment, run:
 bash scripts/bootstrap-ci-tools.sh
 ```
 
-This script:
-- Verifies Node.js version and installs `pnpm` if missing (hard failure if install fails)
-- Installs `trunk` CLI if missing (hard failure if install fails)
-- Runs `trunk install` to download runtimes and tool versions
-- Detects `codeql` availability (warning only; not a failure if missing)
+This script automatically installs all required tools for cloud agents:
+
+**Critical (hard failures if install fails):**
+- Node.js version verification against `.node-version`
+- `pnpm` (package manager)
+- `trunk` CLI (linting/formatting)
+
+**Recommended (installs if missing; non-critical if install fails):**
+- `codeql` v2.25.1+ (security scanning, downloaded from GitHub)
+- `jq` (JSON CLI processor, useful for agent operations)
+
+**Optional (checks but doesn't install):**
+- `make` (build automation)
 
 See [AGENTS.md — Cloud agent bootstrap workflow](AGENTS.md#cloud-agent-bootstrap-workflow) for detailed behavior and fallback commands.
 
