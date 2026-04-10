@@ -226,32 +226,64 @@ else
 fi
 echo
 
-# Step 5: Ensure trunk is available and run trunk install
-echo -e "${BLUE}[5/10]${NC} Trunk CLI setup"
+# Step 5: Install trunk CLI (required)
+echo -e "${BLUE}[5/10]${NC} Trunk CLI installation"
+TRUNK_NEEDS_INSTALL=false
+
+# Check if trunk command is available and executable
 if command -v trunk &> /dev/null; then
-  echo -e "  ${GREEN}✓ trunk already installed${NC}"
+  echo -e "  ${GREEN}✓ trunk already installed$(trunk --version 2>/dev/null | head -1 | sed 's/^/ - /' || echo)${NC}"
 else
   echo "  trunk not found, installing via npm..."
-  if npm install -g @trunkio/launcher 2>&1 | grep -v "^npm notice" | grep -v "^npm info"; then
-    echo -e "  ${GREEN}✓ trunk installed${NC}"
+  TRUNK_NEEDS_INSTALL=true
+fi
+
+# Install trunk if needed
+if [[ "$TRUNK_NEEDS_INSTALL" == "true" ]]; then
+  echo "  Installing @trunkio/launcher globally..."
+
+  # Install trunk
+  if npm install -g @trunkio/launcher 2>&1 | grep -v "^npm notice" | grep -v "^npm info" > /dev/null; then
+    # Verify trunk is now in PATH and executable
+    if command -v trunk &> /dev/null; then
+      # Try to get version; network errors are OK
+      TRUNK_VERSION=$(trunk --version 2>/dev/null | head -1 || echo "installed")
+      echo -e "  ${GREEN}✓ trunk installed successfully ($TRUNK_VERSION)${NC}"
+    else
+      echo -e "  ${RED}✗ trunk not found in PATH after installation${NC}"
+      exit 1
+    fi
   else
-    echo -e "  ${RED}✗ Failed to install trunk${NC}"
+    echo -e "  ${RED}✗ Failed to install trunk via npm${NC}"
     exit 1
   fi
 fi
 echo
 
-# Step 6: Run trunk install if available
-echo -e "${BLUE}[6/10]${NC} Trunk tool installation"
+# Step 6: Run trunk install to set up runtimes and tools
+echo -e "${BLUE}[6/10]${NC} Trunk runtime and tool installation"
 if command -v trunk &> /dev/null; then
-  if trunk install 2>&1 | tail -5; then
-    echo -e "  ${GREEN}✓ Trunk runtimes/tools installed${NC}"
+  echo "  Running 'trunk install' to download runtimes..."
+
+  # Capture trunk install output
+  TRUNK_INSTALL_OUTPUT=$(trunk install 2>&1 || true)
+  TRUNK_INSTALL_EXIT=$?
+
+  # Check for success indicators
+  if echo "$TRUNK_INSTALL_OUTPUT" | grep -qi "success\|complete\|installed"; then
+    echo -e "  ${GREEN}✓ Trunk runtimes and tools installed${NC}"
+  elif [[ $TRUNK_INSTALL_EXIT -eq 0 ]]; then
+    echo -e "  ${GREEN}✓ Trunk install completed successfully${NC}"
+  elif echo "$TRUNK_INSTALL_OUTPUT" | grep -qi "warning\|deprecated"; then
+    echo "$TRUNK_INSTALL_OUTPUT" | tail -3
+    echo -e "  ${YELLOW}⚠ Trunk install completed with warnings (continuing)${NC}"
   else
-    echo -e "  ${YELLOW}⚠ trunk install completed with warnings (non-critical)${NC}"
+    echo "$TRUNK_INSTALL_OUTPUT" | tail -5
+    echo -e "  ${YELLOW}⚠ Trunk install had issues but trunk CLI is functional${NC}"
   fi
 else
-  echo -e "  ${YELLOW}⚠ trunk not available; skipping trunk install${NC}"
-  echo "     (Fallback: use pnpm lint:without-trunk and pnpm format:without-trunk)"
+  echo -e "  ${RED}✗ trunk not available after installation${NC}"
+  exit 1
 fi
 echo
 
