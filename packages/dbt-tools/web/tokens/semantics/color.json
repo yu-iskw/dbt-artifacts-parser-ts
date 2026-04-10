@@ -1,0 +1,33 @@
+{
+  "semantic": {
+    "color": {
+      "bg": {
+        "canvas": { "value": "{color.neutral.50}", "type": "color" },
+        "surface": { "value": "{color.neutral.0}", "type": "color" },
+        "surfaceMuted": { "value": "{color.neutral.100}", "type": "color" },
+        "accentSoft": { "value": "{color.violet.100}", "type": "color" }
+      },
+      "text": {
+        "primary": { "value": "{color.neutral.900}", "type": "color" },
+        "secondary": { "value": "{color.neutral.700}", "type": "color" },
+        "muted": { "value": "{color.neutral.500}", "type": "color" },
+        "inverse": { "value": "{color.neutral.0}", "type": "color" }
+      },
+      "border": {
+        "subtle": { "value": "{color.neutral.200}", "type": "color" },
+        "default": { "value": "{color.neutral.300}", "type": "color" },
+        "focus": { "value": "{color.violet.500}", "type": "color" }
+      },
+      "action": {
+        "primary": { "value": "{color.violet.500}", "type": "color" },
+        "primaryHover": { "value": "{color.violet.600}", "type": "color" }
+      },
+      "status": {
+        "success": { "value": "{color.green.500}", "type": "color" },
+        "warning": { "value": "{color.amber.500}", "type": "color" },
+        "danger": { "value": "{color.red.500}", "type": "color" },
+        "info": { "value": "{color.blue.500}", "type": "color" }
+      }
+    }
+  }
+}

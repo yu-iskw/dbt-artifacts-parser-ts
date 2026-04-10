@@ -2,21 +2,33 @@
 
 ## Import order
 
-`src/index.css` is the only stylesheet entry from `main.tsx`. It imports slices in this order:
+`src/index.css` is the single stylesheet entry from `main.tsx`.
 
-1. **`tokens.css`** — `:root`, `[data-theme="dark"]`, and CSS variable aliases only.
-2. **`base.css`** — global element rules (`*`, `html`, `body`, etc.).
-3. **`app-shell.css`** — layout shell (sidebar, frame, header) and many analyzer/landing rules that sat **before** the lineage section in the original monolith. Shell and workspace selectors are interleaved there on purpose: **cascade order matches the old `index.css`**.
-4. **`ui-primitives.css`** — spinner, skeleton, tooltip, toast, empty state, plus blocks that followed them in the monolith (sidebar link icons, signals, upload/overview landing). Kept in one file to avoid reordering rules.
-5. **`lineage-graph.css`** — dependency graph, lineage viewport, graph toolbars/menus.
-6. **`workspace.css`** — explorer tree, overview modules/bands, type donut, shared legend rows.
+1. **`styles/app.css`** — app-level contract; imports generated token files (`tokens.css`, `theme.css`) and publishes compatibility aliases used by existing styles.
+2. **`styles/base.css`** — global element rules (`*`, `html`, `body`, etc.) and tokenized typography defaults.
+3. **`styles/design-system.css`** — shared component and pattern classes (`.ds-*`) that must map visual decisions to design tokens.
+4. **`styles/app-shell.css`**
+5. **`styles/ui-primitives.css`**
+6. **`styles/lineage-graph.css`**
+7. **`styles/workspace.css`**
 
-Do not change `@import` order without checking for specificity/cascade regressions.
+## Token source of truth
 
-## CSS ↔ TypeScript colors
+Design tokens live in `packages/dbt-tools/web/tokens/` with layered folders:
 
-Canvas and chart code cannot read CSS variables directly in all paths. **`src/constants/themeColors.ts` mirrors** the chart-related custom properties in `tokens.css` (light and dark). When you change chart or graph palette tokens, update **both** places until a codegen pipeline (ADR 0022 Phase 2) exists.
+- `primitives/`
+- `semantics/`
+- `components/`
+- `themes/`
 
-## Status colors in TypeScript
+Generated outputs are produced by `pnpm tokens:build`:
 
-**`src/constants/colors.ts`** defines `STATUS_COLORS` and helpers (`getStatusColor`, `getResourceTypeColor`) for execution/run status and resource-type accents. Chart code uses **`getStatusTonePalette`** from `src/lib/analysis-workspace/constants.ts` for **StatusTone**-aligned palettes (Gantt legend, donuts, etc.).
+- `src/styles/tokens.css`
+- `src/styles/theme.css`
+- `src/lib/tokens.ts`
+- `src/lib/tailwind-theme-bridge.ts`
+
+## Guardrails
+
+- `pnpm tokens:validate` checks token schema and blocks hardcoded design literals in guarded UI paths.
+- Agent-facing implementation rules live at `.agent/ui-rules.md`.

@@ -1,0 +1,12 @@
+{
+  "shadow": {
+    "surface": {
+      "value": "0 1px 3px rgb(15 15 35 / 6%), 0 4px 12px rgb(15 15 35 / 4%)",
+      "type": "shadow"
+    },
+    "focus": {
+      "value": "0 0 0 3px rgb(99 91 255 / 30%)",
+      "type": "shadow"
+    }
+  }
+}

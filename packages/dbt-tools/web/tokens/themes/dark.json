@@ -1,0 +1,33 @@
+{
+  "semantic": {
+    "color": {
+      "bg": {
+        "canvas": { "value": "#0d1120", "type": "color" },
+        "surface": { "value": "#151a2e", "type": "color" },
+        "surfaceMuted": { "value": "#101527", "type": "color" },
+        "accentSoft": { "value": "#232845", "type": "color" }
+      },
+      "text": {
+        "primary": { "value": "#f3f6fc", "type": "color" },
+        "secondary": { "value": "#c6cee0", "type": "color" },
+        "muted": { "value": "#98a3bc", "type": "color" },
+        "inverse": { "value": "#121622", "type": "color" }
+      },
+      "border": {
+        "subtle": { "value": "#262e47", "type": "color" },
+        "default": { "value": "#313a58", "type": "color" },
+        "focus": { "value": "#8a7cff", "type": "color" }
+      },
+      "action": {
+        "primary": { "value": "#8a7cff", "type": "color" },
+        "primaryHover": { "value": "#9b90ff", "type": "color" }
+      },
+      "status": {
+        "success": { "value": "#59d38c", "type": "color" },
+        "warning": { "value": "#f5b95c", "type": "color" },
+        "danger": { "value": "#ff8d86", "type": "color" },
+        "info": { "value": "#79b7ff", "type": "color" }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+/**
+ * AUTO-GENERATED FILE. DO NOT EDIT MANUALLY.
+ */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --dt-semantic-color-bg-canvas: #0d1120;
+  --dt-semantic-color-bg-surface: #151a2e;
+  --dt-semantic-color-bg-surfaceMuted: #101527;
+  --dt-semantic-color-bg-accentSoft: #232845;
+  --dt-semantic-color-text-primary: #f3f6fc;
+  --dt-semantic-color-text-secondary: #c6cee0;
+  --dt-semantic-color-text-muted: #98a3bc;
+  --dt-semantic-color-text-inverse: #121622;
+  --dt-semantic-color-border-subtle: #262e47;
+  --dt-semantic-color-border-default: #313a58;
+  --dt-semantic-color-border-focus: #8a7cff;
+  --dt-semantic-color-action-primary: #8a7cff;
+  --dt-semantic-color-action-primaryHover: #9b90ff;
+  --dt-semantic-color-status-success: #59d38c;
+  --dt-semantic-color-status-warning: #f5b95c;
+  --dt-semantic-color-status-danger: #ff8d86;
+  --dt-semantic-color-status-info: #79b7ff;
+  --dt-component-button-primary-bg: #8a7cff;
+  --dt-component-button-primary-bgHover: #9b90ff;
+  --dt-component-button-primary-text: #121622;
+  --dt-component-button-primary-radius: 0.75rem;
+  --dt-component-button-primary-paddingInline: 1rem;
+  --dt-component-button-primary-paddingBlock: 0.75rem;
+  --dt-component-button-secondary-bg: #151a2e;
+  --dt-component-button-secondary-text: #c6cee0;
+  --dt-component-button-secondary-border: #313a58;
+  --dt-component-input-bg: #151a2e;
+  --dt-component-input-text: #f3f6fc;
+  --dt-component-input-placeholder: #98a3bc;
+  --dt-component-input-border: #313a58;
+  --dt-component-input-focusRing: 0 0 0 3px rgb(99 91 255 / 30%);
+  --dt-component-input-radius: 0.75rem;
+  --dt-component-input-paddingInline: 1rem;
+  --dt-component-input-paddingBlock: 0.75rem;
+}

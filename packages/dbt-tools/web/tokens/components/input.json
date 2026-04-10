@@ -1,0 +1,17 @@
+{
+  "component": {
+    "input": {
+      "bg": { "value": "{semantic.color.bg.surface}", "type": "color" },
+      "text": { "value": "{semantic.color.text.primary}", "type": "color" },
+      "placeholder": {
+        "value": "{semantic.color.text.muted}",
+        "type": "color"
+      },
+      "border": { "value": "{semantic.color.border.default}", "type": "color" },
+      "focusRing": { "value": "{shadow.focus}", "type": "shadow" },
+      "radius": { "value": "{radius.md}", "type": "dimension" },
+      "paddingInline": { "value": "{space.md}", "type": "dimension" },
+      "paddingBlock": { "value": "{space.sm}", "type": "dimension" }
+    }
+  }
+}

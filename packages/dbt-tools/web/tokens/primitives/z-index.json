@@ -1,0 +1,8 @@
+{
+  "zIndex": {
+    "base": { "value": "1", "type": "number" },
+    "sticky": { "value": "10", "type": "number" },
+    "overlay": { "value": "100", "type": "number" },
+    "dialog": { "value": "200", "type": "number" }
+  }
+}

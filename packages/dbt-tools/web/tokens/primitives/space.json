@@ -1,0 +1,10 @@
+{
+  "space": {
+    "2xs": { "value": "0.25rem", "type": "dimension" },
+    "xs": { "value": "0.5rem", "type": "dimension" },
+    "sm": { "value": "0.75rem", "type": "dimension" },
+    "md": { "value": "1rem", "type": "dimension" },
+    "lg": { "value": "1.5rem", "type": "dimension" },
+    "xl": { "value": "2rem", "type": "dimension" }
+  }
+}

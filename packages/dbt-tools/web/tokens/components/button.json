@@ -1,0 +1,25 @@
+{
+  "component": {
+    "button": {
+      "primary": {
+        "bg": { "value": "{semantic.color.action.primary}", "type": "color" },
+        "bgHover": {
+          "value": "{semantic.color.action.primaryHover}",
+          "type": "color"
+        },
+        "text": { "value": "{semantic.color.text.inverse}", "type": "color" },
+        "radius": { "value": "{radius.md}", "type": "dimension" },
+        "paddingInline": { "value": "{space.md}", "type": "dimension" },
+        "paddingBlock": { "value": "{space.sm}", "type": "dimension" }
+      },
+      "secondary": {
+        "bg": { "value": "{semantic.color.bg.surface}", "type": "color" },
+        "text": { "value": "{semantic.color.text.secondary}", "type": "color" },
+        "border": {
+          "value": "{semantic.color.border.default}",
+          "type": "color"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,70 @@
+.ds-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dt-space-2xs);
+  border-radius: var(--dt-component-button-primary-radius);
+  border: var(--dt-border-width-default) solid transparent;
+  font-weight: var(--dt-typography-fontWeight-medium);
+  font-size: var(--dt-typography-fontSize-sm);
+  line-height: var(--dt-typography-lineHeight-tight);
+  cursor: pointer;
+  transition: background-color var(--dt-motion-duration-fast)
+    var(--dt-motion-easing-standard);
+  padding: var(--dt-component-button-primary-paddingBlock)
+    var(--dt-component-button-primary-paddingInline);
+}
+
+.ds-button[data-variant="primary"] {
+  background: var(--dt-component-button-primary-bg);
+  color: var(--dt-component-button-primary-text);
+}
+
+.ds-button[data-variant="primary"]:hover {
+  background: var(--dt-component-button-primary-bgHover);
+}
+
+.ds-button[data-variant="secondary"] {
+  background: var(--dt-component-button-secondary-bg);
+  color: var(--dt-component-button-secondary-text);
+  border-color: var(--dt-component-button-secondary-border);
+}
+
+.ds-card {
+  border-radius: var(--dt-component-input-radius);
+  border: var(--dt-border-width-default) solid
+    var(--dt-semantic-color-border-subtle);
+  background: var(--dt-semantic-color-bg-surface);
+  box-shadow: var(--dt-shadow-surface);
+  padding: var(--dt-space-md);
+}
+
+.ds-input {
+  border-radius: var(--dt-component-input-radius);
+  border: var(--dt-border-width-default) solid var(--dt-component-input-border);
+  background: var(--dt-component-input-bg);
+  color: var(--dt-component-input-text);
+  padding: var(--dt-component-input-paddingBlock)
+    var(--dt-component-input-paddingInline);
+}
+
+.ds-input::placeholder {
+  color: var(--dt-component-input-placeholder);
+}
+
+.ds-input:focus-visible {
+  outline: none;
+  box-shadow: var(--dt-component-input-focusRing);
+  border-color: var(--dt-semantic-color-border-focus);
+}
+
+.ds-empty-state,
+.ds-loading-state {
+  border-radius: var(--dt-radius-md);
+  border: var(--dt-border-width-default) dashed
+    var(--dt-semantic-color-border-subtle);
+  padding: var(--dt-space-lg);
+  text-align: center;
+  color: var(--dt-semantic-color-text-secondary);
+  background: var(--dt-semantic-color-bg-surfaceMuted);
+}

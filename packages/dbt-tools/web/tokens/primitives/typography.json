@@ -1,0 +1,28 @@
+{
+  "typography": {
+    "fontFamily": {
+      "sans": {
+        "value": "\"IBM Plex Sans\", \"Avenir Next\", \"Segoe UI\", sans-serif",
+        "type": "fontFamily"
+      },
+      "mono": {
+        "value": "\"IBM Plex Mono\", SFMono-Regular, Consolas, monospace",
+        "type": "fontFamily"
+      }
+    },
+    "fontSize": {
+      "sm": { "value": "0.875rem", "type": "dimension" },
+      "md": { "value": "1rem", "type": "dimension" },
+      "lg": { "value": "1.125rem", "type": "dimension" }
+    },
+    "fontWeight": {
+      "regular": { "value": "400", "type": "fontWeight" },
+      "medium": { "value": "500", "type": "fontWeight" },
+      "semibold": { "value": "600", "type": "fontWeight" }
+    },
+    "lineHeight": {
+      "tight": { "value": "1.25", "type": "number" },
+      "normal": { "value": "1.5", "type": "number" }
+    }
+  }
+}

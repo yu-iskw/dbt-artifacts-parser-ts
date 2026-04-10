@@ -1,0 +1,30 @@
+@import url("./tokens.css");
+@import url("./theme.css");
+
+:root {
+  --bg-canvas: var(--dt-semantic-color-bg-canvas);
+  --bg-surface: var(--dt-semantic-color-bg-surface);
+  --bg-surface-muted: var(--dt-semantic-color-bg-surfaceMuted);
+  --bg-accent-soft: var(--dt-semantic-color-bg-accentSoft);
+
+  --text-primary: var(--dt-semantic-color-text-primary);
+  --text-secondary: var(--dt-semantic-color-text-secondary);
+  --text-tertiary: var(--dt-semantic-color-text-muted);
+  --text-inverse: var(--dt-semantic-color-text-inverse);
+
+  --border-subtle: var(--dt-semantic-color-border-subtle);
+  --border-default: var(--dt-semantic-color-border-default);
+  --border-focus: var(--dt-semantic-color-border-focus);
+
+  --accent-primary: var(--dt-semantic-color-action-primary);
+  --accent-hover: var(--dt-semantic-color-action-primaryHover);
+
+  --bg: var(--bg-canvas);
+  --panel: var(--bg-surface);
+  --panel-strong: var(--bg-surface-muted);
+  --panel-border: var(--border-default);
+  --text: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-soft: var(--text-tertiary);
+  --accent: var(--accent-primary);
+}
