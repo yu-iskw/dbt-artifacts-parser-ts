@@ -9,6 +9,59 @@ Full stack layout, web app structure, publish workflows, and cross-tool notes (C
 - **Package manager:** `pnpm` (monorepo).
 - **Node.js:** version in [`.node-version`](.node-version) (authoritative for local/tooling).
 
+## Fresh environment startup checklist
+
+When starting work in a new cloud environment, run:
+
+```bash
+bash scripts/bootstrap-ci-tools.sh
+```
+
+This script:
+- Verifies Node.js version and installs `pnpm` if missing (hard failure if install fails)
+- Installs `trunk` CLI if missing (hard failure if install fails)
+- Runs `trunk install` to download runtimes and tool versions
+- Detects `codeql` availability (warning only; not a failure if missing)
+
+See [AGENTS.md — Cloud agent bootstrap workflow](AGENTS.md#cloud-agent-bootstrap-workflow) for detailed behavior and fallback commands.
+
+## Missing tool policy
+
+| Tool | Missing behavior | Impact |
+|------|------------------|--------|
+| `pnpm` | Hard failure; bootstrap installs via npm | Cannot proceed without it |
+| `trunk` | Hard failure; bootstrap installs via npm | Cannot proceed without it |
+| `codeql` | Warning only | Only blocks CodeQL-specific tasks (see policy below) |
+| `corepack` | Warning; bootstrap continues | Rarely needed; pnpm can install via npm |
+
+## Default command order (typical code changes)
+
+1. **Bootstrap (fresh environment only):** `bash scripts/bootstrap-ci-tools.sh`
+2. **Code changes:** Edit files, create tests
+3. **Format:** `pnpm format` (or `pnpm format:without-trunk` if trunk unavailable)
+4. **Lint:** `pnpm lint` (or `pnpm lint:without-trunk` if trunk unavailable)
+5. **Test:** `pnpm test`
+6. **Verify coverage:** `pnpm coverage:report` (must pass thresholds)
+7. **Commit and push:** CodeQL is GitHub Actions only (on PRs)
+
+## CodeQL policy
+
+**CodeQL is NOT required for general code changes.** Missing CodeQL does NOT block:
+- Feature implementation
+- Bug fixes
+- Refactoring
+- Documentation updates
+
+CodeQL is required only when your task explicitly involves:
+- Running CodeQL workflows or SARIF generation
+- Local parity checks with the GitHub Actions [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml)
+- Debugging CodeQL configuration or scripts
+
+If CodeQL is unavailable and your task is non-CodeQL:
+- Proceed with code changes
+- Run standard quality gates (format, lint, test, coverage)
+- Document environment limitation in commit message if relevant
+
 ## Quality gates (before claiming work complete)
 
 From the repository root:

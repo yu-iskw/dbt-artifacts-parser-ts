@@ -41,6 +41,52 @@ From the repository root:
   - Add a **short comment** explaining **why** suppression is necessary and what would remove it (issue link, upstream fix, or alternative attempted).
 - **Prefer config over scatter.** If a rule is consistently wrong for part of the repo, a **focused** change in project config (ESLint override, `semgrep.yml` path rule) with team-visible rationale is preferable to many scattered inline disables—still treat that as exceptional, not the default workflow.
 
+## Cloud agent bootstrap workflow
+
+When working in fresh cloud environments (Claude Code cloud, Codex cloud, etc.), the repository must be bootstrapped before running CI-like tasks. These environments start with minimal tooling (bash, git, curl, Node only) and do not assume `trunk` or `codeql` are preinstalled.
+
+**Bootstrap command:**
+```bash
+bash scripts/bootstrap-ci-tools.sh
+```
+
+This script:
+1. Verifies Node.js version against [`.node-version`](.node-version)
+2. Enables Corepack (if available)
+3. Ensures `pnpm` is available (installs if missing)
+4. Runs `pnpm install --frozen-lockfile`
+5. Ensures `trunk` CLI is available (installs if missing)
+6. Runs `trunk install` (downloads runtimes and tool versions from [`.trunk/trunk.yaml`](.trunk/trunk.yaml))
+7. Detects `codeql` availability (informational; not a failure if missing)
+
+The script is idempotent and safe to run multiple times.
+
+**Trunk-backed vs. fallback commands:**
+
+| Task | Preferred | Fallback (if trunk unavailable) |
+|------|-----------|--------------------------------|
+| Format | `pnpm format` | `pnpm format:without-trunk` |
+| Lint | `pnpm lint` | `pnpm lint:without-trunk` |
+
+### CodeQL policy for cloud agents
+
+**Missing CodeQL should NOT block unrelated code changes.** Only require CodeQL setup when your task explicitly involves:
+- Running CodeQL workflows or SARIF generation
+- Local parity checks against the GitHub Actions [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) workflow
+- Debugging CodeQL scripts or configuration
+
+For all other code changes (features, bug fixes, refactoring):
+1. Bootstrap the repo: `bash scripts/bootstrap-ci-tools.sh`
+2. Make code changes
+3. Run quality gates:
+   - `pnpm format` (or `pnpm format:without-trunk`)
+   - `pnpm lint` (or `pnpm lint:without-trunk`)
+   - `pnpm test`
+   - `pnpm coverage:report`
+4. Commit and push; CodeQL is GitHub Actions only (on PRs)
+
+If CodeQL is unavailable and your task is non-CodeQL, proceed with code changes and document the environment limitation if needed.
+
 ## Cursor (IDE)
 
 - **Indexing:** [`.cursorignore`](.cursorignore) narrows what Cursor indexes (secrets, `node_modules`, build/coverage artifacts, Playwright output, etc.). It does not replace `.gitignore` for version control.
