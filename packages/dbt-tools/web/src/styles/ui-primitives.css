@@ -86,8 +86,8 @@
   /* Appearance */
   padding: 0.42rem 0.7rem;
   border-radius: 10px;
-  background: var(--text);
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--text-inverse);
   font-size: 0.78rem;
   font-weight: 500;
   line-height: 1.45;
@@ -132,12 +132,12 @@
   display: block;
   font-size: 0.98rem;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .empty-state-block__subtext {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.88rem;
   line-height: 1.5;
   max-width: 36ch;
@@ -262,7 +262,7 @@
   width: 2rem;
   height: 2rem;
   border-radius: 10px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   flex-shrink: 0;
   transition:
     background 160ms ease,
@@ -302,11 +302,11 @@
 /* Collapsed: icon pill highlight for active item */
 .app-sidebar--collapsed .sidebar-link--active .sidebar-link__icon {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-primary);
 }
 
 .resource-spotlight__description--muted {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .overview-hero {
@@ -336,7 +336,7 @@
 .upload-feature-card p,
 .upload-panel__tips span,
 .upload-hero__callout p {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -362,7 +362,7 @@
 
 .overview-fact-card span,
 .upload-panel__status {
-  color: var(--text-soft);
+  color: var(--text-tertiary);
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -393,7 +393,7 @@
   padding: 0.3rem 0.6rem;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-primary);
   font-size: 0.78rem;
   font-weight: 700;
 }

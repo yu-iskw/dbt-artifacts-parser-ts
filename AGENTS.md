@@ -22,6 +22,14 @@
 - **Path alias `@web`:** maps to `src/` for this package ([`tsconfig.json`](packages/dbt-tools/web/tsconfig.json), [`vite.config.ts`](packages/dbt-tools/web/vite.config.ts)). Root [`vitest.config.mjs`](vitest.config.mjs) defines the same alias so monorepo `pnpm test` resolves `@web/...` — keep these in sync if the alias changes.
 - **`@dbt-tools/core` vs `core/browser`:** Use `@dbt-tools/core/browser` in workers and anywhere that must stay free of Node built-ins. The full `@dbt-tools/core` entry is for Vite/Node-only code (`artifact-source/`, `dbt-target-plugin.ts`). ESLint encodes this for workers, hooks, and components ([`eslint.config.mjs`](eslint.config.mjs)).
 
+### Design tokens and styling
+
+- **Token source of truth:** [`packages/dbt-tools/web/src/styles/tokens.css`](packages/dbt-tools/web/src/styles/tokens.css) — colors (light + dark), spacing scale (`--space-*`), typography scale (`--text-*`, `--leading-*`, `--font-*`), radii, shadows. See [`.cursor/rules/design-tokens.mdc`](.cursor/rules/design-tokens.mdc) for the quick-reference table.
+- **TS mirror:** `constants/themeColors.generated.ts` is **auto-generated** by `pnpm tokens:sync`; never edit manually. CI runs `pnpm tokens:check` to detect drift.
+- **Stylelint:** `stylelint-declaration-strict-value` enforces `var(--*)` for color and radius properties. Run `pnpm lint:stylelint` after CSS changes (not covered by `pnpm lint:report`).
+- **Legacy aliases** (`--text`, `--bg`, `--panel`, `--mint`, `--rose`, `--amber`): kept for backward compatibility; do not use in new code — use semantic names (`--text-primary`, `--bg-canvas`, etc.).
+- **Import order contract:** `tokens.css` → `base.css` → `app-shell.css` → `ui-primitives.css` → `lineage-graph.css` → `workspace.css`. Do not reorder without cascade regression check.
+
 ## Quality gates (before claiming work complete)
 
 From the repository root:

@@ -35,6 +35,7 @@
         "src/server/cli.ts"
       ],
       "project": ["src/**/*.ts", "src/**/*.tsx"],
+      "ignoreFiles": ["src/constants/themeColors.generated.ts"],
       "vite": true,
       "playwright": true
     }
