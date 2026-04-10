@@ -1,23 +1,8 @@
 # @dbt-tools/cli
 
-Command-line interface for deterministic dbt artifact intelligence.
-
-`dbt-tools` is a stable structured contract for operators, automation, and agent skills: machine-readable by default in non-interactive contexts, while still usable by humans in a terminal.
+Command-line interface for dbt artifact analysis. Optimized for both human and AI agent consumption.
 
 **Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended agent-focused topics (errors, validation, `schema` introspection) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md).
-
-## Positioning
-
-- **Role in dot-tools:** machine interface to the operational intelligence layer.
-- **Deterministic-first:** outputs are derived from artifacts, not generated narratives.
-- **Agent-ready:** schema introspection + field filtering + stable error codes support orchestration.
-- **AI-optional:** useful for shell scripts/CI without any LLM in the loop.
-
-### Non-goals
-
-- Not a chat interface for dbt.
-- Not a dbt execution platform.
-- Not intended to replicate dbt Cloud or Elementary workflows.
 
 ## Commands
 
@@ -60,8 +45,8 @@ pnpm add -g @dbt-tools/cli
 - **Default `./target` directory**: Commands default to dbt's standard artifact location
 - **JSON-by-default**: Machine-readable JSON output in non-interactive environments
 - **Input validation**: Hardened against common agent mistakes (path traversals, control chars, etc.)
-- **Field filtering**: Reduce payload size and context noise with `--fields`
-- **Schema introspection**: Runtime command/option discovery via `schema` command
+- **Field filtering**: Reduce context window usage with `--fields` option
+- **Schema introspection**: Runtime command discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
 - **Inventory**: Browse and filter all dbt resources in one view
 - **Timeline**: Inspect per-node execution timing (row-level, unlike `run-report`)

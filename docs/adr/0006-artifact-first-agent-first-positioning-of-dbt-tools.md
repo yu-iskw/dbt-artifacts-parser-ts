@@ -1,4 +1,4 @@
-# 6. Artifact-first and agent-compatible positioning of dbt-tools (superseded in part)
+# 6. Artifact-first agent-first positioning of dbt-tools
 
 Date: 2026-03-13
 
@@ -6,7 +6,7 @@ Date: 2026-03-13
 
 Accepted
 
-Superseded-by [34. Position dot-tools as a deterministic operational intelligence layer for dbt artifacts](0034-position-dot-tools-as-deterministic-operational-intelligence-layer.md)
+Depends-on [5. Field-level lineage inference via AST parsing](0005-field-level-lineage-inference-via-ast-parsing.md)
 
 Depends-on [5. Field-level lineage inference via AST parsing](0005-field-level-lineage-inference-via-ast-parsing.md)
 

@@ -1,34 +1,16 @@
 # @dbt-tools
 
-A suite of TypeScript packages that forms a **dbt operational intelligence layer**, built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md).
-
-Internally, `@dbt-tools/*` is designed as a **composable analysis substrate for dbt artifacts** that serves both operators and agents.
+A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md).
 
 ---
 
-## Product thesis
-
-`@dbt-tools/*` turns dbt artifacts into deterministic operational intelligence:
-
-- **What it does:** derives dependency, execution, inventory, and artifact readiness intelligence from `manifest.json`, `run_results.json`, and related artifacts.
-- **Who it serves:** operators/investigators in the web workspace; automation and agents via CLI + core APIs.
-- **What differentiates it:** deterministic outputs, schema/introspection support, local-first deployment, and composable interfaces.
-- **AI stance:** AI can consume the outputs, but the product is useful and actionable without AI.
-
-### Non-goals
-
-- Not a hosted dbt execution platform.
-- Not a generic observability SaaS.
-- Not a chat wrapper around dbt metadata.
-- Not a replacement for dbt Cloud or Elementary.
-
 ## Packages
 
-| Package                               | Description                                                                       |
-| ------------------------------------- | --------------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](./core/README.md) | Reusable analysis substrate (graph/dependency/execution/introspection primitives) |
-| [`@dbt-tools/cli`](./cli/README.md)   | Stable structured contract (`dbt-tools`) for automation and agent skills          |
-| [`@dbt-tools/web`](./web/README.md)   | Actionable investigation workspace for operators (no AI required)                 |
+| Package                               | Description                                                     |
+| ------------------------------------- | --------------------------------------------------------------- |
+| [`@dbt-tools/core`](./core/README.md) | Core library — dependency graphs, execution analysis, utilities |
+| [`@dbt-tools/cli`](./cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis                    |
+| [`@dbt-tools/web`](./web/README.md)   | React web app for visual artifact analysis                      |
 
 ---
 
