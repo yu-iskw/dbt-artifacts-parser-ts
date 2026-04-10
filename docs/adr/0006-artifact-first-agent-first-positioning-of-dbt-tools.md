@@ -100,3 +100,4 @@ graph TB
 
 - [dbt-mcp](https://github.com/dbt-labs/dbt-mcp) — tools and capabilities
 - [ADR-0005](0005-field-level-lineage-inference-via-ast-parsing.md) — field-level lineage via AST parsing
+- [ADR-0034](0034-first-party-coding-agent-plugins-and-repository-verification.md) — repository-shipped coding agent plugins (Codex, Claude Code, Cursor layout and verification)

@@ -1,9 +1,9 @@
 ---
-name: artifact-status
+name: dbt-artifacts-status
 description: Check local dbt artifact readiness with dbt-tools status before running manifest- or run_results-based analysis; interpret readiness and branch.
 ---
 
-# Artifact status (readiness gate)
+# dbt artifacts status (readiness gate)
 
 ## When to use
 
