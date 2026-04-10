@@ -75,8 +75,9 @@ With `adaptiveColors="auto"`, default stroke/fill/font colors adapt in dark mode
 
 ## External references
 
-- Style reference: <https://www.drawio.com/doc/faq/drawio-style-reference.html>
-- XSD: <https://www.drawio.com/assets/mxfile.xsd>
+- draw.io documentation index: <https://www.drawio.com/doc/>
+- URL parameters (editor behavior): <https://www.drawio.com/doc/faq/supported-url-parameters>
+- Upstream editor source (mxGraphModel XML; no single published XSD): <https://github.com/jgraph/drawio>
 
 ## Upstream alignment
 

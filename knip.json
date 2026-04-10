@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreBinaries": ["codeql", "prettier", "trunk", "semgrep"],
+  "ignoreBinaries": ["codeql", "make", "prettier", "trunk", "semgrep"],
   "ignoreExportsUsedInFile": true,
   "ignoreIssues": {
     "packages/dbt-artifacts-parser/**/*.ts": ["types"]
