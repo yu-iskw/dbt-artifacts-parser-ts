@@ -59,7 +59,7 @@ When adding a host (for example a private registry), update **both** [`.cursor/s
 
 ### Cursor Team / Enterprise (optional)
 
-If the org uses Cursor business features, use the **admin dashboard** for org-wide defaults (for example SSO and usage policies). Project files in this repo still apply when developers open the workspace; org-level controls are configured in Cursor’s admin experience (see [Cursor documentation](https://docs.cursor.com)). Coordinate with IT/compliance alongside [Enterprise / managed policy](#enterprise--managed-policy-optional) for Claude Code.
+If the org uses Cursor business features, use the **admin dashboard** for org-wide defaults (for example SSO and usage policies). Project files in this repo still apply when developers open the workspace; org-level controls are configured in Cursor’s admin experience (see [Cursor documentation](https://cursor.com/docs)). Coordinate with IT/compliance alongside [Enterprise / managed policy](#enterprise--managed-policy-optional) for Claude Code.
 
 ## Claude Code (CLI / IDE)
 
