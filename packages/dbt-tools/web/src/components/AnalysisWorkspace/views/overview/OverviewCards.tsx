@@ -1,5 +1,8 @@
 import type { AnalysisState } from "@web/types";
-import type { AssetViewState, WorkspaceView } from "@web/lib/analysis-workspace/types";
+import type {
+  AssetViewState,
+  WorkspaceView,
+} from "@web/lib/analysis-workspace/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 import { buildCrossViewNavigationTargets } from "@web/lib/analysis-workspace/crossViewNavigation";
@@ -42,12 +45,15 @@ export function OverviewActionListCard({
       )}
       {topRows.length > 0 ? (
         <div className="action-list">
-          {topRows.map((row, index) => (
+          {topRows.map((row, index) =>
             (() => {
               const targets = buildCrossViewNavigationTargets({
                 resourceId: row.uniqueId,
                 executionId: row.uniqueId,
               });
+              const inventoryTarget = targets.inventory;
+              const timelineTarget = targets.timeline;
+              const runsTarget = targets.runs;
               return (
                 <div key={row.uniqueId} className="action-list__row">
                   <div className="action-list__body">
@@ -67,38 +73,38 @@ export function OverviewActionListCard({
                     <RelatedViewsActions
                       label={`Related views for ${row.name}`}
                       actions={[
-                        ...(targets.inventory
+                        ...(inventoryTarget
                           ? [
                               {
                                 label: "Inventory",
                                 onClick: () =>
                                   onNavigateTo(
-                                    targets.inventory.view,
-                                    targets.inventory.options,
+                                    inventoryTarget.view,
+                                    inventoryTarget.options,
                                   ),
                               },
                             ]
                           : []),
-                        ...(targets.timeline
+                        ...(timelineTarget
                           ? [
                               {
                                 label: "Timeline",
                                 onClick: () =>
                                   onNavigateTo(
-                                    targets.timeline.view,
-                                    targets.timeline.options,
+                                    timelineTarget.view,
+                                    timelineTarget.options,
                                   ),
                               },
                             ]
                           : []),
-                        ...(targets.runs
+                        ...(runsTarget
                           ? [
                               {
                                 label: "Run",
                                 onClick: () =>
                                   onNavigateTo(
-                                    targets.runs.view,
-                                    targets.runs.options,
+                                    runsTarget.view,
+                                    runsTarget.options,
                                   ),
                               },
                             ]
@@ -108,8 +114,8 @@ export function OverviewActionListCard({
                   ) : null}
                 </div>
               );
-            })()
-          ))}
+            })(),
+          )}
         </div>
       ) : (
         <EmptyState

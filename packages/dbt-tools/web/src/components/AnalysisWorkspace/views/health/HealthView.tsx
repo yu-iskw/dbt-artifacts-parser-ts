@@ -104,7 +104,10 @@ export function HealthView({
         />
         <HealthMetricRow analysis={analysis} projectName={projectName} />
         <section className="health-fold__bottlenecks" aria-label="Bottlenecks">
-          <OverviewActionListCard derived={derived} onNavigateTo={onNavigateTo} />
+          <OverviewActionListCard
+            derived={derived}
+            onNavigateTo={onNavigateTo}
+          />
         </section>
       </div>
 

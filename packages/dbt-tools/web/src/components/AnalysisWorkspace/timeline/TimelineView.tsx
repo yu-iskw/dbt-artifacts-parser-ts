@@ -30,11 +30,7 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
 import { buildCrossViewNavigationTargets } from "@web/lib/analysis-workspace/crossViewNavigation";
-import {
-  RelatedViewsActions,
-  SectionCard,
-  WorkspaceScaffold,
-} from "../shared";
+import { RelatedViewsActions, SectionCard, WorkspaceScaffold } from "../shared";
 import {
   TimelineSearchControls,
   type TimelineTypeFilterHint,
@@ -272,6 +268,8 @@ function TimelineRelatedViewsBar({
     resourceId: selectedTimelineItem.unique_id,
     executionId: selectedTimelineItem.unique_id,
   });
+  const inventoryTarget = selectedTimelineTargets.inventory;
+  const runsTarget = selectedTimelineTargets.runs;
   return (
     <div className="timeline-selection-context">
       <p className="timeline-selection-context__label">
@@ -280,27 +278,21 @@ function TimelineRelatedViewsBar({
       <RelatedViewsActions
         label="Related views for selected timeline item"
         actions={[
-          ...(selectedTimelineTargets.inventory
+          ...(inventoryTarget
             ? [
                 {
                   label: "Inventory",
                   onClick: () =>
-                    onNavigateTo(
-                      selectedTimelineTargets.inventory.view,
-                      selectedTimelineTargets.inventory.options,
-                    ),
+                    onNavigateTo(inventoryTarget.view, inventoryTarget.options),
                 },
               ]
             : []),
-          ...(selectedTimelineTargets.runs
+          ...(runsTarget
             ? [
                 {
                   label: "Run",
                   onClick: () =>
-                    onNavigateTo(
-                      selectedTimelineTargets.runs.view,
-                      selectedTimelineTargets.runs.options,
-                    ),
+                    onNavigateTo(runsTarget.view, runsTarget.options),
                 },
               ]
             : []),

@@ -1,8 +1,10 @@
 import { type Dispatch, type SetStateAction, useEffect, useMemo } from "react";
 import type { AnalysisState } from "@web/types";
 import type {
+  AssetViewState,
   InvestigationSelectionState,
   RunsViewState,
+  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { useRunsResultsSource } from "@web/hooks/useRunsResultsSource";
 import {
@@ -29,11 +31,11 @@ export function RunsView({
     SetStateAction<InvestigationSelectionState>
   >;
   onNavigateTo: (
-    view: "inventory" | "timeline",
+    view: WorkspaceView,
     options?: {
       resourceId?: string;
       executionId?: string;
-      assetTab?: "summary" | "lineage";
+      assetTab?: AssetViewState["activeTab"];
       rootResourceId?: string;
     },
   ) => void;

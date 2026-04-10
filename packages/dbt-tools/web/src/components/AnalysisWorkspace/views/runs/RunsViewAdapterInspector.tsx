@@ -1,4 +1,8 @@
 import type { ExecutionRow } from "@web/types";
+import type {
+  AssetViewState,
+  WorkspaceView,
+} from "@web/lib/analysis-workspace/types";
 import { getAdapterResponseFieldsBeyondNormalized } from "@dbt-tools/core/browser";
 import {
   getRunsAdapterField,
@@ -32,11 +36,11 @@ export function RunsAdapterInspector({
   visibleColumns: RunsAdapterColumn[];
   overflowColumns: RunsAdapterColumn[];
   onNavigateTo: (
-    view: "inventory" | "timeline",
+    view: WorkspaceView,
     options?: {
       resourceId?: string;
       executionId?: string;
-      assetTab?: "summary" | "lineage";
+      assetTab?: AssetViewState["activeTab"];
       rootResourceId?: string;
     },
   ) => void;
@@ -100,6 +104,9 @@ export function RunsAdapterInspector({
     resourceId: row.uniqueId,
     executionId: row.uniqueId,
   });
+  const timelineTarget = relatedTargets.timeline;
+  const inventoryTarget = relatedTargets.inventory;
+  const lineageTarget = relatedTargets.lineage;
 
   return (
     <EntityInspector
@@ -121,46 +128,40 @@ export function RunsAdapterInspector({
       ]}
       sections={sections}
       actions={[
-        ...(relatedTargets.timeline
+        ...(timelineTarget
           ? [
               {
                 label: "Open in Timeline",
                 onClick: () =>
-                  onNavigateTo(
-                    relatedTargets.timeline.view,
-                    relatedTargets.timeline.options,
-                  ),
+                  onNavigateTo(timelineTarget.view, timelineTarget.options),
               },
             ]
           : []),
-        ...(relatedTargets.inventory
+        ...(inventoryTarget
           ? [
               {
                 label: "Open in Inventory",
                 onClick: () =>
-                  onNavigateTo(
-                    relatedTargets.inventory.view,
-                    relatedTargets.inventory.options,
-                  ),
+                  onNavigateTo(inventoryTarget.view, inventoryTarget.options),
               },
             ]
           : []),
-        ...(relatedTargets.lineage
+        ...(lineageTarget
           ? [
               {
                 label: "Open in Lineage",
                 onClick: () =>
-                  onNavigateTo(
-                    relatedTargets.lineage.view,
-                    relatedTargets.lineage.options,
-                  ),
+                  onNavigateTo(lineageTarget.view, lineageTarget.options),
               },
             ]
           : []),
         {
           label: "Open in Health",
           onClick: () =>
-            onNavigateTo(relatedTargets.health.view, relatedTargets.health.options),
+            onNavigateTo(
+              relatedTargets.health.view,
+              relatedTargets.health.options,
+            ),
         },
       ]}
     />

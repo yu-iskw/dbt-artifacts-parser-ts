@@ -115,7 +115,9 @@ test.describe("timeline pivot actions", () => {
 
     await page.goto("/?view=timeline&selected=model.jaffle_shop.orders");
     await page.getByRole("button", { name: "Run", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Runs" }).first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Runs" }).first(),
+    ).toBeVisible();
     await expect(page).toHaveURL(/[?&]view=runs/);
     await expect(page).toHaveURL(/[?&]selected=model\.jaffle_shop\.orders/);
   });

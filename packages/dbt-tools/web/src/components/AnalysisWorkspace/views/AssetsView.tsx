@@ -194,6 +194,8 @@ export function AssetsView({
     resourceId: resource.uniqueId,
     executionId: executionRowForSummary?.uniqueId ?? null,
   });
+  const timelineTarget = relatedTargets.timeline;
+  const runsTarget = relatedTargets.runs;
 
   return (
     <div className="workspace-view asset-workspace">
@@ -207,27 +209,21 @@ export function AssetsView({
           <RelatedViewsActions
             label={`Related views for ${resource.name}`}
             actions={[
-              ...(relatedTargets.timeline
+              ...(timelineTarget
                 ? [
                     {
                       label: "Timeline",
                       onClick: () =>
-                        onNavigateTo(
-                          relatedTargets.timeline.view,
-                          relatedTargets.timeline.options,
-                        ),
+                        onNavigateTo(timelineTarget.view, timelineTarget.options),
                     },
                   ]
                 : []),
-              ...(relatedTargets.runs
+              ...(runsTarget
                 ? [
                     {
                       label: "Run",
                       onClick: () =>
-                        onNavigateTo(
-                          relatedTargets.runs.view,
-                          relatedTargets.runs.options,
-                        ),
+                        onNavigateTo(runsTarget.view, runsTarget.options),
                     },
                   ]
                 : []),
