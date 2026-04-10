@@ -34,7 +34,7 @@ Optimize for fast failure. Run the cheapest high-signal checks first, then the s
 5. Run the **`dbt-tools-web-pack-npx-smoke`** skill: prefer **`bash scripts/smoke-npx-with-verdaccio.sh`** from the repo root (CI parity: local Verdaccio + `pnpm publish` for parser, core, web, then pack + `npx`; see skill and [packages/dbt-tools/web/README.md](../../packages/dbt-tools/web/README.md)). If that fails, fix the web package publish layout (`bin`, `prepack`/`dist-serve`, workspace pack) or Verdaccio wiring and rerun until the smoke passes.
 6. Run `pnpm codeql`. If findings remain, use the `codeql-fix` fixer loop until the results are clean, then rerun `pnpm codeql`.
 7. **Normalize (always) — stability loop (cap: 3 stability passes):** Set **`stability_iterations = 0`**. Loop until the working tree is clean or the cap is hit:
-   - Run **`pnpm format`**, then **`pnpm lint`**. (`pnpm lint` includes Trunk, ESLint, Stylelint, and Knip—aligned with repo quality gates.)
+   - Run **`pnpm format`**, then **`pnpm lint`**. (`pnpm lint` includes Trunk, ESLint, Stylelint, and Knip—aligned with repo quality gates.) Trunk is provided by **`@trunkio/launcher`** after **`pnpm install`**; see [AGENTS.md](../../AGENTS.md) **Commands** (Trunk).
    - If **`git status --porcelain` is empty**, normalization is complete; **stop** looping.
    - If **`stability_iterations >= 3`**, **stop**: summarize remaining changes (`git diff --stat` or `git status --short`) and **do not** claim full verification complete.
    - Otherwise run **`pnpm lint:report`**, **`pnpm test`**, and **`pnpm coverage:report`** in that order (fixers as needed; each must exit 0). Increment **`stability_iterations`**, then **repeat** this step from `pnpm format` / `pnpm lint` again.

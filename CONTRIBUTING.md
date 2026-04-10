@@ -85,7 +85,7 @@ pnpm test:e2e
 
 ## Linting & Formatting
 
-This project uses [Trunk](https://trunk.io/) to orchestrate ESLint and Prettier.
+This project uses [Trunk](https://trunk.io/) to orchestrate ESLint and Prettier. Installing the launcher with `pnpm add -D @trunkio/launcher` matches [Trunk’s install guide](https://docs.trunk.io/code-quality/overview/cli/getting-started/install); the package is already a root devDependency, so `pnpm install` is enough.
 
 ```bash
 # Check linting
