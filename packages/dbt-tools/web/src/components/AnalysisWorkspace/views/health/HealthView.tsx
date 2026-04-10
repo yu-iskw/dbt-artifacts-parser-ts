@@ -6,6 +6,7 @@ import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type {
   OverviewFilterState,
   WorkspaceSignal,
+  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { EmptyState } from "../../../EmptyState";
@@ -38,6 +39,7 @@ export function HealthView({
   filters,
   setFilters,
   workspaceSignals,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   projectName: string | null;
@@ -45,6 +47,7 @@ export function HealthView({
   filters: OverviewFilterState;
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   workspaceSignals: WorkspaceSignal[];
+  onNavigateTo?: (view: WorkspaceView) => void;
 }) {
   const healthExecutionFilters = useMemo(
     () => ({
@@ -77,6 +80,24 @@ export function HealthView({
           <p className="lens-header__desc">
             Run posture, critical issues, and dependency pressure at a glance.
           </p>
+          {onNavigateTo != null && (
+            <div className="lens-header__actions">
+              <button
+                type="button"
+                className="workspace-pill"
+                onClick={() => onNavigateTo("timeline")}
+              >
+                View Timeline
+              </button>
+              <button
+                type="button"
+                className="workspace-pill"
+                onClick={() => onNavigateTo("inventory")}
+              >
+                Browse Inventory
+              </button>
+            </div>
+          )}
         </div>
         {filtered && <span className="lens-header__badge">Filtered view</span>}
       </div>

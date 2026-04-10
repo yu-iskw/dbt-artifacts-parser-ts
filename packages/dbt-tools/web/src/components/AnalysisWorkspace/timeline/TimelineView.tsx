@@ -15,8 +15,10 @@ import {
 } from "./useTimelineNeighborhoodRows";
 import type { AnalysisState, GanttItem, ResourceNode } from "@web/types";
 import type {
+  AssetTab,
   InvestigationSelectionState,
   TimelineFilterState,
+  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
@@ -27,7 +29,7 @@ import {
   timelineGanttHasCompileExecutePhases,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { SectionCard, WorkspaceScaffold } from "../shared";
+import { EntityInspector, formatResourceTypeLabel, SectionCard, WorkspaceScaffold } from "../shared";
 import {
   TimelineSearchControls,
   type TimelineTypeFilterHint,
@@ -246,11 +248,69 @@ function TimelineSurface({
   );
 }
 
+function TimelineInspector({
+  selectedId,
+  analysis,
+  onNavigateTo,
+}: {
+  selectedId: string | null;
+  analysis: AnalysisState;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetTab;
+      rootResourceId?: string;
+    },
+  ) => void;
+}) {
+  if (!selectedId) return null;
+  const item = analysis.ganttData.find((d) => d.unique_id === selectedId);
+  if (!item) return null;
+  return (
+    <EntityInspector
+      eyebrow="Selected timeline item"
+      title={item.name}
+      typeLabel={formatResourceTypeLabel(item.resourceType ?? "")}
+      stats={[
+        { label: "Status", value: item.status },
+        { label: "Duration", value: formatMs(item.duration) },
+      ]}
+      actions={[
+        {
+          label: "Open in Inventory",
+          onClick: () =>
+            onNavigateTo("inventory", {
+              resourceId: item.unique_id,
+              assetTab: "summary",
+            }),
+        },
+        {
+          label: "Open in Lineage",
+          onClick: () =>
+            onNavigateTo("inventory", {
+              resourceId: item.unique_id,
+              assetTab: "lineage",
+              rootResourceId: item.unique_id,
+            }),
+        },
+        {
+          label: "Open in Runs",
+          onClick: () =>
+            onNavigateTo("runs", { executionId: item.unique_id }),
+        },
+      ]}
+    />
+  );
+}
+
 export function TimelineView({
   analysis,
   filters,
   setFilters,
   onInvestigationSelectionChange,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
@@ -258,6 +318,15 @@ export function TimelineView({
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetTab;
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -467,6 +536,15 @@ export function TimelineView({
       title="Timeline"
       description="Runtime timing, concurrency, bottlenecks, and execution order."
       className="timeline-view"
+      inspector={
+        filters.selectedExecutionId != null ? (
+          <TimelineInspector
+            selectedId={filters.selectedExecutionId}
+            analysis={analysis}
+            onNavigateTo={onNavigateTo}
+          />
+        ) : null
+      }
     >
       <TimelineSurface
         analysis={analysis}

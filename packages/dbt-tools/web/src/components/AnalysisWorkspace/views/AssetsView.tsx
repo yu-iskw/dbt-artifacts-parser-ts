@@ -210,6 +210,17 @@ export function AssetsView({
           >
             Open in Timeline
           </button>
+          {executionRowForSummary != null && (
+            <button
+              type="button"
+              className="workspace-pill"
+              onClick={() =>
+                onNavigateTo("runs", { executionId: resource.uniqueId })
+              }
+            >
+              Open in Runs
+            </button>
+          )}
         </div>
       </section>
       <div className="asset-workspace__body">
