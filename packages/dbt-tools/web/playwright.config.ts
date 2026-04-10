@@ -9,6 +9,23 @@ const webPackageDir = path.dirname(fileURLToPath(import.meta.url));
 const e2ePort = Number(process.env.PLAYWRIGHT_E2E_PORT ?? "4173");
 const e2eOrigin = `http://127.0.0.1:${e2ePort}`;
 
+/**
+ * When Playwright-managed Chromium cannot be downloaded (egress filter), use the
+ * system Google Chrome build instead. CI keeps the default (bundled Chromium).
+ * @see https://playwright.dev/docs/browsers#google-chrome--microsoft-edge
+ */
+const chromeExecutable = process.env.PLAYWRIGHT_CHROME_EXECUTABLE?.trim();
+const useSystemChrome =
+  process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === "1" ||
+  process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === "true";
+
+const chromeLaunch =
+  chromeExecutable && chromeExecutable.length > 0
+    ? { launchOptions: { executablePath: chromeExecutable } as const }
+    : useSystemChrome
+      ? { channel: "chrome" as const }
+      : {};
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -21,6 +38,7 @@ export default defineConfig({
   use: {
     baseURL: e2eOrigin,
     trace: "on-first-retry",
+    ...chromeLaunch,
   },
   webServer: {
     command: `./node_modules/.bin/vite preview --host 127.0.0.1 --port ${e2ePort}`,

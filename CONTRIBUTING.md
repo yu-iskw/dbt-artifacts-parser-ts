@@ -83,6 +83,13 @@ pnpm --filter @dbt-tools/web run test:e2e:install
 pnpm test:e2e
 ```
 
+If **`playwright install`** cannot reach the CDN, from `packages/dbt-tools/web` after `pnpm build` run with a system Chrome build:
+
+```bash
+PLAYWRIGHT_USE_SYSTEM_CHROME=1 pnpm exec playwright test
+# or: PLAYWRIGHT_CHROME_EXECUTABLE=/path/to/google-chrome pnpm exec playwright test
+```
+
 CI runs the same Playwright suite (with `playwright install chromium --with-deps`) in [`.github/workflows/test-dbt-tools-web.yml`](.github/workflows/test-dbt-tools-web.yml) when web, core, parser, or lockfile paths change.
 
 ---
