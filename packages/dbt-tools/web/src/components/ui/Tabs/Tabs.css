@@ -1,0 +1,90 @@
+@layer components {
+  .ui-tablist {
+    display: flex;
+    gap: var(--space-1);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0;
+    margin: 0;
+  }
+
+  .ui-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-15);
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    line-height: var(--leading-snug);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      color var(--duration-fast) var(--ease-default),
+      background var(--duration-fast) var(--ease-default);
+  }
+
+  .ui-tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface-muted);
+  }
+
+  .ui-tab[aria-selected="true"] {
+    color: var(--accent-primary);
+    font-weight: var(--font-semibold);
+  }
+
+  .ui-tab[aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: var(--space-3);
+    right: var(--space-3);
+    height: 2px;
+    background: var(--accent-primary);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .ui-tab:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  /* ─── Pill variant (for segmented controls) ─────────────────────────── */
+
+  .ui-tablist--pill {
+    border-bottom: 0;
+    background: var(--bg-surface-muted);
+    border-radius: var(--radius-sm);
+    padding: var(--space-05);
+  }
+
+  .ui-tablist--pill .ui-tab {
+    border-radius: var(--radius-xs);
+    padding: var(--space-15) var(--space-3);
+  }
+
+  .ui-tablist--pill .ui-tab[aria-selected="true"] {
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ui-tablist--pill .ui-tab[aria-selected="true"]::after {
+    display: none;
+  }
+
+  /* ─── Tab panel ─────────────────────────────────────────────────────── */
+
+  .ui-tabpanel {
+    padding: var(--space-4) 0;
+  }
+
+  .ui-tabpanel:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+} /* end @layer components */

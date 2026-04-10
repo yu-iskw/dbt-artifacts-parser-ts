@@ -1,0 +1,136 @@
+@layer components {
+  .ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      background var(--duration-fast) var(--ease-default),
+      color var(--duration-fast) var(--ease-default),
+      border-color var(--duration-fast) var(--ease-default),
+      box-shadow var(--duration-fast) var(--ease-default);
+  }
+
+  .ui-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  .ui-btn:disabled,
+  .ui-btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* ─── Variants ──────────────────────────────────────────────────────── */
+
+  .ui-btn--primary {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+  }
+
+  .ui-btn--primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .ui-btn--primary:active {
+    background: var(--accent-active);
+  }
+
+  .ui-btn--secondary {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border-default);
+  }
+
+  .ui-btn--secondary:hover {
+    background: var(--bg-surface-muted);
+    border-color: var(--border-strong);
+  }
+
+  .ui-btn--secondary:active {
+    background: var(--bg-selection-soft);
+  }
+
+  .ui-btn--danger {
+    background: var(--danger-fg);
+    color: var(--text-inverse);
+  }
+
+  .ui-btn--danger:hover {
+    background: var(--text-danger);
+  }
+
+  .ui-btn--ghost {
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .ui-btn--ghost:hover {
+    background: var(--bg-surface-muted);
+    color: var(--text-primary);
+  }
+
+  /* ─── Sizes ─────────────────────────────────────────────────────────── */
+
+  .ui-btn--sm {
+    padding: var(--space-1) var(--space-25);
+    font-size: var(--text-xs);
+    border-radius: var(--radius-xs);
+  }
+
+  .ui-btn--lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-base);
+  }
+
+  /* ─── IconButton ────────────────────────────────────────────────────── */
+
+  .ui-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-15);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) var(--ease-default),
+      color var(--duration-fast) var(--ease-default);
+  }
+
+  .ui-icon-btn:hover {
+    background: var(--bg-surface-muted);
+    color: var(--text-primary);
+  }
+
+  .ui-icon-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  .ui-icon-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .ui-icon-btn svg {
+    width: 1.25em;
+    height: 1.25em;
+    flex-shrink: 0;
+  }
+} /* end @layer components */

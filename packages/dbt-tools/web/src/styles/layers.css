@@ -1,0 +1,7 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CASCADE LAYER ORDER — imported first so layer precedence is explicit.
+   Lower layers lose to higher layers when specificity is equal.
+   See: https://developer.mozilla.org/en-US/docs/Web/CSS/@layer
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer reset, tokens, base, components, utilities, legacy;

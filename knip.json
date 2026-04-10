@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreBinaries": ["codeql", "make", "prettier", "trunk", "semgrep"],
+  "ignoreBinaries": ["codeql", "prettier", "trunk", "semgrep"],
   "ignoreExportsUsedInFile": true,
   "ignoreIssues": {
     "packages/dbt-artifacts-parser/**/*.ts": ["types"]
@@ -32,11 +32,13 @@
         "e2e/**/*.ts",
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
+        "src/**/*.stories.tsx",
         "src/server/cli.ts"
       ],
       "project": ["src/**/*.ts", "src/**/*.tsx"],
       "vite": true,
-      "playwright": true
+      "playwright": true,
+      "storybook": true
     }
   }
 }

@@ -1,0 +1,52 @@
+@layer components {
+  .ui-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ui-card--elevated {
+    box-shadow: var(--panel-shadow);
+  }
+
+  .ui-card--flat {
+    box-shadow: none;
+  }
+
+  .ui-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .ui-card__header h2,
+  .ui-card__header h3 {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-snug);
+  }
+
+  .ui-card__body {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .ui-card__footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Compact variant for dense layouts */
+  .ui-card--compact .ui-card__header,
+  .ui-card--compact .ui-card__body,
+  .ui-card--compact .ui-card__footer {
+    padding: var(--space-3) var(--space-4);
+  }
+} /* end @layer components */

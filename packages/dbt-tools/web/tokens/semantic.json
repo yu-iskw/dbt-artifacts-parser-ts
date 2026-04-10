@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$description": "Semantic design tokens — role-mapped references to foundation tokens. These are what components should consume.",
+
+  "light": {
+    "surface": {
+      "canvas": "{palette.slate.50} → #f6f7fb",
+      "sidebar": "#f3f5fa",
+      "default": "{palette.white}",
+      "muted": "#f1f3f8",
+      "elevated": "{palette.white}",
+      "overlay": "rgb(17 24 39 / 40%)",
+      "code": "#f8f9fc",
+      "selectionSoft": "#eef0ff",
+      "accentSoft": "#eef0ff",
+      "successSoft": "#eaf8f0",
+      "warningSoft": "#fff5e8",
+      "dangerSoft": "#fdedec",
+      "infoSoft": "#eaf2ff"
+    },
+    "text": {
+      "primary": "#171c28",
+      "secondary": "#475067",
+      "tertiary": "#6b7385",
+      "inverse": "#f8fafc",
+      "accent": "#554ceb",
+      "success": "#0f8a4b",
+      "warning": "#a56315",
+      "danger": "#c0352b",
+      "info": "#1769e0",
+      "disabled": "#98a1b3"
+    },
+    "border": {
+      "subtle": "#e6e9f0",
+      "default": "#d7dce7",
+      "strong": "#b8c0d4",
+      "focus": "#6d5ef7",
+      "accent": "#6d5ef7",
+      "success": "#0f8a4b",
+      "warning": "#a56315",
+      "danger": "#c0352b",
+      "info": "#1769e0"
+    },
+    "action": {
+      "primary": "#635bff",
+      "primaryHover": "#554ceb",
+      "primaryActive": "#473ed0",
+      "primarySoft": "#eef0ff",
+      "focusRing": "#6d5ef7"
+    },
+    "status": {
+      "successFg": "#0f8a4b",
+      "successSoft": "#eaf8f0",
+      "warningFg": "#a56315",
+      "warningSoft": "#fff5e8",
+      "dangerFg": "#c0352b",
+      "dangerSoft": "#fdedec",
+      "infoFg": "#1769e0",
+      "infoSoft": "#eaf2ff"
+    }
+  },
+
+  "dark": {
+    "$description": "Dark-theme overrides. Omitted keys inherit from light (in CSS, [data-theme=dark] overrides :root)."
+  }
+}

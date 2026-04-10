@@ -10,6 +10,8 @@
   "include": [
     "vite.config.ts",
     "vite.server.config.ts",
-    "src/dbt-target-plugin.ts"
+    "src/dbt-target-plugin.ts",
+    ".storybook/main.ts",
+    ".storybook/preview.ts"
   ]
 }

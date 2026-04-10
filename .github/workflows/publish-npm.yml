@@ -1,0 +1,99 @@
+# Copyright 2025 yu-iskw
+# SPDX-License-Identifier: Apache-2.0
+# Publishes dbt-artifacts-parser (Apache-2.0) then @dbt-tools/* (source-available LICENSE in packages/dbt-tools/).
+# Monorepo licensing: see README.md and LICENSES/README.md.
+# Job order: parser must reach npm before @dbt-tools/* (workspace deps rewrite to published versions).
+
+name: Publish npm packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish_parser:
+    name: Publish dbt-artifacts-parser
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build package
+        run: pnpm --filter ./packages/dbt-artifacts-parser build
+      - name: Run tests
+        run: pnpm --filter ./packages/dbt-artifacts-parser test
+      - name: Publish to npm
+        run: pnpm publish --filter ./packages/dbt-artifacts-parser --no-git-checks --access public
+
+  publish_dbt_tools:
+    name: Publish @dbt-tools packages
+    needs: publish_parser
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.1.0
+        with:
+          node-version-file: .node-version
+          registry-url: https://registry.npmjs.org
+          scope: "@dbt-tools"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build dbt-artifacts-parser (workspace dependency)
+        run: pnpm --filter ./packages/dbt-artifacts-parser build
+      - name: Build @dbt-tools packages
+        run: |
+          pnpm --filter @dbt-tools/core build
+          pnpm --filter @dbt-tools/cli build
+          pnpm --filter @dbt-tools/web build
+      - name: Run tests
+        run: |
+          pnpm --filter @dbt-tools/core test
+          pnpm --filter @dbt-tools/cli test
+      - name: Publish to npm
+        run: |
+          pnpm publish --filter @dbt-tools/core --no-git-checks --access public
+          pnpm publish --filter @dbt-tools/cli --no-git-checks --access public
+          pnpm publish --filter @dbt-tools/web --no-git-checks --access public

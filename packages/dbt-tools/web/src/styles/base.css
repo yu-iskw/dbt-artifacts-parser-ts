@@ -1,34 +1,45 @@
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-html {
-  min-height: 100%;
-}
+  html {
+    min-height: 100%;
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
-  color: var(--text-primary);
-  background: var(--bg-canvas);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    background: var(--bg-canvas);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-button,
-input {
-  font: inherit;
-}
+  button,
+  input {
+    font: inherit;
+  }
 
-button {
-  border: 0;
-}
+  button {
+    border: 0;
+    cursor: pointer;
+  }
 
-code {
-  font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
-}
+  code {
+    font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
+  }
 
-#root {
-  min-height: 100vh;
-}
+  #root {
+    min-height: 100vh;
+  }
+
+  /* ─── Focus-visible baseline ──────────────────────────────────────────── */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+} /* end @layer base */

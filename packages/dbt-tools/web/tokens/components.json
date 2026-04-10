@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$description": "Component-level design tokens — specific contracts for reusable UI primitives. Reference semantic tokens; only create component tokens when the contract benefits from a named alias.",
+
+  "button": {
+    "primaryBg": "var(--accent-primary)",
+    "primaryText": "var(--text-inverse)",
+    "primaryHoverBg": "var(--accent-hover)",
+    "primaryActiveBg": "var(--accent-active)",
+    "secondaryBg": "var(--bg-surface)",
+    "secondaryText": "var(--text-primary)",
+    "secondaryBorder": "var(--border-default)",
+    "secondaryHoverBg": "var(--bg-surface-muted)",
+    "dangerBg": "var(--danger-fg)",
+    "dangerText": "var(--text-inverse)",
+    "ghostHoverBg": "var(--bg-surface-muted)",
+    "disabledOpacity": "0.5",
+    "borderRadius": "var(--radius-sm)",
+    "paddingX": "var(--space-4)",
+    "paddingY": "var(--space-2)",
+    "fontSize": "var(--text-sm)",
+    "fontWeight": "var(--font-semibold)",
+    "focusRing": "var(--focus-ring)"
+  },
+
+  "badge": {
+    "borderRadius": "var(--radius-full)",
+    "paddingX": "var(--space-2.5)",
+    "paddingY": "var(--space-0.5)",
+    "fontSize": "var(--text-xs)",
+    "fontWeight": "var(--font-semibold)"
+  },
+
+  "card": {
+    "bg": "var(--bg-surface)",
+    "border": "var(--border-subtle)",
+    "borderRadius": "var(--radius-md)",
+    "shadow": "var(--shadow-panel)",
+    "paddingX": "var(--space-5)",
+    "paddingY": "var(--space-4)"
+  },
+
+  "tabs": {
+    "borderBottom": "var(--border-subtle)",
+    "activeAccent": "var(--accent-primary)",
+    "hoverBg": "var(--bg-surface-muted)",
+    "fontSize": "var(--text-sm)",
+    "fontWeight": "var(--font-medium)",
+    "gap": "var(--space-1)"
+  },
+
+  "input": {
+    "bg": "var(--bg-surface)",
+    "border": "var(--border-default)",
+    "borderRadius": "var(--radius-sm)",
+    "focusBorder": "var(--border-focus)",
+    "focusRing": "var(--focus-ring)",
+    "paddingX": "var(--space-3)",
+    "paddingY": "var(--space-2)",
+    "fontSize": "var(--text-sm)",
+    "placeholderColor": "var(--text-tertiary)"
+  },
+
+  "modal": {
+    "overlayBg": "var(--bg-overlay)",
+    "panelBg": "var(--bg-elevated)",
+    "panelRadius": "var(--radius-lg)",
+    "panelShadow": "var(--shadow-lg)"
+  },
+
+  "table": {
+    "headerBg": "var(--bg-surface-muted)",
+    "rowHoverBg": "var(--bg-selection-soft)",
+    "borderColor": "var(--border-subtle)",
+    "headerFontWeight": "var(--font-semibold)",
+    "cellPaddingX": "var(--space-3)",
+    "cellPaddingY": "var(--space-2)"
+  }
+}
