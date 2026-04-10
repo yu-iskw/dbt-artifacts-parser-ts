@@ -40,7 +40,9 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm --filter @dbt-tools/web test:e2e",
-    "verify:normalize": "pnpm format && pnpm lint"
+    "verify:normalize": "pnpm format && pnpm lint",
+    "tokens:web:build": "node packages/dbt-tools/web/scripts/build-tokens.mjs",
+    "tokens:web:validate": "node packages/dbt-tools/web/scripts/validate-tokens.mjs && node packages/dbt-tools/web/scripts/scan-forbidden-style-values.mjs"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.58.0",

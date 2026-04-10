@@ -1,0 +1,21 @@
+{
+  "duration": {
+    "fast": {
+      "$type": "duration",
+      "$value": "140ms",
+      "$extensions": { "dbt": { "cssVar": "motion-duration-fast" } }
+    },
+    "normal": {
+      "$type": "duration",
+      "$value": "200ms",
+      "$extensions": { "dbt": { "cssVar": "motion-duration-normal" } }
+    }
+  },
+  "easing": {
+    "standard": {
+      "$type": "cubicBezier",
+      "$value": [0.4, 0, 0.2, 1],
+      "$extensions": { "dbt": { "cssVar": "motion-easing-standard" } }
+    }
+  }
+}

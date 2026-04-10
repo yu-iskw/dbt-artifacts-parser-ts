@@ -1,0 +1,9 @@
+{
+  "base": { "$type": "number", "$value": 0 },
+  "raised": { "$type": "number", "$value": 10 },
+  "dropdown": { "$type": "number", "$value": 100 },
+  "sticky": { "$type": "number", "$value": 200 },
+  "tooltip": { "$type": "number", "$value": 300 },
+  "modal": { "$type": "number", "$value": 400 },
+  "toast": { "$type": "number", "$value": 500 }
+}

@@ -1,0 +1,4 @@
+{
+  "$description": "Light is the default branch in token JSON; this file documents the mode only. All light values live in tokens/semantics/.",
+  "mode": "light"
+}

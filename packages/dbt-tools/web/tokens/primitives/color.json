@@ -1,0 +1,64 @@
+{
+  "$description": "Raw palette — product code must not reference these CSS variables directly; use semantic tokens.",
+  "gray": {
+    "50": { "$type": "color", "$value": "#f8fafc" },
+    "100": { "$type": "color", "$value": "#f1f5f9" },
+    "150": { "$type": "color", "$value": "#f1f3f8" },
+    "200": { "$type": "color", "$value": "#e2e8f0" },
+    "250": { "$type": "color", "$value": "#e6e9f0" },
+    "300": { "$type": "color", "$value": "#cbd5e1" },
+    "400": { "$type": "color", "$value": "#94a3b8" },
+    "500": { "$type": "color", "$value": "#64748b" },
+    "600": { "$type": "color", "$value": "#475067" },
+    "700": { "$type": "color", "$value": "#334155" },
+    "800": { "$type": "color", "$value": "#2a3142" },
+    "900": { "$type": "color", "$value": "#171c28" },
+    "950": { "$type": "color", "$value": "#0f172a" }
+  },
+  "slate": {
+    "canvasLight": { "$type": "color", "$value": "#f6f7fb" },
+    "canvasDark": { "$type": "color", "$value": "#0d1120" },
+    "surfaceLight": { "$type": "color", "$value": "#ffffff" },
+    "surfaceDark": { "$type": "color", "$value": "#151a2e" }
+  },
+  "violet": {
+    "400": { "$type": "color", "$value": "#8a7cff" },
+    "500": { "$type": "color", "$value": "#635bff" },
+    "600": { "$type": "color", "$value": "#554ceb" },
+    "700": { "$type": "color", "$value": "#473ed0" },
+    "focus": { "$type": "color", "$value": "#6d5ef7" },
+    "focusDark": { "$type": "color", "$value": "#8a7cff" }
+  },
+  "green": {
+    "500": { "$type": "color", "$value": "#0f8a4b" },
+    "500dark": { "$type": "color", "$value": "#59d38c" }
+  },
+  "amber": {
+    "600": { "$type": "color", "$value": "#a56315" },
+    "600dark": { "$type": "color", "$value": "#f5b95c" }
+  },
+  "red": {
+    "600": { "$type": "color", "$value": "#c0352b" },
+    "600dark": { "$type": "color", "$value": "#ff8d86" }
+  },
+  "blue": {
+    "600": { "$type": "color", "$value": "#1769e0" },
+    "600dark": { "$type": "color", "$value": "#79b7ff" },
+    "700": { "$type": "color", "$value": "#1d4ed8" },
+    "700dark": { "$type": "color", "$value": "#5c8deb" }
+  },
+  "cyan": {
+    "600": { "$type": "color", "$value": "#0891b2" },
+    "600dark": { "$type": "color", "$value": "#3eb0c8" }
+  },
+  "pink": {
+    "600": { "$type": "color", "$value": "#db2777" },
+    "600dark": { "$type": "color", "$value": "#d172ae" }
+  },
+  "orange": {
+    "600": { "$type": "color", "$value": "#ea580c" },
+    "600dark": { "$type": "color", "$value": "#d9845c" }
+  },
+  "white": { "$type": "color", "$value": "#ffffff" },
+  "black": { "$type": "color", "$value": "#000000" }
+}

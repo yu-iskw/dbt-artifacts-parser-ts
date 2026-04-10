@@ -1,0 +1,94 @@
+{
+  "$description": "Component tokens — design-system Button only; values reference semantic CSS variables for theme coherence.",
+  "primary": {
+    "bg": {
+      "$type": "color",
+      "$value": "#635bff",
+      "$extensions": {
+        "dbt": { "cssVar": "button-primary-bg", "cssVarRef": "accent-primary" }
+      }
+    },
+    "bgHover": {
+      "$type": "color",
+      "$value": "#554ceb",
+      "$extensions": {
+        "dbt": { "cssVar": "button-primary-bg-hover", "cssVarRef": "accent-hover" }
+      }
+    },
+    "bgActive": {
+      "$type": "color",
+      "$value": "#473ed0",
+      "$extensions": {
+        "dbt": { "cssVar": "button-primary-bg-active", "cssVarRef": "accent-active" }
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#f8fafc",
+      "$extensions": {
+        "dbt": { "cssVar": "button-primary-text", "cssVarRef": "text-inverse" }
+      }
+    },
+    "focusRing": {
+      "$type": "color",
+      "$value": "#6d5ef7",
+      "$extensions": {
+        "dbt": { "cssVar": "button-primary-focus-ring", "cssVarRef": "accent-focus-ring" }
+      }
+    }
+  },
+  "secondary": {
+    "bg": {
+      "$type": "color",
+      "$value": "#f1f3f8",
+      "$extensions": {
+        "dbt": { "cssVar": "button-secondary-bg", "cssVarRef": "bg-surface-muted" }
+      }
+    },
+    "border": {
+      "$type": "color",
+      "$value": "#d7dce7",
+      "$extensions": {
+        "dbt": { "cssVar": "button-secondary-border", "cssVarRef": "border-default" }
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#171c28",
+      "$extensions": {
+        "dbt": { "cssVar": "button-secondary-text", "cssVarRef": "text-primary" }
+      }
+    }
+  },
+  "ghost": {
+    "bgHover": {
+      "$type": "color",
+      "$value": "#eef0ff",
+      "$extensions": {
+        "dbt": { "cssVar": "button-ghost-bg-hover", "cssVarRef": "bg-accent-soft" }
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#475067",
+      "$extensions": {
+        "dbt": { "cssVar": "button-ghost-text", "cssVarRef": "text-secondary" }
+      }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "$value": "8px",
+    "$extensions": { "dbt": { "cssVar": "button-radius", "cssVarRef": "radius-sm" } }
+  },
+  "paddingX": {
+    "$type": "dimension",
+    "$value": "12px",
+    "$extensions": { "dbt": { "cssVar": "button-padding-x", "cssVarRef": "space-md" } }
+  },
+  "paddingY": {
+    "$type": "dimension",
+    "$value": "8px",
+    "$extensions": { "dbt": { "cssVar": "button-padding-y", "cssVarRef": "space-sm" } }
+  }
+}

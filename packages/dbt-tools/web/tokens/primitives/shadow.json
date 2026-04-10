@@ -1,0 +1,16 @@
+{
+  "elevation": {
+    "panelLight": {
+      "$type": "shadow",
+      "$value": "0 1px 3px rgb(15 15 35 / 6%), 0 4px 12px rgb(15 15 35 / 4%)"
+    },
+    "panelDark": {
+      "$type": "shadow",
+      "$value": "0 4px 24px rgb(0 0 0 / 50%)"
+    },
+    "tooltipLight": {
+      "$type": "shadow",
+      "$value": "0 8px 24px rgb(17 24 39 / 22%)"
+    }
+  }
+}

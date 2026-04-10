@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { DsButton } from "@web/design-system";
 import type { ThemePreference } from "@web/lib/analysis-workspace/types";
 import { sourceLabel } from "@web/lib/artifactSource";
 import type {
@@ -58,8 +59,9 @@ function AppearanceSettings({
         <span className="settings-field-label">Theme</span>
         <div className="settings-segmented">
           {(["system", "light", "dark"] as const).map((value) => (
-            <button
+            <DsButton
               key={value}
+              variant="ghost"
               type="button"
               className={pillClass(themePreference === value)}
               onClick={() => onThemeChange(value)}
@@ -67,7 +69,7 @@ function AppearanceSettings({
               {value === "system"
                 ? "System"
                 : value.charAt(0).toUpperCase() + value.slice(1)}
-            </button>
+            </DsButton>
           ))}
         </div>
       </div>
@@ -105,15 +107,17 @@ function SessionSettings({
               : "Load artifacts to unlock analysis views."}
           </p>
         </div>
-        <button
+        <DsButton
+          variant="primary"
           type="button"
           className="primary-action settings-primary-action"
           onClick={onLoadDifferent}
         >
           Load different artifacts
-        </button>
+        </DsButton>
         {pendingRemoteRun && (
-          <button
+          <DsButton
+            variant="secondary"
             type="button"
             className="workspace-pill"
             onClick={() => void onAcceptPendingRemoteRun()}
@@ -122,7 +126,7 @@ function SessionSettings({
             {acceptingRemoteRun
               ? "Switching…"
               : `Load ${pendingRemoteRun.label}`}
-          </button>
+          </DsButton>
         )}
       </div>
     </SectionCard>
@@ -144,7 +148,8 @@ function ShellDefaultsSettings({
       <div className="settings-field-group">
         <span className="settings-field-label">Sidebar</span>
         <div className="settings-segmented">
-          <button
+          <DsButton
+            variant="ghost"
             type="button"
             className={pillClass(!preferences.sidebarCollapsedDefault)}
             onClick={() =>
@@ -155,8 +160,9 @@ function ShellDefaultsSettings({
             }
           >
             Expanded
-          </button>
-          <button
+          </DsButton>
+          <DsButton
+            variant="ghost"
             type="button"
             className={pillClass(preferences.sidebarCollapsedDefault)}
             onClick={() =>
@@ -167,7 +173,7 @@ function ShellDefaultsSettings({
             }
           >
             Collapsed
-          </button>
+          </DsButton>
         </div>
       </div>
     </SectionCard>

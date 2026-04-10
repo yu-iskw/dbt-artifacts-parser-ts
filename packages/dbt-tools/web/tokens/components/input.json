@@ -1,0 +1,45 @@
+{
+  "$description": "Component tokens for design-system Input — references semantic CSS variables.",
+  "bg": {
+    "$type": "color",
+    "$value": "#ffffff",
+    "$extensions": { "dbt": { "cssVar": "input-bg", "cssVarRef": "bg-surface" } }
+  },
+  "border": {
+    "$type": "color",
+    "$value": "#d7dce7",
+    "$extensions": { "dbt": { "cssVar": "input-border", "cssVarRef": "border-default" } }
+  },
+  "borderHover": {
+    "$type": "color",
+    "$value": "#b8c0d4",
+    "$extensions": { "dbt": { "cssVar": "input-border-hover", "cssVarRef": "border-strong" } }
+  },
+  "text": {
+    "$type": "color",
+    "$value": "#171c28",
+    "$extensions": { "dbt": { "cssVar": "input-text", "cssVarRef": "text-primary" } }
+  },
+  "placeholder": {
+    "$type": "color",
+    "$value": "#6b7385",
+    "$extensions": { "dbt": { "cssVar": "input-placeholder", "cssVarRef": "text-tertiary" } }
+  },
+  "focus": {
+    "ring": {
+      "$type": "color",
+      "$value": "#6d5ef7",
+      "$extensions": { "dbt": { "cssVar": "input-focus-ring", "cssVarRef": "border-focus" } }
+    },
+    "ringOffset": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$extensions": { "dbt": { "cssVar": "input-focus-ring-offset", "cssVarRef": "bg-surface" } }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "$value": "8px",
+    "$extensions": { "dbt": { "cssVar": "input-radius", "cssVarRef": "radius-sm" } }
+  }
+}

@@ -1,0 +1,106 @@
+/* Shared design-system layer — component classes map to component/semantic CSS variables only. */
+
+.ds-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--button-padding-y) var(--button-padding-x);
+  border-radius: var(--button-radius);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.ds-button:focus-visible {
+  outline: 2px solid var(--button-primary-focus-ring);
+  outline-offset: 2px;
+}
+
+.ds-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ds-button--primary {
+  border: 1px solid transparent;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.ds-button--primary:hover:not(:disabled) {
+  background: var(--button-primary-bg-hover);
+}
+
+.ds-button--primary:active:not(:disabled) {
+  background: var(--button-primary-bg-active);
+}
+
+.ds-button--secondary {
+  border: 1px solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+}
+
+.ds-button--secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.ds-button--ghost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--button-ghost-text);
+}
+
+.ds-button--ghost:hover:not(:disabled) {
+  background: var(--button-ghost-bg-hover);
+}
+
+.ds-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  box-shadow: var(--panel-shadow);
+}
+
+.ds-card__body {
+  padding: var(--space-lg);
+}
+
+.ds-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--input-radius);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font: inherit;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.ds-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.ds-input:hover:not(:disabled, :focus) {
+  border-color: var(--input-border-hover);
+}
+
+.ds-input:focus {
+  outline: none;
+  border-color: var(--input-focus-ring);
+  box-shadow: 0 0 0 3px var(--bg-accent-soft);
+}
+
+.ds-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

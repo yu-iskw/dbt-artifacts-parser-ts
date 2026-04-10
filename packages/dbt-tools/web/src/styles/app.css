@@ -1,0 +1,7 @@
+/* App stylesheet entry: tokens → theme supplements → Tailwind → semantic @theme bridge.
+   Legacy slices load after this from index.css (cascade order preserved). */
+@import url("./tokens.css");
+@import url("./theme.css");
+@import url("tailwindcss");
+@import url("./tailwind.theme.css");
+@import url("../design-system/design-system.css");

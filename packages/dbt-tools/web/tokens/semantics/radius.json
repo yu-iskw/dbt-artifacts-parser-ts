@@ -1,0 +1,17 @@
+{
+  "lg": {
+    "$type": "dimension",
+    "$value": "16px",
+    "$extensions": { "dbt": { "cssVar": "radius-lg" } }
+  },
+  "md": {
+    "$type": "dimension",
+    "$value": "12px",
+    "$extensions": { "dbt": { "cssVar": "radius-md" } }
+  },
+  "sm": {
+    "$type": "dimension",
+    "$value": "8px",
+    "$extensions": { "dbt": { "cssVar": "radius-sm" } }
+  }
+}

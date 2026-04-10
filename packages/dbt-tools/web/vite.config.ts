@@ -1,10 +1,11 @@
 import path from "path";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { dbtTargetPlugin } from "./src/dbt-target-plugin";
 
 export default defineConfig({
-  plugins: [dbtTargetPlugin(), react()],
+  plugins: [dbtTargetPlugin(), tailwindcss(), react()],
   server: {
     port: 5173,
   },

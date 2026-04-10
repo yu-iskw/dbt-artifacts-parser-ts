@@ -1,0 +1,11 @@
+{
+  "none": { "$type": "dimension", "$value": "0px" },
+  "2xs": { "$type": "dimension", "$value": "4px" },
+  "xs": { "$type": "dimension", "$value": "6px" },
+  "sm": { "$type": "dimension", "$value": "8px" },
+  "md": { "$type": "dimension", "$value": "10px" },
+  "lg": { "$type": "dimension", "$value": "12px" },
+  "xl": { "$type": "dimension", "$value": "16px" },
+  "2xl": { "$type": "dimension", "$value": "18px" },
+  "full": { "$type": "dimension", "$value": "9999px" }
+}

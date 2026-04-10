@@ -8,6 +8,9 @@ export default {
     "**/coverage/**",
     "**/playwright-report/**",
     "**/test-results/**",
+    "packages/dbt-tools/web/src/styles/tokens.css",
+    "packages/dbt-tools/web/src/styles/theme.css",
+    "packages/dbt-tools/web/src/styles/tailwind.theme.css",
   ],
   rules: {
     // App uses kebab-case blocks with BEM __element / --modifier; not literal single-segment kebab-case.

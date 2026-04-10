@@ -4,18 +4,20 @@
 
 `src/index.css` is the only stylesheet entry from `main.tsx`. It imports slices in this order:
 
-1. **`tokens.css`** — `:root`, `[data-theme="dark"]`, and CSS variable aliases only.
+1. **`app.css`** — generated `tokens.css`, `theme.css`, Tailwind (`@tailwindcss/vite`), `tailwind.theme.css` (semantic → utility bridge), and `design-system/design-system.css`.
 2. **`base.css`** — global element rules (`*`, `html`, `body`, etc.).
 3. **`app-shell.css`** — layout shell (sidebar, frame, header) and many analyzer/landing rules that sat **before** the lineage section in the original monolith. Shell and workspace selectors are interleaved there on purpose: **cascade order matches the old `index.css`**.
 4. **`ui-primitives.css`** — spinner, skeleton, tooltip, toast, empty state, plus blocks that followed them in the monolith (sidebar link icons, signals, upload/overview landing). Kept in one file to avoid reordering rules.
 5. **`lineage-graph.css`** — dependency graph, lineage viewport, graph toolbars/menus.
 6. **`workspace.css`** — explorer tree, overview modules/bands, type donut, shared legend rows.
 
+**Token pipeline:** edit JSON under `tokens/`, then `pnpm run build:tokens` in this package (runs automatically before `pnpm build`). Generated: `src/styles/tokens.css`, `src/styles/theme.css`, `src/styles/tailwind.theme.css`, `src/lib/tokens.generated.ts`, `src/constants/themeColors.generated.ts`.
+
 Do not change `@import` order without checking for specificity/cascade regressions.
 
 ## CSS ↔ TypeScript colors
 
-Canvas and chart code cannot read CSS variables directly in all paths. **`src/constants/themeColors.ts` mirrors** the chart-related custom properties in `tokens.css` (light and dark). When you change chart or graph palette tokens, update **both** places until a codegen pipeline (ADR 0022 Phase 2) exists.
+Canvas and chart code cannot read CSS variables directly in all paths. **`src/constants/themeColors.generated.ts`** is produced by `scripts/build-tokens.mjs` from the same token JSON as `tokens.css`. Edit `tokens/semantics/color.json` and `tokens/themes/dark.json`, then rebuild tokens.
 
 ## Status colors in TypeScript
 

@@ -79,31 +79,31 @@
 
   /* Positioning */
   position: absolute;
-  bottom: calc(100% + 7px);
+  bottom: calc(100% + var(--space-sm));
   left: 50%;
   transform: translateX(-50%);
 
-  /* Appearance */
-  padding: 0.42rem 0.7rem;
-  border-radius: 10px;
-  background: var(--text);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 500;
+  /* Appearance — semantic tokens (see tokens/semantics) */
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  font-size: var(--font-size-tooltip);
+  font-weight: var(--font-weight-medium);
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-all;
   max-width: 300px;
   text-align: left;
-  box-shadow: 0 8px 24px rgb(17 24 39 / 22%);
+  box-shadow: var(--shadow-tooltip);
 
   /* Visibility */
   opacity: 0;
   pointer-events: none;
-  transition: opacity 140ms ease;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
 
   /* Ensure it renders above card content */
-  z-index: 300;
+  z-index: var(--z-tooltip);
 }
 
 .tooltip-host:hover::after,

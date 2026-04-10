@@ -50,6 +50,8 @@ jobs:
           version: 10
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Validate design tokens
+        run: pnpm tokens:web:validate
       - name: Build dependencies
         run: pnpm build
       - name: Run tests with coverage

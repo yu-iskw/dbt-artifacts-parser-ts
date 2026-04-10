@@ -1,0 +1,23 @@
+/* AUTO-GENERATED — Tailwind v4 @theme bridge → semantic CSS variables
+ * Imported after `@import url("tailwindcss")` in app.css (see src/styles/app.css).
+ * Use e.g. bg-background, text-foreground, border-border in feature code. */
+@theme inline {
+  --color-background: var(--bg-canvas);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-subtle: var(--text-tertiary);
+  --color-card: var(--bg-surface);
+  --color-card-muted: var(--bg-surface-muted);
+  --color-border: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-input: var(--border-default);
+  --color-ring: var(--border-focus);
+  --color-primary: var(--accent-primary);
+  --color-primary-foreground: var(--text-inverse);
+  --color-destructive: var(--text-danger);
+  --color-destructive-foreground: var(--text-inverse);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --shadow-panel: var(--panel-shadow);
+}

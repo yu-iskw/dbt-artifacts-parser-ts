@@ -36,7 +36,8 @@
       ],
       "project": ["src/**/*.ts", "src/**/*.tsx"],
       "vite": true,
-      "playwright": true
+      "playwright": true,
+      "ignoreDependencies": ["tailwindcss"]
     }
   }
 }

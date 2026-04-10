@@ -1,0 +1,12 @@
+{
+  "panel": {
+    "$type": "shadow",
+    "$value": "0 1px 3px rgb(15 15 35 / 6%), 0 4px 12px rgb(15 15 35 / 4%)",
+    "$extensions": { "dbt": { "cssVar": "panel-shadow" } }
+  },
+  "tooltip": {
+    "$type": "shadow",
+    "$value": "0 8px 24px rgb(17 24 39 / 22%)",
+    "$extensions": { "dbt": { "cssVar": "shadow-tooltip" } }
+  }
+}

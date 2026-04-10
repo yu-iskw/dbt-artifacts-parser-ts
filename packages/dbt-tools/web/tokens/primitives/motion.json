@@ -1,0 +1,12 @@
+{
+  "duration": {
+    "instant": { "$type": "duration", "$value": "0ms" },
+    "fast": { "$type": "duration", "$value": "140ms" },
+    "normal": { "$type": "duration", "$value": "200ms" },
+    "slow": { "$type": "duration", "$value": "300ms" }
+  },
+  "easing": {
+    "standard": { "$type": "cubicBezier", "$value": [0.4, 0, 0.2, 1] },
+    "emphasized": { "$type": "cubicBezier", "$value": [0.2, 0, 0, 1] }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "fontFamily": {
+    "sans": {
+      "$type": "fontFamily",
+      "$value": ["IBM Plex Sans", "Avenir Next", "Segoe UI", "sans-serif"],
+      "$extensions": { "dbt": { "cssVar": "font-family-sans" } }
+    },
+    "mono": {
+      "$type": "fontFamily",
+      "$value": ["IBM Plex Mono", "SFMono-Regular", "Consolas", "monospace"],
+      "$extensions": { "dbt": { "cssVar": "font-family-mono" } }
+    }
+  },
+  "fontSize": {
+    "tooltip": {
+      "$type": "dimension",
+      "$value": "0.78rem",
+      "$extensions": { "dbt": { "cssVar": "font-size-tooltip" } }
+    }
+  },
+  "fontWeight": {
+    "medium": {
+      "$type": "fontWeight",
+      "$value": "500",
+      "$extensions": { "dbt": { "cssVar": "font-weight-medium" } }
+    }
+  }
+}

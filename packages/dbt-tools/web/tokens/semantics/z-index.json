@@ -1,0 +1,17 @@
+{
+  "tooltip": {
+    "$type": "number",
+    "$value": 300,
+    "$extensions": { "dbt": { "cssVar": "z-tooltip" } }
+  },
+  "modal": {
+    "$type": "number",
+    "$value": 400,
+    "$extensions": { "dbt": { "cssVar": "z-modal" } }
+  },
+  "toast": {
+    "$type": "number",
+    "$value": 500,
+    "$extensions": { "dbt": { "cssVar": "z-toast" } }
+  }
+}

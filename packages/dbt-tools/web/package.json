@@ -25,7 +25,9 @@
   ],
   "scripts": {
     "prepack": "npm run build && node ../../../scripts/copy-dbt-tools-license.mjs",
-    "build": "pnpm --filter @dbt-tools/core build && tsc && vite build && pnpm run build:serve",
+    "build:tokens": "node scripts/build-tokens.mjs",
+    "validate:tokens": "node scripts/validate-tokens.mjs && node scripts/scan-forbidden-style-values.mjs",
+    "build": "pnpm run validate:tokens && pnpm run build:tokens && pnpm --filter @dbt-tools/core build && tsc && vite build && pnpm run build:serve",
     "build:serve": "vite build --config vite.server.config.ts",
     "dev": "vite",
     "dev:debug": "DBT_TOOLS_DEBUG=1 vite",
@@ -51,10 +53,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
     "vite": "^8.0.5"
   },

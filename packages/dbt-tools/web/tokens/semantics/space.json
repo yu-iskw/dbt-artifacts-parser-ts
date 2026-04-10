@@ -1,0 +1,17 @@
+{
+  "sm": {
+    "$type": "dimension",
+    "$value": "8px",
+    "$extensions": { "dbt": { "cssVar": "space-sm" } }
+  },
+  "md": {
+    "$type": "dimension",
+    "$value": "12px",
+    "$extensions": { "dbt": { "cssVar": "space-md" } }
+  },
+  "lg": {
+    "$type": "dimension",
+    "$value": "16px",
+    "$extensions": { "dbt": { "cssVar": "space-lg" } }
+  }
+}
