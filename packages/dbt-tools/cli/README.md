@@ -1,8 +1,8 @@
 # @dbt-tools/cli
 
-Command-line interface for dbt artifact analysis. Optimized for both human and AI agent consumption.
+**Structured interface** for dbt artifact analysis: machine-readable JSON by default in non-interactive environments, runtime **`schema`** introspection, **`--fields`** to shrink payloads, and validated inputs with stable error codes—suited to **operators**, **CI**, **scripts**, and **coding agents** (skills, multi-step automation) without treating AI as the only consumer.
 
-**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended agent-focused topics (errors, validation, `schema` introspection) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md).
+**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended topics (errors, validation, `schema` introspection, agent-oriented patterns) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md). Positioning: [ADR-0035](../../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 ## Commands
 
@@ -43,10 +43,10 @@ pnpm add -g @dbt-tools/cli
 ## Features
 
 - **Default `./target` directory**: Commands default to dbt's standard artifact location
-- **JSON-by-default**: Machine-readable JSON output in non-interactive environments
-- **Input validation**: Hardened against common agent mistakes (path traversals, control chars, etc.)
-- **Field filtering**: Reduce context window usage with `--fields` option
-- **Schema introspection**: Runtime command discovery via `schema` command
+- **JSON-by-default**: Machine-readable JSON output in non-interactive environments (stable contract for pipes, CI, agents)
+- **Input validation**: Hardened against common mistakes (path traversals, control chars, ambiguous resource IDs)
+- **Field filtering**: Bound output size with `--fields` (also useful when piping into LLM context)
+- **Schema introspection**: Runtime command and option discovery via `schema` command
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
 - **Inventory**: Browse and filter all dbt resources in one view
 - **Timeline**: Inspect per-node execution timing (row-level, unlike `run-report`)
@@ -608,15 +608,19 @@ Errors are formatted as JSON in non-TTY environments:
 
 ---
 
-## Best Practices for AI Agents
+## Automation and agent workflows
+
+The same patterns help **scripts and CI** and **coding agents** (e.g. discover resources, then query deps with minimal fields).
 
 1. **Run `status` first** to check which artifacts are available before running analysis commands.
 2. **Use `search` to discover resources** before running `deps` or `inventory`.
-3. **Always use field filtering** for dependency queries and analysis to reduce context window usage.
+3. **Use field filtering** on large outputs to keep JSON payloads small.
 4. **Use default `./target` directory** unless you have a specific reason not to.
 5. **Validate resource IDs** before querying (use schema introspection if unsure).
 6. **Handle errors programmatically** using error codes in non-interactive environments.
 7. **Use schema introspection** to discover command capabilities at runtime.
+
+Compose with other tooling as needed (e.g. warehouse job metadata, CI environment variables, or separate analysis of warehouse query logs)—`dbt-tools` stays artifact-grounded and does not execute warehouse queries.
 
 ---
 

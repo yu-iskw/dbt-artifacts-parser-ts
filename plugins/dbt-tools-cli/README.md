@@ -1,6 +1,6 @@
 # dbt-tools-cli (agent plugin)
 
-First-party plugin for **[`@dbt-tools/cli`](../../packages/dbt-tools/cli/README.md)** workflows. Skills live under [`skills/`](skills/).
+First-party plugin wrapping the **[`@dbt-tools/cli`](../../packages/dbt-tools/cli/README.md)** **structured interface** (JSON, `schema`, `status`) so coding agents and skills can orchestrate artifact analysis alongside other tools. Skills live under [`skills/`](skills/).
 
 | Skill                                                          | Purpose                                                                        |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |

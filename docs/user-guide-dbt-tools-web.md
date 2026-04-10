@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/web
 
-Operator-focused documentation for the dbt-tools web analyzer. For a short npm-first overview, see the [package README](../packages/dbt-tools/web/README.md). For development setup, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+Operator-focused documentation for the **dbt-tools** browser analyzer: **deterministic, artifact-driven** views for dependencies, execution, and inventory—**no LLM required**. Remote artifact sources (S3/GCS) are optional, explicitly configured server-side infrastructure ([ADR-0029](./adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)). Positioning: [ADR-0035](./adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md). For a short npm-first overview, see the [package README](../packages/dbt-tools/web/README.md). For development setup, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ---
 

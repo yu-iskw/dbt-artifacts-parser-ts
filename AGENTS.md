@@ -8,6 +8,7 @@
 
 ## Frontend application
 
+- **Positioning:** dbt-tools is a **dbt operational intelligence layer**; `@dbt-tools/web` is the **deterministic** investigation UI (artifact-driven; no LLM required for core value). See [ADR-0035](docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 - **Package:** `@dbt-tools/web`
 - **Path:** [`packages/dbt-tools/web`](packages/dbt-tools/web)
 - **Stack:** Vite, React, Recharts, `@tanstack/react-virtual`; depends on workspace packages `@dbt-tools/core` and `dbt-artifacts-parser`
@@ -28,6 +29,7 @@ From the repository root:
 - `pnpm lint:report` — writes `lint-report.json`; must exit 0
 - `pnpm coverage:report` — writes `coverage-report.json`; must exit 0. If coverage is below thresholds, add or improve unit tests (lines 60%, branches 50%, functions 60%, statements 60%)
 - `pnpm knip` — unused exports/files/deps (monorepo); must exit 0. Configuration: [`knip.json`](knip.json). `ignoreExportsUsedInFile` is enabled; parser package ignores noisy `types` issues; `scripts/preprocess-refs.js` and the `@apidevtools/json-schema-ref-parser` devDependency are scoped to generation scripts (see `ignoreFiles` / `ignoreDependencies`).
+- **Verifier subagent** ([`.claude/agents/verifier.md`](.claude/agents/verifier.md)): a full verification run always ends with `pnpm format` and `pnpm lint` (same as `pnpm verify:normalize`). If that leaves the working tree dirty, follow the agent’s **stability loop**: re-run `pnpm lint:report`, `pnpm test`, and `pnpm coverage:report` (up to three passes), re-applying normalization until clean or the cap is hit.
 - **ESLint vs TypeScript 6:** `@typescript-eslint/*` 8.57.x still declares a peer range that excludes TypeScript 6 while this repo uses TypeScript 6, so `pnpm lint:eslint` may log a “not officially supported” warning. That is informational until [typescript-eslint#12123](https://github.com/typescript-eslint/typescript-eslint/issues/12123) ships; when a release widens the peer range, bump `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` to the **same** new version and refresh the lockfile.
 
 ### Linter and static-analysis violations (agent default)
@@ -59,7 +61,7 @@ When adding a host (for example a private registry), update **both** [`.cursor/s
 
 ### Cursor Team / Enterprise (optional)
 
-If the org uses Cursor business features, use the **admin dashboard** for org-wide defaults (for example SSO and usage policies). Project files in this repo still apply when developers open the workspace; org-level controls are configured in Cursor’s admin experience (see [Cursor documentation](https://cursor.com/docs)). Coordinate with IT/compliance alongside [Enterprise / managed policy](#enterprise--managed-policy-optional) for Claude Code.
+If the org uses Cursor business features, use the **admin dashboard** for org-wide defaults (for example SSO and usage policies). Project files in this repo still apply when developers open the workspace; org-level controls are configured in Cursor’s admin experience (see [Cursor documentation](https://docs.cursor.com)). Coordinate with IT/compliance alongside [Enterprise / managed policy](#enterprise--managed-policy-optional) for Claude Code.
 
 ## Claude Code (CLI / IDE)
 

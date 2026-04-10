@@ -8,9 +8,9 @@ Accepted
 
 Depends-on [5. Field-level lineage inference via AST parsing](0005-field-level-lineage-inference-via-ast-parsing.md)
 
-Depends-on [5. Field-level lineage inference via AST parsing](0005-field-level-lineage-inference-via-ast-parsing.md)
-
 Supports [10. Per-package coverage breakdown and fixture-based CLI tests for agent feedback](0010-per-package-coverage-breakdown-and-fixture-based-cli-tests-for-agent-feedback.md)
+
+**Amendment (2026-04-10):** Outward and architecture-facing **product positioning**—including the phrases **dbt operational intelligence layer** and **composable analysis substrate**, plus explicit **category boundaries** (not a hosted dbt platform replacement, not observability-SaaS-first, not “AI-only” as the headline)—is recorded in [ADR-0035](0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md). This ADR remains authoritative for **artifact-only** operation, **offline/CI** workflows, and **explicit non-overlap** with dbt-mcp and the dbt VS Code extension.
 
 ## Context
 
@@ -98,6 +98,7 @@ graph TB
 
 ## References
 
+- [ADR-0035](0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md) — operational intelligence framing and explicit category non-goals
 - [dbt-mcp](https://github.com/dbt-labs/dbt-mcp) — tools and capabilities
 - [ADR-0005](0005-field-level-lineage-inference-via-ast-parsing.md) — field-level lineage via AST parsing
 - [ADR-0034](0034-first-party-coding-agent-plugins-and-repository-verification.md) — repository-shipped coding agent plugins (Codex, Claude Code, Cursor layout and verification)

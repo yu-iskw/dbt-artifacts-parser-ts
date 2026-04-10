@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/cli
 
-Extended notes for automation and AI agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
+Extended notes for operators and automation using **`dbt-tools`**. The CLI is the **structured interface** to dbt artifact analysis: JSON-oriented defaults, `schema` for runtime discovery, and `--fields` to bound payloads—suited to CI, scripts, and coding-agent skills alike. For product positioning (operational intelligence layer, composable substrate), see [ADR-0035](./adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md). For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
 
 ---
 

@@ -1,5 +1,7 @@
 # Artifact Console Boundaries
 
+Product positioning for dbt-tools (operational intelligence layer, web usable without AI, CLI/core as structured interfaces) is recorded in [ADR-0035](../adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+
 ## Phase 1 rules
 
 - `@dbt-tools/core` owns artifact parsing, manifest graph construction, execution analysis, bottleneck detection, and serializable analysis snapshot building.
