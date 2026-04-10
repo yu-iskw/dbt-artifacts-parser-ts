@@ -76,13 +76,84 @@
   --chart-7: #db2777; /* pink / magenta */
   --chart-8: #64748b; /* slate-neutral */
 
-  /* Radius and shadows — kept from previous for consistency */
+  /* Radius and shadows */
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
   --panel-shadow: 0 1px 3px rgb(15 15 35 / 6%), 0 4px 12px rgb(15 15 35 / 4%);
+  --shadow-color: rgb(15 23 42 / 8%);
 
-  /* Legacy variable mapping (for gradual migration / safety) */
+  /* Spacing scale (4px grid at 16px root) — theme-invariant */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 0.125rem;
+  --space-1: 0.25rem;
+  --space-1-5: 0.375rem;
+  --space-2: 0.5rem;
+  --space-2-5: 0.625rem;
+  --space-3: 0.75rem;
+  --space-3-5: 0.875rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Typography — font families */
+  --font-sans: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", "Consolas", monospace;
+
+  /* Typography — font sizes (major-second scale, rounded to px grid) */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  /* Typography — fluid display sizes for hero / marketing text */
+  --text-display-sm: clamp(1.15rem, 1.8vw, 1.45rem);
+  --text-display-md: clamp(1.35rem, 2vw, 1.85rem);
+  --text-display-lg: clamp(1.8rem, 3vw, 2.6rem);
+
+  /* Typography — line heights */
+  --leading-none: 1;
+  --leading-tight: 1.15;
+  --leading-snug: 1.25;
+  --leading-normal: 1.35;
+  --leading-relaxed: 1.45;
+  --leading-loose: 1.6;
+
+  /* Previously undefined variables — aliases for backward compatibility */
+  --danger: var(--danger-fg);
+  --surface-raised: var(--bg-elevated);
+  --bg-input: var(--bg-surface);
+  --bg-muted: var(--bg-surface-muted);
+  --status-danger: var(--danger-fg);
+  --status-warning: var(--warning-fg);
+  --status-positive: var(--success-fg);
+
+  /* ⚠️ LEGACY — do not use in new code. Use semantic names instead.
+     Kept for backward compatibility during migration.
+     --bg         → use --bg-canvas
+     --bg-soft    → use --bg-surface-muted
+     --panel      → use --bg-surface
+     --panel-strong → use --bg-surface-muted
+     --panel-border → use --border-default
+     --text       → use --text-primary
+     --text-muted → use --text-secondary
+     --text-soft  → use --text-tertiary
+     --accent     → use --accent-primary
+     --mint       → use --text-success
+     --rose       → use --text-danger
+     --amber      → use --text-warning
+     --mint-soft  → use --bg-success-soft
+     --rose-soft  → use --bg-danger-soft */
   --bg: var(--bg-canvas);
   --bg-soft: var(--bg-surface-muted);
   --panel: var(--bg-surface);
@@ -222,6 +293,7 @@
   --chart-7: #d172ae;
   --chart-8: #8690aa;
   --panel-shadow: 0 4px 24px rgb(0 0 0 / 50%);
+  --shadow-color: rgb(0 0 0 / 25%);
 
   /* dbt resource type soft fills — rgba matches dark chart hues */
   --dbt-type-source-soft: rgb(69 196 154 / 20%);

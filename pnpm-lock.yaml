@@ -61,6 +61,9 @@ importers:
       stylelint-config-standard:
         specifier: ^40.0.0
         version: 40.0.0(stylelint@17.6.0(typescript@6.0.2))
+      stylelint-declaration-strict-value:
+        specifier: ^1.11.1
+        version: 1.11.1(stylelint@17.6.0(typescript@6.0.2))
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -3389,6 +3392,12 @@ packages:
     engines: {node: '>=20.19.0'}
     peerDependencies:
       stylelint: ^17.0.0
+
+  stylelint-declaration-strict-value@1.11.1:
+    resolution: {integrity: sha512-DYihiMuKGk9AeCYp+c3PMy6Z+Qu6yb6wRLeXQJZVMdXV+QOqs7P+Xj6jt8RVTgFJfII+cEQaFI5uWu08WwlkOA==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      stylelint: '>=16 <=17'
 
   stylelint@17.6.0:
     resolution: {integrity: sha512-tokrsMIVAR9vAQ/q3UVEr7S0dGXCi7zkCezPRnS2kqPUulvUh5Vgfwngrk4EoAoW7wnrThqTdnTFN5Ra7CaxIg==}
@@ -7772,6 +7781,10 @@ snapshots:
     dependencies:
       stylelint: 17.6.0(typescript@6.0.2)
       stylelint-config-recommended: 18.0.0(stylelint@17.6.0(typescript@6.0.2))
+
+  stylelint-declaration-strict-value@1.11.1(stylelint@17.6.0(typescript@6.0.2)):
+    dependencies:
+      stylelint: 17.6.0(typescript@6.0.2)
 
   stylelint@17.6.0(typescript@6.0.2):
     dependencies:

@@ -15,7 +15,11 @@ Do not change `@import` order without checking for specificity/cascade regressio
 
 ## CSS ↔ TypeScript colors
 
-Canvas and chart code cannot read CSS variables directly in all paths. **`src/constants/themeColors.ts` mirrors** the chart-related custom properties in `tokens.css` (light and dark). When you change chart or graph palette tokens, update **both** places until a codegen pipeline (ADR 0022 Phase 2) exists.
+`src/constants/themeColors.generated.ts` is **auto-generated** from `tokens.css` by `pnpm tokens:sync` (script: `scripts/sync-css-tokens-to-ts.mjs`). When you change any token in `tokens.css`, run `pnpm tokens:sync` and commit the generated file. CI verifies freshness via `pnpm tokens:check`.
+
+Canvas, SVG, and chart code that cannot use CSS `var()` should import from `themeColors.generated.ts`.
+
+The **legacy** manual mirror `src/constants/themeColors.ts` remains for existing consumers (status hex maps, canvas colors, resource-type fills) that have not yet been migrated to the generated file.
 
 ## Status colors in TypeScript
 
