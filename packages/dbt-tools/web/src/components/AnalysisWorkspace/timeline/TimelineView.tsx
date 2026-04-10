@@ -29,7 +29,12 @@ import {
   timelineGanttHasCompileExecutePhases,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { EntityInspector, formatResourceTypeLabel, SectionCard, WorkspaceScaffold } from "../shared";
+import {
+  EntityInspector,
+  formatResourceTypeLabel,
+  SectionCard,
+  WorkspaceScaffold,
+} from "../shared";
 import {
   TimelineSearchControls,
   type TimelineTypeFilterHint,
@@ -297,8 +302,7 @@ function TimelineInspector({
         },
         {
           label: "Open in Runs",
-          onClick: () =>
-            onNavigateTo("runs", { executionId: item.unique_id }),
+          onClick: () => onNavigateTo("runs", { executionId: item.unique_id }),
         },
       ]}
     />
