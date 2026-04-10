@@ -8,11 +8,11 @@ A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifact
 
 ## Packages
 
-| Package                               | Description                                                     |
-| ------------------------------------- | --------------------------------------------------------------- |
+| Package                               | Description                                                                       |
+| ------------------------------------- | --------------------------------------------------------------------------------- |
 | [`@dbt-tools/core`](./core/README.md) | Reusable analysis substrate for dependency, execution, and inventory intelligence |
 | [`@dbt-tools/cli`](./cli/README.md)   | Structured CLI interface (`dbt-tools`) for operators, automation, and agents      |
-| [`@dbt-tools/web`](./web/README.md)   | Actionable investigation UI for artifact-driven analysis (works without AI)        |
+| [`@dbt-tools/web`](./web/README.md)   | Actionable investigation UI for artifact-driven analysis (works without AI)       |
 
 ---
 
@@ -33,12 +33,12 @@ graph TD
 
 ## When to Use Which Package
 
-| I want to…                                                                                                                                      | Use                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Parse dbt JSON artifacts in TypeScript with type safety                                                                                         | [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md)                                                                     |
-| Build a dependency graph or run execution analysis programmatically                                                                             | [`@dbt-tools/core`](./core/README.md)                                                                                           |
-| Analyze artifacts from the command line with machine-readable outputs for scripts, CI, and agent orchestration                                     | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
-| Investigate dependency structure, execution behavior, and inventory in a browser without requiring an AI assistant                                   | [`@dbt-tools/web`](./web/README.md) · [ADR-0029](../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) |
+| I want to…                                                                                                         | Use                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Parse dbt JSON artifacts in TypeScript with type safety                                                            | [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md)                                                                     |
+| Build a dependency graph or run execution analysis programmatically                                                | [`@dbt-tools/core`](./core/README.md)                                                                                           |
+| Analyze artifacts from the command line with machine-readable outputs for scripts, CI, and agent orchestration     | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
+| Investigate dependency structure, execution behavior, and inventory in a browser without requiring an AI assistant | [`@dbt-tools/web`](./web/README.md) · [ADR-0029](../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) |
 
 ---
 
