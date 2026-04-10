@@ -11,6 +11,8 @@ Before considering a task complete, run both report scripts from the repository 
 - **Coverage report:** `pnpm coverage:report` — produces `coverage-report.json`; must exit 0
 - **Knip:** `pnpm knip` — unused exports, files, and dependencies; must exit 0 (see [`knip.json`](mdc:knip.json))
 
+**Full `pnpm lint` / `pnpm format`** (including verifier normalization) run **Trunk first** via `@trunkio/launcher`, then ESLint, Prettier, Stylelint, and Knip as wired in the root [`package.json`](mdc:package.json). See [AGENTS.md](mdc:AGENTS.md) **Commands** (Trunk).
+
 The **verifier** subagent ([`.claude/agents/verifier.md`](mdc:.claude/agents/verifier.md)) finishes with `pnpm format` and `pnpm lint` (`pnpm verify:normalize`) and may re-run `lint:report`, tests, and `coverage:report` when normalization dirties the tree.
 
 If `coverage-report.json` shows `belowThreshold: true`, add or improve unit tests until coverage meets thresholds (lines 60%, branches 50%, functions 60%, statements 60%).
