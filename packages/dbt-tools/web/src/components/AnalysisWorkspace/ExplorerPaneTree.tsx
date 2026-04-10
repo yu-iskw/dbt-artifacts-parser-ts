@@ -125,7 +125,7 @@ export function ExplorerTreeList({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   /** Initial row height guess before `measureElement` runs (see `.explorer-tree__row` in workspace.css). */
-  const explorerTreeRowEstimatePx = 46;
+  const explorerTreeRowEstimatePx = 30;
 
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual useVirtualizer
   const virtualizer = useVirtualizer({
