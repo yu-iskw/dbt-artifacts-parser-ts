@@ -1,11 +1,12 @@
 {
   "name": "@dbt-tools/web",
   "version": "0.5.1",
-  "description": "Web application for visual dbt artifact analysis",
+  "description": "Browser UI for deterministic dbt artifact investigation — dependencies, execution timelines, inventory (no LLM required)",
   "keywords": [
     "dbt",
     "web",
-    "visualization"
+    "visualization",
+    "operational-intelligence"
   ],
   "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",

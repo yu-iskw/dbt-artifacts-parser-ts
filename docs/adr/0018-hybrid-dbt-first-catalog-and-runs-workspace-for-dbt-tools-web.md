@@ -34,6 +34,8 @@ Research into benchmark products showed a useful split:
 
 The right direction is not a full observability control plane and not a cosmetic restyle. It is a hybrid workspace that keeps dbt artifacts as the source of truth while presenting them through a clearer catalog-and-runs information architecture.
 
+**Note (2026-04-10):** References to **dbt Docs** and **Elementary** above are **UX and information-architecture benchmarks** (navigation, trust cues, triage patterns), not a claim that dbt-tools belongs in the same product category as those vendors. Positioning for artifact-driven **operational intelligence** vs observability SaaS or hosted platform substitutes is recorded in [ADR-0035](0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+
 ## Decision
 
 Evolve `@dbt-tools/web` into a **hybrid dbt-first catalog and runs workspace**.
@@ -195,6 +197,7 @@ flowchart TB
 
 ## References
 
+- [ADR-0035](0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md) — product positioning and category boundaries
 - `packages/dbt-tools/web/src/App.tsx`
 - `packages/dbt-tools/web/src/components/AnalysisWorkspace/AnalysisWorkspace.tsx`
 - `packages/dbt-tools/web/src/services/analyze.ts`

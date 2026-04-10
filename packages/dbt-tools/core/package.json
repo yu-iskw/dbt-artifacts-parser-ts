@@ -1,11 +1,12 @@
 {
   "name": "@dbt-tools/core",
   "version": "0.5.1",
-  "description": "Core library for dbt artifact graph management and analysis",
+  "description": "Composable analysis engine for dbt artifacts (graphs, execution analysis) — substrate for @dbt-tools/cli and @dbt-tools/web",
   "keywords": [
     "dbt",
     "graph",
-    "analysis"
+    "analysis",
+    "operational-intelligence"
   ],
   "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",

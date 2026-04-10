@@ -1,16 +1,16 @@
 # @dbt-tools
 
-A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md).
+**dbt operational intelligence layer:** TypeScript packages that turn `manifest.json`, `run_results.json`, and related dbt artifacts into **structured, deterministic analysis** for operators and for automation (CI, scripts, coding agents). Built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md). Architecture framing: **composable analysis substrate** — see [ADR-0035](../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 ---
 
 ## Packages
 
-| Package                               | Description                                                     |
-| ------------------------------------- | --------------------------------------------------------------- |
-| [`@dbt-tools/core`](./core/README.md) | Core library — dependency graphs, execution analysis, utilities |
-| [`@dbt-tools/cli`](./cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis                    |
-| [`@dbt-tools/web`](./web/README.md)   | React web app for visual artifact analysis                      |
+| Package                               | Description                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| [`@dbt-tools/core`](./core/README.md) | Analysis engine — graphs, execution analysis, snapshots, exports             |
+| [`@dbt-tools/cli`](./cli/README.md)   | CLI (`dbt-tools`) — machine-readable output, schema, field filtering         |
+| [`@dbt-tools/web`](./web/README.md)   | Browser UI — dependency, execution, and inventory views without requiring AI |
 
 ---
 
@@ -35,7 +35,7 @@ graph TD
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Parse dbt JSON artifacts in TypeScript with type safety                                                                                         | [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md)                                                                     |
 | Build a dependency graph or run execution analysis programmatically                                                                             | [`@dbt-tools/core`](./core/README.md)                                                                                           |
-| Analyze artifacts from the command line or feed results to an AI agent                                                                          | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
+| Run structured analysis from the terminal (operators, CI, scripts, agent skills)                                                                | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
 | Visually explore dependencies and execution timelines in a browser (local target, upload, or optional **S3/GCS** via `DBT_TOOLS_REMOTE_SOURCE`) | [`@dbt-tools/web`](./web/README.md) · [ADR-0029](../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) |
 
 ---

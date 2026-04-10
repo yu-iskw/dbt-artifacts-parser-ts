@@ -4,10 +4,10 @@ A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) a
 
 This repo contains two distinct but related ecosystems:
 
-| Ecosystem                                                  | Description                                                                                     |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts |
-| [`@dbt-tools/*`](./packages/dbt-tools/)                    | Analysis tools suite (CLI, core library, web app) built on top of the parser                    |
+| Ecosystem                                                  | Description                                                                                                                                                                |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts                                                                            |
+| [`@dbt-tools/*`](./packages/dbt-tools/)                    | **dbt operational intelligence layer** — CLI, core library, and web app for deterministic analysis of dbt artifacts (see [suite overview](./packages/dbt-tools/README.md)) |
 
 ## Packages
 
@@ -34,13 +34,13 @@ Supported artifacts:
 
 > `packages/dbt-tools/` · npm scope: `@dbt-tools`
 
-A suite of analysis tools for dbt artifacts. Built on `dbt-artifacts-parser`.
+**dbt-tools** turns dbt artifacts into **deterministic operational intelligence** for humans and agents—a **composable analysis substrate** built on `dbt-artifacts-parser`. See [ADR-0035](docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md) for positioning and non-goals.
 
-| Package                                                  | Description                                                                        |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Core library — dependency graphs, execution analysis, formatting                   |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI tool (`dbt-tools`) for artifact analysis, AI-agent-friendly                    |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | React web app for visual artifact analysis (local target, upload, optional S3/GCS) |
+| Package                                                  | Description                                                                          |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Analysis engine — dependency graphs, execution analysis, shared snapshot logic       |
+| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI (`dbt-tools`) — structured JSON, schema introspection, automation and agents     |
+| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | Browser UI for artifact-driven investigation (local target, upload, optional S3/GCS) |
 
 [Suite overview →](./packages/dbt-tools/README.md)
 

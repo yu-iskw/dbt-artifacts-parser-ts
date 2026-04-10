@@ -39,7 +39,8 @@
     "lint:trunk-all": "trunk check --all -y",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "pnpm --filter @dbt-tools/web test:e2e"
+    "test:e2e": "pnpm --filter @dbt-tools/web test:e2e",
+    "verify:normalize": "pnpm format && pnpm lint"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.58.0",
