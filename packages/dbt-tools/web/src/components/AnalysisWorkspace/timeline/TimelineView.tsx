@@ -15,8 +15,10 @@ import {
 } from "./useTimelineNeighborhoodRows";
 import type { AnalysisState, GanttItem, ResourceNode } from "@web/types";
 import type {
+  AssetViewState,
   InvestigationSelectionState,
   TimelineFilterState,
+  WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
@@ -27,7 +29,12 @@ import {
   timelineGanttHasCompileExecutePhases,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { SectionCard, WorkspaceScaffold } from "../shared";
+import { buildCrossViewNavigationTargets } from "@web/lib/analysis-workspace/crossViewNavigation";
+import {
+  RelatedViewsActions,
+  SectionCard,
+  WorkspaceScaffold,
+} from "../shared";
 import {
   TimelineSearchControls,
   type TimelineTypeFilterHint,
@@ -246,11 +253,77 @@ function TimelineSurface({
   );
 }
 
+function TimelineRelatedViewsBar({
+  selectedTimelineItem,
+  onNavigateTo,
+}: {
+  selectedTimelineItem: GanttItem;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => void;
+}) {
+  const selectedTimelineTargets = buildCrossViewNavigationTargets({
+    resourceId: selectedTimelineItem.unique_id,
+    executionId: selectedTimelineItem.unique_id,
+  });
+  return (
+    <div className="timeline-selection-context">
+      <p className="timeline-selection-context__label">
+        Focused timeline item: <strong>{selectedTimelineItem.name}</strong>
+      </p>
+      <RelatedViewsActions
+        label="Related views for selected timeline item"
+        actions={[
+          ...(selectedTimelineTargets.inventory
+            ? [
+                {
+                  label: "Inventory",
+                  onClick: () =>
+                    onNavigateTo(
+                      selectedTimelineTargets.inventory.view,
+                      selectedTimelineTargets.inventory.options,
+                    ),
+                },
+              ]
+            : []),
+          ...(selectedTimelineTargets.runs
+            ? [
+                {
+                  label: "Run",
+                  onClick: () =>
+                    onNavigateTo(
+                      selectedTimelineTargets.runs.view,
+                      selectedTimelineTargets.runs.options,
+                    ),
+                },
+              ]
+            : []),
+          {
+            label: "Health",
+            onClick: () =>
+              onNavigateTo(
+                selectedTimelineTargets.health.view,
+                selectedTimelineTargets.health.options,
+              ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 export function TimelineView({
   analysis,
   filters,
   setFilters,
   onInvestigationSelectionChange,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
@@ -258,6 +331,15 @@ export function TimelineView({
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -327,6 +409,16 @@ export function TimelineView({
     }
     return m;
   }, [analysis.ganttData]);
+
+  const selectedTimelineItem = useMemo(
+    () =>
+      filters.selectedExecutionId == null
+        ? null
+        : (analysis.ganttData.find(
+            (item) => item.unique_id === filters.selectedExecutionId,
+          ) ?? null),
+    [analysis.ganttData, filters.selectedExecutionId],
+  );
 
   const filteredParents: GanttItem[] = useMemo(
     () =>
@@ -488,6 +580,12 @@ export function TimelineView({
         toggleType={toggleType}
         onInvestigationSelectionChange={onInvestigationSelectionChange}
       />
+      {selectedTimelineItem != null ? (
+        <TimelineRelatedViewsBar
+          selectedTimelineItem={selectedTimelineItem}
+          onNavigateTo={onNavigateTo}
+        />
+      ) : null}
     </WorkspaceScaffold>
   );
 }

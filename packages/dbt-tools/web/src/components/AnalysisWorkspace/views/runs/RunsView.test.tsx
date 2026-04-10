@@ -304,6 +304,7 @@ describe("RunsView", () => {
     expect(container.textContent).toContain("Open in Timeline");
     expect(container.textContent).toContain("Open in Inventory");
     expect(container.textContent).toContain("Open in Lineage");
+    expect(container.textContent).toContain("Open in Health");
   });
 
   it("wires the Open in Lineage action to inventory lineage navigation", () => {

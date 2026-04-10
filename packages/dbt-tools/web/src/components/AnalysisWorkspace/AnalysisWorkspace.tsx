@@ -56,6 +56,7 @@ export function AnalysisWorkspace({
             filters={overviewFilters}
             setFilters={onOverviewFiltersChange}
             workspaceSignals={workspaceSignals}
+            onNavigateTo={onNavigateTo}
           />
         )}
         {activeView === "inventory" && (
@@ -94,6 +95,7 @@ export function AnalysisWorkspace({
             filters={timelineFilters}
             setFilters={onTimelineFiltersChange}
             onInvestigationSelectionChange={onInvestigationSelectionChange}
+            onNavigateTo={onNavigateTo}
           />
         )}
       </div>

@@ -94,3 +94,29 @@ test.describe("inventory to timeline cross-view", () => {
     await expect(page).toHaveURL(/[?&]selected=/);
   });
 });
+
+test.describe("timeline pivot actions", () => {
+  test("selected timeline item offers Inventory and Run pivots", async ({
+    page,
+  }) => {
+    await loadWorkspace(page);
+    await page.goto("/?view=timeline&selected=model.jaffle_shop.orders");
+    await expect(
+      page.getByRole("heading", { name: "Timeline" }).first(),
+    ).toBeVisible();
+    await expect(page.getByText("Focused timeline item:")).toBeVisible();
+
+    await page.getByRole("button", { name: "Inventory", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Inventory" }).first(),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]view=inventory/);
+    await expect(page).toHaveURL(/[?&]resource=model\.jaffle_shop\.orders/);
+
+    await page.goto("/?view=timeline&selected=model.jaffle_shop.orders");
+    await page.getByRole("button", { name: "Run", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Runs" }).first()).toBeVisible();
+    await expect(page).toHaveURL(/[?&]view=runs/);
+    await expect(page).toHaveURL(/[?&]selected=model\.jaffle_shop\.orders/);
+  });
+});

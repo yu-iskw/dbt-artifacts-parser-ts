@@ -1,19 +1,32 @@
 import type { AnalysisState } from "@web/types";
+import type { AssetViewState, WorkspaceView } from "@web/lib/analysis-workspace/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import { buildCrossViewNavigationTargets } from "@web/lib/analysis-workspace/crossViewNavigation";
 import { EmptyState } from "../../../EmptyState";
 import { OverviewScopeBadge } from "./OverviewPanel";
+import { RelatedViewsActions } from "../../shared";
 
 export function OverviewActionListCard({
   derived,
   title = "Bottlenecks",
   subtitle = "Longest-running nodes in the filtered execution slice.",
   embedded = false,
+  onNavigateTo,
 }: {
   derived: OverviewDerivedState;
   title?: string;
   subtitle?: string;
   embedded?: boolean;
+  onNavigateTo?: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const topRows = derived.topBottlenecks;
 
@@ -30,21 +43,72 @@ export function OverviewActionListCard({
       {topRows.length > 0 ? (
         <div className="action-list">
           {topRows.map((row, index) => (
-            <div key={row.uniqueId} className="action-list__row">
-              <div className="action-list__body">
-                <strong>{`${index + 1}. ${row.name}`}</strong>
-                <span>
-                  {`${(
-                    (row.executionTime /
-                      Math.max(derived.filteredExecutionTime, 0.0001)) *
-                    100
-                  ).toFixed(1)}% of filtered run`}
-                </span>
-              </div>
-              <div className="action-list__metric">
-                <strong>{formatSeconds(row.executionTime)}</strong>
-              </div>
-            </div>
+            (() => {
+              const targets = buildCrossViewNavigationTargets({
+                resourceId: row.uniqueId,
+                executionId: row.uniqueId,
+              });
+              return (
+                <div key={row.uniqueId} className="action-list__row">
+                  <div className="action-list__body">
+                    <strong>{`${index + 1}. ${row.name}`}</strong>
+                    <span>
+                      {`${(
+                        (row.executionTime /
+                          Math.max(derived.filteredExecutionTime, 0.0001)) *
+                        100
+                      ).toFixed(1)}% of filtered run`}
+                    </span>
+                  </div>
+                  <div className="action-list__metric">
+                    <strong>{formatSeconds(row.executionTime)}</strong>
+                  </div>
+                  {onNavigateTo ? (
+                    <RelatedViewsActions
+                      label={`Related views for ${row.name}`}
+                      actions={[
+                        ...(targets.inventory
+                          ? [
+                              {
+                                label: "Inventory",
+                                onClick: () =>
+                                  onNavigateTo(
+                                    targets.inventory.view,
+                                    targets.inventory.options,
+                                  ),
+                              },
+                            ]
+                          : []),
+                        ...(targets.timeline
+                          ? [
+                              {
+                                label: "Timeline",
+                                onClick: () =>
+                                  onNavigateTo(
+                                    targets.timeline.view,
+                                    targets.timeline.options,
+                                  ),
+                              },
+                            ]
+                          : []),
+                        ...(targets.runs
+                          ? [
+                              {
+                                label: "Run",
+                                onClick: () =>
+                                  onNavigateTo(
+                                    targets.runs.view,
+                                    targets.runs.options,
+                                  ),
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  ) : null}
+                </div>
+              );
+            })()
           ))}
         </div>
       ) : (

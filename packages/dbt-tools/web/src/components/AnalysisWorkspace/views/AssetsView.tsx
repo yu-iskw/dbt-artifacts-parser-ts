@@ -20,6 +20,8 @@ import { AssetTestsSection } from "./AssetTestsSection";
 import { useResourceCode } from "@web/hooks/useResourceCode";
 import { AssetSummarySection } from "./AssetSummarySection";
 import { AssetSqlOrDefinitionCard } from "./AssetsViewSqlDefinitionCard";
+import { buildCrossViewNavigationTargets } from "@web/lib/analysis-workspace/crossViewNavigation";
+import { RelatedViewsActions } from "../shared";
 
 type AssetSectionId = Exclude<AssetViewState["activeTab"], "runtime">;
 
@@ -188,6 +190,10 @@ export function AssetsView({
       }));
     },
   } as const;
+  const relatedTargets = buildCrossViewNavigationTargets({
+    resourceId: resource.uniqueId,
+    executionId: executionRowForSummary?.uniqueId ?? null,
+  });
 
   return (
     <div className="workspace-view asset-workspace">
@@ -198,18 +204,43 @@ export function AssetsView({
           {detailSubtitle}
         </div>
         <div className="asset-hero__actions" aria-label="Asset actions">
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() =>
-              onNavigateTo("timeline", {
-                resourceId: resource.uniqueId,
-                executionId: resource.uniqueId,
-              })
-            }
-          >
-            Open in Timeline
-          </button>
+          <RelatedViewsActions
+            label={`Related views for ${resource.name}`}
+            actions={[
+              ...(relatedTargets.timeline
+                ? [
+                    {
+                      label: "Timeline",
+                      onClick: () =>
+                        onNavigateTo(
+                          relatedTargets.timeline.view,
+                          relatedTargets.timeline.options,
+                        ),
+                    },
+                  ]
+                : []),
+              ...(relatedTargets.runs
+                ? [
+                    {
+                      label: "Run",
+                      onClick: () =>
+                        onNavigateTo(
+                          relatedTargets.runs.view,
+                          relatedTargets.runs.options,
+                        ),
+                    },
+                  ]
+                : []),
+              {
+                label: "Health",
+                onClick: () =>
+                  onNavigateTo(
+                    relatedTargets.health.view,
+                    relatedTargets.health.options,
+                  ),
+              },
+            ]}
+          />
         </div>
       </section>
       <div className="asset-workspace__body">

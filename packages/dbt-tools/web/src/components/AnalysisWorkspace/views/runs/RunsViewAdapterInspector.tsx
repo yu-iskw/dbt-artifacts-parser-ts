@@ -6,6 +6,7 @@ import {
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
 import { EntityInspector, formatResourceTypeLabel } from "../../shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import { buildCrossViewNavigationTargets } from "@web/lib/analysis-workspace/crossViewNavigation";
 
 function formatInspectorFields(
   row: ExecutionRow,
@@ -95,6 +96,10 @@ export function RunsAdapterInspector({
           ]
         : [];
   const sections = [...normalizedSections, ...rawFieldSection];
+  const relatedTargets = buildCrossViewNavigationTargets({
+    resourceId: row.uniqueId,
+    executionId: row.uniqueId,
+  });
 
   return (
     <EntityInspector
@@ -116,30 +121,46 @@ export function RunsAdapterInspector({
       ]}
       sections={sections}
       actions={[
+        ...(relatedTargets.timeline
+          ? [
+              {
+                label: "Open in Timeline",
+                onClick: () =>
+                  onNavigateTo(
+                    relatedTargets.timeline.view,
+                    relatedTargets.timeline.options,
+                  ),
+              },
+            ]
+          : []),
+        ...(relatedTargets.inventory
+          ? [
+              {
+                label: "Open in Inventory",
+                onClick: () =>
+                  onNavigateTo(
+                    relatedTargets.inventory.view,
+                    relatedTargets.inventory.options,
+                  ),
+              },
+            ]
+          : []),
+        ...(relatedTargets.lineage
+          ? [
+              {
+                label: "Open in Lineage",
+                onClick: () =>
+                  onNavigateTo(
+                    relatedTargets.lineage.view,
+                    relatedTargets.lineage.options,
+                  ),
+              },
+            ]
+          : []),
         {
-          label: "Open in Timeline",
+          label: "Open in Health",
           onClick: () =>
-            onNavigateTo("timeline", {
-              resourceId: row.uniqueId,
-              executionId: row.uniqueId,
-            }),
-        },
-        {
-          label: "Open in Inventory",
-          onClick: () =>
-            onNavigateTo("inventory", {
-              resourceId: row.uniqueId,
-              assetTab: "summary",
-            }),
-        },
-        {
-          label: "Open in Lineage",
-          onClick: () =>
-            onNavigateTo("inventory", {
-              resourceId: row.uniqueId,
-              assetTab: "lineage",
-              rootResourceId: row.uniqueId,
-            }),
+            onNavigateTo(relatedTargets.health.view, relatedTargets.health.options),
         },
       ]}
     />

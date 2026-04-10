@@ -269,6 +269,45 @@ describe("AssetsView", () => {
     cleanupRoot(root, container);
   });
 
+  it("renders related view pivots for the selected asset", () => {
+    const resource = makeResource();
+    const executionRow = {
+      uniqueId: resource.uniqueId,
+      name: resource.name,
+      resourceType: "model",
+      packageName: "jaffle_shop",
+      path: resource.path,
+      status: "success",
+      statusTone: "positive",
+      executionTime: 3.63,
+      threadId: "Thread-1",
+      start: null,
+      end: null,
+    } as ExecutionRow;
+    const { container, root, onNavigateTo } = renderAssetsView({
+      resource,
+      analysis: makeAnalysis([resource], [executionRow]),
+    });
+
+    expect(container.textContent).toContain("Timeline");
+    expect(container.textContent).toContain("Run");
+    expect(container.textContent).toContain("Health");
+
+    const runButton = [...container.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Run"),
+    ) as HTMLButtonElement;
+    expect(runButton).toBeTruthy();
+    act(() => {
+      runButton.click();
+    });
+    expect(onNavigateTo).toHaveBeenCalledWith("runs", {
+      executionId: resource.uniqueId,
+      resourceId: resource.uniqueId,
+    });
+
+    cleanupRoot(root, container);
+  });
+
   it("shows adapter response on the asset summary when snapshot includes it", () => {
     const resource = makeResource({
       adapterMetrics: {

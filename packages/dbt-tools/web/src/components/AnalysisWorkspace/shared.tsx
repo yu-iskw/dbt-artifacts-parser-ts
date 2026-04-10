@@ -197,6 +197,22 @@ export function QuickJumpActions({
   );
 }
 
+export function RelatedViewsActions({
+  label = "Related views",
+  actions,
+}: {
+  label?: string;
+  actions: { label: string; onClick: () => void; disabled?: boolean }[];
+}) {
+  if (actions.length === 0) return null;
+  return (
+    <div className="related-views-actions" role="group" aria-label={label}>
+      <span className="related-views-actions__label">{label}</span>
+      <QuickJumpActions actions={actions} />
+    </div>
+  );
+}
+
 export function EntityInspector({
   eyebrow,
   title,
