@@ -1,26 +1,12 @@
 # @dbt-tools/web
 
-Web investigation workspace for **actionable dbt operational intelligence** from artifacts: trace dependencies, inspect execution timing, identify bottlenecks, assess blast radius, and review inventory/readiness context.
-
-The web app is intentionally useful without AI. It supports deterministic investigation workflows in local-first or controlled environments, with optional remote run discovery from S3/GCS.
+React application for visual dbt artifact analysis: dependency graphs, execution timelines, inventory views, and optional remote runs from S3 or GCS.
 
 **End users:** install from npm and run **`dbt-tools-web`** (see below). **Contributors:** clone the monorepo and use Vite — see [Developing from source](#developing-from-source) and [CONTRIBUTING.md](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/CONTRIBUTING.md).
 
 Full operator topics (Docker, GHCR, remote sources, Vite-only options) live in the [user guide](../../../docs/user-guide-dbt-tools-web.md).
 
 ---
-
-## Positioning
-
-- **Role in dot-tools:** operator-facing investigation workspace on top of deterministic artifact analysis.
-- **Actionability over visualization-only:** views are designed to move from symptom to likely next checks (critical path, bottlenecks, dependencies, resource inventory, freshness/readiness).
-- **AI stance:** no chat/copilot dependency; AI can be layered later on structured outputs if needed.
-
-### Non-goals
-
-- Not a hosted dbt execution platform.
-- Not a generic observability SaaS replacement.
-- Not merely a DAG viewer.
 
 ## Prerequisites
 
@@ -68,11 +54,11 @@ You can also set **`DBT_TOOLS_TARGET_DIR`** (or legacy `DBT_TARGET_DIR` / `DBT_T
 
 ## Features
 
-- **Dependency graph** — trace upstream/downstream blast radius and likely impact paths
-- **Execution timeline** — inspect per-node timings, critical path, and bottlenecks
-- **Local artifacts** — investigate runs in local or controlled environments from `manifest.json` / `run_results.json`
+- **Dependency graph** — interactive lineage
+- **Execution timeline** — Gantt-style `run_results` with critical path
+- **Local artifacts** — read `manifest.json` / `run_results.json` from a target directory via server-side routes
 - **Remote sources (S3 / GCS)** — optional `DBT_TOOLS_REMOTE_SOURCE`; server-side credentials; UI prompts before switching runs ([ADR-0029](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md))
-- **Large manifests** — web workers and virtualization keep investigation workflows usable at high scale
+- **Large manifests** — web workers and virtualization for very large projects
 
 ---
 

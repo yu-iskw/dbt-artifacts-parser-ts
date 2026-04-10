@@ -6,7 +6,7 @@ Date: 2026-03-13
 
 Accepted
 
-Depends-on [6. Artifact-first and agent-compatible positioning of dbt-tools (superseded in part)](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
+Depends-on [6. Artifact-first agent-first positioning of dbt-tools](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
 
 Extends web workspace MVP [12. Optional default dbt target directory for web dev server](0012-optional-default-dbt-target-directory-for-web-dev-server.md)
 

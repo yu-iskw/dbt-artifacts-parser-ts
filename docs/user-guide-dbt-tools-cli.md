@@ -1,6 +1,6 @@
 # User guide: @dbt-tools/cli
 
-Extended notes for automation and agents using **`dbt-tools`** as a deterministic structured interface. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
+Extended notes for automation and AI agents using **`dbt-tools`**. For the full command reference (`summary`, `graph`, `run-report`, `deps`, `schema`), see the [package README](../packages/dbt-tools/cli/README.md).
 
 ---
 
@@ -20,18 +20,6 @@ npx @dbt-tools/cli --help
 ```
 
 ---
-
-## Contract assumptions for automation
-
-Treat the CLI as a stable machine contract over dbt artifacts:
-
-- outputs are deterministic for a given artifact set and flags
-- non-TTY defaults to JSON for programmatic consumption
-- `schema` exposes command/option shapes for dynamic clients
-- `--fields` supports low-noise payload shaping
-- error `code` values are intended for branching/retries
-
-This contract is useful with or without AI; shell scripts and CI jobs are first-class consumers.
 
 ## Schema introspection
 
