@@ -17,12 +17,12 @@ When starting work in a new cloud environment, run:
 bash scripts/bootstrap-ci-tools.sh
 ```
 
-This script automatically installs all required tools for cloud agents:
+This script automatically installs all required tools for cloud agents following Trunk's best practices:
 
 **Critical (hard failures if install fails):**
 - Node.js version verification against `.node-version`
 - `pnpm` (package manager)
-- `trunk` CLI (linting/formatting)
+- `trunk` CLI via `@trunkio/launcher` (dev dependency in `package.json`)
 
 **Recommended (installs if missing; non-critical if install fails):**
 - `codeql` v2.25.1+ (security scanning, downloaded from GitHub)
@@ -30,6 +30,11 @@ This script automatically installs all required tools for cloud agents:
 
 **Optional (checks but doesn't install):**
 - `make` (build automation)
+
+**Trunk installation strategy (best practice):**
+- Primary: Installed as dev dependency → available from `node_modules/.bin/trunk` after `pnpm install`
+- Fallback: Uses global `trunk` if already in PATH
+- Last resort: Installs globally via npm if not found locally
 
 See [AGENTS.md — Cloud agent bootstrap workflow](AGENTS.md#cloud-agent-bootstrap-workflow) for detailed behavior and fallback commands.
 

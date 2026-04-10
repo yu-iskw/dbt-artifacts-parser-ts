@@ -50,14 +50,17 @@ When working in fresh cloud environments (Claude Code cloud, Codex cloud, etc.),
 bash scripts/bootstrap-ci-tools.sh
 ```
 
-This script installs and configures all required tools for cloud agents:
+This script installs and configures all required tools for cloud agents using best practices:
 
 **Critical tools (required):**
 1. Verifies Node.js version against [`.node-version`](.node-version)
 2. Enables Corepack (if available)
 3. Installs `pnpm` if missing (package manager)
-4. Runs `pnpm install --frozen-lockfile` (dependencies)
-5. Installs `trunk` CLI if missing (linting/formatting)
+4. Runs `pnpm install --frozen-lockfile` (installs **all dependencies including `@trunkio/launcher`**)
+5. Ensures `trunk` CLI is available:
+   - **Preferred:** Uses trunk from `node_modules/.bin` (installed as dev dependency via pnpm)
+   - **Fallback:** Uses global `trunk` if available
+   - **Last resort:** Installs globally via `npm install -g @trunkio/launcher`
 6. Runs `trunk install` (downloads runtimes from [`.trunk/trunk.yaml`](.trunk/trunk.yaml))
 
 **Recommended tools (installed if missing):**
@@ -68,6 +71,8 @@ This script installs and configures all required tools for cloud agents:
 9. Verifies `make` is available (useful for build automation)
 
 The script is **idempotent and safe to run multiple times**. It does not fail if optional tools cannot be installed; it reports status and continues.
+
+**Note on Trunk:** Following [Trunk's official recommendations](https://github.com/trunk-io/docs/blob/main/code-quality/overview/cli/getting-started/install.md), `@trunkio/launcher` is installed as a **dev dependency** in `package.json`. This ensures version consistency across developers and cloud environments.
 
 **Trunk-backed vs. fallback commands:**
 

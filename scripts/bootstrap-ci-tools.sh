@@ -126,7 +126,8 @@ _check_critical_tools() {
     critical_ok=false
   fi
 
-  if command -v trunk &> /dev/null; then
+  # Check trunk (in node_modules or global PATH)
+  if [[ -x "$REPO_ROOT/node_modules/.bin/trunk" ]] || command -v trunk &> /dev/null; then
     echo -e "    ${GREEN}✓${NC} trunk"
   else
     echo -e "    ${RED}✗${NC} trunk (CRITICAL)"
@@ -226,35 +227,42 @@ else
 fi
 echo
 
-# Step 5: Install trunk CLI (required)
-echo -e "${BLUE}[5/10]${NC} Trunk CLI installation"
-TRUNK_NEEDS_INSTALL=false
+# Step 5: Ensure Trunk CLI is available (installed as dev dependency)
+echo -e "${BLUE}[5/10]${NC} Trunk CLI setup"
 
-# Check if trunk command is available and executable
-if command -v trunk &> /dev/null; then
-  echo -e "  ${GREEN}✓ trunk already installed$(trunk --version 2>/dev/null | head -1 | sed 's/^/ - /' || echo)${NC}"
-else
-  echo "  trunk not found, installing via npm..."
-  TRUNK_NEEDS_INSTALL=true
+# Check if trunk is available (should be in node_modules from pnpm install)
+TRUNK_FOUND=false
+
+# Method 1: Check if trunk is in node_modules/.bin (installed as dev dependency)
+if [[ -x "$REPO_ROOT/node_modules/.bin/trunk" ]]; then
+  TRUNK_FOUND=true
+  TRUNK_PATH="$REPO_ROOT/node_modules/.bin/trunk"
+  TRUNK_VERSION=$("$TRUNK_PATH" --version 2>/dev/null | head -1 || echo "installed")
+  echo -e "  ${GREEN}✓ trunk available via node_modules (v$TRUNK_VERSION)${NC}"
 fi
 
-# Install trunk if needed
-if [[ "$TRUNK_NEEDS_INSTALL" == "true" ]]; then
-  echo "  Installing @trunkio/launcher globally..."
+# Method 2: Check if trunk is in global PATH
+if [[ "$TRUNK_FOUND" == "false" ]] && command -v trunk &> /dev/null; then
+  TRUNK_FOUND=true
+  TRUNK_PATH="$(command -v trunk)"
+  TRUNK_VERSION=$(trunk --version 2>/dev/null | head -1 || echo "installed")
+  echo -e "  ${GREEN}✓ trunk found in PATH ($TRUNK_VERSION)${NC}"
+fi
 
-  # Install trunk
+# Method 3: Install trunk globally as fallback
+if [[ "$TRUNK_FOUND" == "false" ]]; then
+  echo "  trunk not found, installing @trunkio/launcher globally..."
   if npm install -g @trunkio/launcher 2>&1 | grep -v "^npm notice" | grep -v "^npm info" > /dev/null; then
-    # Verify trunk is now in PATH and executable
     if command -v trunk &> /dev/null; then
-      # Try to get version; network errors are OK
+      TRUNK_PATH="$(command -v trunk)"
       TRUNK_VERSION=$(trunk --version 2>/dev/null | head -1 || echo "installed")
-      echo -e "  ${GREEN}✓ trunk installed successfully ($TRUNK_VERSION)${NC}"
+      echo -e "  ${GREEN}✓ trunk installed globally ($TRUNK_VERSION)${NC}"
     else
-      echo -e "  ${RED}✗ trunk not found in PATH after installation${NC}"
+      echo -e "  ${RED}✗ Failed to install trunk${NC}"
       exit 1
     fi
   else
-    echo -e "  ${RED}✗ Failed to install trunk via npm${NC}"
+    echo -e "  ${RED}✗ Failed to install @trunkio/launcher${NC}"
     exit 1
   fi
 fi
@@ -262,11 +270,20 @@ echo
 
 # Step 6: Run trunk install to set up runtimes and tools
 echo -e "${BLUE}[6/10]${NC} Trunk runtime and tool installation"
-if command -v trunk &> /dev/null; then
-  echo "  Running 'trunk install' to download runtimes..."
+
+# Use the trunk path we found/installed in Step 5
+if [[ -z "${TRUNK_PATH:-}" ]]; then
+  # Fallback: try to find trunk
+  if command -v trunk &> /dev/null; then
+    TRUNK_PATH="$(command -v trunk)"
+  fi
+fi
+
+if [[ -n "${TRUNK_PATH:-}" ]] && [[ -x "$TRUNK_PATH" ]]; then
+  echo "  Running 'trunk install' via $TRUNK_PATH..."
 
   # Capture trunk install output
-  TRUNK_INSTALL_OUTPUT=$(trunk install 2>&1 || true)
+  TRUNK_INSTALL_OUTPUT=$("$TRUNK_PATH" install 2>&1 || true)
   TRUNK_INSTALL_EXIT=$?
 
   # Check for success indicators
