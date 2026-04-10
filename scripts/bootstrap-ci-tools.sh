@@ -33,7 +33,8 @@ NC='\033[0m' # No Color
 # Helper Functions (defined before use)
 # ============================================================================
 
-# Install CodeQL from GitHub releases
+# Install CodeQL bundle from GitHub (following GitHub's best practice)
+# https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/scan-from-the-command-line/setting-up-the-codeql-cli
 _install_codeql() {
   local TMPDIR
   TMPDIR=$(mktemp -d)
@@ -45,40 +46,67 @@ _install_codeql() {
   local ARCH
   ARCH=$(uname -m)
 
-  local PATTERN
+  # Map to CodeQL bundle naming convention
+  local BUNDLE_PATTERN
   if [[ "$SYSTEM" == "linux" && "$ARCH" == "x86_64" ]]; then
-    PATTERN="linux64"
-  elif [[ "$SYSTEM" == "darwin" ]]; then
-    PATTERN="macos"
+    BUNDLE_PATTERN="linux64"
+  elif [[ "$SYSTEM" == "darwin" && "$ARCH" == "x86_64" ]]; then
+    BUNDLE_PATTERN="macos"
+  elif [[ "$SYSTEM" == "darwin" && "$ARCH" == "arm64" ]]; then
+    BUNDLE_PATTERN="osx64"
   else
     return 1
   fi
 
-  # Fetch and download
+  # Fetch latest CodeQL bundle from github/codeql-action releases
   local RELEASE_JSON
-  RELEASE_JSON=$(curl -s https://api.github.com/repos/github/codeql-cli-binaries/releases/latest 2>/dev/null || echo '{}')
+  RELEASE_JSON=$(curl -s https://api.github.com/repos/github/codeql-action/releases/latest 2>/dev/null || echo '{}')
 
   if echo "$RELEASE_JSON" | grep -q "message.*API rate limit" 2>/dev/null; then
     return 1
   fi
 
+  # Look for bundle (prefer .tar.zst, fall back to .tar.gz)
   local DOWNLOAD_URL
-  DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "$PATTERN" | cut -d'"' -f4 | head -1)
+  DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "codeql-bundle-$BUNDLE_PATTERN" | grep "\.tar\.zst" | cut -d'"' -f4 | head -1)
+
+  if [[ -z "$DOWNLOAD_URL" ]]; then
+    # Fall back to tar.gz if zst not available
+    DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url" | grep "codeql-bundle-$BUNDLE_PATTERN" | grep "\.tar\.gz" | cut -d'"' -f4 | head -1)
+  fi
 
   if [[ -z "$DOWNLOAD_URL" ]]; then
     return 1
   fi
 
-  # Download and extract
-  if curl -L -o "$TMPDIR/codeql.zip" "$DOWNLOAD_URL" 2>/dev/null && \
-     mkdir -p "$HOME/.local/bin" && \
-     unzip -q "$TMPDIR/codeql.zip" -d "$HOME/.local/bin" 2>/dev/null; then
+  # Download and extract the bundle
+  local BUNDLE_FILE="$TMPDIR/codeql-bundle.tar.gz"
+  if [[ "$DOWNLOAD_URL" == *".tar.zst" ]]; then
+    BUNDLE_FILE="$TMPDIR/codeql-bundle.tar.zst"
+  fi
 
-    # Add to PATH
-    if ! grep -q "$HOME/.local/bin" <<< "$PATH" 2>/dev/null; then
-      export PATH="$HOME/.local/bin:$PATH"
+  if curl -L -o "$BUNDLE_FILE" "$DOWNLOAD_URL" 2>/dev/null; then
+    mkdir -p "$HOME/.local/codeql"
+
+    # Extract based on file type
+    if [[ "$BUNDLE_FILE" == *".tar.zst" ]]; then
+      if command -v zstd &> /dev/null; then
+        tar -xf "$BUNDLE_FILE" -C "$HOME/.local/codeql" 2>/dev/null
+      else
+        # Fall back to tar.gz if zstd not available
+        return 1
+      fi
+    else
+      tar -xzf "$BUNDLE_FILE" -C "$HOME/.local/codeql" 2>/dev/null
     fi
-    return 0
+
+    # Add codeql directory to PATH
+    if [[ -x "$HOME/.local/codeql/codeql/codeql" ]]; then
+      if ! grep -q "$HOME/.local/codeql/codeql" <<< "$PATH" 2>/dev/null; then
+        export PATH="$HOME/.local/codeql/codeql:$PATH"
+      fi
+      return 0
+    fi
   fi
 
   return 1

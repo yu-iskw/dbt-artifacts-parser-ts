@@ -64,7 +64,9 @@ This script installs and configures all required tools for cloud agents using be
 6. Runs `trunk install` (downloads runtimes from [`.trunk/trunk.yaml`](.trunk/trunk.yaml))
 
 **Recommended tools (installed if missing):**
-7. Installs `codeql` if missing (security scanning via GitHub releases)
+7. Installs `codeql` bundle if missing (security scanning via [github/codeql-action releases](https://github.com/github/codeql-action/releases))
+   - Downloads CodeQL bundle (includes CLI, queries, and libraries)
+   - Follows [GitHub's recommended installation](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/scan-from-the-command-line/setting-up-the-codeql-cli) best practice
 8. Installs `jq` if missing (JSON CLI tool for agent operations)
 
 **Optional tools (checked but not installed):**
