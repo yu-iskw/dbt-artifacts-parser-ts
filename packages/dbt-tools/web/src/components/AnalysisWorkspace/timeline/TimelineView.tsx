@@ -27,7 +27,13 @@ import {
   timelineGanttHasCompileExecutePhases,
 } from "@web/lib/analysis-workspace/utils";
 import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
-import { SectionCard, WorkspaceScaffold } from "../shared";
+import { buildCrossViewPivotActions } from "@web/lib/analysis-workspace/crossViewNavigation";
+import {
+  EntityInspector,
+  RelatedViewPivots,
+  SectionCard,
+  WorkspaceScaffold,
+} from "../shared";
 import {
   TimelineSearchControls,
   type TimelineTypeFilterHint,
@@ -251,6 +257,7 @@ export function TimelineView({
   filters,
   setFilters,
   onInvestigationSelectionChange,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   filters: TimelineFilterState;
@@ -258,6 +265,15 @@ export function TimelineView({
   onInvestigationSelectionChange: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
+  onNavigateTo: (
+    view: "health" | "inventory" | "runs" | "timeline",
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const deferredQuery = useDeferredValue(filters.query);
   const projectName =
@@ -461,13 +477,69 @@ export function TimelineView({
     filters.activeStatuses.size > 0 ||
     hasTypeOverride ||
     filters.query.length > 0;
+  const selectedTimelineItem =
+    filters.selectedExecutionId == null
+      ? null
+      : (analysis.ganttData.find(
+          (item) => item.unique_id === filters.selectedExecutionId,
+        ) ?? null);
 
   return (
     <WorkspaceScaffold
       title="Timeline"
       description="Runtime timing, concurrency, bottlenecks, and execution order."
       className="timeline-view"
+      inspector={
+        selectedTimelineItem ? (
+          <EntityInspector
+            eyebrow="Selected timeline item"
+            title={selectedTimelineItem.name}
+            typeLabel={selectedTimelineItem.resourceType ?? null}
+            stats={[
+              { label: "Status", value: selectedTimelineItem.status },
+              {
+                label: "Duration",
+                value: formatMs(selectedTimelineItem.duration),
+              },
+              {
+                label: "Selected id",
+                value: selectedTimelineItem.unique_id,
+              },
+            ]}
+            sections={[
+              {
+                label: "Context",
+                value:
+                  "Timeline focus is preserved while you pivot to other lenses.",
+              },
+            ]}
+            actions={[
+              {
+                label: "Focus in Timeline",
+                onClick: () =>
+                  setFilters((current) => ({
+                    ...current,
+                    query: selectedTimelineItem.name,
+                    selectedExecutionId: selectedTimelineItem.unique_id,
+                  })),
+              },
+            ]}
+          />
+        ) : null
+      }
     >
+      {selectedTimelineItem ? (
+        <RelatedViewPivots
+          label={`Related views for ${selectedTimelineItem.name}`}
+          actions={buildCrossViewPivotActions({
+            context: {
+              resourceId: selectedTimelineItem.unique_id,
+              executionId: selectedTimelineItem.unique_id,
+            },
+            onNavigateTo,
+          })}
+        />
+      ) : null}
       <TimelineSurface
         analysis={analysis}
         filters={filters}

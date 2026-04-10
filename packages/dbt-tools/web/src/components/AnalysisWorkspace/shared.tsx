@@ -175,6 +175,37 @@ export function WorkspaceScaffold({
   );
 }
 
+export function RelatedViewPivots({
+  actions,
+  label = "Related views",
+}: {
+  actions: {
+    key: string;
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+  }[];
+  label?: string;
+}) {
+  return (
+    <div className="related-view-pivots" role="group" aria-label={label}>
+      <span className="related-view-pivots__label">{label}</span>
+      <div className="entity-inspector__actions">
+        {actions.map((action) => (
+          <button
+            key={action.key}
+            type="button"
+            className="workspace-pill"
+            onClick={action.onClick}
+            disabled={action.disabled}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 export function QuickJumpActions({
   actions,
 }: {

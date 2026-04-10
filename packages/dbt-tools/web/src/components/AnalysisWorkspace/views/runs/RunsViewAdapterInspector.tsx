@@ -4,6 +4,7 @@ import {
   getRunsAdapterField,
   type RunsAdapterColumn,
 } from "@web/lib/analysis-workspace/runsAdapterColumns";
+import { buildCrossViewPivotActions } from "@web/lib/analysis-workspace/crossViewNavigation";
 import { EntityInspector, formatResourceTypeLabel } from "../../shared";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
 
@@ -31,11 +32,11 @@ export function RunsAdapterInspector({
   visibleColumns: RunsAdapterColumn[];
   overflowColumns: RunsAdapterColumn[];
   onNavigateTo: (
-    view: "inventory" | "timeline",
+    view: "health" | "inventory" | "runs" | "timeline",
     options?: {
       resourceId?: string;
       executionId?: string;
-      assetTab?: "summary" | "lineage";
+      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
       rootResourceId?: string;
     },
   ) => void;
@@ -115,33 +116,14 @@ export function RunsAdapterInspector({
         },
       ]}
       sections={sections}
-      actions={[
-        {
-          label: "Open in Timeline",
-          onClick: () =>
-            onNavigateTo("timeline", {
-              resourceId: row.uniqueId,
-              executionId: row.uniqueId,
-            }),
-        },
-        {
-          label: "Open in Inventory",
-          onClick: () =>
-            onNavigateTo("inventory", {
-              resourceId: row.uniqueId,
-              assetTab: "summary",
-            }),
-        },
-        {
-          label: "Open in Lineage",
-          onClick: () =>
-            onNavigateTo("inventory", {
-              resourceId: row.uniqueId,
-              assetTab: "lineage",
-              rootResourceId: row.uniqueId,
-            }),
-        },
-      ]}
+      actions={buildCrossViewPivotActions({
+        context: { resourceId: row.uniqueId, executionId: row.uniqueId },
+        onNavigateTo,
+      }).map((action) => ({
+        label: `Open in ${action.label}`,
+        onClick: action.onClick,
+        disabled: action.disabled,
+      }))}
     />
   );
 }

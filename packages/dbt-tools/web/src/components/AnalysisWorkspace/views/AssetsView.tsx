@@ -13,7 +13,8 @@ import type {
   LineageViewState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
-import { ResourceTypeBadge } from "../shared";
+import { buildCrossViewPivotActions } from "@web/lib/analysis-workspace/crossViewNavigation";
+import { RelatedViewPivots, ResourceTypeBadge } from "../shared";
 import { MaterializationSemanticsBadge } from "../MaterializationSemanticsBadge";
 import { LineagePanel } from "../lineage/LineagePanel";
 import { AssetTestsSection } from "./AssetTestsSection";
@@ -198,18 +199,19 @@ export function AssetsView({
           {detailSubtitle}
         </div>
         <div className="asset-hero__actions" aria-label="Asset actions">
-          <button
-            type="button"
-            className="workspace-pill"
-            onClick={() =>
-              onNavigateTo("timeline", {
+          <RelatedViewPivots
+            label={`Related views for ${resource.name}`}
+            actions={buildCrossViewPivotActions({
+              context: {
                 resourceId: resource.uniqueId,
-                executionId: resource.uniqueId,
-              })
-            }
-          >
-            Open in Timeline
-          </button>
+                executionId: executionRowForSummary?.uniqueId ?? null,
+              },
+              onNavigateTo,
+            }).map((action) => ({
+              ...action,
+              label: `Open in ${action.label}`,
+            }))}
+          />
         </div>
       </section>
       <div className="asset-workspace__body">

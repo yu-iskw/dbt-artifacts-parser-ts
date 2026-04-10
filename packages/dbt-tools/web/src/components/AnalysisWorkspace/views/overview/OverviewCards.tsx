@@ -1,7 +1,9 @@
 import type { AnalysisState } from "@web/types";
 import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import { buildCrossViewPivotActions } from "@web/lib/analysis-workspace/crossViewNavigation";
 import { EmptyState } from "../../../EmptyState";
+import { RelatedViewPivots } from "../../shared";
 import { OverviewScopeBadge } from "./OverviewPanel";
 
 export function OverviewActionListCard({
@@ -9,11 +11,21 @@ export function OverviewActionListCard({
   title = "Bottlenecks",
   subtitle = "Longest-running nodes in the filtered execution slice.",
   embedded = false,
+  onNavigateTo,
 }: {
   derived: OverviewDerivedState;
   title?: string;
   subtitle?: string;
   embedded?: boolean;
+  onNavigateTo?: (
+    view: "health" | "inventory" | "runs" | "timeline",
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const topRows = derived.topBottlenecks;
 
@@ -44,6 +56,18 @@ export function OverviewActionListCard({
               <div className="action-list__metric">
                 <strong>{formatSeconds(row.executionTime)}</strong>
               </div>
+              {onNavigateTo ? (
+                <RelatedViewPivots
+                  label={`Related views for ${row.name}`}
+                  actions={buildCrossViewPivotActions({
+                    context: {
+                      resourceId: row.uniqueId,
+                      executionId: row.uniqueId,
+                    },
+                    onNavigateTo,
+                  })}
+                />
+              ) : null}
             </div>
           ))}
         </div>

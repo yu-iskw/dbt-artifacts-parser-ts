@@ -4,7 +4,9 @@ import type { AnalysisState } from "@web/types";
 import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type {
+  AssetViewState,
   OverviewFilterState,
+  WorkspaceView,
   WorkspaceSignal,
 } from "@web/lib/analysis-workspace/types";
 import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
@@ -38,6 +40,7 @@ export function HealthView({
   filters,
   setFilters,
   workspaceSignals,
+  onNavigateTo,
 }: {
   analysis: AnalysisState;
   projectName: string | null;
@@ -45,6 +48,15 @@ export function HealthView({
   filters: OverviewFilterState;
   setFilters: Dispatch<SetStateAction<OverviewFilterState>>;
   workspaceSignals: WorkspaceSignal[];
+  onNavigateTo: (
+    view: WorkspaceView,
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: AssetViewState["activeTab"];
+      rootResourceId?: string;
+    },
+  ) => void;
 }) {
   const healthExecutionFilters = useMemo(
     () => ({
@@ -92,7 +104,10 @@ export function HealthView({
         />
         <HealthMetricRow analysis={analysis} projectName={projectName} />
         <section className="health-fold__bottlenecks" aria-label="Bottlenecks">
-          <OverviewActionListCard derived={derived} />
+          <OverviewActionListCard
+            derived={derived}
+            onNavigateTo={onNavigateTo}
+          />
         </section>
       </div>
 

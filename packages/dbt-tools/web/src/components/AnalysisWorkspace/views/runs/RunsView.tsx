@@ -29,11 +29,11 @@ export function RunsView({
     SetStateAction<InvestigationSelectionState>
   >;
   onNavigateTo: (
-    view: "inventory" | "timeline",
+    view: "health" | "inventory" | "runs" | "timeline",
     options?: {
       resourceId?: string;
       executionId?: string;
-      assetTab?: "summary" | "lineage";
+      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
       rootResourceId?: string;
     },
   ) => void;

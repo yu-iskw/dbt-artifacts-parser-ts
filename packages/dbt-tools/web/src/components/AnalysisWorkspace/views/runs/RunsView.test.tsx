@@ -303,10 +303,11 @@ describe("RunsView", () => {
     expect(container.textContent).toContain("Selected run item");
     expect(container.textContent).toContain("Open in Timeline");
     expect(container.textContent).toContain("Open in Inventory");
-    expect(container.textContent).toContain("Open in Lineage");
+    expect(container.textContent).toContain("Open in Run");
+    expect(container.textContent).toContain("Open in Health");
   });
 
-  it("wires the Open in Lineage action to inventory lineage navigation", () => {
+  it("wires the Open in Run action to runs navigation", () => {
     const row = makeRow({
       uniqueId: "model.pkg.orders",
       name: "orders",
@@ -329,21 +330,20 @@ describe("RunsView", () => {
       );
     });
 
-    const lineageButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Open in Lineage",
+    const runButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Open in Run",
     );
-    expect(lineageButton).toBeTruthy();
+    expect(runButton).toBeTruthy();
 
     act(() => {
-      lineageButton?.dispatchEvent(
+      runButton?.dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true }),
       );
     });
 
-    expect(onNavigateTo).toHaveBeenCalledWith("inventory", {
+    expect(onNavigateTo).toHaveBeenCalledWith("runs", {
+      executionId: row.uniqueId,
       resourceId: row.uniqueId,
-      assetTab: "lineage",
-      rootResourceId: row.uniqueId,
     });
   });
 });
