@@ -18,11 +18,11 @@ A suite of TypeScript tools for analyzing dbt artifacts, built on [`dbt-artifact
 
 ```mermaid
 graph TD
-  DAP[dbt-artifacts-parser]
+  DAP["dbt-artifacts-parser"]
 
-  DAP -->|parsed artifact types| CORE[@dbt-tools/core]
-  CORE -->|ManifestGraph\nExecutionAnalyzer\nDependencyService| CLI[@dbt-tools/cli\ndbt-tools binary]
-  CORE -->|browser export| WEB[@dbt-tools/web\nReact app]
+  DAP -->|parsed artifact types| CORE["@dbt-tools/core"]
+  CORE -->|ManifestGraph / ExecutionAnalyzer / DependencyService| CLI["@dbt-tools/cli<br/>dbt-tools binary"]
+  CORE -->|browser export| WEB["@dbt-tools/web<br/>React app"]
   DAP -->|direct parse calls| CLI
   DAP -->|direct parse calls| WEB
 ```
