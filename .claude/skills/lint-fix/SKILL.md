@@ -1,7 +1,7 @@
 ---
 name: lint-fix
 description: Format code, run linters and static analysis, and find unused code (ESLint + Knip). Use when the user asks to fix lint, format code, run formatters, find dead code, unused exports, run knip, fix style, tidy code, or run eslint --fix.
-compatibility: Requires pnpm from the repository root; expects `package.json` scripts and repo configs (`eslint.config.mjs`, `knip.json`). **Trunk** is recommended for parity with full `pnpm lint` / `pnpm format` but is **optional**—use `pnpm format:without-trunk` / `pnpm lint:without-trunk` when the `trunk` CLI is not installed.
+compatibility: Requires pnpm from the repository root; expects `package.json` scripts and repo configs (`eslint.config.mjs`, `knip.json`). The **default** path assumes **`pnpm install`** has been run so **`@trunkio/launcher`** is present; use **`pnpm format:without-trunk`** / **`pnpm lint:without-trunk`** only as an escape hatch for **broken or minimal** environments where `trunk` cannot run.
 ---
 
 # Lint Fix
@@ -29,14 +29,16 @@ Activate this skill when the user says or implies:
 
 ## Trunk availability
 
-**Detect:** from the repo root, `command -v trunk` or `which trunk`. Non-zero / empty output means Trunk is not on `PATH`.
+**Default (this monorepo):** From the repository root, run **`pnpm install`** so **`@trunkio/launcher`** is installed. Then use **`pnpm format`** / **`pnpm lint`**, or **`pnpm exec trunk check`**, **`pnpm exec trunk fmt`**, for full parity with CI. **`pnpm`** puts `node_modules/.bin` on `PATH` when running package scripts, but a bare interactive shell often does **not**—so **`command -v trunk`** / **`which trunk`** are **not** authoritative; do not use them alone to decide if Trunk is usable.
 
-| Situation           | Format                                                                             | Lint (full, no fix loops)                                                                  |
-| ------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **Trunk available** | `pnpm format`                                                                      | `pnpm lint`                                                                                |
-| **Trunk missing**   | `pnpm format:without-trunk` (same as `pnpm format:eslint && pnpm format:prettier`) | `pnpm lint:without-trunk` (same as `pnpm lint:eslint && pnpm lint:stylelint && pnpm knip`) |
+**Optional checks** (from repo root): `test -x node_modules/.bin/trunk`, or **`pnpm exec trunk version`**.
 
-Do **not** run `pnpm format` or `pnpm lint` when Trunk is missing: both scripts invoke `trunk` first and will fail immediately.
+| Situation                                 | Format                                                                             | Lint (full, no fix loops)                                                                  |
+| ----------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Use pnpm scripts (launcher present)**   | `pnpm format`                                                                      | `pnpm lint`                                                                                |
+| **Launcher missing / cannot run `trunk`** | `pnpm format:without-trunk` (same as `pnpm format:eslint && pnpm format:prettier`) | `pnpm lint:without-trunk` (same as `pnpm lint:eslint && pnpm lint:stylelint && pnpm knip`) |
+
+Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `trunk` (e.g. missing `node_modules` or failed install): both scripts invoke `trunk` first and will fail immediately. The **`*:without-trunk`** scripts are an **escape hatch**, not the normal workflow here.
 
 **Coverage gap (no Trunk):** [.trunk/trunk.yaml](../../../.trunk/trunk.yaml) enables additional checks (e.g. markdownlint, taplo, shellcheck, actionlint, Trivy, OSV, yamllint) that the no-Trunk path does **not** run. The no-Trunk path matches most **TypeScript / React / CSS / dead-code** work and aligns with agent gates in [`AGENTS.md`](../../../AGENTS.md) (`lint:report`, `knip`) **but** is not CI-identical. Before merge or when editing markdown, YAML, shell, or workflow files, run `pnpm lint` in an environment with Trunk when possible.
 
@@ -44,12 +46,12 @@ Do **not** run `pnpm format` or `pnpm lint` when Trunk is missing: both scripts 
 
 ## Order rule
 
-### Path A — Trunk available
+### Path A — Launcher present (`pnpm format` / `pnpm lint`)
 
 1. **Format first** — `pnpm format` (`trunk fmt` → `eslint . --fix` → `prettier --write .`).
 2. **Lint** — `pnpm lint` (`lint:trunk` → `lint:eslint` → `lint:stylelint` → `knip`), or a slimmer pass: `pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint` (omit Knip if not needed yet).
 
-### Path B — Trunk missing
+### Path B — Escape hatch (`*:without-trunk`)
 
 1. **Format first** — `pnpm format:without-trunk` (or `pnpm format:eslint && pnpm format:prettier`). **Do not** use `pnpm format`.
 2. **Lint** — `pnpm lint:without-trunk` (or the same chain manually). **Do not** use `pnpm lint`.
@@ -69,16 +71,16 @@ Run from the **repository root**.
 
 | Step                      | Command                     | Purpose                                                           |
 | ------------------------- | --------------------------- | ----------------------------------------------------------------- |
-| Format (with Trunk)       | `pnpm format`               | `trunk fmt` → `eslint . --fix` → `prettier --write .`             |
-| Format (no Trunk)         | `pnpm format:without-trunk` | `eslint . --fix` → `prettier --write .` only                      |
-| Lint full (with Trunk)    | `pnpm lint`                 | `lint:trunk` → `lint:eslint` → `lint:stylelint` → **`knip`**      |
-| Lint full (no Trunk)      | `pnpm lint:without-trunk`   | `lint:eslint` → `lint:stylelint` → **`knip`** (no Trunk)          |
+| Format (launcher path)    | `pnpm format`               | `trunk fmt` → `eslint . --fix` → `prettier --write .`             |
+| Format (escape hatch)     | `pnpm format:without-trunk` | `eslint . --fix` → `prettier --write .` only                      |
+| Lint full (launcher path) | `pnpm lint`                 | `lint:trunk` → `lint:eslint` → `lint:stylelint` → **`knip`**      |
+| Lint full (escape hatch)  | `pnpm lint:without-trunk`   | `lint:eslint` → `lint:stylelint` → **`knip`** (no Trunk)          |
 | ESLint report (agents)    | `pnpm lint:report`          | Writes `lint-report.json`; ESLint-only; must exit **0** for green |
 | Stylelint (web CSS)       | `pnpm lint:stylelint`       | `packages/dbt-tools/web/src/**/*.css`                             |
 | Dead code (analyze)       | `pnpm knip`                 | Unused exports/files/deps; must exit **0** when clean             |
 | Dead code (assisted edit) | `pnpm knip:fix`             | Review diff before commit                                         |
 
-**Typical fix sequence — Trunk available:**
+**Typical fix sequence — launcher present:**
 
 ```bash
 pnpm format && pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint && pnpm knip
@@ -86,7 +88,7 @@ pnpm format && pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint && pnp
 
 (Equivalent high-level: `pnpm format` then `pnpm lint`.)
 
-**Typical fix sequence — Trunk unavailable:**
+**Typical fix sequence — escape hatch:**
 
 ```bash
 pnpm format:without-trunk && pnpm lint:without-trunk
@@ -99,10 +101,10 @@ If violations remain:
 1. **Identify:** Read ESLint / Trunk / Stylelint / Knip output.
 2. **Fix:** Minimal edits; for Knip, prefer removing dead code or narrowing **`knip.json`** with a short rationale (shell-only scripts, dynamic imports, published API).
 3. **Verify:**
-   - **Trunk available:** re-run `pnpm format` (or at least ESLint + Prettier), then `pnpm lint:eslint`, **`pnpm knip`**, **`pnpm lint:report`**.
-   - **Trunk missing:** re-run **`pnpm format:without-trunk`**, **`pnpm lint:without-trunk`**, **`pnpm lint:report`**.
+   - **Launcher present:** re-run `pnpm format` (or at least ESLint + Prettier), then `pnpm lint:eslint`, **`pnpm knip`**, **`pnpm lint:report`**.
+   - **Escape hatch:** re-run **`pnpm format:without-trunk`**, **`pnpm lint:without-trunk`**, **`pnpm lint:report`**.
    - For CSS-heavy changes, include **`pnpm lint:stylelint`** in verify if you did not run full `pnpm lint` / `pnpm lint:without-trunk`.
-   - Before relying on CI: run **`pnpm lint`** where Trunk is installed when possible.
+   - Before relying on CI: run **`pnpm lint`** from a repo with **`pnpm install`** completed when possible.
 4. Repeat up to **3** iterations to avoid unbounded loops.
 
 **Policy:** Fix root causes; avoid blanket `eslint-disable` or widening ignores unless unavoidable (see [`AGENTS.md`](../../../AGENTS.md) quality gates).
@@ -114,7 +116,7 @@ When used by the verifier agent, confirm at minimum:
 - `pnpm lint:report` exits **0**
 - `pnpm knip` exits **0**
 
-When **Trunk is unavailable**, also run **`pnpm lint:eslint`** and **`pnpm lint:stylelint`** (or a single **`pnpm lint:without-trunk`**) so non-ESLint issues (especially CSS) are not missed.
+When using the **escape hatch** (`*:without-trunk`), also run **`pnpm lint:eslint`** and **`pnpm lint:stylelint`** (or a single **`pnpm lint:without-trunk`**) so non-ESLint issues (especially CSS) are not missed.
 
 Re-run the relevant commands after fixes before marking the step complete.
 

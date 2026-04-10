@@ -8,7 +8,7 @@ Full stack layout, web app structure, publish workflows, and cross-tool notes (C
 
 - **Package manager:** `pnpm` (monorepo).
 - **Node.js:** version in [`.node-version`](.node-version) (authoritative for local/tooling).
-- **Trunk:** After `pnpm install`, `@trunkio/launcher` provides the `trunk` CLI. Full **`pnpm format`** / **`pnpm lint`** (and `pnpm verify:normalize`) run Trunk first—see [AGENTS.md](AGENTS.md) **Commands** (Trunk) and [CONTRIBUTING.md](CONTRIBUTING.md) prerequisites.
+- **Trunk:** After `pnpm install`, `@trunkio/launcher` provides the `trunk` CLI ([documented pnpm install](https://docs.trunk.io/code-quality/overview/cli/getting-started/install): `pnpm add -D @trunkio/launcher`). Full **`pnpm format`** / **`pnpm lint`** (and `pnpm verify:normalize`) run Trunk first—see [AGENTS.md](AGENTS.md) **Commands** (Trunk) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Quality gates (before claiming work complete)
 
