@@ -43,7 +43,7 @@ test.describe("inventory workspace", () => {
     ).toBeVisible();
     await expect(page.getByText("Asset details")).toHaveCount(0);
     const assetActions = page.locator(".asset-hero__actions");
-    await expect(assetActions).not.toContainText("Open in Runs");
+    await expect(assetActions).toContainText("Open in Runs");
     await expect(assetActions).toContainText(OPEN_IN_TIMELINE_LABEL);
     await expect(assetActions).not.toContainText(EXPAND_LINEAGE_LABEL);
     const lineageCard = page.locator(ASSET_WORKSPACE_SECTION).filter({
@@ -55,7 +55,7 @@ test.describe("inventory workspace", () => {
         exact: true,
       }),
     ).toBeVisible();
-    for (const action of [OPEN_IN_TIMELINE_LABEL]) {
+    for (const action of [OPEN_IN_TIMELINE_LABEL, "Open in Runs"]) {
       await expect(
         assetActions.getByRole("button", { name: action, exact: true }),
       ).toBeVisible();
