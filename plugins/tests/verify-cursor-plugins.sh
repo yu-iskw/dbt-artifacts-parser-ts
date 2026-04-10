@@ -95,7 +95,7 @@ cursor_validate_plugin_structure() {
 	fi
 }
 
-# Cursor Agent CLI: per-plugin validation when preflight passes (see plugins/README.md).
+# Cursor Agent CLI: per-plugin validation when preflight passes (see plugins/CONTRIBUTING.md).
 # Preflight failure → soft-skip (return 0). Missing cursor-agent or broken --help → return 1. Validate failure → return 1.
 cursor_run_plugin_validation() {
 	echo "verify-agent-plugins: Cursor Agent CLI verification (cursor-agent plugin validate)…"
@@ -113,12 +113,12 @@ cursor_run_plugin_validation() {
 	fi
 
 	if ! printf '%s\n' "${cursor_help}" | grep -qE '^[[:space:]]{2}plugin[[:space:]]'; then
-		echo "verify-agent-plugins: preflight — cursor-agent does not list a top-level plugin command; skipping Cursor Agent CLI validation (see plugins/README.md)." >&2
+		echo "verify-agent-plugins: preflight — cursor-agent does not list a top-level plugin command; skipping Cursor Agent CLI validation (see plugins/CONTRIBUTING.md)." >&2
 		return 0
 	fi
 
 	if ! cursor-agent plugin validate -h >/dev/null 2>&1; then
-		echo "verify-agent-plugins: preflight — cursor-agent plugin validate is not available; skipping Cursor Agent CLI validation (see plugins/README.md)." >&2
+		echo "verify-agent-plugins: preflight — cursor-agent plugin validate is not available; skipping Cursor Agent CLI validation (see plugins/CONTRIBUTING.md)." >&2
 		return 0
 	fi
 

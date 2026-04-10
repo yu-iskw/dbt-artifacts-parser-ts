@@ -25,7 +25,7 @@ claude_run_plugin_validation() {
 	fi
 
 	if ! claude plugin validate -h >/dev/null 2>&1; then
-		echo "verify-agent-plugins: preflight — claude plugin validate is not available; skipping Claude Code CLI validation (see plugins/README.md)." >&2
+		echo "verify-agent-plugins: preflight — claude plugin validate is not available; skipping Claude Code CLI validation (see plugins/CONTRIBUTING.md)." >&2
 		return 0
 	fi
 

@@ -23,7 +23,7 @@ So each new workflow must be `plugins/dbt-tools-cli/skills/<id>/SKILL.md`, not a
 ./plugins/tests/verify-agent-plugins.sh structural
 ```
 
-Operational detail and Docker image: [`plugins/README.md`](../../../../plugins/README.md).
+Operational detail and Docker image: [`plugins/CONTRIBUTING.md`](../../../../plugins/CONTRIBUTING.md).
 
 ## What structural does not replace
 

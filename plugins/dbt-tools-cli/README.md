@@ -6,4 +6,4 @@ First-party plugin for **[`@dbt-tools/cli`](../../packages/dbt-tools/cli/README.
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [`dbt-artifacts-status`](skills/dbt-artifacts-status/SKILL.md) | Run `dbt-tools status` first; interpret `readiness` before other CLI commands. |
 
-See [plugins/README.md](../README.md) for marketplace layout, verification, and per-engine manifests.
+See [plugins/README.md](../README.md) for marketplace layout and discovery. For verification, CI commands, and per-engine manifest maintenance, see [plugins/CONTRIBUTING.md](../CONTRIBUTING.md).

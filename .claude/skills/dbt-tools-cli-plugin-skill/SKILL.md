@@ -85,5 +85,6 @@ Link to [packages/dbt-tools/cli/README.md](../../../../packages/dbt-tools/cli/RE
 
 ## Related
 
-- Plugin overview: [`plugins/README.md`](../../../plugins/README.md)
+- Plugin discovery (end users): [`plugins/README.md`](../../../plugins/README.md)
+- Verification and CI (contributors): [`plugins/CONTRIBUTING.md`](../../../plugins/CONTRIBUTING.md)
 - Exemplar skill: [`dbt-artifacts-status`](../../../plugins/dbt-tools-cli/skills/dbt-artifacts-status/SKILL.md)

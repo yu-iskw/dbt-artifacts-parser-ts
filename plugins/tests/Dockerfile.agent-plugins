@@ -1,5 +1,5 @@
 # Agent plugin verification image: bash, jq, Claude Code, Codex, and Cursor Agent CLIs.
-# Run via `make -C plugins test-*` (see plugins/README.md); no docker-compose file.
+# Run via `make -C plugins test-*` (see plugins/CONTRIBUTING.md); no docker-compose file.
 # Build from repository root:
 #   docker build -f plugins/tests/Dockerfile.agent-plugins -t dbt-artifacts-parser-ts:agent-plugins .
 #

@@ -99,7 +99,7 @@ codex_validate_plugin_structure() {
 	fi
 }
 
-# Codex CLI: per-plugin validation when `codex plugin validate` preflight passes (see plugins/README.md).
+# Codex CLI: per-plugin validation when `codex plugin validate` preflight passes (see plugins/CONTRIBUTING.md).
 # Preflight failure → soft-skip (return 0). Missing codex binary → return 1. Validate failure → return 1.
 # Does not call fail/exit — orchestrator runs Codex, Claude, and Cursor independently.
 codex_run_plugin_validation() {
@@ -111,7 +111,7 @@ codex_run_plugin_validation() {
 	fi
 
 	if ! codex plugin validate -h >/dev/null 2>&1; then
-		echo "verify-agent-plugins: preflight — codex plugin validate is not available; skipping Codex CLI validation (see plugins/README.md)." >&2
+		echo "verify-agent-plugins: preflight — codex plugin validate is not available; skipping Codex CLI validation (see plugins/CONTRIBUTING.md)." >&2
 		return 0
 	fi
 

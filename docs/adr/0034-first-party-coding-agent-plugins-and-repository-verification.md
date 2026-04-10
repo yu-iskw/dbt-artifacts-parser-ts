@@ -14,11 +14,11 @@ Multiple coding-agent products (Codex CLI, Claude Code, Cursor Agent CLI) each d
 
 1. **Plugin root:** First-party plugins live under `plugins/<plugin-id>/` with **parallel per-engine manifests** (`.claude-plugin`, `.codex-plugin`, `.cursor-plugin`) and **`skills/`** at the plugin root, following each vendor’s upstream layout expectations.
 
-2. **Discovery split:** **Codex** uses a single repo marketplace at `.agents/plugins/marketplace.json`. **Cursor** uses `.cursor-plugin/marketplace.json`. **Claude Code** does **not** rely on a committed Claude-hosted root `marketplace.json` in this repo; the same on-disk plugin trees are consumed via project or user configuration (see `plugins/README.md` for contributor detail).
+2. **Discovery split:** **Codex** uses a single repo marketplace at `.agents/plugins/marketplace.json`. **Cursor** uses `.cursor-plugin/marketplace.json`. **Claude Code** does **not** rely on a committed Claude-hosted root `marketplace.json` in this repo; the same on-disk plugin trees are consumed via project or user configuration (see `plugins/README.md` for user-facing discovery; `plugins/CONTRIBUTING.md` for contributor wiring and verification).
 
 3. **Catalog alignment:** Cursor and Codex marketplace entries **stay aligned** (same plugin ids and local paths) when verification runs without a single-plugin filter; automated checks enforce that invariant.
 
-4. **Verification strategy:** Structural checks (marketplaces, manifests, layout) run **offline** and **always**. Optional vendor CLI steps run **`plugin validate`** when **preflight** succeeds for that tool. If a vendor CLI does not expose a usable `plugin validate` surface, that vendor phase **soft-skips** (does not fail the run); hard failures apply when validation runs and fails. Pinned tool versions and operational commands live in `plugins/README.md` and the agent-plugins Docker image, not in this ADR.
+4. **Verification strategy:** Structural checks (marketplaces, manifests, layout) run **offline** and **always**. Optional vendor CLI steps run **`plugin validate`** when **preflight** succeeds for that tool. If a vendor CLI does not expose a usable `plugin validate` surface, that vendor phase **soft-skips** (does not fail the run); hard failures apply when validation runs and fails. Pinned tool versions and operational commands live in `plugins/CONTRIBUTING.md` and the agent-plugins Docker image, not in this ADR.
 
 ```mermaid
 flowchart TD
@@ -54,4 +54,4 @@ flowchart TD
 ## References
 
 - [ADR-0006](0006-artifact-first-agent-first-positioning-of-dbt-tools.md) — strategic artifact-first, agent-first positioning for dbt-tools (complementary; not a duplicate of this record).
-- Coarse pointers: `plugins/README.md`; Docker-based verification under `plugins/tests/` (orchestrator `verify-agent-plugins.sh`).
+- Coarse pointers: `plugins/README.md` (end-user discovery and plugin index); `plugins/CONTRIBUTING.md` (verification, pins, CI); Docker-based verification under `plugins/tests/` (orchestrator `verify-agent-plugins.sh`).

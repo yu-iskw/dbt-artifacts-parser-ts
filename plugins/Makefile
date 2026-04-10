@@ -18,7 +18,7 @@ DOCKER_RUN_AGENT_PLUGINS = docker run --rm \
 .PHONY: help test test-all test-structural test-codex test-claude test-cursor build-image clean
 
 help:
-	@echo "Agent plugin verification (see plugins/README.md)"
+	@echo "Agent plugin verification (see plugins/CONTRIBUTING.md)"
 	@echo ""
 	@echo "  make -C plugins test              Same as test-all (VERIFY_TARGET=all)"
 	@echo "  make -C plugins test-all        Full check: structural + all vendor CLIs"
