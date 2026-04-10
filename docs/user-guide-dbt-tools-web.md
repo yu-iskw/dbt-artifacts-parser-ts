@@ -1,8 +1,19 @@
 # User guide: @dbt-tools/web
 
-Operator-focused documentation for the dbt-tools web analyzer. For a short npm-first overview, see the [package README](../packages/dbt-tools/web/README.md). For development setup, see [CONTRIBUTING.md](../CONTRIBUTING.md).
+Operator-focused documentation for the dbt-tools web investigation workspace. For a short npm-first overview, see the [package README](../packages/dbt-tools/web/README.md). For development setup, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ---
+
+## Investigation outcomes (without AI)
+
+The web app is designed to support deterministic investigation workflows directly from artifacts:
+
+- trace dependencies to understand likely blast radius
+- inspect timeline data to identify bottlenecks and critical path contributors
+- review inventory context (resource type/package/tag/path) before deeper checks
+- assess whether artifact pairs are present and fresh enough to trust
+
+This value does not require an AI copilot; AI can consume the same structured artifact outputs separately.
 
 ## Vite dev server (monorepo)
 

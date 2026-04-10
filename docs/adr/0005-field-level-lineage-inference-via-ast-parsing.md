@@ -6,7 +6,7 @@ Date: 2026-03-13
 
 Accepted
 
-Builds on field-level lineage [6. Artifact-first agent-first positioning of dbt-tools](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
+Builds on field-level lineage [6. Artifact-first and agent-compatible positioning of dbt-tools (superseded in part)](0006-artifact-first-agent-first-positioning-of-dbt-tools.md)
 
 ## Context
 
