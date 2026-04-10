@@ -212,10 +212,11 @@ packages/dbt-tools/web/
 ### E2E tests
 
 ```bash
+pnpm --filter @dbt-tools/web run test:e2e:install   # once per machine / after Playwright upgrade
 pnpm test:e2e
 ```
 
-(from repo root: `pnpm test:e2e` as documented in CONTRIBUTING)
+(from repo root; CI runs the same suite in `.github/workflows/test-dbt-tools-web.yml`)
 
 ---
 

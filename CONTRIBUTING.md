@@ -78,8 +78,12 @@ pnpm --filter @dbt-tools/core test
 pnpm --filter @dbt-tools/cli test
 
 # Run E2E tests for the web app (Playwright)
+# First-time / after upgrading @playwright/test: install the browser binary
+pnpm --filter @dbt-tools/web run test:e2e:install
 pnpm test:e2e
 ```
+
+CI runs the same Playwright suite (with `playwright install chromium --with-deps`) in [`.github/workflows/test-dbt-tools-web.yml`](.github/workflows/test-dbt-tools-web.yml) when web, core, parser, or lockfile paths change.
 
 ---
 

@@ -4,8 +4,8 @@ Source of truth: [`packages/dbt-tools/web/playwright.config.ts`](../../../../pac
 
 ## Server and base URL
 
-- **`baseURL`:** `http://localhost:4173`
-- **`webServer`:** `vite preview` on port `4173` only (see config). **`dist/` must exist** before preview starts—run `pnpm build` (or `pnpm --filter @dbt-tools/web build`) first. The GitHub **Test** workflow builds the monorepo before the sharded E2E jobs.
+- **`baseURL`:** `http://127.0.0.1:4173` (see `PLAYWRIGHT_E2E_PORT` in `playwright.config.ts`)
+- **`webServer`:** `vite preview` on that port only (see config). **`dist/` must exist** before preview starts—run `pnpm build` (or `pnpm --filter @dbt-tools/web build`) first. CI runs sharded E2E in [`.github/workflows/test-dbt-tools-web.yml`](../../../../.github/workflows/test-dbt-tools-web.yml) after `pnpm build`.
 - Tests always hit the **preview** server. Do not assume HMR, dev-only env, or behaviors that differ between `pnpm dev` and `vite preview` unless you explicitly verify both.
 
 ## Projects and reporting
@@ -14,7 +14,7 @@ Source of truth: [`packages/dbt-tools/web/playwright.config.ts`](../../../../pac
 - **Parallelism:** `fullyParallel: true`. **`workers`:** Playwright’s default locally; in CI, **2** workers to avoid overloading the single `vite preview` process (raise only after profiling).
 - **Retries:** `1` in CI, `0` locally — balances flake tolerance vs wall time on failures.
 - **Reporters:** `github` + `line` when `CI` is set; `html` locally.
-- **CI:** `.github/workflows/test.yml` runs E2E in **two shards** (`--shard=1/2`, `--shard=2/2`), each with its own `webServer`, plus a **Playwright browser cache** on `~/.cache/ms-playwright`.
+- **CI:** `.github/workflows/test-dbt-tools-web.yml` runs E2E in **two shards** (`--shard=1/2`, `--shard=2/2`), each with its own `webServer`, plus a **Playwright browser cache** on `~/.cache/ms-playwright`.
 - **Traces:** `trace: "on-first-retry"` — useful when debugging flakes in CI.
 
 ## Selector priority
