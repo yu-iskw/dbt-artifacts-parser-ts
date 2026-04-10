@@ -101,6 +101,73 @@ function parentHasFailureSignal(
   return !isPositiveStatus(item.status) || hasTestFail;
 }
 
+function TimelineSelectionInspector({
+  selectedTimelineItem,
+  setFilters,
+  onNavigateTo,
+}: {
+  selectedTimelineItem: GanttItem;
+  setFilters: Dispatch<SetStateAction<TimelineFilterState>>;
+  onNavigateTo: (
+    view: "health" | "inventory" | "runs" | "timeline",
+    options?: {
+      resourceId?: string;
+      executionId?: string;
+      assetTab?: "summary" | "lineage" | "sql" | "runtime" | "tests";
+      rootResourceId?: string;
+    },
+  ) => void;
+}) {
+  return (
+    <>
+      <RelatedViewPivots
+        label={`Related views for ${selectedTimelineItem.name}`}
+        actions={buildCrossViewPivotActions({
+          context: {
+            resourceId: selectedTimelineItem.unique_id,
+            executionId: selectedTimelineItem.unique_id,
+          },
+          onNavigateTo,
+        })}
+      />
+      <EntityInspector
+        eyebrow="Selected timeline item"
+        title={selectedTimelineItem.name}
+        typeLabel={selectedTimelineItem.resourceType ?? null}
+        stats={[
+          { label: "Status", value: selectedTimelineItem.status },
+          {
+            label: "Duration",
+            value: formatMs(selectedTimelineItem.duration),
+          },
+          {
+            label: "Selected id",
+            value: selectedTimelineItem.unique_id,
+          },
+        ]}
+        sections={[
+          {
+            label: "Context",
+            value:
+              "Timeline focus is preserved while you pivot to other lenses.",
+          },
+        ]}
+        actions={[
+          {
+            label: "Focus in Timeline",
+            onClick: () =>
+              setFilters((current) => ({
+                ...current,
+                query: selectedTimelineItem.name,
+                selectedExecutionId: selectedTimelineItem.unique_id,
+              })),
+          },
+        ]}
+      />
+    </>
+  );
+}
+
 function TimelineSurface({
   analysis,
   filters,
@@ -491,55 +558,14 @@ export function TimelineView({
       className="timeline-view"
       inspector={
         selectedTimelineItem ? (
-          <EntityInspector
-            eyebrow="Selected timeline item"
-            title={selectedTimelineItem.name}
-            typeLabel={selectedTimelineItem.resourceType ?? null}
-            stats={[
-              { label: "Status", value: selectedTimelineItem.status },
-              {
-                label: "Duration",
-                value: formatMs(selectedTimelineItem.duration),
-              },
-              {
-                label: "Selected id",
-                value: selectedTimelineItem.unique_id,
-              },
-            ]}
-            sections={[
-              {
-                label: "Context",
-                value:
-                  "Timeline focus is preserved while you pivot to other lenses.",
-              },
-            ]}
-            actions={[
-              {
-                label: "Focus in Timeline",
-                onClick: () =>
-                  setFilters((current) => ({
-                    ...current,
-                    query: selectedTimelineItem.name,
-                    selectedExecutionId: selectedTimelineItem.unique_id,
-                  })),
-              },
-            ]}
+          <TimelineSelectionInspector
+            selectedTimelineItem={selectedTimelineItem}
+            setFilters={setFilters}
+            onNavigateTo={onNavigateTo}
           />
         ) : null
       }
     >
-      {selectedTimelineItem ? (
-        <RelatedViewPivots
-          label={`Related views for ${selectedTimelineItem.name}`}
-          actions={buildCrossViewPivotActions({
-            context: {
-              resourceId: selectedTimelineItem.unique_id,
-              executionId: selectedTimelineItem.unique_id,
-            },
-            onNavigateTo,
-          })}
-        />
-      ) : null}
       <TimelineSurface
         analysis={analysis}
         filters={filters}
