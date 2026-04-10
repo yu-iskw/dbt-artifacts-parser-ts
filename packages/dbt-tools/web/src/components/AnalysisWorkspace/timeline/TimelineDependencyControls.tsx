@@ -66,6 +66,13 @@ export function TimelineDependencyControls({
               +
             </button>
           </div>
+          <button
+            type="button"
+            className="workspace-pill timeline-dependency-controls__max-button"
+            onClick={() => setDepth(TIMELINE_EXTENDED_MAX_HOPS)}
+          >
+            Max
+          </button>
         </div>
         <div
           className="timeline-dependency-controls__divider"
@@ -103,13 +110,6 @@ export function TimelineDependencyControls({
               );
             })}
           </div>
-          <button
-            type="button"
-            className="workspace-pill timeline-dependency-controls__max-button"
-            onClick={() => setDepth(TIMELINE_EXTENDED_MAX_HOPS)}
-          >
-            Max
-          </button>
         </div>
       </div>
     </div>
