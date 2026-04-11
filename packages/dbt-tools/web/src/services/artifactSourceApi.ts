@@ -104,15 +104,35 @@ async function fetchArrayBufferOrNull(
   return response.arrayBuffer();
 }
 
+async function fetchRequiredArtifactBytes(
+  pathname: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    return await fetchArrayBufferOrNull(pathname);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchOptionalArtifactBytes(
+  pathname: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    return await fetchArrayBufferOrNull(pathname);
+  } catch {
+    return null;
+  }
+}
+
 async function fetchArtifactBufferSet(
   urls: ArtifactUrlSet,
 ): Promise<AnalysisArtifactBufferInputs | null> {
   const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
     await Promise.all([
-      fetchArrayBufferOrNull(urls.manifest),
-      fetchArrayBufferOrNull(urls.runResults),
-      fetchArrayBufferOrNull(urls.catalog),
-      fetchArrayBufferOrNull(urls.sources),
+      fetchRequiredArtifactBytes(urls.manifest),
+      fetchRequiredArtifactBytes(urls.runResults),
+      fetchOptionalArtifactBytes(urls.catalog),
+      fetchOptionalArtifactBytes(urls.sources),
     ]);
 
   if (manifestBytes == null || runResultsBytes == null) return null;

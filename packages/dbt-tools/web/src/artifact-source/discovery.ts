@@ -105,8 +105,6 @@ export function discoverLatestArtifactRuns(
           updatedAtMs: Math.max(
             parts.manifest.updatedAtMs,
             parts.runResults.updatedAtMs,
-            parts.catalog?.updatedAtMs ?? 0,
-            parts.sources?.updatedAtMs ?? 0,
           ),
           versionToken: versionTokenForKeys(
             [
