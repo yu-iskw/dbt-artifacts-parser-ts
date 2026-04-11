@@ -25,8 +25,10 @@ describe("analysis worker contract", () => {
       type: "load-analysis",
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId: 1,
-      manifestBytes: encodeJson(manifestJson),
-      runResultsBytes: encodeJson(runResultsJson),
+      artifactBuffers: {
+        manifestBytes: encodeJson(manifestJson),
+        runResultsBytes: encodeJson(runResultsJson),
+      },
       source: "upload",
     });
 
@@ -45,8 +47,10 @@ describe("analysis worker contract", () => {
       type: "load-analysis",
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId: 2,
-      manifestBytes: invalidBytes,
-      runResultsBytes: invalidBytes,
+      artifactBuffers: {
+        manifestBytes: invalidBytes,
+        runResultsBytes: invalidBytes,
+      },
       source: "preload",
     });
 
@@ -69,8 +73,10 @@ describe("analysis worker contract", () => {
       type: "load-analysis",
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId: 3,
-      manifestBytes: encodeJson(manifestJson),
-      runResultsBytes: encodeJson(runResultsJson),
+      artifactBuffers: {
+        manifestBytes: encodeJson(manifestJson),
+        runResultsBytes: encodeJson(runResultsJson),
+      },
       source: "upload",
     });
 
@@ -93,8 +99,10 @@ describe("analysis worker contract", () => {
       type: "load-analysis",
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId: 10,
-      manifestBytes: encodeJson(manifestJson),
-      runResultsBytes: encodeJson(runResultsJson),
+      artifactBuffers: {
+        manifestBytes: encodeJson(manifestJson),
+        runResultsBytes: encodeJson(runResultsJson),
+      },
       source: "upload",
     });
 
@@ -135,8 +143,10 @@ describe("analysis worker contract", () => {
       type: "load-analysis",
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId: 20,
-      manifestBytes: encodeJson(manifestJson),
-      runResultsBytes: encodeJson(runResultsJson),
+      artifactBuffers: {
+        manifestBytes: encodeJson(manifestJson),
+        runResultsBytes: encodeJson(runResultsJson),
+      },
       source: "upload",
     });
 
@@ -151,5 +161,66 @@ describe("analysis worker contract", () => {
     if (searchResponse.type !== "search-resources-ready") return;
     expect(searchResponse.resources.length).toBeGreaterThan(0);
     expect(searchResponse.resources.length).toBeLessThanOrEqual(8);
+  });
+
+  it("loads optional catalog and sources buffers without requiring them", async () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.11.json",
+    ) as Record<string, unknown>;
+    const runResultsJson = loadTestRunResults(
+      "v6",
+      "run_results_1.11.json",
+    ) as Record<string, unknown>;
+    const catalogJson = {
+      metadata: {
+        dbt_schema_version: "https://schemas.getdbt.com/dbt/catalog/v1.json",
+      },
+      nodes: {},
+      sources: {
+        "source.jaffle_shop.ecom.raw_customers": {
+          columns: {
+            id: { type: "integer" },
+          },
+        },
+      },
+    } as Record<string, unknown>;
+    const sourcesJson = {
+      metadata: {
+        dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+      },
+      results: [
+        {
+          unique_id: "source.jaffle_shop.ecom.raw_customers",
+          status: "pass",
+          max_loaded_at: "2026-01-01T00:00:00.000Z",
+          snapshotted_at: "2026-01-01T00:30:00.000Z",
+          max_loaded_at_time_ago_in_s: 1800,
+          criteria: {},
+        },
+      ],
+    } as Record<string, unknown>;
+
+    const response = await handleAnalysisWorkerRequest({
+      type: "load-analysis",
+      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+      requestId: 30,
+      artifactBuffers: {
+        manifestBytes: encodeJson(manifestJson),
+        runResultsBytes: encodeJson(runResultsJson),
+        catalogBytes: encodeJson(catalogJson),
+        sourcesBytes: encodeJson(sourcesJson),
+      },
+      source: "upload",
+    });
+
+    expect(response.type).toBe("analysis-ready");
+    if (response.type !== "analysis-ready") return;
+    const source = response.analysis.resources.find(
+      (resource) =>
+        resource.uniqueId === "source.jaffle_shop.ecom.raw_customers",
+    );
+    expect(source?.catalogStats?.columnCount).toBe(1);
+    expect(source?.sourceFreshness?.status).toBe("Pass");
   });
 });

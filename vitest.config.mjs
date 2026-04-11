@@ -1,34 +1,17 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { defineConfig } from "vitest/config";
+import { createSharedSourceEntryAliases } from "./tooling/source-entry-aliases.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const sharedAliases = createSharedSourceEntryAliases(__dirname);
 
 export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
       "@web": path.resolve(__dirname, "packages/dbt-tools/web/src"),
-      "@dbt-tools/core/browser": path.resolve(
-        __dirname,
-        "packages/dbt-tools/core/src/browser.ts",
-      ),
-      "@dbt-tools/core": path.resolve(
-        __dirname,
-        "packages/dbt-tools/core/src/index.ts",
-      ),
-      "dbt-artifacts-parser/manifest": path.resolve(
-        __dirname,
-        "packages/dbt-artifacts-parser/src/manifest/index.ts",
-      ),
-      "dbt-artifacts-parser/run_results": path.resolve(
-        __dirname,
-        "packages/dbt-artifacts-parser/src/run_results/index.ts",
-      ),
-      "dbt-artifacts-parser/catalog": path.resolve(
-        __dirname,
-        "packages/dbt-artifacts-parser/src/catalog/index.ts",
-      ),
+      ...sharedAliases,
       "dbt-artifacts-parser/test-utils": path.resolve(
         __dirname,
         "packages/dbt-artifacts-parser/src/test-utils.ts",

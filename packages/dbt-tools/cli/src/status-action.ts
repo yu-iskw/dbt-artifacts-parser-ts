@@ -28,11 +28,31 @@ export type StatusResult = {
   target_dir: string;
   manifest: ArtifactFileStatus;
   run_results: ArtifactFileStatus;
+  catalog: ArtifactFileStatus;
+  sources: ArtifactFileStatus;
   readiness: "manifest-only" | "full" | "unavailable";
   latest_modified_at?: string;
   age_seconds?: number;
   summary: string;
 };
+
+function pushArtifactStatus(
+  lines: string[],
+  label: string,
+  status: ArtifactFileStatus,
+): void {
+  const icon = status.exists ? "✓" : "✗";
+  lines.push(`${icon} ${label}`);
+  lines.push(`    path:     ${status.path}`);
+  if (status.exists) {
+    lines.push(`    modified: ${status.modified_at}`);
+    if (status.age_seconds !== undefined) {
+      lines.push(`    age:      ${humanAge(status.age_seconds)}`);
+    }
+  } else {
+    lines.push("    (not found)");
+  }
+}
 
 function getFileStatus(filePath: string): ArtifactFileStatus {
   try {
@@ -68,30 +88,16 @@ export function formatStatus(result: StatusResult): string {
   lines.push(`Readiness:    ${result.readiness}`);
   lines.push("");
 
-  const mIcon = result.manifest.exists ? "✓" : "✗";
-  lines.push(`${mIcon} manifest.json`);
-  lines.push(`    path:     ${result.manifest.path}`);
-  if (result.manifest.exists) {
-    lines.push(`    modified: ${result.manifest.modified_at}`);
-    if (result.manifest.age_seconds !== undefined) {
-      lines.push(`    age:      ${humanAge(result.manifest.age_seconds)}`);
-    }
-  } else {
-    lines.push("    (not found)");
-  }
+  pushArtifactStatus(lines, "manifest.json", result.manifest);
 
   lines.push("");
-  const rrIcon = result.run_results.exists ? "✓" : "✗";
-  lines.push(`${rrIcon} run_results.json`);
-  lines.push(`    path:     ${result.run_results.path}`);
-  if (result.run_results.exists) {
-    lines.push(`    modified: ${result.run_results.modified_at}`);
-    if (result.run_results.age_seconds !== undefined) {
-      lines.push(`    age:      ${humanAge(result.run_results.age_seconds)}`);
-    }
-  } else {
-    lines.push("    (not found)");
-  }
+  pushArtifactStatus(lines, "run_results.json", result.run_results);
+
+  lines.push("");
+  pushArtifactStatus(lines, "catalog.json", result.catalog);
+
+  lines.push("");
+  pushArtifactStatus(lines, "sources.json", result.sources);
 
   if (result.latest_modified_at) {
     lines.push("");
@@ -121,9 +127,13 @@ export function statusAction(
     // Validate paths before accessing filesystem
     validateSafePath(paths.manifest);
     validateSafePath(paths.runResults);
+    if (paths.catalog) validateSafePath(paths.catalog);
+    if (paths.sources) validateSafePath(paths.sources);
 
     const manifestStatus = getFileStatus(paths.manifest);
     const runResultsStatus = getFileStatus(paths.runResults);
+    const catalogStatus = getFileStatus(paths.catalog ?? "");
+    const sourcesStatus = getFileStatus(paths.sources ?? "");
 
     // Determine target dir from the manifest path using path.dirname for portability
     const targetDir = path.dirname(paths.manifest) || ".";
@@ -144,6 +154,8 @@ export function statusAction(
     const candidates: ArtifactFileStatus[] = [
       manifestStatus,
       runResultsStatus,
+      catalogStatus,
+      sourcesStatus,
     ].filter((f) => f.exists);
 
     if (candidates.length > 0) {
@@ -157,7 +169,7 @@ export function statusAction(
     }
 
     const summaryMap: Record<StatusResult["readiness"], string> = {
-      full: "All artifacts present. Manifest and execution analysis available.",
+      full: "Required artifacts present. Manifest and execution analysis available; catalog.json and sources.json remain optional enrichments.",
       "manifest-only":
         "manifest.json found; run_results.json missing. Execution analysis unavailable.",
       unavailable:
@@ -168,6 +180,8 @@ export function statusAction(
       target_dir: targetDir,
       manifest: manifestStatus,
       run_results: runResultsStatus,
+      catalog: catalogStatus,
+      sources: sourcesStatus,
       readiness,
       latest_modified_at: latestModifiedAt,
       age_seconds: latestAgeSeconds,

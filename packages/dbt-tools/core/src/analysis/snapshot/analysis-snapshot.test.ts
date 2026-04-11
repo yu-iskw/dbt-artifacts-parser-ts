@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import {
+  loadTestCatalog,
   loadTestManifest,
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
 import {
+  buildAnalysisSnapshotFromArtifactBundle,
   buildAnalysisSnapshotFromArtifacts,
+  buildAnalysisSnapshotFromParsedArtifactBundle,
   buildAnalysisSnapshotFromParsedArtifacts,
 } from "../analysis-snapshot";
 
@@ -35,6 +38,71 @@ describe("analysis snapshot facade", () => {
     expect(snapshot.warehouseType).toBe("duckdb");
   });
 
+  it("supports bundle inputs with optional catalog and sources enrichments", async () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.11.json",
+    ) as Record<string, unknown>;
+    const runResultsJson = loadTestRunResults(
+      "v6",
+      "run_results_1.11.json",
+    ) as Record<string, unknown>;
+    const catalogJson = loadTestCatalog("v1", "catalog_1.11.json") as Record<
+      string,
+      unknown
+    >;
+    const sourcesJson = {
+      metadata: {
+        dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+        dbt_version: "1.11.0",
+      },
+      results: [
+        {
+          unique_id: "source.jaffle_shop.ecom.raw_customers",
+          status: "warn",
+          max_loaded_at: "2026-01-01T00:00:00.000Z",
+          snapshotted_at: "2026-01-01T01:00:00.000Z",
+          max_loaded_at_time_ago_in_s: 3600,
+          criteria: {
+            warn_after: { count: 12, period: "hour" },
+            error_after: { count: 24, period: "hour" },
+          },
+        },
+      ],
+    } satisfies Record<string, unknown>;
+
+    const snapshot = await buildAnalysisSnapshotFromArtifactBundle({
+      manifestJson,
+      runResultsJson,
+      catalogJson,
+      sourcesJson,
+    });
+
+    const source = snapshot.resources.find(
+      (resource) =>
+        resource.uniqueId === "source.jaffle_shop.ecom.raw_customers",
+    );
+    expect(source?.catalogStats?.columnCount).toBeGreaterThan(0);
+    expect(source?.sourceFreshness?.status).toBe("Warn");
+  });
+
+  it("supports bundle inputs without run_results.json", async () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.11.json",
+    ) as Record<string, unknown>;
+
+    const snapshot = await buildAnalysisSnapshotFromArtifactBundle({
+      manifestJson,
+    });
+
+    expect(snapshot.resources.length).toBeGreaterThan(0);
+    expect(snapshot.summary.total_nodes).toBe(0);
+    expect(snapshot.executions).toEqual([]);
+    expect(snapshot.ganttData).toEqual([]);
+    expect(snapshot.invocationId).toBeNull();
+  });
+
   it("keeps the parsed-artifact builder aligned with the raw facade", () => {
     const manifestJson = loadTestManifest(
       "v12",
@@ -60,6 +128,49 @@ describe("analysis snapshot facade", () => {
     expect(analysis.warehouseType).toBe("duckdb");
     expect(timings.graphBuildMs).toBeGreaterThanOrEqual(0);
     expect(timings.snapshotBuildMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("keeps the parsed bundle builder aligned with optional enrichments", () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.11.json",
+    ) as Record<string, unknown>;
+    const runResultsJson = loadTestRunResults(
+      "v6",
+      "run_results_1.11.json",
+    ) as Record<string, unknown>;
+    const manifest = parseManifest(manifestJson);
+    const runResults = parseRunResults(runResultsJson);
+
+    const { analysis } = buildAnalysisSnapshotFromParsedArtifactBundle({
+      manifestJson,
+      runResultsJson,
+      sourcesJson: {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+          dbt_version: "1.11.0",
+        },
+        results: [
+          {
+            unique_id: "source.jaffle_shop.ecom.raw_customers",
+            status: "pass",
+            max_loaded_at: "2026-01-01T00:00:00.000Z",
+            snapshotted_at: "2026-01-01T01:00:00.000Z",
+            max_loaded_at_time_ago_in_s: 1800,
+            criteria: {},
+          },
+        ],
+      },
+      manifest,
+      runResults,
+    });
+
+    expect(
+      analysis.resources.find(
+        (resource) =>
+          resource.uniqueId === "source.jaffle_shop.ecom.raw_customers",
+      )?.sourceFreshness?.status,
+    ).toBe("Pass");
   });
 
   it("uses direct dependency edges in dependencyIndex and omits bulk SQL fields", () => {

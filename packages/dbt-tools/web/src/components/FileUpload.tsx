@@ -52,6 +52,8 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   const { toast } = useToast();
   const [manifestFile, setManifestFile] = useState<File | null>(null);
   const [runResultsFile, setRunResultsFile] = useState<File | null>(null);
+  const [catalogFile, setCatalogFile] = useState<File | null>(null);
+  const [sourcesFile, setSourcesFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleAnalyze() {
@@ -64,13 +66,20 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
     onError(null);
 
     try {
-      const [manifestBytes, runResultsBytes] = await Promise.all([
-        manifestFile.arrayBuffer(),
-        runResultsFile.arrayBuffer(),
-      ]);
+      const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
+        await Promise.all([
+          manifestFile.arrayBuffer(),
+          runResultsFile.arrayBuffer(),
+          catalogFile?.arrayBuffer() ?? Promise.resolve(undefined),
+          sourcesFile?.arrayBuffer() ?? Promise.resolve(undefined),
+        ]);
       const result = await loadAnalysisFromBuffers(
-        manifestBytes,
-        runResultsBytes,
+        {
+          manifestBytes,
+          runResultsBytes,
+          ...(catalogBytes != null ? { catalogBytes } : {}),
+          ...(sourcesBytes != null ? { sourcesBytes } : {}),
+        },
         "upload",
       );
       onAnalysis(result);
@@ -152,6 +161,18 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
             file={runResultsFile}
             onFileChange={setRunResultsFile}
           />
+          <FileInputRow
+            id="catalog-input"
+            label="catalog.json (optional)"
+            file={catalogFile}
+            onFileChange={setCatalogFile}
+          />
+          <FileInputRow
+            id="sources-input"
+            label="sources.json (optional)"
+            file={sourcesFile}
+            onFileChange={setSourcesFile}
+          />
         </div>
 
         <div className="upload-panel__tips">
@@ -167,6 +188,15 @@ export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
             <span>
               The app supports both uploaded artifacts and auto-loaded local
               targets for faster iteration.
+            </span>
+          </div>
+          <div>
+            <strong>
+              Bring catalog and freshness artifacts when you have them.
+            </strong>
+            <span>
+              <code>catalog.json</code> and <code>sources.json</code> enrich the
+              workspace, but they are never required.
             </span>
           </div>
         </div>

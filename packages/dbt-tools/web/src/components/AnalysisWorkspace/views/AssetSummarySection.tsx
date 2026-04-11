@@ -25,6 +25,113 @@ function warehouseRelationLabel(resource: ResourceNode): string {
   return "n/a";
 }
 
+function AdapterResponseSection({
+  adapterMetrics,
+  extraAdapterRawFields,
+}: {
+  adapterMetrics:
+    | ExecutionRow["adapterMetrics"]
+    | ResourceNode["adapterMetrics"];
+  extraAdapterRawFields: ReturnType<
+    typeof getAdapterResponseFieldsBeyondNormalized
+  >;
+}) {
+  const adapterMetricDescriptors =
+    adapterMetrics != null
+      ? getPresentAdapterMetricDescriptors([adapterMetrics])
+      : [];
+  const showAdapter =
+    extraAdapterRawFields.length > 0 || adapterMetricDescriptors.length > 0;
+
+  if (!showAdapter) return null;
+
+  return (
+    <div className="asset-summary__group">
+      <p className="asset-summary__group-title">Adapter response</p>
+      {adapterMetrics != null && adapterMetricDescriptors.length > 0 ? (
+        <div className="detail-grid">
+          {adapterMetricDescriptors.map((descriptor) => {
+            const value = getAdapterMetricValue(adapterMetrics, descriptor.key);
+            return (
+              <div className="detail-stat" key={descriptor.key}>
+                <span>{descriptor.shortLabel}</span>
+                <strong>
+                  {value !== undefined
+                    ? formatAdapterMetricValue(descriptor, value)
+                    : "—"}
+                </strong>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+      {extraAdapterRawFields.length > 0 ? (
+        <div
+          className="asset-summary__adapter-raw"
+          aria-label="Additional adapter response fields"
+        >
+          {extraAdapterRawFields
+            .map((field) => `${field.label}: ${field.displayValue}`)
+            .join("\n")}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SourceFreshnessSection({
+  freshness,
+}: {
+  freshness: ResourceNode["sourceFreshness"];
+}) {
+  if (freshness == null) return null;
+
+  return (
+    <SectionCard
+      title="Source freshness"
+      subtitle="Latest freshness evidence from sources.json when provided."
+    >
+      <div className="detail-grid">
+        <div className="detail-stat">
+          <span>Status</span>
+          <strong>{freshness.status}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Age</span>
+          <strong>{formatSeconds(freshness.ageSeconds)}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Max loaded at</span>
+          <strong>{freshness.maxLoadedAt ?? "n/a"}</strong>
+        </div>
+        <div className="detail-stat">
+          <span>Snapshotted at</span>
+          <strong>{freshness.snapshottedAt ?? "n/a"}</strong>
+        </div>
+      </div>
+      {freshness.criteria != null ? (
+        <div className="detail-grid">
+          <div className="detail-stat">
+            <span>Warn after</span>
+            <strong>{freshness.criteria.warnAfter ?? "n/a"}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Error after</span>
+            <strong>{freshness.criteria.errorAfter ?? "n/a"}</strong>
+          </div>
+          <div className="detail-stat">
+            <span>Filter</span>
+            <strong>{freshness.criteria.filter ?? "n/a"}</strong>
+          </div>
+        </div>
+      ) : null}
+      {freshness.error ? (
+        <p className="resource-spotlight__description">{freshness.error}</p>
+      ) : null}
+    </SectionCard>
+  );
+}
+
 export function AssetSummarySection({
   resource,
   executionRow = null,
@@ -37,18 +144,10 @@ export function AssetSummarySection({
     resource.adapterMetrics ?? executionRow?.adapterMetrics;
   const adapterResponseFields =
     resource.adapterResponseFields ?? executionRow?.adapterResponseFields;
-  const adapterMetricDescriptors =
-    adapterMetrics != null
-      ? getPresentAdapterMetricDescriptors([adapterMetrics])
-      : [];
-
   const extraAdapterRawFields = getAdapterResponseFieldsBeyondNormalized(
     adapterMetrics,
     adapterResponseFields,
   );
-
-  const showAdapter =
-    extraAdapterRawFields.length > 0 || adapterMetricDescriptors.length > 0;
 
   return (
     <div className="asset-summary-stack">
@@ -69,6 +168,12 @@ export function AssetSummarySection({
             <span>Relation</span>
             <strong>{warehouseRelationLabel(resource)}</strong>
           </div>
+          {resource.catalogStats != null ? (
+            <div className="detail-stat">
+              <span>Catalog columns</span>
+              <strong>{resource.catalogStats.columnCount}</strong>
+            </div>
+          ) : null}
         </div>
         {resource.description ? (
           <ResourceMarkdownDescription
@@ -82,6 +187,8 @@ export function AssetSummarySection({
           </p>
         )}
       </SectionCard>
+
+      <SourceFreshnessSection freshness={resource.sourceFreshness} />
 
       <SectionCard
         title="This run"
@@ -102,41 +209,10 @@ export function AssetSummarySection({
               <strong>{resource.threadId ?? "n/a"}</strong>
             </div>
           </div>
-          {showAdapter ? (
-            <div className="asset-summary__group">
-              <p className="asset-summary__group-title">Adapter response</p>
-              {adapterMetrics != null && adapterMetricDescriptors.length > 0 ? (
-                <div className="detail-grid">
-                  {adapterMetricDescriptors.map((descriptor) => {
-                    const value = getAdapterMetricValue(
-                      adapterMetrics,
-                      descriptor.key,
-                    );
-                    return (
-                      <div className="detail-stat" key={descriptor.key}>
-                        <span>{descriptor.shortLabel}</span>
-                        <strong>
-                          {value !== undefined
-                            ? formatAdapterMetricValue(descriptor, value)
-                            : "—"}
-                        </strong>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-              {extraAdapterRawFields.length > 0 ? (
-                <div
-                  className="asset-summary__adapter-raw"
-                  aria-label="Additional adapter response fields"
-                >
-                  {extraAdapterRawFields
-                    .map((field) => `${field.label}: ${field.displayValue}`)
-                    .join("\n")}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+          <AdapterResponseSection
+            adapterMetrics={adapterMetrics}
+            extraAdapterRawFields={extraAdapterRawFields}
+          />
         </div>
       </SectionCard>
     </div>

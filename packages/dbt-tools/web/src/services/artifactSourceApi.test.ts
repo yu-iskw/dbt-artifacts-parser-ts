@@ -11,6 +11,7 @@ vi.mock("./analysisLoader", () => ({
 import {
   fetchArtifactSourceStatus,
   loadCurrentManagedArtifacts,
+  refetchFromApi,
 } from "./artifactSourceApi";
 
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -40,8 +41,18 @@ describe("artifactSourceApi", () => {
     loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
     fetchMock
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
-      .mockResolvedValueOnce(new Response("manifest"))
-      .mockResolvedValueOnce(new Response("run-results"));
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
 
     const result = await loadCurrentManagedArtifacts();
 
@@ -54,8 +65,10 @@ describe("artifactSourceApi", () => {
       result: analysisResult,
     });
     expect(loadAnalysisFromBuffers).toHaveBeenCalledWith(
-      expect.any(ArrayBuffer),
-      expect.any(ArrayBuffer),
+      expect.objectContaining({
+        manifestBytes: expect.any(ArrayBuffer),
+        runResultsBytes: expect.any(ArrayBuffer),
+      }),
       "preload",
     );
   });
@@ -68,8 +81,18 @@ describe("artifactSourceApi", () => {
     loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
     fetchMock
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(new Response("manifest"))
-      .mockResolvedValueOnce(new Response("run-results"));
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
 
     const result = await loadCurrentManagedArtifacts();
 
@@ -91,8 +114,18 @@ describe("artifactSourceApi", () => {
     loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
     fetchMock
       .mockRejectedValueOnce(new Error("network"))
-      .mockResolvedValueOnce(new Response("manifest"))
-      .mockResolvedValueOnce(new Response("run-results"));
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
 
     const result = await loadCurrentManagedArtifacts();
 
@@ -109,6 +142,8 @@ describe("artifactSourceApi", () => {
   it("returns waiting status when artifact source fails and legacy artifacts are unavailable", async () => {
     fetchMock
       .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
       .mockResolvedValueOnce(new Response(null, { status: 404 }));
 
@@ -159,6 +194,220 @@ describe("artifactSourceApi", () => {
       result: null,
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("loads current managed artifact routes before considering legacy fallbacks", async () => {
+    const analysisResult = {
+      analysis: { projectName: "managed-run" },
+      metrics: { source: "preload" },
+    };
+    loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          mode: "preload",
+          currentSource: "preload",
+          label: "Live target",
+          checkedAtMs: 123,
+          remoteProvider: null,
+          remoteLocation: null,
+          pollIntervalMs: null,
+          currentRun: null,
+          pendingRun: null,
+          supportsSwitch: false,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("catalog", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("sources", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    const result = await loadCurrentManagedArtifacts();
+
+    expect(result).toEqual({
+      status: expect.objectContaining({
+        mode: "preload",
+        currentSource: "preload",
+        label: "Live target",
+      }),
+      result: analysisResult,
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "/api/artifact-source");
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/artifacts/current/manifest.json",
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/artifacts/current/run_results.json",
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "/api/artifacts/current/catalog.json",
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      5,
+      "/api/artifacts/current/sources.json",
+    );
+    expect(loadAnalysisFromBuffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        manifestBytes: expect.any(ArrayBuffer),
+        runResultsBytes: expect.any(ArrayBuffer),
+        catalogBytes: expect.any(ArrayBuffer),
+        sourcesBytes: expect.any(ArrayBuffer),
+      }),
+      "preload",
+    );
+  });
+
+  it("ignores optional managed artifact fetch rejections when required files succeed", async () => {
+    const analysisResult = {
+      analysis: { projectName: "managed-run" },
+      metrics: { source: "preload" },
+    };
+    loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          mode: "preload",
+          currentSource: "preload",
+          label: "Live target",
+          checkedAtMs: 123,
+          remoteProvider: null,
+          remoteLocation: null,
+          pollIntervalMs: null,
+          currentRun: null,
+          pendingRun: null,
+          supportsSwitch: false,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockRejectedValueOnce(new Error("catalog unavailable"))
+      .mockRejectedValueOnce(new Error("sources unavailable"));
+
+    const result = await loadCurrentManagedArtifacts();
+
+    expect(result.result).toBe(analysisResult);
+    expect(loadAnalysisFromBuffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        manifestBytes: expect.any(ArrayBuffer),
+        runResultsBytes: expect.any(ArrayBuffer),
+      }),
+      "preload",
+    );
+    expect(loadAnalysisFromBuffers.mock.calls[0]?.[0]).not.toHaveProperty(
+      "catalogBytes",
+    );
+    expect(loadAnalysisFromBuffers.mock.calls[0]?.[0]).not.toHaveProperty(
+      "sourcesBytes",
+    );
+  });
+
+  it("refetches successfully when optional managed artifacts reject", async () => {
+    const analysisResult = {
+      analysis: { projectName: "managed-run" },
+      metrics: { source: "remote" },
+    };
+    loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockRejectedValueOnce(new Error("catalog unavailable"))
+      .mockRejectedValueOnce(new Error("sources unavailable"));
+
+    await expect(refetchFromApi("remote")).resolves.toBe(analysisResult);
+    expect(loadAnalysisFromBuffers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        manifestBytes: expect.any(ArrayBuffer),
+        runResultsBytes: expect.any(ArrayBuffer),
+      }),
+      "remote",
+    );
+  });
+
+  it("does not load when a required managed artifact fetch rejects", async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error("manifest unavailable"))
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(new Response("catalog", { status: 200 }))
+      .mockResolvedValueOnce(new Response("sources", { status: 200 }));
+
+    await expect(refetchFromApi("preload")).resolves.toBeNull();
+    expect(loadAnalysisFromBuffers).not.toHaveBeenCalled();
+  });
+
+  it("ignores optional managed artifacts when their content type is not json", async () => {
+    const analysisResult = {
+      analysis: { projectName: "managed-run" },
+      metrics: { source: "preload" },
+    };
+    loadAnalysisFromBuffers.mockResolvedValue(analysisResult);
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response("manifest", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("run-results", {
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("<html>catalog</html>", {
+          headers: { "Content-Type": "text/html" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("<html>sources</html>", {
+          headers: { "Content-Type": "text/html" },
+        }),
+      );
+
+    await expect(refetchFromApi("preload")).resolves.toBe(analysisResult);
+    expect(loadAnalysisFromBuffers.mock.calls[0]?.[0]).not.toHaveProperty(
+      "catalogBytes",
+    );
+    expect(loadAnalysisFromBuffers.mock.calls[0]?.[0]).not.toHaveProperty(
+      "sourcesBytes",
+    );
   });
 
   it("keeps fetchArtifactSourceStatus strict for non-ok responses", async () => {

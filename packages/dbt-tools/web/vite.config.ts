@@ -2,6 +2,11 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { dbtTargetPlugin } from "./src/dbt-target-plugin";
+import { createSharedSourceEntryAliases } from "../../../tooling/source-entry-aliases.mjs";
+
+const sharedAliases = createSharedSourceEntryAliases(
+  path.resolve(__dirname, "../../.."),
+);
 
 export default defineConfig({
   plugins: [dbtTargetPlugin(), react()],
@@ -15,19 +20,7 @@ export default defineConfig({
     // alias only applies when "vite dev" processes imports).
     alias: {
       "@web": path.resolve(__dirname, "src"),
-      "@dbt-tools/core/browser": path.resolve(
-        __dirname,
-        "../core/src/browser.ts",
-      ),
-      "@dbt-tools/core": path.resolve(__dirname, "../core/src/index.ts"),
-      "dbt-artifacts-parser/manifest": path.resolve(
-        __dirname,
-        "../../dbt-artifacts-parser/src/manifest/index.ts",
-      ),
-      "dbt-artifacts-parser/run_results": path.resolve(
-        __dirname,
-        "../../dbt-artifacts-parser/src/run_results/index.ts",
-      ),
+      ...sharedAliases,
     },
   },
   optimizeDeps: {
@@ -37,6 +30,8 @@ export default defineConfig({
     include: [
       "dbt-artifacts-parser/manifest",
       "dbt-artifacts-parser/run_results",
+      "dbt-artifacts-parser/catalog",
+      "dbt-artifacts-parser/sources",
     ],
   },
   build: {

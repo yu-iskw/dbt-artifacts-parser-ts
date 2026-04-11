@@ -2,6 +2,7 @@
 import type { AnalysisState } from "@web/types";
 import {
   ANALYSIS_WORKER_PROTOCOL_VERSION,
+  type AnalysisArtifactBufferInputs,
   type AnalysisLoadSource,
   type AnalysisWorkerRequest,
   type AnalysisWorkerResponse,
@@ -75,7 +76,16 @@ class AnalysisWorkerClient {
       this.handleMessage(event.data);
     };
     this.worker.onerror = (event) => {
-      const message = event.message || "Analysis worker failed";
+      const message = this.formatWorkerError(event);
+      debug("Analysis worker error", message);
+      for (const pending of this.pending.values()) {
+        pending.reject(new Error(message));
+      }
+      this.pending.clear();
+    };
+    this.worker.onmessageerror = () => {
+      const message = "Analysis worker failed to deserialize a message";
+      debug("Analysis worker message error");
       for (const pending of this.pending.values()) {
         pending.reject(new Error(message));
       }
@@ -83,9 +93,46 @@ class AnalysisWorkerClient {
     };
   }
 
+  private formatWorkerError(event: ErrorEvent): string {
+    const details: string[] = [];
+    if (typeof event.filename === "string" && event.filename.length > 0) {
+      const location =
+        event.lineno > 0
+          ? `${event.filename}:${event.lineno}${event.colno > 0 ? `:${event.colno}` : ""}`
+          : event.filename;
+      details.push(location);
+    }
+    if (event.error instanceof Error && event.error.message.trim() !== "") {
+      details.push(event.error.message);
+    }
+
+    const primary = event.message?.trim();
+    if (primary) {
+      return details.length > 0
+        ? `Analysis worker failed: ${primary} (${details.join(" | ")})`
+        : `Analysis worker failed: ${primary}`;
+    }
+
+    if (details.length > 0) {
+      return `Analysis worker failed: ${details.join(" | ")}`;
+    }
+
+    return "Analysis worker failed";
+  }
+
+  private collectTransferables(
+    artifactBuffers: AnalysisArtifactBufferInputs,
+  ): ArrayBuffer[] {
+    return [
+      artifactBuffers.manifestBytes,
+      artifactBuffers.runResultsBytes,
+      artifactBuffers.catalogBytes,
+      artifactBuffers.sourcesBytes,
+    ].filter((value): value is ArrayBuffer => value instanceof ArrayBuffer);
+  }
+
   async loadAnalysis(
-    manifestBytes: ArrayBuffer,
-    runResultsBytes: ArrayBuffer,
+    artifactBuffers: AnalysisArtifactBufferInputs,
     source: AnalysisLoadSource,
   ): Promise<AnalysisLoadResult> {
     const requestId = this.requestId + 1;
@@ -101,8 +148,7 @@ class AnalysisWorkerClient {
       type: "load-analysis",
       protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
       requestId,
-      manifestBytes,
-      runResultsBytes,
+      artifactBuffers,
       source,
     };
 
@@ -110,7 +156,10 @@ class AnalysisWorkerClient {
       this.pending.set(requestId, { kind: "load", resolve, reject, source });
     });
 
-    this.worker.postMessage(request, [manifestBytes, runResultsBytes]);
+    this.worker.postMessage(
+      request,
+      this.collectTransferables(artifactBuffers),
+    );
 
     return promise.then((result) => {
       markDebug(readyMarkName);
@@ -274,11 +323,10 @@ function getWorkerClient(): AnalysisWorkerClient {
 }
 
 export async function loadAnalysisFromBuffers(
-  manifestBytes: ArrayBuffer,
-  runResultsBytes: ArrayBuffer,
+  artifactBuffers: AnalysisArtifactBufferInputs,
   source: AnalysisLoadSource,
 ): Promise<AnalysisLoadResult> {
-  return getWorkerClient().loadAnalysis(manifestBytes, runResultsBytes, source);
+  return getWorkerClient().loadAnalysis(artifactBuffers, source);
 }
 
 export async function requestResourceCodeFromWorker(

@@ -6,6 +6,7 @@ import {
   loadAnalysisFromBuffers,
   type AnalysisLoadResult,
 } from "./analysisLoader";
+import type { AnalysisArtifactBufferInputs } from "../workers/analysisProtocol";
 import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
 
 export type { WorkspaceArtifactSource };
@@ -32,20 +33,29 @@ export interface ArtifactSourceStatus {
   supportsSwitch: boolean;
 }
 
-const LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS: readonly [string, string] = [
-  "/api/manifest.json",
-  "/api/run_results.json",
-];
+type ArtifactUrlSet = {
+  manifest: string;
+  runResults: string;
+  catalog: string;
+  sources: string;
+};
+
+const LEGACY_ARTIFACT_URLS: ArtifactUrlSet = {
+  manifest: "/api/manifest.json",
+  runResults: "/api/run_results.json",
+  catalog: "/api/catalog.json",
+  sources: "/api/sources.json",
+};
 
 /** Precedence: current managed paths, then legacy single-target paths. */
-const ARTIFACT_MANIFEST_RUN_RESULTS_URLS: ReadonlyArray<
-  readonly [manifestPath: string, runResultsPath: string]
-> = [
-  [
-    "/api/artifacts/current/manifest.json",
-    "/api/artifacts/current/run_results.json",
-  ],
-  LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS,
+const ARTIFACT_URL_SETS: ReadonlyArray<ArtifactUrlSet> = [
+  {
+    manifest: "/api/artifacts/current/manifest.json",
+    runResults: "/api/artifacts/current/run_results.json",
+    catalog: "/api/artifacts/current/catalog.json",
+    sources: "/api/artifacts/current/sources.json",
+  },
+  LEGACY_ARTIFACT_URLS,
 ];
 
 function emptyManagedArtifactStatusFields(): Pick<
@@ -87,50 +97,69 @@ async function fetchArrayBufferOrNull(
 ): Promise<ArrayBuffer | null> {
   const response = await fetch(pathname);
   if (!response.ok) return null;
+  const contentType = response.headers?.get?.("content-type")?.toLowerCase();
+  if (contentType != null && !contentType.includes("application/json")) {
+    return null;
+  }
   return response.arrayBuffer();
 }
 
-async function fetchArtifactPair(
-  manifestPath: string,
-  runResultsPath: string,
-): Promise<{
-  manifestBytes: ArrayBuffer;
-  runResultsBytes: ArrayBuffer;
-} | null> {
-  const [manifestBytes, runResultsBytes] = await Promise.all([
-    fetchArrayBufferOrNull(manifestPath),
-    fetchArrayBufferOrNull(runResultsPath),
-  ]);
-
-  if (manifestBytes == null || runResultsBytes == null) return null;
-  return { manifestBytes, runResultsBytes };
+async function fetchRequiredArtifactBytes(
+  pathname: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    return await fetchArrayBufferOrNull(pathname);
+  } catch {
+    return null;
+  }
 }
 
-async function fetchFirstArtifactPair(
-  attempts: ReadonlyArray<
-    readonly [string, string]
-  > = ARTIFACT_MANIFEST_RUN_RESULTS_URLS,
-): Promise<{
-  manifestBytes: ArrayBuffer;
-  runResultsBytes: ArrayBuffer;
-} | null> {
-  for (const [manifestPath, runResultsPath] of attempts) {
-    const pair = await fetchArtifactPair(manifestPath, runResultsPath);
-    if (pair != null) return pair;
+async function fetchOptionalArtifactBytes(
+  pathname: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    return await fetchArrayBufferOrNull(pathname);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchArtifactBufferSet(
+  urls: ArtifactUrlSet,
+): Promise<AnalysisArtifactBufferInputs | null> {
+  const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
+    await Promise.all([
+      fetchRequiredArtifactBytes(urls.manifest),
+      fetchRequiredArtifactBytes(urls.runResults),
+      fetchOptionalArtifactBytes(urls.catalog),
+      fetchOptionalArtifactBytes(urls.sources),
+    ]);
+
+  if (manifestBytes == null || runResultsBytes == null) return null;
+  return {
+    manifestBytes,
+    runResultsBytes,
+    ...(catalogBytes != null ? { catalogBytes } : {}),
+    ...(sourcesBytes != null ? { sourcesBytes } : {}),
+  };
+}
+
+async function fetchFirstArtifactBufferSet(
+  attempts: ReadonlyArray<ArtifactUrlSet> = ARTIFACT_URL_SETS,
+): Promise<AnalysisArtifactBufferInputs | null> {
+  for (const urls of attempts) {
+    const bundle = await fetchArtifactBufferSet(urls);
+    if (bundle != null) return bundle;
   }
   return null;
 }
 
 async function loadFromLegacyApi(): Promise<AnalysisLoadResult | null> {
-  const legacyPair = await fetchFirstArtifactPair([
-    LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS,
+  const legacyBuffers = await fetchFirstArtifactBufferSet([
+    LEGACY_ARTIFACT_URLS,
   ]);
-  if (legacyPair == null) return null;
-  return loadAnalysisFromBuffers(
-    legacyPair.manifestBytes,
-    legacyPair.runResultsBytes,
-    "preload",
-  );
+  if (legacyBuffers == null) return null;
+  return loadAnalysisFromBuffers(legacyBuffers, "preload");
 }
 
 async function loadManagedArtifactsFallback(): Promise<{
@@ -159,14 +188,10 @@ export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus>
 export async function refetchFromApi(
   source: Exclude<WorkspaceArtifactSource, "upload"> = "preload",
 ): Promise<AnalysisLoadResult | null> {
-  const currentPair = await fetchFirstArtifactPair();
+  const currentBuffers = await fetchFirstArtifactBufferSet();
 
-  if (currentPair == null) return null;
-  return loadAnalysisFromBuffers(
-    currentPair.manifestBytes,
-    currentPair.runResultsBytes,
-    source,
-  );
+  if (currentBuffers == null) return null;
+  return loadAnalysisFromBuffers(currentBuffers, source);
 }
 
 export async function loadCurrentManagedArtifacts(): Promise<{

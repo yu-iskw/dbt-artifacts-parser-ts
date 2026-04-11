@@ -4,7 +4,13 @@ import type {
   GraphLike,
   ManifestEntryLookup,
 } from "./analysis-snapshot-internal";
-import type { AnalysisSnapshot, ResourceNode } from "./analysis-snapshot-types";
+import type {
+  AnalysisArtifactInputs,
+  AnalysisSnapshot,
+  CatalogResourceStats,
+  ResourceNode,
+  SourceFreshnessDetails,
+} from "./analysis-snapshot-types";
 import {
   buildResourceDefinition,
   sortResources,
@@ -36,6 +42,134 @@ function readGraphResourceCore(
     database: optionalStringField(attributes, "database"),
     schema: optionalStringField(attributes, "schema"),
     description: optionalStringField(attributes, "description"),
+  };
+}
+
+function optionalNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function buildCatalogLookup(
+  catalogJson?: AnalysisArtifactInputs["catalogJson"],
+): Map<string, Record<string, unknown>> {
+  const lookup = new Map<string, Record<string, unknown>>();
+  if (catalogJson == null) return lookup;
+  for (const groupKey of ["nodes", "sources"] as const) {
+    const group = catalogJson[groupKey];
+    if (group == null || typeof group !== "object") continue;
+    for (const [uniqueId, value] of Object.entries(group)) {
+      if (value != null && typeof value === "object") {
+        lookup.set(uniqueId, value as Record<string, unknown>);
+      }
+    }
+  }
+  return lookup;
+}
+
+function buildCatalogStats(
+  entry: Record<string, unknown> | undefined,
+): CatalogResourceStats | null {
+  if (entry == null) return null;
+  const columns =
+    entry.columns != null && typeof entry.columns === "object"
+      ? (entry.columns as Record<string, unknown>)
+      : undefined;
+  const metadata =
+    entry.metadata != null && typeof entry.metadata === "object"
+      ? (entry.metadata as Record<string, unknown>)
+      : undefined;
+  const stats =
+    entry.stats != null && typeof entry.stats === "object"
+      ? (entry.stats as Record<string, unknown>)
+      : undefined;
+
+  return {
+    columnCount: columns == null ? 0 : Object.keys(columns).length,
+    tableType:
+      typeof metadata?.type === "string"
+        ? metadata.type
+        : typeof metadata?.table_type === "string"
+          ? metadata.table_type
+          : null,
+    bytes:
+      optionalNumber(stats?.bytes) ??
+      optionalNumber(stats?.num_bytes) ??
+      optionalNumber(stats?.size),
+    rowCount:
+      optionalNumber(stats?.row_count) ??
+      optionalNumber(stats?.num_rows) ??
+      optionalNumber(stats?.rows),
+  };
+}
+
+function buildSourcesLookup(
+  sourcesJson?: AnalysisArtifactInputs["sourcesJson"],
+): Map<string, Record<string, unknown>> {
+  const lookup = new Map<string, Record<string, unknown>>();
+  const results = sourcesJson?.results;
+  if (!Array.isArray(results)) return lookup;
+  for (const result of results) {
+    if (result == null || typeof result !== "object") continue;
+    const entry = result as Record<string, unknown>;
+    const uniqueId = entry.unique_id;
+    if (typeof uniqueId === "string" && uniqueId.length > 0) {
+      lookup.set(uniqueId, entry);
+    }
+  }
+  return lookup;
+}
+
+function buildDurationThreshold(value: unknown): string | null {
+  if (value == null || typeof value !== "object") return null;
+  const count =
+    typeof (value as Record<string, unknown>).count === "number"
+      ? (value as Record<string, unknown>).count
+      : null;
+  const period =
+    typeof (value as Record<string, unknown>).period === "string"
+      ? (value as Record<string, unknown>).period
+      : null;
+  if (count == null || period == null) return null;
+  return `${count} ${period}`;
+}
+
+function buildSourceFreshness(
+  resourceType: string,
+  entry: Record<string, unknown> | undefined,
+): SourceFreshnessDetails | null {
+  if (resourceType !== "source" || entry == null) return null;
+  const criteria =
+    entry.criteria != null && typeof entry.criteria === "object"
+      ? (entry.criteria as Record<string, unknown>)
+      : undefined;
+  const rawStatus =
+    typeof entry.status === "string" && entry.status.trim() !== ""
+      ? entry.status
+      : undefined;
+
+  return {
+    status: rawStatus == null ? "Unknown" : statusLabel(rawStatus),
+    statusTone: statusTone(rawStatus),
+    maxLoadedAt:
+      typeof entry.max_loaded_at === "string" ? entry.max_loaded_at : null,
+    snapshottedAt:
+      typeof entry.snapshotted_at === "string" ? entry.snapshotted_at : null,
+    ageSeconds: optionalNumber(entry.max_loaded_at_time_ago_in_s),
+    criteria:
+      criteria == null
+        ? null
+        : {
+            warnAfter: buildDurationThreshold(criteria.warn_after),
+            errorAfter: buildDurationThreshold(criteria.error_after),
+            filter:
+              typeof criteria.filter === "string" ? criteria.filter : null,
+          },
+    error:
+      typeof entry.error === "string"
+        ? entry.error
+        : typeof entry.message === "string"
+          ? entry.message
+          : null,
   };
 }
 
@@ -71,6 +205,10 @@ function buildResourceNode(
   graph: GraphLike,
   manifestEntryLookup: ManifestEntryLookup,
   adapterType: string | null | undefined,
+  enrichment: {
+    catalogEntry?: Record<string, unknown>;
+    sourcesEntry?: Record<string, unknown>;
+  },
 ): ResourceNode {
   const withValue = <T extends object, K extends string, V>(
     condition: boolean,
@@ -104,6 +242,11 @@ function buildResourceNode(
       : null;
   const threadId =
     typeof execution?.thread_id === "string" ? execution.thread_id : null;
+  const catalogStats = buildCatalogStats(enrichment.catalogEntry);
+  const sourceFreshness = buildSourceFreshness(
+    resourceType,
+    enrichment.sourcesEntry,
+  );
 
   return {
     ...core,
@@ -135,6 +278,12 @@ function buildResourceNode(
       "adapterResponseFields",
       execution?.adapterResponseFields,
     ),
+    ...withValue(catalogStats != null, "catalogStats", catalogStats),
+    ...withValue(
+      sourceFreshness != null,
+      "sourceFreshness",
+      sourceFreshness,
+    ),
   };
 }
 
@@ -143,6 +292,7 @@ export function buildResourcesAndDependencyIndex(
   executionById: Map<string, NodeExecution>,
   manifestEntryLookup: ManifestEntryLookup,
   adapterType: string | null | undefined,
+  artifactInputs: Pick<AnalysisArtifactInputs, "catalogJson" | "sourcesJson">,
 ): {
   resources: AnalysisSnapshot["resources"];
   dependencyIndex: AnalysisSnapshot["dependencyIndex"];
@@ -150,6 +300,8 @@ export function buildResourcesAndDependencyIndex(
   const resources: AnalysisSnapshot["resources"] = [];
   const dependencyIndex: AnalysisSnapshot["dependencyIndex"] = {};
   const graphologyGraph = graph.getGraph();
+  const catalogLookup = buildCatalogLookup(artifactInputs.catalogJson);
+  const sourcesLookup = buildSourcesLookup(artifactInputs.sourcesJson);
 
   graphologyGraph.forEachNode(
     (uniqueId: string, attributes: Record<string, unknown>) => {
@@ -164,6 +316,10 @@ export function buildResourcesAndDependencyIndex(
           graph,
           manifestEntryLookup,
           adapterType,
+          {
+            catalogEntry: catalogLookup.get(uniqueId),
+            sourcesEntry: sourcesLookup.get(uniqueId),
+          },
         ),
       );
       dependencyIndex[uniqueId] = mapDependencyNeighbors(

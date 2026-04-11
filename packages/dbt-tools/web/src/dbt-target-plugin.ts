@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import type { Plugin } from "vite";
 import {
+  DBT_CATALOG_JSON,
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
+  DBT_SOURCES_JSON,
   getDbtToolsReloadDebounceMs,
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
@@ -34,7 +36,12 @@ function setupArtifactWatch(
   };
 
   fs.watch(resolved, (_eventType, filename) => {
-    if (filename === DBT_MANIFEST_JSON || filename === DBT_RUN_RESULTS_JSON) {
+    if (
+      filename === DBT_MANIFEST_JSON ||
+      filename === DBT_RUN_RESULTS_JSON ||
+      filename === DBT_CATALOG_JSON ||
+      filename === DBT_SOURCES_JSON
+    ) {
       notify();
     }
   });

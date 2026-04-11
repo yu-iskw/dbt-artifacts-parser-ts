@@ -4,12 +4,15 @@ import * as path from "path";
 import * as os from "os";
 import {
   resolveArtifactPaths,
+  loadCatalog,
   loadManifest,
   loadRunResults,
+  loadSources,
 } from "./artifact-loader";
 import { resetDbtToolsEnvDeprecationWarningsForTests } from "../config/dbt-tools-env";
 // @ts-expect-error - workspace package, TypeScript resolves via package.json
 import {
+  loadTestCatalog,
   loadTestManifest,
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
@@ -122,6 +125,23 @@ describe("ArtifactLoader", () => {
       );
       expect(result.catalog).toBe(path.resolve(catalogPath));
     });
+
+    it("should default sources to target/sources.json when sourcesPath omitted", () => {
+      const result = resolveArtifactPaths(undefined, undefined, tempDir);
+      expect(result.sources).toBe(path.join(tempDir, "sources.json"));
+    });
+
+    it("should use explicit sources path when provided", () => {
+      const sourcesPath = path.join(tempDir, "custom-sources.json");
+      const result = resolveArtifactPaths(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        sourcesPath,
+      );
+      expect(result.sources).toBe(path.resolve(sourcesPath));
+    });
   });
 
   describe("loadManifest", () => {
@@ -177,6 +197,53 @@ describe("ArtifactLoader", () => {
       expect(() => loadRunResults(invalidPath)).toThrow(
         "Failed to parse run results file",
       );
+    });
+  });
+
+  describe("loadCatalog", () => {
+    it("should load and parse valid catalog", () => {
+      const catalogJson = loadTestCatalog("v1", "catalog.json");
+      const catalogPath = path.join(tempDir, "catalog.json");
+      fs.writeFileSync(catalogPath, JSON.stringify(catalogJson), "utf-8");
+
+      const parsed = loadCatalog(catalogPath);
+      expect(parsed).toBeDefined();
+      expect(parsed.metadata).toBeDefined();
+    });
+  });
+
+  describe("loadSources", () => {
+    it("should load and parse valid sources", () => {
+      const sourcesJson = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+          dbt_version: "1.11.0",
+        },
+        results: [
+          {
+            unique_id: "source.test.raw.customers",
+            status: "pass",
+            max_loaded_at: "2026-01-01T00:00:00.000Z",
+            snapshotted_at: "2026-01-01T01:00:00.000Z",
+            max_loaded_at_time_ago_in_s: 3600,
+            criteria: {
+              warn_after: { count: 12, period: "hour" },
+              error_after: { count: 24, period: "hour" },
+            },
+          },
+        ],
+      };
+      const sourcesPath = path.join(tempDir, "sources.json");
+      fs.writeFileSync(sourcesPath, JSON.stringify(sourcesJson), "utf-8");
+
+      const parsed = loadSources(sourcesPath);
+      expect(parsed).toBeDefined();
+      expect(parsed.metadata).toBeDefined();
+    });
+
+    it("should throw error for missing file", () => {
+      const missingPath = path.join(tempDir, "nonexistent-sources.json");
+      expect(() => loadSources(missingPath)).toThrow("Sources file not found");
     });
   });
 });

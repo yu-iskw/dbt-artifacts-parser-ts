@@ -24,7 +24,13 @@ vi.mock("../artifact-source/sourceService", () => {
       };
     }
     async getCurrentArtifacts() {
-      return null;
+      return {
+        source: "preload" as const,
+        manifestBytes: new TextEncoder().encode('{"manifest":true}'),
+        runResultsBytes: new TextEncoder().encode('{"run_results":true}'),
+        catalogBytes: new TextEncoder().encode('{"catalog":true}'),
+        sourcesBytes: new TextEncoder().encode('{"sources":true}'),
+      };
     }
     async switchToRun() {
       return this.getStatus();
@@ -164,6 +170,21 @@ describe("startServer", () => {
     expect(contentType).toContain("application/json");
     const parsed = JSON.parse(body) as ArtifactSourceStatus;
     expect(parsed.mode).toBe("none");
+  });
+
+  it("serves optional catalog and sources artifact routes", async () => {
+    const catalogResponse = await httpGet(
+      `http://${listenHost}:${listenPort}/api/catalog.json`,
+    );
+    const sourcesResponse = await httpGet(
+      `http://${listenHost}:${listenPort}/api/sources.json`,
+    );
+
+    expect(catalogResponse.status).toBe(200);
+    expect(catalogResponse.contentType).toContain("application/json");
+    expect(catalogResponse.body).toContain("catalog");
+    expect(sourcesResponse.status).toBe(200);
+    expect(sourcesResponse.body).toContain("sources");
   });
 
   it("serves index.html as the SPA fallback for unknown paths", async () => {

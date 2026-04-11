@@ -13,6 +13,7 @@ class MockWorker {
   onmessage: ((event: MessageEvent<AnalysisWorkerResponse>) => void) | null =
     null;
   onerror: ((event: ErrorEvent) => void) | null = null;
+  onmessageerror: ((event: MessageEvent<unknown>) => void) | null = null;
   postMessage = vi.fn();
   terminate = vi.fn();
 }
@@ -70,13 +71,17 @@ describe("analysisLoader", () => {
 
   it("correlates out-of-order worker responses by requestId", async () => {
     const p1 = loadAnalysisFromBuffers(
-      new ArrayBuffer(1),
-      new ArrayBuffer(1),
+      {
+        manifestBytes: new ArrayBuffer(1),
+        runResultsBytes: new ArrayBuffer(1),
+      },
       "upload",
     );
     const p2 = loadAnalysisFromBuffers(
-      new ArrayBuffer(1),
-      new ArrayBuffer(1),
+      {
+        manifestBytes: new ArrayBuffer(1),
+        runResultsBytes: new ArrayBuffer(1),
+      },
       "preload",
     );
 
@@ -124,5 +129,30 @@ describe("analysisLoader", () => {
       analysis: { selectedResourceId: "first" },
       metrics: { requestId: requests[0]!.requestId, source: "upload" },
     });
+  });
+
+  it("surfaces worker runtime details when the worker crashes", async () => {
+    const resultPromise = loadAnalysisFromBuffers(
+      {
+        manifestBytes: new ArrayBuffer(1),
+        runResultsBytes: new ArrayBuffer(1),
+      },
+      "preload",
+    );
+
+    worker.onerror?.({
+      message: "Failed to fetch dynamically imported module",
+      filename: "http://127.0.0.1:5173/src/workers/analysis.worker.ts",
+      lineno: 1,
+      colno: 1,
+      error: new Error("Cannot resolve dbt-artifacts-parser/sources"),
+    } as ErrorEvent);
+
+    await expect(resultPromise).rejects.toThrow(
+      /Analysis worker failed: Failed to fetch dynamically imported module/,
+    );
+    await expect(resultPromise).rejects.toThrow(
+      /Cannot resolve dbt-artifacts-parser\/sources/,
+    );
   });
 });
