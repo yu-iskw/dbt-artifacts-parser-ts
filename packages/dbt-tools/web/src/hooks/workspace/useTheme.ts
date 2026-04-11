@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ThemePreference } from "@web/lib/analysis-workspace/types";
+import type { ThemePreference } from "@web/lib/workspace-state/types";
 
 export type Theme = "light" | "dark";
 

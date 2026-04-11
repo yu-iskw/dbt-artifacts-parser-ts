@@ -13,17 +13,17 @@ import type {
   InvestigationSelectionState,
   RunsSortBy,
   RunsViewState,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import {
   nextRunsSort,
   runsColumnHeaderSortUi,
-} from "@web/lib/analysis-workspace/runsSort";
+} from "@web/lib/workspace-state/runsSort";
 import type { RunsResultsSourceState } from "@web/hooks/analysis/useRunsResultsSource";
 import {
   badgeClassName,
   formatSeconds,
-} from "@web/lib/analysis-workspace/utils";
-import type { RunsAdapterColumn } from "@web/lib/analysis-workspace/runsAdapterColumns";
+} from "@web/lib/workspace-state/utils";
+import type { RunsAdapterColumn } from "@web/lib/workspace-state/runsAdapterColumns";
 import {
   getAdapterCellValue,
   getRunsTableTemplate,

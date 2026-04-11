@@ -10,7 +10,7 @@ import type {
   LineageViewState,
   RunsViewState,
   TimelineFilterState,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 
 const baseAsset = (): AssetViewState => ({
   activeTab: "summary",

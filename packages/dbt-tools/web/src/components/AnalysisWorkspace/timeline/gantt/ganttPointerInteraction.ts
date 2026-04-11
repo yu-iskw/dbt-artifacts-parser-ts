@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import { hitTestBundle, type BundleLayout, type HoverState } from "./hitTest";
 
 export interface GanttPointerContext {

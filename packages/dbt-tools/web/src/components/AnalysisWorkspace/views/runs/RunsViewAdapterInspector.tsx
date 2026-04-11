@@ -3,9 +3,9 @@ import { getAdapterResponseFieldsBeyondNormalized } from "@dbt-tools/core/browse
 import {
   getRunsAdapterField,
   type RunsAdapterColumn,
-} from "@web/lib/analysis-workspace/runsAdapterColumns";
+} from "@web/lib/workspace-state/runsAdapterColumns";
 import { EntityInspector, formatResourceTypeLabel } from "../../shared";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import { formatSeconds } from "@web/lib/workspace-state/utils";
 
 function formatInspectorFields(
   row: ExecutionRow,

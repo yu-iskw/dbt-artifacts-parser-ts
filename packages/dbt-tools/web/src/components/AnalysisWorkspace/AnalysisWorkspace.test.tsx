@@ -8,7 +8,7 @@ import type {
   MaterializationKind,
   ResourceNode,
 } from "@web/types";
-import type { AssetViewState } from "@web/lib/analysis-workspace/types";
+import type { AssetViewState } from "@web/lib/workspace-state/types";
 import { AnalysisWorkspace } from "./AnalysisWorkspace";
 
 function makeAnalysis(

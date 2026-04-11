@@ -9,11 +9,11 @@ import {
   getThemeHex,
 } from "@web/constants/themeColors";
 import { useSyncedDocumentTheme } from "@web/hooks/workspace/useTheme";
-import { GANTT_LEGEND_PRIMARY_TYPES } from "@web/lib/analysis-workspace/constants";
+import { GANTT_LEGEND_PRIMARY_TYPES } from "@web/lib/workspace-state/constants";
 import {
   MATERIALIZATION_KIND_ORDER,
   materializationKindShortLabel,
-} from "@web/lib/analysis-workspace/materializationSemanticsUi";
+} from "@web/lib/workspace-state/materializationSemanticsUi";
 import type { MaterializationKind } from "@web/types";
 
 interface GanttLegendProps {

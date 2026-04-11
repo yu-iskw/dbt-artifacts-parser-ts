@@ -16,7 +16,7 @@ vi.mock("./AppSidebar", () => ({
   AppSidebar: () => <aside data-testid="app-sidebar" />,
 }));
 
-vi.mock("@web/hooks/useOmniboxResults", () => ({
+vi.mock("@web/hooks/analysis/useOmniboxResults", () => ({
   useOmniboxResults: () => mockOmniboxResults(),
 }));
 

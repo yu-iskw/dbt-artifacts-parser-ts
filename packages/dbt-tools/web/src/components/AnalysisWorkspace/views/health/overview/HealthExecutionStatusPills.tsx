@@ -1,9 +1,9 @@
 import type { Dispatch, SetStateAction } from "react";
-import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/workspace-state/constants";
 import type {
   DashboardStatusFilter,
   OverviewFilterState,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 
 const STATUS_OPTIONS: { value: DashboardStatusFilter; label: string }[] = [
   { value: "all", label: "All" },

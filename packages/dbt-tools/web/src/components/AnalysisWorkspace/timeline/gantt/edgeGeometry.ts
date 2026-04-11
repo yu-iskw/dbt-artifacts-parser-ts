@@ -1,7 +1,7 @@
 import type { GanttItem, TimelineAdjacencyEntry } from "@web/types";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
-import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
-import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
+import type { TimelineDependencyDirection } from "@web/lib/workspace-state/types";
+import { TEST_RESOURCE_TYPES } from "@web/lib/workspace-state/constants";
 import {
   AXIS_TOP,
   BAR_H,

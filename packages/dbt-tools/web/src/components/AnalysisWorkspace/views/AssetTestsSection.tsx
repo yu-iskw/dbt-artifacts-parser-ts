@@ -3,18 +3,18 @@ import type { AnalysisState, ResourceNode } from "@web/types";
 import type {
   AssetViewState,
   WorkspaceView,
-} from "@web/lib/analysis-workspace/types";
-import { NOT_EXECUTED } from "@web/lib/analysis-workspace/catalogCopy";
+} from "@web/lib/workspace-state/types";
+import { NOT_EXECUTED } from "@web/lib/workspace-state/catalogCopy";
 import {
   formatSeconds,
   badgeClassName,
-} from "@web/lib/analysis-workspace/utils";
-import { buildSelectedAssetTestEvidence } from "@web/lib/analysis-workspace/explorerTree";
+} from "@web/lib/workspace-state/utils";
+import { buildSelectedAssetTestEvidence } from "@web/lib/workspace-state/explorerTree";
 import {
   sortSelectedAssetTests,
   type AssetTestsSortDirection,
   type AssetTestsSortKey,
-} from "@web/lib/analysis-workspace/selectedAssetTestsSort";
+} from "@web/lib/workspace-state/selectedAssetTestsSort";
 import { SectionCard, ResourceTypeBadge } from "../shared";
 
 function selectedAssetQualityPosture(

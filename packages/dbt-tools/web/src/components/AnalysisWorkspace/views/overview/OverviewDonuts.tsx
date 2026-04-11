@@ -1,17 +1,17 @@
 import { useId, useMemo } from "react";
 import { useSyncedDocumentTheme } from "@web/hooks/workspace/useTheme";
 import type { ExecutionRow, StatusTone } from "@web/types";
-import { getStatusTonePalette } from "@web/lib/analysis-workspace/constants";
+import { getStatusTonePalette } from "@web/lib/workspace-state/constants";
 import {
   EXECUTION_TYPE_BAR_LABEL_INSIDE_MIN_SHARE,
   formatExecutionTypeSegmentPercent,
   shouldPlaceExecutionSegmentLabelInsideBar,
   sortStatusBreakdownByCountDesc,
-} from "@web/lib/analysis-workspace/executionTypeBarLabels";
+} from "@web/lib/workspace-state/executionTypeBarLabels";
 import {
   buildTypeStatusBreakdowns,
   type TypeStatusBreakdown,
-} from "@web/lib/analysis-workspace/overviewState";
+} from "@web/lib/workspace-state/overviewState";
 import { formatResourceTypeLabel } from "../../shared";
 
 function TypeStatusBarRow({

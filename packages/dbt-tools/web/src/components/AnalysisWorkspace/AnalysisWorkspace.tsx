@@ -1,5 +1,5 @@
-import type { AnalysisWorkspaceProps } from "@web/lib/analysis-workspace/types";
-import { deriveProjectName } from "@web/lib/analysis-workspace/utils";
+import type { AnalysisWorkspaceProps } from "@web/lib/workspace-state/types";
+import { deriveProjectName } from "@web/lib/workspace-state/utils";
 import { HealthView } from "./views/health/HealthView";
 import { InventoryView } from "./views/inventory/InventoryView";
 import { TimelineView } from "./timeline/TimelineView";

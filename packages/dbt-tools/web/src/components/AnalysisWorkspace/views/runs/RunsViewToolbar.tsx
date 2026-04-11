@@ -1,11 +1,11 @@
 import { type Dispatch, type SetStateAction } from "react";
-import type { RunsViewState } from "@web/lib/analysis-workspace/types";
-import { defaultRunsSortDirection } from "@web/lib/analysis-workspace/runsSort";
+import type { RunsViewState } from "@web/lib/workspace-state/types";
+import { defaultRunsSortDirection } from "@web/lib/workspace-state/runsSort";
 import type { RunsResultsSourceState } from "@web/hooks/analysis/useRunsResultsSource";
 import {
   isRunsAdapterSortBy,
   type RunsAdapterColumnLayout,
-} from "@web/lib/analysis-workspace/runsAdapterColumns";
+} from "@web/lib/workspace-state/runsAdapterColumns";
 import type { MaterializationKind } from "@web/types";
 import { MaterializationKindPillRow } from "../../MaterializationKindPillRow";
 

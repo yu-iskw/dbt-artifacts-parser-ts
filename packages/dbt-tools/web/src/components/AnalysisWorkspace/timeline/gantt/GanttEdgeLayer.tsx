@@ -1,5 +1,5 @@
 import { type ThemeMode, getThemeHex } from "@web/constants/themeColors";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import type { GanttItem } from "@web/types";
 import { X_PAD } from "./constants";
 import { type FocusTimelineEdge, focusEdgePath } from "./edgeGeometry";

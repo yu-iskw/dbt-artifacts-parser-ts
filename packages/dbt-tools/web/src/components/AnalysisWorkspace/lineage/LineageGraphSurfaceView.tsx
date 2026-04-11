@@ -9,9 +9,9 @@ import type {
   LineageGraphModel,
   LineageGraphNodeLayout,
   LensLegendItem,
-} from "@web/lib/analysis-workspace/lineageModel";
-import type { LensMode } from "@web/lib/analysis-workspace/types";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/lineageModel";
+import type { LensMode } from "@web/lib/workspace-state/types";
+import { formatSeconds } from "@web/lib/workspace-state/utils";
 import { formatResourceTypeLabel } from "../shared";
 import { LineageGraphInteractiveHotspots } from "./LineageGraphInteractiveHotspots";
 import { LineageGraphLegendBar } from "./LineageGraphLegendBar";

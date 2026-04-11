@@ -1,6 +1,6 @@
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { useLayoutEffect } from "react";
-import type { LineageGraphNodeLayout } from "@web/lib/analysis-workspace/lineageModel";
+import type { LineageGraphNodeLayout } from "@web/lib/workspace-state/lineageModel";
 import {
   OVERLAY_VIEWPORT_MARGIN,
   TOOLTIP_NODE_PADDING,

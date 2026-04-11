@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { EXPLORER_MODE_LABELS } from "@web/lib/analysis-workspace/constants";
-import type { AssetExplorerMode } from "@web/lib/analysis-workspace/types";
+import { EXPLORER_MODE_LABELS } from "@web/lib/workspace-state/constants";
+import type { AssetExplorerMode } from "@web/lib/workspace-state/types";
 import {
   EXPLORER_FILTERS_STORAGE_KEY,
   ExplorerPaneFilters,

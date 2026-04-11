@@ -6,7 +6,7 @@ import {
   type RefObject,
 } from "react";
 import type { GanttItem, ResourceNode, ResourceTestStats } from "@web/types";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import type { ThemeMode } from "@web/constants/themeColors";
 import type { FocusTimelineEdge } from "./edgeGeometry";
 import { GanttEdgeLayer } from "./GanttEdgeLayer";

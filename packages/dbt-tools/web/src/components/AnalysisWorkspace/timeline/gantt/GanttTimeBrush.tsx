@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
-import type { TimeWindow } from "@web/lib/analysis-workspace/types";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
+import type { TimeWindow } from "@web/lib/workspace-state/types";
 import type { ResourceTestStats } from "@web/types";
 import { isIssueStatus } from "./formatting";
 

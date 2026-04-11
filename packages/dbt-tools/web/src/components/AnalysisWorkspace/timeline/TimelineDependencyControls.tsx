@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type {
   TimelineDependencyDirection,
   TimelineFilterState,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import { TIMELINE_EXTENDED_MAX_HOPS } from "./gantt/constants";
 import { clampTimelineDependencyDepth } from "./gantt/dependencyControls";
 

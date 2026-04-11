@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AnalysisState, ResourceNode } from "@web/types";
-import type { SearchState } from "@web/lib/analysis-workspace/types";
+import type { SearchState } from "@web/lib/workspace-state/types";
 import { searchResourcesFromWorker } from "@web/services/analysisLoader";
 
 const OMNIBOX_LIMIT = 8;

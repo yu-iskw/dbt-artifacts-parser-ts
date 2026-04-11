@@ -3,7 +3,7 @@ import type { ExecutionRow, MaterializationKind } from "@web/types";
 import {
   MATERIALIZATION_KIND_ORDER,
   materializationKindShortLabel,
-} from "@web/lib/analysis-workspace/materializationSemanticsUi";
+} from "@web/lib/workspace-state/materializationSemanticsUi";
 
 /**
  * Distribution of normalized materializations among **model** executions in scope.

@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
-import type { AssetExplorerMode } from "@web/lib/analysis-workspace/types";
-import { formatResourceTypeLabel } from "@web/lib/analysis-workspace/utils";
+import type { AssetExplorerMode } from "@web/lib/workspace-state/types";
+import { formatResourceTypeLabel } from "@web/lib/workspace-state/utils";
 
 export { formatResourceTypeLabel };
 

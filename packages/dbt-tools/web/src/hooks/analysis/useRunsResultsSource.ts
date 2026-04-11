@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ExecutionRow } from "@web/types";
-import type { RunsViewState } from "@web/lib/analysis-workspace/types";
-import type { RunsResultsSummary } from "@web/lib/analysis-workspace/resultsDataSource";
+import type { RunsViewState } from "@web/lib/workspace-state/types";
+import type { RunsResultsSummary } from "@web/lib/workspace-state/resultsDataSource";
 
 const RESULTS_BATCH_SIZE = 100;
 

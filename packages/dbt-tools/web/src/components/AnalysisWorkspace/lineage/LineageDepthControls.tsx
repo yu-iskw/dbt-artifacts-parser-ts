@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
-import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
-import { clampDepth } from "@web/lib/analysis-workspace/lineageModel";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/workspace-state/constants";
+import { clampDepth } from "@web/lib/workspace-state/lineageModel";
 
 export function DepthStepper({
   label,

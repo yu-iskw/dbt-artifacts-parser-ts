@@ -2,7 +2,7 @@ import type { ExecutionRow } from "@web/types";
 import {
   getRunsAdapterField,
   type RunsAdapterColumn,
-} from "@web/lib/analysis-workspace/runsAdapterColumns";
+} from "@web/lib/workspace-state/runsAdapterColumns";
 
 export function getRunsTableTemplate(
   adapterColumns: RunsAdapterColumn[],

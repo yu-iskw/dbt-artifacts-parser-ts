@@ -5,13 +5,13 @@ import type {
   DashboardStatusFilter,
   RunsKind,
   RunsViewState,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import {
   createRunsResultsIndex,
   filterRunsResultsIndex,
   type RunsResultsIndex,
   type RunsResultsSummary,
-} from "@web/lib/analysis-workspace/resultsDataSource";
+} from "@web/lib/workspace-state/resultsDataSource";
 
 interface InitMessage {
   type: "init";

@@ -1,6 +1,6 @@
 import type { AnalysisState } from "@web/types";
-import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+import type { OverviewDerivedState } from "@web/lib/workspace-state/overviewState";
+import { formatSeconds } from "@web/lib/workspace-state/utils";
 import { EmptyState } from "../../../EmptyState";
 import { OverviewScopeBadge } from "./OverviewPanel";
 

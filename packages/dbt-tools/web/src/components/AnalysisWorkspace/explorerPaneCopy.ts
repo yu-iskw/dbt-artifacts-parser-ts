@@ -1,4 +1,4 @@
-import type { DashboardStatusFilter } from "@web/lib/analysis-workspace/types";
+import type { DashboardStatusFilter } from "@web/lib/workspace-state/types";
 
 /** User-facing copy for explorer metrics; exported for unit tests. */
 export const EXPLORER_UI_COPY = {

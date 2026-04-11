@@ -5,7 +5,7 @@ import type {
   RunsViewState,
   TimelineFilterState,
   WorkspaceView,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePreferences";
 import {
   buildInitialLineageViewState,

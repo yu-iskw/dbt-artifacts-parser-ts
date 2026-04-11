@@ -5,22 +5,22 @@ import type {
   AssetViewState,
   InvestigationSelectionState,
   WorkspaceView,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import {
   isMainProjectResource,
   matchesAssetMaterializationKind,
   matchesAssetResourceType,
   matchesAssetStatus,
   matchesResource,
-} from "@web/lib/analysis-workspace/utils";
-import { collectMaterializationKindsFromSemantics } from "@web/lib/analysis-workspace/materializationSemanticsUi";
+} from "@web/lib/workspace-state/utils";
+import { collectMaterializationKindsFromSemantics } from "@web/lib/workspace-state/materializationSemanticsUi";
 import {
   buildExplorerTree,
   buildResourceTestStats,
   collectBranchIds,
   collectLeafIds,
   flattenExplorerTree,
-} from "@web/lib/analysis-workspace/explorerTree";
+} from "@web/lib/workspace-state/explorerTree";
 import { ExplorerPane } from "./ExplorerPane";
 import { useInventoryExplorerExpansion } from "./useInventoryExplorerExpansion";
 

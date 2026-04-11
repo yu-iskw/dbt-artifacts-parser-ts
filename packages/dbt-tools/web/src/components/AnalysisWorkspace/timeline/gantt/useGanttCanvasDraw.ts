@@ -1,5 +1,5 @@
 import { useEffect, type RefObject } from "react";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import type { ThemeMode } from "@web/constants/themeColors";
 import type { ResourceTestStats } from "@web/types";
 import { drawGantt } from "./canvasDraw";

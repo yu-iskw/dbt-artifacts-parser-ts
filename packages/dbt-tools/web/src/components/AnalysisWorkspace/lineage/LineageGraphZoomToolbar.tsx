@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
+import { PILL_BASE } from "@web/lib/workspace-state/constants";
 
 /** Zoom / layout reset + node counts (presentation layer for lineage graph). */
 export function LineageGraphZoomToolbar({

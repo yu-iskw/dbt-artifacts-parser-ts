@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { ThemePreference } from "@web/lib/analysis-workspace/types";
+import type { ThemePreference } from "@web/lib/workspace-state/types";
 import { sourceLabel } from "@web/lib/artifactSourceLabels";
 import type {
   RemoteArtifactRun,

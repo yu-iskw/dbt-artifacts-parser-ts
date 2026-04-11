@@ -1,13 +1,13 @@
 import type { AnalysisState } from "@web/types";
-import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
+import type { OverviewDerivedState } from "@web/lib/workspace-state/overviewState";
 import {
   buildHealthOverviewHeadline,
   buildHealthSummaryBits,
-} from "@web/lib/analysis-workspace/healthOverviewHeadline";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/healthOverviewHeadline";
+import { formatSeconds } from "@web/lib/workspace-state/utils";
 import { sourceBadgeLabel } from "@web/lib/artifactSourceLabels";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
-import type { WorkspaceSignal } from "@web/lib/analysis-workspace/types";
+import type { WorkspaceSignal } from "@web/lib/workspace-state/types";
 
 function workspaceModeFromSignals(signals: WorkspaceSignal[]): string {
   const mode = signals.find((s) => s.label === "Workspace mode");

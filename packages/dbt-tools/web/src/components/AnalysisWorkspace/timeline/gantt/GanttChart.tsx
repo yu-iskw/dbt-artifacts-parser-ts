@@ -4,14 +4,14 @@ import { useSyncedDocumentTheme } from "@web/hooks/workspace/useTheme";
 import type {
   TimelineDependencyDirection,
   TimeWindow,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import type {
   GanttItem,
   ResourceNode,
   ResourceTestStats,
   TimelineAdjacencyEntry,
 } from "@web/types";
-import { groupIntoBundles } from "@web/lib/analysis-workspace/bundleLayout";
+import { groupIntoBundles } from "@web/lib/workspace-state/bundleLayout";
 import {
   AXIS_TOP,
   LABEL_COLUMN_MIN_PX,

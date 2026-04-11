@@ -2,8 +2,8 @@ import type { MaterializationKind, ResourceNode } from "@web/types";
 import type {
   AssetExplorerMode,
   DashboardStatusFilter,
-} from "@web/lib/analysis-workspace/types";
-import type { ExplorerTreeRow } from "@web/lib/analysis-workspace/explorerTree";
+} from "@web/lib/workspace-state/types";
+import type { ExplorerTreeRow } from "@web/lib/workspace-state/explorerTree";
 
 export interface ExplorerPaneProps {
   treeRows: ExplorerTreeRow[];

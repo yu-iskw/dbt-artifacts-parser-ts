@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import type { AssetViewState } from "@web/lib/analysis-workspace/types";
+import type { AssetViewState } from "@web/lib/workspace-state/types";
 import {
   collectAncestorBranchIdsForResource,
   type ExplorerTreeNode,
   projectRootBranchId,
-} from "@web/lib/analysis-workspace/explorerTree";
+} from "@web/lib/workspace-state/explorerTree";
 
 /**
  * Expands ancestors for the selected resource (deep links / clicks) and, in

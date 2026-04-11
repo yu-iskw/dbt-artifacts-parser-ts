@@ -1,5 +1,5 @@
-import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
-import { materializationKindShortLabel } from "@web/lib/analysis-workspace/materializationSemanticsUi";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/workspace-state/constants";
+import { materializationKindShortLabel } from "@web/lib/workspace-state/materializationSemanticsUi";
 import type { MaterializationKind } from "@web/types";
 
 export function MaterializationKindPillRow({

@@ -1,5 +1,5 @@
-import type { LensLegendItem } from "@web/lib/analysis-workspace/lineageModel";
-import type { LensMode } from "@web/lib/analysis-workspace/types";
+import type { LensLegendItem } from "@web/lib/workspace-state/lineageModel";
+import type { LensMode } from "@web/lib/workspace-state/types";
 
 /** Lens legend + clear control (presentation layer for lineage graph). */
 export function LineageGraphLegendBar({

@@ -1,6 +1,6 @@
 import type { ResourceNode } from "@web/types";
-import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
-import type { AssetExplorerMode } from "@web/lib/analysis-workspace/types";
+import { TEST_RESOURCE_TYPES } from "@web/lib/workspace-state/constants";
+import type { AssetExplorerMode } from "@web/lib/workspace-state/types";
 import { formatResourceTypeLabel } from "./shared";
 import { EXPLORER_UI_COPY } from "./explorerPaneCopy";
 

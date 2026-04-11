@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { WorkspaceSignal } from "../AnalysisWorkspace";
 import { ErrorBanner } from "../ErrorBanner";
 import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePreferences";
-import type { ThemePreference } from "@web/lib/analysis-workspace/types";
+import type { ThemePreference } from "@web/lib/workspace-state/types";
 import type { UseWorkspaceUrlStateResult } from "@web/hooks/workspace/useWorkspaceUrlState";
 import { useOmniboxResults } from "@web/hooks/analysis/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";

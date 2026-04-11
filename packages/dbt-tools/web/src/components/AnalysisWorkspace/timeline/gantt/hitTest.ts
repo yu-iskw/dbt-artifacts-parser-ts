@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 import type { GanttItem } from "@web/types";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import {
   AXIS_TOP,
   BUNDLE_HULL_PAD,

@@ -12,7 +12,7 @@ import type {
   AssetViewState,
   LineageViewState,
   WorkspaceView,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import { ResourceTypeBadge } from "../shared";
 import { MaterializationSemanticsBadge } from "../MaterializationSemanticsBadge";
 import { LineagePanel } from "../lineage/LineagePanel";

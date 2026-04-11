@@ -1,4 +1,4 @@
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import type { ResourceTestStats } from "@web/types";
 import { AXIS_TOP, BUNDLE_HULL_PAD, ROW_H, TEST_LANE_H } from "./constants";
 import { isPositiveStatus } from "./formatting";

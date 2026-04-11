@@ -1,5 +1,5 @@
 import type { GanttItem, TimelineAdjacencyEntry } from "@web/types";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import { describe, expect, it } from "vitest";
 import {
   applyNeighborCap,

@@ -1,4 +1,4 @@
-import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
+import type { TimelineDependencyDirection } from "@web/lib/workspace-state/types";
 import type { FocusTimelineEdgesOptions } from "./edgeGeometry";
 import {
   TIMELINE_EXTENDED_MAX_EDGES_PER_DIRECTION,

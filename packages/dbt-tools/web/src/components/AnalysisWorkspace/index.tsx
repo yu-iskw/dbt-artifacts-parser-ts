@@ -17,5 +17,5 @@ export type {
   InvestigationSelectionState,
   WorkspaceSignal,
   AnalysisWorkspaceProps,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 export { AnalysisWorkspace } from "./AnalysisWorkspace";

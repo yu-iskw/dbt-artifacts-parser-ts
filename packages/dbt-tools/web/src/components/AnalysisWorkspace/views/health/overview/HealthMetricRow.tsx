@@ -7,8 +7,8 @@ import type { AnalysisState } from "@web/types";
 import {
   PRIMARY_PROJECT_SUMMARY_GROUPS,
   TEST_RESOURCE_TYPES,
-} from "@web/lib/analysis-workspace/constants";
-import { isMainProjectResource } from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/constants";
+import { isMainProjectResource } from "@web/lib/workspace-state/utils";
 
 function groupKeyForResourceType(resourceType: string): string {
   return TEST_RESOURCE_TYPES.has(resourceType) ? "tests" : resourceType;

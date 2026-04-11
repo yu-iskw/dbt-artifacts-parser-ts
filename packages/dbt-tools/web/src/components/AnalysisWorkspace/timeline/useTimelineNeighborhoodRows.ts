@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { AnalysisState, GanttItem } from "@web/types";
-import type { TimelineFilterState } from "@web/lib/analysis-workspace/types";
+import type { TimelineFilterState } from "@web/lib/workspace-state/types";
 import {
   collectTimelineNeighborhoodIds,
   resolveTimelineNeighborhoodFocusId,

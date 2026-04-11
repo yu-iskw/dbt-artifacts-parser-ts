@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { GanttItem, TimelineAdjacencyEntry } from "@web/types";
-import type { TimelineDependencyDirection } from "@web/lib/analysis-workspace/types";
+import type { TimelineDependencyDirection } from "@web/lib/workspace-state/types";
 import { getFocusTimelineEdges, type FocusTimelineEdge } from "./edgeGeometry";
 import { mapTimelineDependencyControlsToFocusOptions } from "./dependencyControls";
 

@@ -3,7 +3,7 @@ import {
   buildMaterializationTooltipText,
   materializationKindShortLabel,
   shouldShowMaterializationSemanticsBadge,
-} from "@web/lib/analysis-workspace/materializationSemanticsUi";
+} from "@web/lib/workspace-state/materializationSemanticsUi";
 
 /**
  * Compact materialization chip; distinct from status tones and resource-type pills

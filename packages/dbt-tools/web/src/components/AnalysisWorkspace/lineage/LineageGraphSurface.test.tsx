@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ResourceNode } from "@web/types";
-import { buildLineageGraphModel } from "@web/lib/analysis-workspace/lineageModel";
+import { buildLineageGraphModel } from "@web/lib/workspace-state/lineageModel";
 import { LineageGraphSurface } from "./LineageGraphSurface";
 
 function makeResource(overrides: Partial<ResourceNode> = {}): ResourceNode {

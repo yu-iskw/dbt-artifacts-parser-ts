@@ -2,12 +2,12 @@ import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { AnalysisState, ResourceNode } from "@web/types";
-import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
+import { PILL_BASE } from "@web/lib/workspace-state/constants";
 import {
   type LineageDisplayMode,
   buildLineageGraphModel,
-} from "@web/lib/analysis-workspace/lineageModel";
-import type { LensMode } from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/lineageModel";
+import type { LensMode } from "@web/lib/workspace-state/types";
 import { SectionCard, formatResourceTypeLabel } from "../shared";
 import { DepthStepper, SharedDepthSelector } from "./LineageDepthControls";
 import { LensSelector } from "./LensSelector";

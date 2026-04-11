@@ -10,7 +10,7 @@ import type { ResourceNode, ResourceTestStats } from "@web/types";
 import { TOOLTIP_LABEL_STYLE } from "./constants";
 import { formatMs, formatTimestamp } from "./formatting";
 import type { HoverState } from "./hitTest";
-import { buildMaterializationTooltipText } from "@web/lib/analysis-workspace/materializationSemanticsUi";
+import { buildMaterializationTooltipText } from "@web/lib/workspace-state/materializationSemanticsUi";
 
 const TOOLTIP_OFFSET_X = 16;
 const TOOLTIP_OFFSET_Y = 0;

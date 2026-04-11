@@ -3,11 +3,11 @@ import type { AnalysisState } from "@web/types";
 import {
   buildInvocationResourceComparison,
   type InvocationResourceComparisonRow,
-} from "@web/lib/analysis-workspace/invocationResourceStats";
+} from "@web/lib/workspace-state/invocationResourceStats";
 import {
   deriveProjectName,
   formatResourceTypeLabel,
-} from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/utils";
 
 export function InvocationResourceStatsTable({
   rows,

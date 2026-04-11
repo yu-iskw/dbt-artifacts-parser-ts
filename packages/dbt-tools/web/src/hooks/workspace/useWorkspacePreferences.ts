@@ -4,7 +4,7 @@ import type {
   LensMode,
   ThemePreference,
   TimelineDependencyDirection,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 
 const WORKSPACE_PREFERENCES_KEY = "dbt-tools.workspacePreferences";
 

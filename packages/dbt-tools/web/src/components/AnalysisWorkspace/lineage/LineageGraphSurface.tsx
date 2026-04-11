@@ -13,8 +13,8 @@ import {
   collectHighlightedGraphIds,
   filterLineageGraphModel,
   getLensLegendItems,
-} from "@web/lib/analysis-workspace/lineageModel";
-import type { LensMode } from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/lineageModel";
+import type { LensMode } from "@web/lib/workspace-state/types";
 import { getScrollToCenterSelectedNode } from "./lineageViewportScroll";
 import { LineageGraphSurfaceView } from "./LineageGraphSurfaceView";
 import { useLineageGraphTooltipPosition } from "./useLineageGraphTooltipPosition";

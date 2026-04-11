@@ -15,7 +15,7 @@ import type {
   SearchState,
   TimelineFilterState,
   WorkspaceView,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import type { WorkspacePreferences } from "./useWorkspacePreferences";
 import {
   getInitialSidebarCollapsed,

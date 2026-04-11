@@ -1,12 +1,12 @@
 import type {
   LineageDisplayMode,
   LineageGraphNodeLayout,
-} from "@web/lib/analysis-workspace/lineageModel";
+} from "@web/lib/workspace-state/lineageModel";
 import {
   getLensNodeFill,
   supportsTests,
-} from "@web/lib/analysis-workspace/lineageModel";
-import type { LensMode } from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/lineageModel";
+import type { LensMode } from "@web/lib/workspace-state/types";
 import { ResourceTypeIcon, formatResourceTypeLabel } from "../shared";
 import { estimateBadgeWidth } from "./lineageOverlayConstants";
 

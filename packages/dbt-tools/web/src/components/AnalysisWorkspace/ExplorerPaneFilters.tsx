@@ -1,5 +1,5 @@
-import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
-import type { DashboardStatusFilter } from "@web/lib/analysis-workspace/types";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/workspace-state/constants";
+import type { DashboardStatusFilter } from "@web/lib/workspace-state/types";
 import { formatResourceTypeLabel } from "./shared";
 import type { MaterializationKind } from "@web/types";
 import { MaterializationKindPillRow } from "./MaterializationKindPillRow";

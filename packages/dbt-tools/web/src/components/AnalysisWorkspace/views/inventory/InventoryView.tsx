@@ -5,7 +5,7 @@ import type {
   AssetViewState,
   LineageViewState,
   WorkspaceView,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import { searchResourcesFromWorker } from "@web/services/analysisLoader";
 import { AssetsView } from "../AssetsView";
 import { EmptyState } from "../../../EmptyState";

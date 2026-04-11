@@ -5,12 +5,12 @@ import {
   getAdapterResponseFieldsBeyondNormalized,
   getPresentAdapterMetricDescriptors,
 } from "@dbt-tools/core/browser";
-import { NOT_EXECUTED } from "@web/lib/analysis-workspace/catalogCopy";
+import { NOT_EXECUTED } from "@web/lib/workspace-state/catalogCopy";
 import {
   displayResourcePath,
   formatRelationNameForDisplay,
   formatSeconds,
-} from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/utils";
 import { ResourceMarkdownDescription } from "../ResourceMarkdownDescription";
 import { SectionCard } from "../shared";
 

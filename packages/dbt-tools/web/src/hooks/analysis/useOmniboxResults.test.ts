@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisState, ResourceNode } from "@web/types";
-import { matchesResource } from "@web/lib/analysis-workspace/utils";
+import { matchesResource } from "@web/lib/workspace-state/utils";
 import { computeOmniboxRecentResults } from "./useOmniboxResults";
 
 function analysisWithResources(resources: ResourceNode[]): AnalysisState {

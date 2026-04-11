@@ -1,13 +1,13 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useMemo } from "react";
 import type { AnalysisState } from "@web/types";
-import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
+import { TEST_RESOURCE_TYPES } from "@web/lib/workspace-state/constants";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type {
   OverviewFilterState,
   WorkspaceSignal,
-} from "@web/lib/analysis-workspace/types";
-import { buildOverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
+} from "@web/lib/workspace-state/types";
+import { buildOverviewDerivedState } from "@web/lib/workspace-state/overviewState";
 import { EmptyState } from "../../../EmptyState";
 import {
   OverviewActionListCard,

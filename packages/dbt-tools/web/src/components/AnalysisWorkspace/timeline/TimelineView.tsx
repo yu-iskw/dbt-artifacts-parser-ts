@@ -17,16 +17,16 @@ import type { AnalysisState, GanttItem, ResourceNode } from "@web/types";
 import type {
   InvestigationSelectionState,
   TimelineFilterState,
-} from "@web/lib/analysis-workspace/types";
-import { TEST_RESOURCE_TYPES } from "@web/lib/analysis-workspace/constants";
+} from "@web/lib/workspace-state/types";
+import { TEST_RESOURCE_TYPES } from "@web/lib/workspace-state/constants";
 import {
   countTimelineTestResources,
   deriveProjectName,
   getDefaultTimelineActiveTypes,
   isDefaultTimelineResource,
   timelineGanttHasCompileExecutePhases,
-} from "@web/lib/analysis-workspace/utils";
-import { buildResourceTestStats } from "@web/lib/analysis-workspace/explorerTree";
+} from "@web/lib/workspace-state/utils";
+import { buildResourceTestStats } from "@web/lib/workspace-state/explorerTree";
 import { SectionCard, WorkspaceScaffold } from "../shared";
 import {
   TimelineSearchControls,

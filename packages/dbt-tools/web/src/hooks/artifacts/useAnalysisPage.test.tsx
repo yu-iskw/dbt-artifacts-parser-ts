@@ -18,7 +18,7 @@ const {
   switchToArtifactRun: vi.fn(),
 }));
 
-vi.mock("../services/artifactApi", () => ({
+vi.mock("../../services/artifactApi", () => ({
   fetchArtifactSourceStatus,
   loadCurrentManagedArtifacts,
   refetchFromApi,

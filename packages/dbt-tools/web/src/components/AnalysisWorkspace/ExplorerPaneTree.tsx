@@ -2,13 +2,13 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { type ReactNode, useRef } from "react";
 import { EmptyState } from "../EmptyState";
 import type { ResourceNode } from "@web/types";
-import type { AssetExplorerMode } from "@web/lib/analysis-workspace/types";
+import type { AssetExplorerMode } from "@web/lib/workspace-state/types";
 import {
   getResourceOriginLabel,
   testStatsHasAttention,
   type ExplorerTreeRow,
   type TestStats,
-} from "@web/lib/analysis-workspace/explorerTree";
+} from "@web/lib/workspace-state/explorerTree";
 import {
   ExplorerBranchIcon,
   ResourceTypeIcon,

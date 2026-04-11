@@ -5,7 +5,7 @@ import type {
   ResourceNode,
   SemanticModelDefinition,
 } from "@web/types";
-import { NOT_CAPTURED } from "@web/lib/analysis-workspace/catalogCopy";
+import { NOT_CAPTURED } from "@web/lib/workspace-state/catalogCopy";
 import { SectionCard } from "../shared";
 import { SqlPanel } from "./AssetsViewSqlPanel";
 import { Spinner } from "../../ui/Spinner";

@@ -10,7 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AnalysisState, ExecutionRow } from "@web/types";
-import type { RunsViewState } from "@web/lib/analysis-workspace/types";
+import type { RunsViewState } from "@web/lib/workspace-state/types";
 import { useRunsResultsSource } from "@web/hooks/analysis/useRunsResultsSource";
 import { RunsView } from "./RunsView";
 

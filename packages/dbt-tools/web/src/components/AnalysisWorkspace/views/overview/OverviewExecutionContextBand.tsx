@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { AnalysisState, ThreadStat } from "@web/types";
-import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
-import type { OverviewDerivedState } from "@web/lib/analysis-workspace/overviewState";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/workspace-state/constants";
+import type { OverviewDerivedState } from "@web/lib/workspace-state/overviewState";
 import {
   THREAD_DISTRIBUTION_METRIC_OPTIONS,
   capSortedThreadStats,
@@ -10,8 +10,8 @@ import {
   maxThreadStatMetricValue,
   sortThreadStatsByMetric,
   type ThreadDistributionMetric,
-} from "@web/lib/analysis-workspace/threadDistributionMetrics";
-import { formatSeconds } from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/threadDistributionMetrics";
+import { formatSeconds } from "@web/lib/workspace-state/utils";
 import { EmptyState } from "../../../EmptyState";
 
 function threadDistributionRowDetail(

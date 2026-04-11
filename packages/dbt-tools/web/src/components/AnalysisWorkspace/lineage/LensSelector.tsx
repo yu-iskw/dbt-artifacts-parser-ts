@@ -1,5 +1,5 @@
-import { PILL_ACTIVE, PILL_BASE } from "@web/lib/analysis-workspace/constants";
-import type { LensMode } from "@web/lib/analysis-workspace/types";
+import { PILL_ACTIVE, PILL_BASE } from "@web/lib/workspace-state/constants";
+import type { LensMode } from "@web/lib/workspace-state/types";
 
 export function LensSelector({
   lensMode,

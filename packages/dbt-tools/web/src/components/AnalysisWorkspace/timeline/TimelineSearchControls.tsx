@@ -1,6 +1,6 @@
 import { type Dispatch, type SetStateAction } from "react";
-import { PILL_BASE } from "@web/lib/analysis-workspace/constants";
-import type { TimelineFilterState } from "@web/lib/analysis-workspace/types";
+import { PILL_BASE } from "@web/lib/workspace-state/constants";
+import type { TimelineFilterState } from "@web/lib/workspace-state/types";
 
 export type TimelineTypeFilterHint = {
   shown: string[];

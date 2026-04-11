@@ -3,8 +3,8 @@
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
-import type { TimeWindow } from "@web/lib/analysis-workspace/types";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
+import type { TimeWindow } from "@web/lib/workspace-state/types";
 import type { GanttItem, ResourceTestStats } from "@web/types";
 import { GanttTimeBrush, hasIssueSignal } from "./GanttTimeBrush";
 

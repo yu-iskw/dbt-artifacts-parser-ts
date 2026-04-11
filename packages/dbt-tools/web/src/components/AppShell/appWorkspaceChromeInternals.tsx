@@ -5,12 +5,12 @@ import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePref
 import {
   formatRunStartedAt,
   getInvocationTimestamp,
-} from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/utils";
 import { sourceLabel } from "@web/lib/artifactSourceLabels";
 import type {
   ThemePreference,
   WorkspaceSignal,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import type { UseWorkspaceUrlStateResult } from "@web/hooks/workspace/useWorkspaceUrlState";
 import type { OmniboxResultsSnapshot } from "@web/hooks/analysis/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";

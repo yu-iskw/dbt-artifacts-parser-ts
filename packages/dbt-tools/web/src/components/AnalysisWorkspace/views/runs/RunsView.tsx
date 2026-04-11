@@ -3,17 +3,17 @@ import type { AnalysisState } from "@web/types";
 import type {
   InvestigationSelectionState,
   RunsViewState,
-} from "@web/lib/analysis-workspace/types";
+} from "@web/lib/workspace-state/types";
 import { useRunsResultsSource } from "@web/hooks/analysis/useRunsResultsSource";
 import {
   getRunsAdapterColumnLayout,
   isRunsAdapterSortBy,
-} from "@web/lib/analysis-workspace/runsAdapterColumns";
+} from "@web/lib/workspace-state/runsAdapterColumns";
 import { WorkspaceScaffold } from "../../shared";
 import { RunsAdapterInspector } from "./RunsViewAdapterInspector";
 import { RunsResultsTable } from "./RunsViewResultsTable";
 import { RunsToolbar } from "./RunsViewToolbar";
-import { collectMaterializationKindsFromSemantics } from "@web/lib/analysis-workspace/materializationSemanticsUi";
+import { collectMaterializationKindsFromSemantics } from "@web/lib/workspace-state/materializationSemanticsUi";
 
 export function RunsView({
   analysis,

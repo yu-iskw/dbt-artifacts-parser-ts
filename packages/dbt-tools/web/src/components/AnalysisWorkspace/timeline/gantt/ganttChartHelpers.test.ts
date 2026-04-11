@@ -1,4 +1,4 @@
-import type { BundleRow } from "@web/lib/analysis-workspace/bundleLayout";
+import type { BundleRow } from "@web/lib/workspace-state/bundleLayout";
 import type { GanttItem } from "@web/types";
 import { describe, expect, it } from "vitest";
 import {

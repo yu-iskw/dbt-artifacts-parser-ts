@@ -4,7 +4,7 @@ import type {
   MutableRefObject,
   SetStateAction,
 } from "react";
-import type { LineageGraphNodeLayout } from "@web/lib/analysis-workspace/lineageModel";
+import type { LineageGraphNodeLayout } from "@web/lib/workspace-state/lineageModel";
 import {
   CONTEXT_MENU_OVERLAY_SIZE,
   positionOverlay,
