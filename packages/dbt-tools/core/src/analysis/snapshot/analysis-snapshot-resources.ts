@@ -279,11 +279,7 @@ function buildResourceNode(
       execution?.adapterResponseFields,
     ),
     ...withValue(catalogStats != null, "catalogStats", catalogStats),
-    ...withValue(
-      sourceFreshness != null,
-      "sourceFreshness",
-      sourceFreshness,
-    ),
+    ...withValue(sourceFreshness != null, "sourceFreshness", sourceFreshness),
   };
 }
 
