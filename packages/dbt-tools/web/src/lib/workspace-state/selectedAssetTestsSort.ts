@@ -1,5 +1,5 @@
 import type { ResourceNode } from "@web/types";
-import { formatResourceTypeLabel } from "@web/lib/analysis-workspace/utils";
+import { formatResourceTypeLabel } from "@web/lib/workspace-state/utils";
 
 export type AssetTestsSortKey =
   | "test"

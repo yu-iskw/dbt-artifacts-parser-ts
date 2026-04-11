@@ -2,7 +2,7 @@ import type { AnalysisState, ResourceNode } from "@web/types";
 import {
   isDefaultTimelineResource,
   isMainProjectResource,
-} from "@web/lib/analysis-workspace/utils";
+} from "@web/lib/workspace-state/utils";
 
 /** Types always listed so operators can compare zeros (e.g. sources in graph vs timeline). */
 const PINNED_RESOURCE_TYPES = ["model", "source", "seed", "snapshot"] as const;

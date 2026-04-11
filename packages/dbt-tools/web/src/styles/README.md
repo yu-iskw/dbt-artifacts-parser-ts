@@ -23,4 +23,4 @@ The **legacy** manual mirror `src/constants/themeColors.ts` remains for existing
 
 ## Status colors in TypeScript
 
-**`src/constants/colors.ts`** defines `STATUS_COLORS` and helpers (`getStatusColor`, `getResourceTypeColor`) for execution/run status and resource-type accents. Chart code uses **`getStatusTonePalette`** from `src/lib/analysis-workspace/constants.ts` for **StatusTone**-aligned palettes (Gantt legend, donuts, etc.).
+**`src/constants/colors.ts`** defines `STATUS_COLORS` and helpers (`getStatusColor`, `getResourceTypeColor`) for execution/run status and resource-type accents. Chart code uses **`getStatusTonePalette`** from `src/lib/workspace-state/constants.ts` for **StatusTone**-aligned palettes (Gantt legend, donuts, etc.).

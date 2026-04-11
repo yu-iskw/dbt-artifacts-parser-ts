@@ -4,7 +4,7 @@ import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { parseCatalog } from "dbt-artifacts-parser/catalog";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import { parseSources } from "dbt-artifacts-parser/sources";
-import { matchesResource } from "../lib/analysis-workspace/utils";
+import { matchesResource } from "../lib/workspace-state/utils";
 import {
   buildAnalysisSnapshotFromParsedArtifactBundle,
   type AnalysisSnapshot,

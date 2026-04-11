@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getStatusTonePalette } from "@web/lib/analysis-workspace/constants";
+import { getStatusTonePalette } from "@web/lib/workspace-state/constants";
 
 describe("getStatusTonePalette", () => {
   it("returns distinct semantic colors for light theme", () => {
