@@ -4,7 +4,7 @@ import {
   useDeferredValue,
   useMemo,
 } from "react";
-import { GanttChart } from "./GanttChart";
+import { GanttChart } from "./gantt/GanttChart";
 import { GanttLegend } from "./GanttLegend";
 import { TimelineDependencyControls } from "./TimelineDependencyControls";
 import { TIMELINE_BUNDLE_COUNT_WARNING } from "./gantt/constants";
