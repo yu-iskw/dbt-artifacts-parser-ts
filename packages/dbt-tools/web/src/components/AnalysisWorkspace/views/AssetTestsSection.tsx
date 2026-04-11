@@ -5,10 +5,7 @@ import type {
   WorkspaceView,
 } from "@web/lib/workspace-state/types";
 import { NOT_EXECUTED } from "@web/lib/workspace-state/catalogCopy";
-import {
-  formatSeconds,
-  badgeClassName,
-} from "@web/lib/workspace-state/utils";
+import { formatSeconds, badgeClassName } from "@web/lib/workspace-state/utils";
 import { buildSelectedAssetTestEvidence } from "@web/lib/workspace-state/explorerTree";
 import {
   sortSelectedAssetTests,

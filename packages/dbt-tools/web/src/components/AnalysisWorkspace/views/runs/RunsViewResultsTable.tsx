@@ -19,10 +19,7 @@ import {
   runsColumnHeaderSortUi,
 } from "@web/lib/workspace-state/runsSort";
 import type { RunsResultsSourceState } from "@web/hooks/analysis/useRunsResultsSource";
-import {
-  badgeClassName,
-  formatSeconds,
-} from "@web/lib/workspace-state/utils";
+import { badgeClassName, formatSeconds } from "@web/lib/workspace-state/utils";
 import type { RunsAdapterColumn } from "@web/lib/workspace-state/runsAdapterColumns";
 import {
   getAdapterCellValue,

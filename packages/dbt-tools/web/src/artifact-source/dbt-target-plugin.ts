@@ -9,9 +9,9 @@ import {
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
 } from "@dbt-tools/core";
-import { ArtifactSourceService } from "./artifact-source/sourceService";
-import { resolveWatchableLocalTargetDir } from "./artifact-source/resolveLocalTargetDir";
-import { tryHandleArtifactSourceViteRequest } from "./artifact-source/viteArtifactRoutes";
+import { ArtifactSourceService } from "./sourceService";
+import { resolveWatchableLocalTargetDir } from "./resolveLocalTargetDir";
+import { tryHandleArtifactSourceViteRequest } from "./viteArtifactRoutes";
 
 function debugLog(...args: unknown[]) {
   if (isDbtToolsDebugEnabled()) {
