@@ -38,11 +38,15 @@ This skill covers **deterministic** automation (specs + CI-style runs). It does 
 
 ## Preview build constraint
 
-Playwright starts **`vite preview`** on `http://localhost:4173` (see `playwright.config.ts`). **`dist/` must already exist**—run `pnpm build` / `pnpm --filter @dbt-tools/web build` first, or rely on the **Test** workflow which builds before E2E. Tests exercise the **production preview** bundle, not `pnpm dev`.
+Playwright starts **`vite preview`** on `http://localhost:4173` (see `playwright.config.ts`). Always run **`pnpm --filter @dbt-tools/web build`** before running tests—do not assume `dist/` is current. The **Test** workflow always builds before E2E shards; in any other context (skill invocation, local run, `ui-feature-verify`) rebuild explicitly. Tests exercise the **production preview** bundle, not `pnpm dev`.
 
 Some flows may **fail or be skipped** in preview while they work in dev—for example, code paths that assume Node `require` or dev-only bundling. Do **not** remove `test.skip` or weaken assertions without **fixing the underlying preview/bundle issue**. Document new skips with a short comment pointing to the root cause.
 
 Details: [Playwright conventions](references/playwright-conventions.md).
+
+## Coverage contract
+
+For every new button, tab, pivot, or navigation element added to a view, the spec for that view must include at least one assertion that the element exists and is visible (e.g. `expect(page.getByRole('button', { name: '...' })).toBeVisible()`). The `ui-feature-verify` skill's step 8 gap report flags missing assertions before the session ends. Do not ship a UI feature without that assertion.
 
 ## Further reading
 

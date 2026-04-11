@@ -5,7 +5,7 @@ Source of truth: [`packages/dbt-tools/web/playwright.config.ts`](../../../../pac
 ## Server and base URL
 
 - **`baseURL`:** `http://localhost:4173`
-- **`webServer`:** `vite preview` on port `4173` only (see config). **`dist/` must exist** before preview starts—run `pnpm build` (or `pnpm --filter @dbt-tools/web build`) first. The GitHub **Test** workflow builds the monorepo before the sharded E2E jobs.
+- **`webServer`:** `vite preview` on port `4173` only (see config). Always run `pnpm --filter @dbt-tools/web build` before preview starts—do not assume `dist/` is current. The GitHub **Test** workflow always builds before the sharded E2E jobs.
 - Tests always hit the **preview** server. Do not assume HMR, dev-only env, or behaviors that differ between `pnpm dev` and `vite preview` unless you explicitly verify both.
 
 ## Projects and reporting

@@ -25,6 +25,10 @@ Optimize for fast failure. Run the cheapest high-signal checks first, then the s
 - **Step 6 — never parallel with build or pack on the same workspace:** `pnpm codeql` runs `codeql:db`, which invokes `codeql:clean` and **deletes** `packages/dbt-tools/web/dist`, `dist-serve`, and CodeQL artifacts. Run CodeQL only **after** step 5 completes (or accept that web build outputs under `packages/dbt-tools/web` are removed afterward).
 - **Step 7 — sequential, mutating:** Run **normalization** only **after** step 6. Do **not** parallelize step 7 with Batch A or with step 3. `pnpm format` rewrites files; if the working tree is still dirty after step 7’s stability loop, do **not** claim full completion—report the remaining diff (or `git status --short`).
 
+## Working-tree check (before steps 1–7)
+
+Before running any step, run `git status --short`. If any paths appear, warn the caller and ask them to commit or stash before proceeding. Do not start verification while a foreground agent is still editing the same files—a write conflict at step 7 normalization wastes tokens resolving merge artifacts.
+
 ## Steps (canonical order)
 
 1. Run `pnpm lint:report` from the repository root. This catches policy violations quickly, including file-size and complexity regressions. If it fails, use `lint-fix` until it passes, then rerun `pnpm lint:report`.
