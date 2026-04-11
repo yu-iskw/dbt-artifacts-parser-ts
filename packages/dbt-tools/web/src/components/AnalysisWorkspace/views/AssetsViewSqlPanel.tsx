@@ -17,77 +17,103 @@ interface SqlToken {
   value: string;
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity -- SQL lexer branches
 function tokenizeSQL(sql: string): SqlToken[] {
+  const readBlockComment = (start: number): string | null => {
+    if (!sql.startsWith("/*", start)) return null;
+    const end = sql.indexOf("*/", start + 2);
+    return end === -1 ? sql.slice(start) : sql.slice(start, end + 2);
+  };
+
+  const readLineComment = (start: number): string | null => {
+    if (!sql.startsWith("--", start)) return null;
+    const end = sql.indexOf("\n", start);
+    return end === -1 ? sql.slice(start) : sql.slice(start, end + 1);
+  };
+
+  const readStringLiteral = (start: number): string | null => {
+    if (sql[start] !== "'") return null;
+    let end = start + 1;
+    while (end < sql.length) {
+      if (sql[end] === "'" && sql[end - 1] !== "\\") {
+        end += 1;
+        break;
+      }
+      end += 1;
+    }
+    return sql.slice(start, end);
+  };
+
+  const readNumberLiteral = (start: number): string | null => {
+    const numMatch = /^[0-9]+(\.[0-9]+)?/.exec(sql.slice(start));
+    if (!numMatch || (start > 0 && /[a-zA-Z_]/.test(sql[start - 1]))) {
+      return null;
+    }
+    return numMatch[0];
+  };
+
+  const readWord = (start: number): { type: string; value: string } | null => {
+    const wordMatch = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(sql.slice(start));
+    if (!wordMatch) return null;
+    const word = wordMatch[0];
+    const upper = word.toUpperCase();
+    return {
+      type: SQL_KEYWORDS.has(upper)
+        ? "keyword"
+        : SQL_FUNCTIONS.has(upper)
+          ? "function"
+          : "identifier",
+      value: word,
+    };
+  };
+
+  const readStructuredToken = (
+    start: number,
+  ): { type: string; value: string } | null => {
+    const value =
+      readBlockComment(start) ??
+      readLineComment(start) ??
+      readStringLiteral(start) ??
+      readNumberLiteral(start);
+    if (value == null) return null;
+    if (value.startsWith("/*") || value.startsWith("--")) {
+      return { type: "comment", value };
+    }
+    if (sql[start] === "'") {
+      return { type: "string", value };
+    }
+    return { type: "number", value };
+  };
+
+  const singleCharTokenType = (char: string): string | null => {
+    if (/[=<>!|+\-*/%^&~]/.test(char)) return "operator";
+    if (/[(),;.[\]{}]/.test(char)) return "punctuation";
+    return null;
+  };
+
   const tokens: SqlToken[] = [];
   let pos = 0;
   const len = sql.length;
 
   while (pos < len) {
-    // Block comment
-    if (sql.startsWith("/*", pos)) {
-      const end = sql.indexOf("*/", pos + 2);
-      const value = end === -1 ? sql.slice(pos) : sql.slice(pos, end + 2);
-      tokens.push({ type: "comment", value });
-      pos += value.length;
+    const structuredToken = readStructuredToken(pos);
+    if (structuredToken != null) {
+      tokens.push(structuredToken);
+      pos += structuredToken.value.length;
       continue;
     }
-    // Line comment
-    if (sql.startsWith("--", pos)) {
-      const end = sql.indexOf("\n", pos);
-      const value = end === -1 ? sql.slice(pos) : sql.slice(pos, end + 1);
-      tokens.push({ type: "comment", value });
-      pos += value.length;
+
+    const word = readWord(pos);
+    if (word != null) {
+      tokens.push(word);
+      pos += word.value.length;
       continue;
     }
-    // Single-quoted string
-    if (sql[pos] === "'") {
-      let i = pos + 1;
-      while (i < len) {
-        if (sql[i] === "'" && sql[i - 1] !== "\\") {
-          i++;
-          break;
-        }
-        i++;
-      }
-      tokens.push({ type: "string", value: sql.slice(pos, i) });
-      pos = i;
-      continue;
-    }
-    // Number
-    const numMatch = /^[0-9]+(\.[0-9]+)?/.exec(sql.slice(pos));
-    if (numMatch && (pos === 0 || !/[a-zA-Z_]/.test(sql[pos - 1]))) {
-      tokens.push({ type: "number", value: numMatch[0] });
-      pos += numMatch[0].length;
-      continue;
-    }
-    // Word (keyword, function, or identifier)
-    const wordMatch = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(sql.slice(pos));
-    if (wordMatch) {
-      const word = wordMatch[0];
-      const upper = word.toUpperCase();
-      const type = SQL_KEYWORDS.has(upper)
-        ? "keyword"
-        : SQL_FUNCTIONS.has(upper)
-          ? "function"
-          : "identifier";
-      tokens.push({ type, value: word });
-      pos += word.length;
-      continue;
-    }
-    // Operator
-    if (/[=<>!|+\-*/%^&~]/.test(sql[pos])) {
-      tokens.push({ type: "operator", value: sql[pos] });
+    const charType = singleCharTokenType(sql[pos]);
+    if (charType != null) {
+      tokens.push({ type: charType, value: sql[pos] });
       pos++;
       continue;
     }
-    // Punctuation
-    if (/[(),;.[\]{}]/.test(sql[pos])) {
-      tokens.push({ type: "punctuation", value: sql[pos] });
-      pos++;
-      continue;
-    }
-    // Whitespace / anything else — keep as-is
     tokens.push({ type: "plain", value: sql[pos] });
     pos++;
   }

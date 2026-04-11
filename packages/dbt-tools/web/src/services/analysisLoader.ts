@@ -233,59 +233,83 @@ class AnalysisWorkerClient {
     this.pending.clear();
   }
 
+  private resolveLoadResponse(
+    pending: PendingLoad,
+    payload: AnalysisWorkerResponse,
+  ): boolean {
+    if (payload.type === "analysis-error") {
+      pending.reject(new Error(payload.message));
+      return true;
+    }
+    if (payload.type === "analysis-ready") {
+      pending.resolve({
+        analysis: payload.analysis,
+        metrics: {
+          requestId: payload.requestId,
+          source: pending.source,
+          dispatchMarkName: "",
+          readyMarkName: "",
+          analysisReadyMeasureName: "",
+          timings: payload.timings,
+        },
+      });
+      return true;
+    }
+    return false;
+  }
+
+  private resolveResourceCodeResponse(
+    pending: PendingResourceCode,
+    payload: AnalysisWorkerResponse,
+  ): boolean {
+    if (payload.type === "resource-code-error") {
+      pending.reject(new Error(payload.message));
+      return true;
+    }
+    if (payload.type === "resource-code-ready") {
+      pending.resolve({
+        compiledCode: payload.compiledCode,
+        rawCode: payload.rawCode,
+      });
+      return true;
+    }
+    return false;
+  }
+
+  private resolveSearchResourcesResponse(
+    pending: PendingSearchResources,
+    payload: AnalysisWorkerResponse,
+  ): boolean {
+    if (payload.type === "search-resources-error") {
+      pending.reject(new Error(payload.message));
+      return true;
+    }
+    if (payload.type === "search-resources-ready") {
+      pending.resolve(payload.resources);
+      return true;
+    }
+    return false;
+  }
+
   private handleMessage(payload: AnalysisWorkerResponse) {
     const pending = this.pending.get(payload.requestId);
     if (!pending) return;
     this.pending.delete(payload.requestId);
 
     if (pending.kind === "load") {
-      if (payload.type === "analysis-error") {
-        pending.reject(new Error(payload.message));
-        return;
-      }
-      if (payload.type === "analysis-ready") {
-        pending.resolve({
-          analysis: payload.analysis,
-          metrics: {
-            requestId: payload.requestId,
-            source: pending.source,
-            dispatchMarkName: "",
-            readyMarkName: "",
-            analysisReadyMeasureName: "",
-            timings: payload.timings,
-          },
-        });
-        return;
-      }
+      if (this.resolveLoadResponse(pending, payload)) return;
       pending.reject(new Error(ERR_UNEXPECTED_ANALYSIS_RESPONSE));
       return;
     }
 
     if (pending.kind === "resource-code") {
-      if (payload.type === "resource-code-error") {
-        pending.reject(new Error(payload.message));
-        return;
-      }
-      if (payload.type === "resource-code-ready") {
-        pending.resolve({
-          compiledCode: payload.compiledCode,
-          rawCode: payload.rawCode,
-        });
-        return;
-      }
+      if (this.resolveResourceCodeResponse(pending, payload)) return;
       pending.reject(new Error(ERR_UNEXPECTED_RESOURCE_CODE_RESPONSE));
       return;
     }
 
     if (pending.kind === WORKER_MSG_SEARCH_RESOURCES) {
-      if (payload.type === "search-resources-error") {
-        pending.reject(new Error(payload.message));
-        return;
-      }
-      if (payload.type === "search-resources-ready") {
-        pending.resolve(payload.resources);
-        return;
-      }
+      if (this.resolveSearchResourcesResponse(pending, payload)) return;
       pending.reject(new Error(ERR_UNEXPECTED_SEARCH_RESPONSE));
     }
   }

@@ -83,6 +83,204 @@ export class ManifestGraph {
     this.relationMap.set((relationName as string).toLowerCase(), uniqueId);
   }
 
+  private optionalString(value: unknown): string | undefined {
+    return typeof value === "string" && value !== "" ? value : undefined;
+  }
+
+  private optionalStringArray(value: unknown): string[] | undefined {
+    return Array.isArray(value) ? (value as string[]) : undefined;
+  }
+
+  private baseNodeAttributes(
+    uniqueId: string,
+    entry: Record<string, unknown>,
+  ): Partial<GraphNodeAttributes> {
+    return {
+      unique_id: uniqueId,
+      name: this.optionalString(entry.name) ?? uniqueId,
+      package_name: this.optionalString(entry.package_name) ?? "",
+      path: this.optionalString(entry.path),
+      original_file_path: this.optionalString(entry.original_file_path),
+      tags: this.optionalStringArray(entry.tags),
+      description: this.optionalString(entry.description),
+    };
+  }
+
+  private addManifestEntries(
+    entries: ManifestEntryMap | undefined,
+    buildAttributes: (
+      uniqueId: string,
+      entry: Record<string, unknown>,
+    ) => GraphNodeAttributes,
+    relationNameField?: string,
+  ): void {
+    if (!entries) return;
+    for (const [uniqueId, entry] of Object.entries(entries)) {
+      const entryRecord = entry as Record<string, unknown>;
+      this.graph.addNode(uniqueId, buildAttributes(uniqueId, entryRecord));
+      if (relationNameField != null) {
+        this.registerRelationName(uniqueId, entryRecord[relationNameField]);
+      }
+    }
+  }
+
+  private readMaterialized(
+    config: Record<string, unknown> | undefined,
+  ): string | undefined {
+    const materializedRaw = config?.materialized;
+    return typeof materializedRaw === "string" && materializedRaw.trim() !== ""
+      ? materializedRaw
+      : undefined;
+  }
+
+  private metricArrayStrings(
+    value: unknown,
+    field: string,
+  ): string[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    return (value as Array<Record<string, unknown>>)
+      .map((entry) => entry[field])
+      .filter((entry): entry is string => typeof entry === "string");
+  }
+
+  private buildNodeEntryAttributes(
+    uniqueId: string,
+    node: Record<string, unknown>,
+  ): GraphNodeAttributes {
+    const resourceType = this.extractResourceType(
+      this.optionalString(node.resource_type) ?? "model",
+    );
+    const config = node.config as Record<string, unknown> | undefined;
+    const materialized = this.readMaterialized(config);
+    return {
+      ...this.baseNodeAttributes(uniqueId, node),
+      resource_type: resourceType,
+      patch_path: this.optionalString(node.patch_path),
+      database: this.optionalString(node.database),
+      schema: this.optionalString(node.schema),
+      compiled_code: this.optionalString(node.compiled_code),
+      raw_code:
+        this.optionalString(node.raw_code) ?? this.optionalString(node.raw_sql),
+      ...(materialized != null ? { materialized } : {}),
+    } as GraphNodeAttributes;
+  }
+
+  private buildSourceEntryAttributes(
+    uniqueId: string,
+    source: Record<string, unknown>,
+  ): GraphNodeAttributes {
+    return {
+      ...this.baseNodeAttributes(uniqueId, source),
+      resource_type: "source",
+    } as GraphNodeAttributes;
+  }
+
+  private buildMacroEntryAttributes(
+    uniqueId: string,
+    macro: Record<string, unknown>,
+  ): GraphNodeAttributes {
+    return {
+      ...this.baseNodeAttributes(uniqueId, macro),
+      resource_type: "macro",
+      raw_code: this.optionalString(macro.macro_sql),
+    } as GraphNodeAttributes;
+  }
+
+  private buildExposureEntryAttributes(
+    uniqueId: string,
+    exposure: Record<string, unknown>,
+  ): GraphNodeAttributes {
+    return {
+      ...this.baseNodeAttributes(uniqueId, exposure),
+      resource_type: "exposure",
+    } as GraphNodeAttributes;
+  }
+
+  private buildMetricEntryAttributes(
+    uniqueId: string,
+    metric: Record<string, unknown>,
+  ): GraphNodeAttributes {
+    const typeParams = metric.type_params as
+      | Record<string, unknown>
+      | undefined;
+    const filter = metric.filter as Record<string, unknown> | undefined;
+    const dependsOn = metric.depends_on as Record<string, unknown> | undefined;
+    const tagsValue = metric.tags;
+    const tags =
+      typeof tagsValue === "string"
+        ? [tagsValue]
+        : this.optionalStringArray(tagsValue);
+    return {
+      ...this.baseNodeAttributes(uniqueId, metric),
+      resource_type: "metric",
+      label: this.optionalString(metric.label),
+      metric_type: this.optionalString(metric.type),
+      metric_expression: this.optionalString(typeParams?.expr),
+      metric_measure: this.optionalString(
+        (typeParams?.measure as Record<string, unknown> | undefined)?.name,
+      ),
+      metric_input_measures: this.metricArrayStrings(
+        typeParams?.input_measures,
+        "name",
+      ),
+      metric_input_metrics: this.metricArrayStrings(
+        typeParams?.metrics,
+        "name",
+      ),
+      metric_time_granularity: this.optionalString(metric.time_granularity),
+      metric_filters: this.metricArrayStrings(
+        filter?.where_filters,
+        "where_sql_template",
+      ),
+      metric_source_reference:
+        (dependsOn?.nodes as string[] | undefined)?.[0] ?? undefined,
+      tags,
+    } as GraphNodeAttributes;
+  }
+
+  private traverseNeighbors(
+    nodeId: string,
+    options: {
+      maxDepth?: number;
+      getNeighbors: (currentNodeId: string) => string[];
+      includeParents: boolean;
+    },
+  ): Array<{ nodeId: string; depth: number; parentId?: string }> {
+    if (!this.graph.hasNode(nodeId)) {
+      return [];
+    }
+
+    const result: Array<{ nodeId: string; depth: number; parentId?: string }> =
+      [];
+    const visited = new Set<string>();
+    const queue: Array<{ id: string; depth: number }> = [];
+    let head = 0;
+
+    const enqueueNeighbors = (parentId: string, depth: number) => {
+      for (const neighborId of options.getNeighbors(parentId)) {
+        if (visited.has(neighborId)) continue;
+        visited.add(neighborId);
+        result.push(
+          options.includeParents
+            ? { nodeId: neighborId, depth, parentId }
+            : { nodeId: neighborId, depth },
+        );
+        if (options.maxDepth === undefined || depth < options.maxDepth) {
+          queue.push({ id: neighborId, depth });
+        }
+      }
+    };
+
+    enqueueNeighbors(nodeId, 1);
+
+    while (head < queue.length) {
+      const { id, depth } = queue[head++];
+      enqueueNeighbors(id, depth + 1);
+    }
+
+    return result;
+  }
+
   private addNodes(manifest: ParsedManifest): void {
     this.addNodeEntries(manifest.nodes);
     this.addSourceEntries(manifest.sources);
@@ -94,169 +292,44 @@ export class ManifestGraph {
   }
 
   private addNodeEntries(nodes: ParsedManifest["nodes"] | undefined): void {
-    if (!nodes) return;
-    for (const [uniqueId, node] of Object.entries(nodes)) {
-      const nodeAny = node as Record<string, unknown>;
-      const resourceType = this.extractResourceType(
-        (nodeAny.resource_type as string) || "model",
-      );
-      const config = nodeAny.config as Record<string, unknown> | undefined;
-      const materializedRaw = config?.materialized;
-      const materialized =
-        typeof materializedRaw === "string" && materializedRaw.trim() !== ""
-          ? materializedRaw
-          : undefined;
-      this.graph.addNode(uniqueId, {
-        unique_id: uniqueId,
-        resource_type: resourceType,
-        name: (nodeAny.name as string) || uniqueId,
-        package_name: (nodeAny.package_name as string) || "",
-        path: (nodeAny.path as string) || undefined,
-        original_file_path: (nodeAny.original_file_path as string) || undefined,
-        patch_path: (nodeAny.patch_path as string) || undefined,
-        database: (nodeAny.database as string) || undefined,
-        schema: (nodeAny.schema as string) || undefined,
-        tags: (nodeAny.tags as string[]) || undefined,
-        description: (nodeAny.description as string) || undefined,
-        compiled_code: (nodeAny.compiled_code as string) || undefined,
-        raw_code:
-          (nodeAny.raw_code as string) ||
-          (nodeAny.raw_sql as string) ||
-          undefined,
-        ...(materialized != null ? { materialized } : {}),
-      });
-      this.registerRelationName(uniqueId, nodeAny.relation_name);
-    }
+    this.addManifestEntries(
+      nodes as ManifestEntryMap | undefined,
+      (uniqueId, node) => this.buildNodeEntryAttributes(uniqueId, node),
+      "relation_name",
+    );
   }
 
   private addSourceEntries(
     sources: ParsedManifest["sources"] | undefined,
   ): void {
-    if (!sources) return;
-    for (const [uniqueId, source] of Object.entries(sources)) {
-      const sourceAny = source as Record<string, unknown>;
-      this.graph.addNode(uniqueId, {
-        unique_id: uniqueId,
-        resource_type: "source",
-        name: (sourceAny.name as string) || uniqueId,
-        package_name: (sourceAny.package_name as string) || "",
-        path: (sourceAny.path as string) || undefined,
-        original_file_path:
-          (sourceAny.original_file_path as string) || undefined,
-        tags: (sourceAny.tags as string[]) || undefined,
-        description: (sourceAny.description as string) || undefined,
-      });
-      this.registerRelationName(uniqueId, sourceAny.relation_name);
-    }
+    this.addManifestEntries(
+      sources as ManifestEntryMap | undefined,
+      (uniqueId, source) => this.buildSourceEntryAttributes(uniqueId, source),
+      "relation_name",
+    );
   }
 
   private addMacroEntries(macros: ParsedManifest["macros"] | undefined): void {
-    if (!macros) return;
-    for (const [uniqueId, macro] of Object.entries(macros)) {
-      const macroAny = macro as Record<string, unknown>;
-      this.graph.addNode(uniqueId, {
-        unique_id: uniqueId,
-        resource_type: "macro",
-        name: (macroAny.name as string) || uniqueId,
-        package_name: (macroAny.package_name as string) || "",
-        path: (macroAny.path as string) || undefined,
-        original_file_path:
-          (macroAny.original_file_path as string) || undefined,
-        description: (macroAny.description as string) || undefined,
-        raw_code: (macroAny.macro_sql as string) || undefined,
-      });
-    }
+    this.addManifestEntries(
+      macros as ManifestEntryMap | undefined,
+      (uniqueId, macro) => this.buildMacroEntryAttributes(uniqueId, macro),
+    );
   }
 
   private addExposureEntries(
     exposures: ParsedManifest["exposures"] | undefined,
   ): void {
-    if (!exposures) return;
-    for (const [uniqueId, exposure] of Object.entries(exposures)) {
-      const exposureAny = exposure as Record<string, unknown>;
-      this.graph.addNode(uniqueId, {
-        unique_id: uniqueId,
-        resource_type: "exposure",
-        name: (exposureAny.name as string) || uniqueId,
-        package_name: (exposureAny.package_name as string) || "",
-        tags: (exposureAny.tags as string[]) || undefined,
-        description: (exposureAny.description as string) || undefined,
-      });
-    }
+    this.addManifestEntries(
+      exposures as ManifestEntryMap | undefined,
+      (uniqueId, exposure) =>
+        this.buildExposureEntryAttributes(uniqueId, exposure),
+    );
   }
 
   private addMetricEntries(metrics: ManifestEntryMap | undefined): void {
-    if (!metrics) return;
-    for (const [uniqueId, metric] of Object.entries(metrics)) {
-      const metricAny = metric as Record<string, unknown>;
-      const tagsValue = metricAny.tags;
-      const tags = Array.isArray(tagsValue)
-        ? (tagsValue as string[])
-        : typeof tagsValue === "string"
-          ? [tagsValue]
-          : undefined;
-      this.graph.addNode(uniqueId, {
-        unique_id: uniqueId,
-        resource_type: "metric",
-        name: (metricAny.name as string) || uniqueId,
-        package_name: (metricAny.package_name as string) || "",
-        path: (metricAny.path as string) || undefined,
-        original_file_path:
-          (metricAny.original_file_path as string) || undefined,
-        description: (metricAny.description as string) || undefined,
-        label: (metricAny.label as string) || undefined,
-        metric_type: (metricAny.type as string) || undefined,
-        metric_expression:
-          ((metricAny.type_params as Record<string, unknown> | undefined)
-            ?.expr as string | undefined) || undefined,
-        metric_measure:
-          ((
-            (metricAny.type_params as Record<string, unknown> | undefined)
-              ?.measure as Record<string, unknown> | undefined
-          )?.name as string | undefined) || undefined,
-        metric_input_measures: Array.isArray(
-          (metricAny.type_params as Record<string, unknown> | undefined)
-            ?.input_measures,
-        )
-          ? (
-              (metricAny.type_params as Record<string, unknown>)
-                .input_measures as Array<Record<string, unknown>>
-            )
-              .map((entry) => entry.name)
-              .filter((entry): entry is string => typeof entry === "string")
-          : undefined,
-        metric_input_metrics: Array.isArray(
-          (metricAny.type_params as Record<string, unknown> | undefined)
-            ?.metrics,
-        )
-          ? (
-              (metricAny.type_params as Record<string, unknown>)
-                .metrics as Array<Record<string, unknown>>
-            )
-              .map((entry) => entry.name)
-              .filter((entry): entry is string => typeof entry === "string")
-          : undefined,
-        metric_time_granularity:
-          (metricAny.time_granularity as string) || undefined,
-        metric_filters: Array.isArray(
-          (metricAny.filter as Record<string, unknown> | undefined)
-            ?.where_filters,
-        )
-          ? (
-              (metricAny.filter as Record<string, unknown>)
-                .where_filters as Array<Record<string, unknown>>
-            )
-              .map((entry) => entry.where_sql_template)
-              .filter((entry): entry is string => typeof entry === "string")
-          : undefined,
-        metric_source_reference:
-          (
-            (metricAny.depends_on as Record<string, unknown> | undefined)
-              ?.nodes as string[] | undefined
-          )?.[0] || undefined,
-        tags,
-      });
-    }
+    this.addManifestEntries(metrics, (uniqueId, metric) =>
+      this.buildMetricEntryAttributes(uniqueId, metric),
+    );
   }
 
   private addSemanticModelEntries(
@@ -478,40 +551,12 @@ export class ManifestGraph {
     nodeId: string,
     maxDepth?: number,
   ): Array<{ nodeId: string; depth: number }> {
-    if (!this.graph.hasNode(nodeId)) {
-      return [];
-    }
-
-    const result: Array<{ nodeId: string; depth: number }> = [];
-    const visited = new Set<string>();
-    const queue: Array<{ id: string; depth: number }> = [];
-    let head = 0;
-
-    for (const neighborId of this.graph.inboundNeighbors(nodeId)) {
-      if (!visited.has(neighborId)) {
-        visited.add(neighborId);
-        result.push({ nodeId: neighborId, depth: 1 });
-        if (maxDepth === undefined || 1 < maxDepth) {
-          queue.push({ id: neighborId, depth: 1 });
-        }
-      }
-    }
-
-    while (head < queue.length) {
-      const { id, depth } = queue[head++];
-      const nextDepth = depth + 1;
-      for (const neighborId of this.graph.inboundNeighbors(id)) {
-        if (!visited.has(neighborId)) {
-          visited.add(neighborId);
-          result.push({ nodeId: neighborId, depth: nextDepth });
-          if (maxDepth === undefined || nextDepth < maxDepth) {
-            queue.push({ id: neighborId, depth: nextDepth });
-          }
-        }
-      }
-    }
-
-    return result;
+    return this.traverseNeighbors(nodeId, {
+      maxDepth,
+      getNeighbors: (currentNodeId) =>
+        this.graph.inboundNeighbors(currentNodeId),
+      includeParents: false,
+    }).map(({ nodeId: id, depth }) => ({ nodeId: id, depth }));
   }
 
   /**
@@ -524,40 +569,12 @@ export class ManifestGraph {
     nodeId: string,
     maxDepth?: number,
   ): Array<{ nodeId: string; depth: number }> {
-    if (!this.graph.hasNode(nodeId)) {
-      return [];
-    }
-
-    const result: Array<{ nodeId: string; depth: number }> = [];
-    const visited = new Set<string>();
-    const queue: Array<{ id: string; depth: number }> = [];
-    let head = 0;
-
-    for (const neighborId of this.graph.outboundNeighbors(nodeId)) {
-      if (!visited.has(neighborId)) {
-        visited.add(neighborId);
-        result.push({ nodeId: neighborId, depth: 1 });
-        if (maxDepth === undefined || 1 < maxDepth) {
-          queue.push({ id: neighborId, depth: 1 });
-        }
-      }
-    }
-
-    while (head < queue.length) {
-      const { id, depth } = queue[head++];
-      const nextDepth = depth + 1;
-      for (const neighborId of this.graph.outboundNeighbors(id)) {
-        if (!visited.has(neighborId)) {
-          visited.add(neighborId);
-          result.push({ nodeId: neighborId, depth: nextDepth });
-          if (maxDepth === undefined || nextDepth < maxDepth) {
-            queue.push({ id: neighborId, depth: nextDepth });
-          }
-        }
-      }
-    }
-
-    return result;
+    return this.traverseNeighbors(nodeId, {
+      maxDepth,
+      getNeighbors: (currentNodeId) =>
+        this.graph.outboundNeighbors(currentNodeId),
+      includeParents: false,
+    }).map(({ nodeId: id, depth }) => ({ nodeId: id, depth }));
   }
 
   /**
@@ -568,43 +585,16 @@ export class ManifestGraph {
     nodeId: string,
     maxDepth?: number,
   ): Array<{ nodeId: string; depth: number; parentId: string }> {
-    if (!this.graph.hasNode(nodeId)) {
-      return [];
-    }
-
-    const result: Array<{
-      nodeId: string;
-      depth: number;
-      parentId: string;
-    }> = [];
-    const visited = new Set<string>();
-    const queue: Array<{ id: string; depth: number; parentId: string }> = [];
-
-    for (const neighborId of this.graph.inboundNeighbors(nodeId)) {
-      if (!visited.has(neighborId)) {
-        visited.add(neighborId);
-        result.push({ nodeId: neighborId, depth: 1, parentId: nodeId });
-        if (maxDepth === undefined || 1 < maxDepth) {
-          queue.push({ id: neighborId, depth: 1, parentId: nodeId });
-        }
-      }
-    }
-
-    while (queue.length > 0) {
-      const { id, depth } = queue.shift()!;
-      const nextDepth = depth + 1;
-      for (const neighborId of this.graph.inboundNeighbors(id)) {
-        if (!visited.has(neighborId)) {
-          visited.add(neighborId);
-          result.push({ nodeId: neighborId, depth: nextDepth, parentId: id });
-          if (maxDepth === undefined || nextDepth < maxDepth) {
-            queue.push({ id: neighborId, depth: nextDepth, parentId: id });
-          }
-        }
-      }
-    }
-
-    return result;
+    return this.traverseNeighbors(nodeId, {
+      maxDepth,
+      getNeighbors: (currentNodeId) =>
+        this.graph.inboundNeighbors(currentNodeId),
+      includeParents: true,
+    }).map(({ nodeId: id, depth, parentId }) => ({
+      nodeId: id,
+      depth,
+      parentId: parentId ?? nodeId,
+    }));
   }
 
   /**
@@ -656,43 +646,16 @@ export class ManifestGraph {
     nodeId: string,
     maxDepth?: number,
   ): Array<{ nodeId: string; depth: number; parentId: string }> {
-    if (!this.graph.hasNode(nodeId)) {
-      return [];
-    }
-
-    const result: Array<{
-      nodeId: string;
-      depth: number;
-      parentId: string;
-    }> = [];
-    const visited = new Set<string>();
-    const queue: Array<{ id: string; depth: number; parentId: string }> = [];
-
-    for (const neighborId of this.graph.outboundNeighbors(nodeId)) {
-      if (!visited.has(neighborId)) {
-        visited.add(neighborId);
-        result.push({ nodeId: neighborId, depth: 1, parentId: nodeId });
-        if (maxDepth === undefined || 1 < maxDepth) {
-          queue.push({ id: neighborId, depth: 1, parentId: nodeId });
-        }
-      }
-    }
-
-    while (queue.length > 0) {
-      const { id, depth } = queue.shift()!;
-      const nextDepth = depth + 1;
-      for (const neighborId of this.graph.outboundNeighbors(id)) {
-        if (!visited.has(neighborId)) {
-          visited.add(neighborId);
-          result.push({ nodeId: neighborId, depth: nextDepth, parentId: id });
-          if (maxDepth === undefined || nextDepth < maxDepth) {
-            queue.push({ id: neighborId, depth: nextDepth, parentId: id });
-          }
-        }
-      }
-    }
-
-    return result;
+    return this.traverseNeighbors(nodeId, {
+      maxDepth,
+      getNeighbors: (currentNodeId) =>
+        this.graph.outboundNeighbors(currentNodeId),
+      includeParents: true,
+    }).map(({ nodeId: id, depth, parentId }) => ({
+      nodeId: id,
+      depth,
+      parentId: parentId ?? nodeId,
+    }));
   }
 
   /**

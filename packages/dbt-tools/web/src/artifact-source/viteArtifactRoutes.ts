@@ -48,6 +48,42 @@ function currentArtifactBytes(
   return null;
 }
 
+const CURRENT_ARTIFACT_PATHS = new Set([
+  `/api/${DBT_MANIFEST_JSON}`,
+  `/api/artifacts/current/${DBT_MANIFEST_JSON}`,
+  `/api/${DBT_RUN_RESULTS_JSON}`,
+  `/api/artifacts/current/${DBT_RUN_RESULTS_JSON}`,
+  `/api/${DBT_CATALOG_JSON}`,
+  `/api/artifacts/current/${DBT_CATALOG_JSON}`,
+  `/api/${DBT_SOURCES_JSON}`,
+  `/api/artifacts/current/${DBT_SOURCES_JSON}`,
+]);
+
+function requestPathname(req: IncomingMessage): string | null {
+  return req.url?.split("?")[0] ?? null;
+}
+
+function isArtifactStatusRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "GET" && pathname === "/api/artifact-source";
+}
+
+function isArtifactSwitchRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "POST" && pathname === "/api/artifact-source/switch";
+}
+
+function isCurrentArtifactRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "GET" && CURRENT_ARTIFACT_PATHS.has(pathname);
+}
+
 /**
  * Vite middleware handler for artifact-source HTTP routes. Returns `true` when
  * the request was fully handled (response ended).
@@ -57,15 +93,15 @@ export async function tryHandleArtifactSourceViteRequest(
   res: ServerResponse,
   service: ArtifactSourceService,
 ): Promise<boolean> {
-  const pathname = req.url?.split("?")[0];
+  const pathname = requestPathname(req);
   if (!pathname) return false;
 
-  if (req.method === "GET" && pathname === "/api/artifact-source") {
+  if (isArtifactStatusRequest(req, pathname)) {
     sendJson(res, 200, await service.getStatus());
     return true;
   }
 
-  if (req.method === "POST" && pathname === "/api/artifact-source/switch") {
+  if (isArtifactSwitchRequest(req, pathname)) {
     const body = await readJsonBody(req);
     const runId =
       typeof body.runId === "string" && body.runId.trim() !== ""
@@ -75,17 +111,7 @@ export async function tryHandleArtifactSourceViteRequest(
     return true;
   }
 
-  if (
-    req.method === "GET" &&
-    (pathname === `/api/${DBT_MANIFEST_JSON}` ||
-      pathname === `/api/artifacts/current/${DBT_MANIFEST_JSON}` ||
-      pathname === `/api/${DBT_RUN_RESULTS_JSON}` ||
-      pathname === `/api/artifacts/current/${DBT_RUN_RESULTS_JSON}` ||
-      pathname === `/api/${DBT_CATALOG_JSON}` ||
-      pathname === `/api/artifacts/current/${DBT_CATALOG_JSON}` ||
-      pathname === `/api/${DBT_SOURCES_JSON}` ||
-      pathname === `/api/artifacts/current/${DBT_SOURCES_JSON}`)
-  ) {
+  if (isCurrentArtifactRequest(req, pathname)) {
     const current = await service.getCurrentArtifacts();
     const bytes = currentArtifactBytes(pathname, current);
     if (bytes == null) {

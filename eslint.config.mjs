@@ -48,8 +48,8 @@ const sharedTsRules = Object.assign({}, tseslint.configs.recommended.rules, {
   "max-params": ["error", { max: 8 }],
   "max-nested-callbacks": ["error", { max: 4 }],
   // SonarJS
-  "sonarjs/cyclomatic-complexity": ["error", { threshold: 20 }],
-  "sonarjs/cognitive-complexity": ["error", 20],
+  "sonarjs/cyclomatic-complexity": ["error", { threshold: 15 }],
+  "sonarjs/cognitive-complexity": ["error", 15],
   "sonarjs/no-duplicate-string": "error",
   "sonarjs/prefer-immediate-return": "error",
   "no-unreachable": "error",

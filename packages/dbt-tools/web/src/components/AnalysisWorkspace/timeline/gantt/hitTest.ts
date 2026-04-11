@@ -68,6 +68,22 @@ export function hitTestBundle(
   effectiveLabelW: number,
   canvas: HTMLCanvasElement | null,
 ): { item: GanttItem; x: number; y: number } | null {
+  const hitResult = (item: GanttItem, x: number, y: number) => ({ item, x, y });
+  const withinBounds = (
+    x: number,
+    left: number,
+    width: number,
+    y?: number,
+    top?: number,
+    height?: number,
+  ) =>
+    x >= left &&
+    x <= left + width &&
+    (y == null ||
+      top == null ||
+      height == null ||
+      (y >= top && y <= top + height));
+
   const { rowOffsets, rowHeights, showTests } = layout;
   if (!canvas) return null;
   const rect = event.currentTarget.getBoundingClientRect();
@@ -88,7 +104,7 @@ export function hitTestBundle(
 
   // Label column: select parent
   if (mouseX < effectiveLabelW) {
-    return { item: bundle.item, x: mouseX, y: mouseY };
+    return hitResult(bundle.item, mouseX, mouseY);
   }
 
   // Chart bounds used to clamp hitboxes so that bars extending outside the
@@ -104,8 +120,8 @@ export function hitTestBundle(
     chartLeft,
     chartW,
   );
-  if (mouseX >= barX && mouseX <= barX + barW) {
-    return { item: bundle.item, x: mouseX, y: mouseY };
+  if (withinBounds(mouseX, barX, barW)) {
+    return hitResult(bundle.item, mouseX, mouseY);
   }
 
   if (showTests && bundle.lanes.length > 0) {
@@ -121,13 +137,8 @@ export function hitTestBundle(
       );
       const chipY = bundleRowY + ROW_H + BUNDLE_HULL_PAD + lane * TEST_LANE_H;
 
-      if (
-        mouseX >= chipX &&
-        mouseX <= chipX + chipW &&
-        mouseY >= chipY &&
-        mouseY <= chipY + TEST_BAR_H
-      ) {
-        return { item: test, x: mouseX, y: mouseY };
+      if (withinBounds(mouseX, chipX, chipW, mouseY, chipY, TEST_BAR_H)) {
+        return hitResult(test, mouseX, mouseY);
       }
     }
   }

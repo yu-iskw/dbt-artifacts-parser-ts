@@ -50,6 +50,7 @@ Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `tr
 
 1. **Format first** — `pnpm format` (`trunk fmt` → `eslint . --fix` → `prettier --write .`).
 2. **Lint** — `pnpm lint` (`lint:trunk` → `lint:eslint` → `lint:stylelint` → `knip`), or a slimmer pass: `pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint` (omit Knip if not needed yet).
+3. **Build gate for broad shared TS refactors** — after the first green **`pnpm lint:eslint`** checkpoint, if the touched files include `packages/dbt-tools/core`, `packages/dbt-tools/cli`, shared TypeScript utilities, worker protocol layers, or exported types/helpers, run **`pnpm build`** from the repo root. If it fails, switch to [`.claude/skills/build-fix/SKILL.md`](../build-fix/SKILL.md) and follow its fixer loop before claiming the lint session is complete.
 
 ### Path B — Escape hatch (`*:without-trunk`)
 
@@ -102,6 +103,7 @@ If violations remain:
 2. **Fix:** Minimal edits; for Knip, prefer removing dead code or narrowing **`knip.json`** with a short rationale (shell-only scripts, dynamic imports, published API).
 3. **Verify:**
    - **Launcher present:** re-run `pnpm format` (or at least ESLint + Prettier), then `pnpm lint:eslint`, **`pnpm knip`**, **`pnpm lint:report`**.
+   - For broad shared TypeScript refactors, run **`pnpm build`** after the first green **`pnpm lint:eslint`** pass; if build breaks, use the **`build-fix`** skill loop before final verification.
    - **Escape hatch:** re-run **`pnpm format:without-trunk`**, **`pnpm lint:without-trunk`**, **`pnpm lint:report`**.
    - For CSS-heavy changes, include **`pnpm lint:stylelint`** in verify if you did not run full `pnpm lint` / `pnpm lint:without-trunk`.
    - Before relying on CI: run **`pnpm lint`** from a repo with **`pnpm install`** completed when possible.

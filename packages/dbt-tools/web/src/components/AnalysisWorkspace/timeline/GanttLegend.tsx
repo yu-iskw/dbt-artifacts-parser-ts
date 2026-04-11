@@ -141,6 +141,191 @@ function GanttBarEncodingKey({
   );
 }
 
+function StatusLegendGroup({
+  visibleStatuses,
+  statusCounts,
+  activeStatuses,
+  onToggleStatus,
+  failuresOnly,
+  onToggleFailuresOnly,
+  theme,
+}: {
+  visibleStatuses: string[];
+  statusCounts: Record<string, number>;
+  activeStatuses?: Set<string>;
+  onToggleStatus?: (status: string) => void;
+  failuresOnly?: boolean;
+  onToggleFailuresOnly?: () => void;
+  theme: "light" | "dark";
+}) {
+  if (visibleStatuses.length === 0 && onToggleFailuresOnly == null) {
+    return null;
+  }
+
+  return (
+    <div className="gantt-legend__group">
+      <span className="gantt-legend__label">Status</span>
+      {visibleStatuses.map((status) => {
+        const isActive = activeStatuses?.has(status) ?? false;
+        const color = getStatusColor(status, theme);
+        const count = statusCounts[status] ?? 0;
+        return (
+          <button
+            key={status}
+            type="button"
+            className={legendItemClass(isActive)}
+            onClick={() => onToggleStatus?.(status)}
+            title={`${status} (${count})`}
+          >
+            <span style={{ ...SWATCH_STYLE, background: color }} />
+            <span className="gantt-legend__name">{status}</span>
+            <span className="gantt-legend__count">{count}</span>
+          </button>
+        );
+      })}
+      {onToggleFailuresOnly != null && (
+        <button
+          type="button"
+          className={legendItemClass(Boolean(failuresOnly))}
+          onClick={onToggleFailuresOnly}
+          title={
+            failuresOnly
+              ? "Show all parent rows"
+              : "Show only parents with errors or failing tests"
+          }
+          aria-pressed={failuresOnly ?? false}
+        >
+          <span
+            style={{
+              ...SWATCH_STYLE,
+              background: getStatusColor("fail", theme),
+            }}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">failures only</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TypeLegendGroup({
+  visibleTypes,
+  typeCounts,
+  activeTypes,
+  onToggleType,
+  showTests,
+  onToggleShowTests,
+  testsLegendCount,
+  theme,
+  themeHex,
+}: {
+  visibleTypes: string[];
+  typeCounts: Record<string, number>;
+  activeTypes?: Set<string>;
+  onToggleType?: (type: string) => void;
+  showTests?: boolean;
+  onToggleShowTests?: () => void;
+  testsLegendCount: number;
+  theme: "light" | "dark";
+  themeHex: ThemeHex;
+}) {
+  if (visibleTypes.length === 0 && onToggleShowTests == null) {
+    return null;
+  }
+
+  return (
+    <div className="gantt-legend__group">
+      <span className="gantt-legend__label">Type</span>
+      {visibleTypes.map((type) => {
+        const isActive = activeTypes?.has(type) ?? false;
+        const color = getResourceTypeColor(type, theme);
+        const count = typeCounts[type] ?? 0;
+        return (
+          <button
+            key={type}
+            type="button"
+            className={legendItemClass(isActive)}
+            onClick={() => onToggleType?.(type)}
+            title={`${type} (${count})`}
+          >
+            <span style={typeLegendSwatchStyle(themeHex, color)} />
+            <span className="gantt-legend__name">{type}</span>
+            <span className="gantt-legend__count">{count}</span>
+          </button>
+        );
+      })}
+      {onToggleShowTests != null && (
+        <button
+          type="button"
+          className={legendItemClass(Boolean(showTests))}
+          onClick={onToggleShowTests}
+          title={showTests ? "Hide test chips" : "Show test chips"}
+          aria-pressed={showTests ?? false}
+        >
+          <span
+            style={typeLegendSwatchStyle(
+              themeHex,
+              getResourceTypeColor("test", theme),
+            )}
+            aria-hidden
+          />
+          <span className="gantt-legend__name">tests</span>
+          <span className="gantt-legend__count">{testsLegendCount}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function MaterializationLegendGroup({
+  materializationRows,
+  materializationCounts,
+  themeHex,
+}: {
+  materializationRows: string[];
+  materializationCounts?: Record<string, number>;
+  themeHex: ThemeHex;
+}) {
+  if (materializationRows.length === 0 || materializationCounts == null) {
+    return null;
+  }
+
+  return (
+    <div className="gantt-legend__group gantt-legend__group--materialization">
+      <span className="gantt-legend__label">Materialization</span>
+      <span className="gantt-legend__hint">
+        Manifest-derived; not a bar color.
+      </span>
+      {materializationRows.map((kind) => {
+        const count = materializationCounts[kind] ?? 0;
+        return (
+          <div
+            key={kind}
+            className="gantt-legend__item gantt-legend__item--static"
+            title="Normalized from manifest config.materialized and resource type"
+          >
+            <span
+              className="gantt-legend__mat-icon"
+              aria-hidden
+              style={{
+                ...SWATCH_STYLE,
+                borderRadius: 0,
+                border: `2px dashed ${themeHex.borderDefault}`,
+                background: themeHex.bgSoft,
+              }}
+            />
+            <span className="gantt-legend__name">
+              {materializationKindShortLabel(kind as MaterializationKind)}
+            </span>
+            <span className="gantt-legend__count">{count}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function GanttLegend({
   statusCounts,
   typeCounts,
@@ -191,128 +376,31 @@ export function GanttLegend({
           showCompileExecuteLegend={showCompileExecuteLegend}
         />
       ) : null}
-      {(visibleStatuses.length > 0 || onToggleFailuresOnly != null) && (
-        <div className="gantt-legend__group">
-          <span className="gantt-legend__label">Status</span>
-          {visibleStatuses.map((status) => {
-            const isActive = activeStatuses?.has(status) ?? false;
-            const color = getStatusColor(status, theme);
-            const count = statusCounts[status] ?? 0;
-            return (
-              <button
-                key={status}
-                type="button"
-                className={legendItemClass(isActive)}
-                onClick={() => onToggleStatus?.(status)}
-                title={`${status} (${count})`}
-              >
-                <span style={{ ...SWATCH_STYLE, background: color }} />
-                <span className="gantt-legend__name">{status}</span>
-                <span className="gantt-legend__count">{count}</span>
-              </button>
-            );
-          })}
-          {onToggleFailuresOnly != null && (
-            <button
-              type="button"
-              className={legendItemClass(Boolean(failuresOnly))}
-              onClick={onToggleFailuresOnly}
-              title={
-                failuresOnly
-                  ? "Show all parent rows"
-                  : "Show only parents with errors or failing tests"
-              }
-              aria-pressed={failuresOnly ?? false}
-            >
-              <span
-                style={{
-                  ...SWATCH_STYLE,
-                  background: getStatusColor("fail", theme),
-                }}
-                aria-hidden
-              />
-              <span className="gantt-legend__name">failures only</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {(visibleTypes.length > 0 || onToggleShowTests != null) && (
-        <div className="gantt-legend__group">
-          <span className="gantt-legend__label">Type</span>
-          {visibleTypes.map((type) => {
-            const isActive = activeTypes?.has(type) ?? false;
-            const color = getResourceTypeColor(type, theme);
-            const count = typeCounts[type] ?? 0;
-            return (
-              <button
-                key={type}
-                type="button"
-                className={legendItemClass(isActive)}
-                onClick={() => onToggleType?.(type)}
-                title={`${type} (${count})`}
-              >
-                <span style={typeLegendSwatchStyle(themeHex, color)} />
-                <span className="gantt-legend__name">{type}</span>
-                <span className="gantt-legend__count">{count}</span>
-              </button>
-            );
-          })}
-          {onToggleShowTests != null && (
-            <button
-              type="button"
-              className={legendItemClass(Boolean(showTests))}
-              onClick={onToggleShowTests}
-              title={showTests ? "Hide test chips" : "Show test chips"}
-              aria-pressed={showTests ?? false}
-            >
-              <span
-                style={typeLegendSwatchStyle(
-                  themeHex,
-                  getResourceTypeColor("test", theme),
-                )}
-                aria-hidden
-              />
-              <span className="gantt-legend__name">tests</span>
-              <span className="gantt-legend__count">{testsLegendCount}</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {materializationRows.length > 0 ? (
-        <div className="gantt-legend__group gantt-legend__group--materialization">
-          <span className="gantt-legend__label">Materialization</span>
-          <span className="gantt-legend__hint">
-            Manifest-derived; not a bar color.
-          </span>
-          {materializationRows.map((kind) => {
-            const count = materializationCounts![kind] ?? 0;
-            return (
-              <div
-                key={kind}
-                className="gantt-legend__item gantt-legend__item--static"
-                title="Normalized from manifest config.materialized and resource type"
-              >
-                <span
-                  className="gantt-legend__mat-icon"
-                  aria-hidden
-                  style={{
-                    ...SWATCH_STYLE,
-                    borderRadius: 0,
-                    border: `2px dashed ${themeHex.borderDefault}`,
-                    background: themeHex.bgSoft,
-                  }}
-                />
-                <span className="gantt-legend__name">
-                  {materializationKindShortLabel(kind as MaterializationKind)}
-                </span>
-                <span className="gantt-legend__count">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+      <StatusLegendGroup
+        visibleStatuses={visibleStatuses}
+        statusCounts={statusCounts}
+        activeStatuses={activeStatuses}
+        onToggleStatus={onToggleStatus}
+        failuresOnly={failuresOnly}
+        onToggleFailuresOnly={onToggleFailuresOnly}
+        theme={theme}
+      />
+      <TypeLegendGroup
+        visibleTypes={visibleTypes}
+        typeCounts={typeCounts}
+        activeTypes={activeTypes}
+        onToggleType={onToggleType}
+        showTests={showTests}
+        onToggleShowTests={onToggleShowTests}
+        testsLegendCount={testsLegendCount}
+        theme={theme}
+        themeHex={themeHex}
+      />
+      <MaterializationLegendGroup
+        materializationRows={materializationRows}
+        materializationCounts={materializationCounts}
+        themeHex={themeHex}
+      />
     </div>
   );
 }

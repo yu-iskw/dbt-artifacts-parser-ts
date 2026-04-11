@@ -157,6 +157,107 @@ function GanttTooltipAdapterResponse({
   );
 }
 
+function TooltipRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span style={TOOLTIP_LABEL_STYLE}>{label}: </span>
+      {value}
+    </div>
+  );
+}
+
+function TooltipSemanticsBlock({
+  semantics,
+  materialized,
+}: {
+  semantics: HoverState["item"]["semantics"];
+  materialized?: string | null;
+}) {
+  if (semantics) {
+    return (
+      <div style={{ marginTop: "0.25rem", maxWidth: 340 }}>
+        <div>
+          <span style={TOOLTIP_LABEL_STYLE}>Semantics: </span>
+        </div>
+        <div
+          style={{
+            whiteSpace: "pre-wrap",
+            fontSize: "0.82rem",
+            lineHeight: 1.35,
+          }}
+        >
+          {buildMaterializationTooltipText(semantics)}
+        </div>
+      </div>
+    );
+  }
+  if (materialized) {
+    return (
+      <TooltipRow
+        label="Materialization"
+        value={formatMaterializationLabel(materialized)}
+      />
+    );
+  }
+  return null;
+}
+
+function TooltipTimingBlock({
+  hover,
+  runStartedAt,
+  canShowTimestamps,
+  timeZone,
+}: {
+  hover: HoverState;
+  runStartedAt: number | null | undefined;
+  canShowTimestamps: boolean;
+  timeZone: string;
+}) {
+  const startValue =
+    canShowTimestamps && runStartedAt != null
+      ? formatTimestamp(runStartedAt + hover.item.start, timeZone)
+      : `+${formatMs(hover.item.start)}`;
+  const endValue =
+    canShowTimestamps && runStartedAt != null
+      ? formatTimestamp(runStartedAt + hover.item.end, timeZone)
+      : `+${formatMs(hover.item.end)}`;
+
+  return (
+    <>
+      <TooltipRow label="Start" value={startValue} />
+      <TooltipRow label="End" value={endValue} />
+      <TooltipRow label="Duration" value={formatMs(hover.item.duration)} />
+    </>
+  );
+}
+
+function TooltipPhaseRow({
+  label,
+  start,
+  end,
+}: {
+  label: string;
+  start?: number | null;
+  end?: number | null;
+}) {
+  if (start == null || end == null || end <= start) {
+    return null;
+  }
+  return <TooltipRow label={label} value={formatMs(end - start)} />;
+}
+
+function TooltipTestsRow({ testStats }: { testStats?: ResourceTestStats }) {
+  if (!testStats) return null;
+  const parts = [
+    testStats.pass > 0 ? `✓${testStats.pass}` : null,
+    testStats.error > 0 ? `✗${testStats.error}` : null,
+    testStats.warn > 0 ? `!${testStats.warn}` : null,
+    testStats.skipped > 0 ? `−${testStats.skipped}` : null,
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return <TooltipRow label="Tests" value={parts.join(" · ")} />;
+}
+
 export function GanttTooltip({
   hover,
   frameWidth,
@@ -231,99 +332,31 @@ export function GanttTooltip({
       <div style={{ fontWeight: 700, marginBottom: "0.3rem" }}>
         {hover.item.name || hover.item.unique_id}
       </div>
-      <div>
-        <span style={TOOLTIP_LABEL_STYLE}>Status: </span>
-        {hover.item.status}
-      </div>
+      <TooltipRow label="Status" value={hover.item.status} />
       {hover.item.resourceType && (
-        <div>
-          <span style={TOOLTIP_LABEL_STYLE}>Type: </span>
-          {hover.item.resourceType}
-        </div>
+        <TooltipRow label="Type" value={hover.item.resourceType} />
       )}
-      {hover.item.semantics ? (
-        <div style={{ marginTop: "0.25rem", maxWidth: 340 }}>
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>Semantics: </span>
-          </div>
-          <div
-            style={{
-              whiteSpace: "pre-wrap",
-              fontSize: "0.82rem",
-              lineHeight: 1.35,
-            }}
-          >
-            {buildMaterializationTooltipText(hover.item.semantics)}
-          </div>
-        </div>
-      ) : hover.item.materialized ? (
-        <div>
-          <span style={TOOLTIP_LABEL_STYLE}>Materialization: </span>
-          {formatMaterializationLabel(hover.item.materialized)}
-        </div>
-      ) : null}
-      {canShowTimestamps && runStartedAt != null ? (
-        <>
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>Start: </span>
-            {formatTimestamp(runStartedAt + hover.item.start, timeZone)}
-          </div>
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>End: </span>
-            {formatTimestamp(runStartedAt + hover.item.end, timeZone)}
-          </div>
-        </>
-      ) : (
-        <>
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>Start: </span>+
-            {formatMs(hover.item.start)}
-          </div>
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>End: </span>+
-            {formatMs(hover.item.end)}
-          </div>
-        </>
-      )}
-      <div>
-        <span style={TOOLTIP_LABEL_STYLE}>Duration: </span>
-        {formatMs(hover.item.duration)}
-      </div>
-      {hover.item.compileStart != null &&
-        hover.item.compileEnd != null &&
-        hover.item.compileEnd > hover.item.compileStart && (
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>Compile: </span>
-            {formatMs(hover.item.compileEnd - hover.item.compileStart)}
-          </div>
-        )}
-      {hover.item.executeStart != null &&
-        hover.item.executeEnd != null &&
-        hover.item.executeEnd > hover.item.executeStart && (
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>Execute: </span>
-            {formatMs(hover.item.executeEnd - hover.item.executeStart)}
-          </div>
-        )}
-      {testStats &&
-        testStats.pass +
-          testStats.fail +
-          testStats.error +
-          testStats.warn +
-          testStats.skipped >
-          0 && (
-          <div>
-            <span style={TOOLTIP_LABEL_STYLE}>Tests: </span>
-            {[
-              testStats.pass > 0 ? `✓${testStats.pass}` : null,
-              testStats.error > 0 ? `✗${testStats.error}` : null,
-              testStats.warn > 0 ? `!${testStats.warn}` : null,
-              testStats.skipped > 0 ? `−${testStats.skipped}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </div>
-        )}
+      <TooltipSemanticsBlock
+        semantics={hover.item.semantics}
+        materialized={hover.item.materialized}
+      />
+      <TooltipTimingBlock
+        hover={hover}
+        runStartedAt={runStartedAt}
+        canShowTimestamps={canShowTimestamps}
+        timeZone={timeZone}
+      />
+      <TooltipPhaseRow
+        label="Compile"
+        start={hover.item.compileStart}
+        end={hover.item.compileEnd}
+      />
+      <TooltipPhaseRow
+        label="Execute"
+        start={hover.item.executeStart}
+        end={hover.item.executeEnd}
+      />
+      <TooltipTestsRow testStats={testStats} />
       <GanttTooltipAdapterResponse resource={tooltipResource} />
     </div>
   );

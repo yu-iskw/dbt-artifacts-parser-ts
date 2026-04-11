@@ -72,6 +72,31 @@ function getManifestAttrs(
   return manifestEntryLookup.get(uniqueId);
 }
 
+function firstNonTestParent(
+  candidateIds: Iterable<string>,
+  graphologyGraph: GraphologyAttrsGraph,
+  manifestEntryLookup: ManifestEntryLookup,
+): string | null {
+  for (const parentId of candidateIds) {
+    const parentAttrs = getManifestAttrs(
+      parentId,
+      graphologyGraph,
+      manifestEntryLookup,
+    );
+    const parentType = String(
+      parentAttrs?.resource_type ?? inferResourceTypeFromId(parentId),
+    );
+    if (
+      parentType !== "test" &&
+      parentType !== "unit_test" &&
+      parentType !== ""
+    ) {
+      return parentId;
+    }
+  }
+  return null;
+}
+
 function resolveTestParentFromManifest(
   graph: GraphLike,
   graphologyGraph: GraphologyAttrsGraph,
@@ -81,17 +106,12 @@ function resolveTestParentFromManifest(
   const upstream = graph.getUpstream(testUniqueId);
   const direct = upstream.filter((u) => u.depth === 1);
   const candidates = direct.length > 0 ? direct : upstream;
-  for (const u of candidates) {
-    const uAttrs = getManifestAttrs(
-      u.nodeId,
-      graphologyGraph,
-      manifestEntryLookup,
-    );
-    const uType = String(uAttrs?.resource_type ?? "");
-    if (uType !== "test" && uType !== "unit_test" && uType !== "") {
-      return u.nodeId;
-    }
-  }
+  const graphParent = firstNonTestParent(
+    candidates.map((candidate) => candidate.nodeId),
+    graphologyGraph,
+    manifestEntryLookup,
+  );
+  if (graphParent != null) return graphParent;
 
   const testAttrs = manifestEntryLookup.get(testUniqueId);
   const attachedNode =
@@ -106,20 +126,14 @@ function resolveTestParentFromManifest(
     | { nodes?: unknown; macros?: unknown }
     | undefined;
   if (Array.isArray(dependsOn?.nodes)) {
-    for (const parentId of dependsOn.nodes) {
-      if (typeof parentId !== "string") continue;
-      const parentAttrs = getManifestAttrs(
-        parentId,
-        graphologyGraph,
-        manifestEntryLookup,
-      );
-      const parentType = String(
-        parentAttrs?.resource_type ?? inferResourceTypeFromId(parentId),
-      );
-      if (parentType !== "test" && parentType !== "unit_test") {
-        return parentId;
-      }
-    }
+    const dependsOnParent = firstNonTestParent(
+      dependsOn.nodes.filter(
+        (parentId): parentId is string => typeof parentId === "string",
+      ),
+      graphologyGraph,
+      manifestEntryLookup,
+    );
+    if (dependsOnParent != null) return dependsOnParent;
   }
 
   return null;
@@ -145,7 +159,7 @@ export function buildSemanticsForTimelineNode(
 ): NodeExecutionSemantics {
   const entry = manifestEntryLookup.get(uniqueId) ?? null;
   const resourceType =
-    typeof attrs?.resource_type === "string" && attrs.resource_type
+    typeof attrs?.resource_type === "string" && attrs.resource_type !== ""
       ? attrs.resource_type
       : inferResourceTypeFromId(uniqueId);
   const mat =
@@ -183,10 +197,9 @@ export function enrichGanttItemRow(
     graphologyGraph,
     manifestEntryLookup,
   );
-  const rtRaw = attrs?.resource_type;
   const resourceType =
-    typeof rtRaw === "string" && rtRaw
-      ? rtRaw
+    typeof attrs?.resource_type === "string" && attrs.resource_type !== ""
+      ? attrs.resource_type
       : inferResourceTypeFromId(item.unique_id);
 
   const parentId =
@@ -203,10 +216,10 @@ export function enrichGanttItemRow(
     typeof attrs?.package_name === "string" && attrs.package_name.length > 0
       ? attrs.package_name
       : inferPackageNameFromUniqueId(item.unique_id);
-
-  const mat = attrs?.materialized;
   const materialized =
-    typeof mat === "string" && mat.trim() !== "" ? mat : null;
+    typeof attrs?.materialized === "string" && attrs.materialized.trim() !== ""
+      ? attrs.materialized
+      : null;
 
   const semantics = buildSemanticsForTimelineNode(
     item.unique_id,
@@ -272,39 +285,36 @@ export function buildSyntheticSourceRows(
   manifestEntryLookup: ManifestEntryLookup,
   adapterType: string | null | undefined,
 ): GanttItem[] {
-  const existingIds = new Set(enrichedGanttData.map((item) => item.unique_id));
-  const testsBySourceId = new Map<string, GanttItem[]>();
-
-  for (const item of enrichedGanttData) {
+  const addTestUnderSource = (
+    grouped: Map<string, GanttItem[]>,
+    item: GanttItem,
+  ) => {
     if (
       (item.resourceType !== "test" && item.resourceType !== "unit_test") ||
       item.parentId == null ||
       !graphologyGraph.hasNode(item.parentId)
     ) {
-      continue;
+      return;
     }
 
     const parentAttrs = graphologyGraph.getNodeAttributes(item.parentId);
     if (String(parentAttrs?.resource_type ?? "") !== "source") {
-      continue;
+      return;
     }
 
-    const existing = testsBySourceId.get(item.parentId) ?? [];
+    const existing = grouped.get(item.parentId) ?? [];
     existing.push(item);
-    testsBySourceId.set(item.parentId, existing);
-  }
+    grouped.set(item.parentId, existing);
+  };
 
-  const syntheticRows: GanttItem[] = [];
-  for (const [sourceId, tests] of testsBySourceId.entries()) {
-    if (existingIds.has(sourceId) || tests.length === 0) {
-      continue;
-    }
-
+  const buildSyntheticSourceRow = (
+    sourceId: string,
+    tests: GanttItem[],
+  ): GanttItem => {
     const sourceAttrs = graphologyGraph.getNodeAttributes(sourceId);
     const sortedTests = [...tests].sort(compareGanttItems);
     const start = Math.min(...sortedTests.map((item) => item.start));
     const end = Math.max(...sortedTests.map((item) => item.end));
-
     const semantics = buildSemanticsForTimelineNode(
       sourceId,
       sourceAttrs,
@@ -312,7 +322,7 @@ export function buildSyntheticSourceRows(
       adapterType,
     );
 
-    syntheticRows.push({
+    return {
       unique_id: sourceId,
       name:
         typeof sourceAttrs?.name === "string" && sourceAttrs.name.length > 0
@@ -336,7 +346,22 @@ export function buildSyntheticSourceRows(
       executeEnd: null,
       materialized: null,
       semantics,
-    });
+    };
+  };
+
+  const existingIds = new Set(enrichedGanttData.map((item) => item.unique_id));
+  const testsBySourceId = new Map<string, GanttItem[]>();
+
+  for (const item of enrichedGanttData) {
+    addTestUnderSource(testsBySourceId, item);
+  }
+
+  const syntheticRows: GanttItem[] = [];
+  for (const [sourceId, tests] of testsBySourceId.entries()) {
+    if (existingIds.has(sourceId) || tests.length === 0) {
+      continue;
+    }
+    syntheticRows.push(buildSyntheticSourceRow(sourceId, tests));
   }
 
   return syntheticRows.sort(compareGanttItems);

@@ -233,6 +233,46 @@ function incrementalHintsFromConfig(
 export function buildNodeExecutionSemantics(
   input: BuildNodeExecutionSemanticsInput,
 ): NodeExecutionSemantics {
+  const nonEmptyString = (value: unknown): string | undefined =>
+    typeof value === "string" && value.trim() !== "" ? value : undefined;
+
+  const buildOptionalSemanticsFields = (
+    relationName: string | undefined,
+    adapterType: string | null | undefined,
+    uniqueKey: string | string[] | undefined,
+    rawMaterialization: string | undefined,
+    inc: ReturnType<typeof incrementalHintsFromConfig>,
+  ): Partial<
+    Pick<
+      NodeExecutionSemantics,
+      | "relationName"
+      | "adapterType"
+      | "incrementalStrategy"
+      | "uniqueKey"
+      | "onSchemaChange"
+      | "fullRefreshCapable"
+      | "rawMaterialization"
+    >
+  > => ({
+    ...(relationName != null ? { relationName } : {}),
+    ...(nonEmptyString(adapterType) != null
+      ? { adapterType: nonEmptyString(adapterType) }
+      : {}),
+    ...(inc.incrementalStrategy != null
+      ? { incrementalStrategy: inc.incrementalStrategy }
+      : {}),
+    ...(uniqueKey != null ? { uniqueKey } : {}),
+    ...(inc.onSchemaChange != null
+      ? { onSchemaChange: inc.onSchemaChange }
+      : {}),
+    ...(inc.fullRefreshCapable != null
+      ? { fullRefreshCapable: inc.fullRefreshCapable }
+      : {}),
+    ...(nonEmptyString(rawMaterialization) != null
+      ? { rawMaterialization: nonEmptyString(rawMaterialization) }
+      : {}),
+  });
+
   const { resourceType, adapterType } = input;
   const entry = input.manifestEntry ?? null;
   const config = readConfig(entry);
@@ -253,10 +293,7 @@ export function buildNodeExecutionSemantics(
   const { uniqueKey, hasUniqueKeyField } = parseUniqueKey(config);
   const inc = incrementalHintsFromConfig(config, hasUniqueKeyField);
 
-  const relationName =
-    typeof entry?.relation_name === "string" && entry.relation_name.length > 0
-      ? entry.relation_name
-      : undefined;
+  const relationName = nonEmptyString(entry?.relation_name);
 
   const hadMaterializedConfig =
     configMaterialized != null && String(configMaterialized).trim() !== "";
@@ -265,34 +302,17 @@ export function buildNodeExecutionSemantics(
 
   const flags = deriveSemanticsFlags(kind, resourceType);
 
-  const optional: Partial<
-    Pick<
-      NodeExecutionSemantics,
-      | "relationName"
-      | "adapterType"
-      | "incrementalStrategy"
-      | "uniqueKey"
-      | "onSchemaChange"
-      | "fullRefreshCapable"
-      | "rawMaterialization"
-    >
-  > = {};
-  if (relationName != null) optional.relationName = relationName;
-  if (adapterType != null && adapterType.length > 0)
-    optional.adapterType = adapterType;
-  if (inc.incrementalStrategy != null)
-    optional.incrementalStrategy = inc.incrementalStrategy;
-  if (uniqueKey != null) optional.uniqueKey = uniqueKey;
-  if (inc.onSchemaChange != null) optional.onSchemaChange = inc.onSchemaChange;
-  if (inc.fullRefreshCapable != null)
-    optional.fullRefreshCapable = inc.fullRefreshCapable;
-  if (raw != null && raw.length > 0) optional.rawMaterialization = raw;
-
   return {
     resourceType,
     materialization: kind,
     ...flags,
-    ...optional,
+    ...buildOptionalSemanticsFields(
+      relationName,
+      adapterType,
+      uniqueKey,
+      raw,
+      inc,
+    ),
     materializationSource: provenanceFromEntry(
       entry,
       hadMaterializedConfig || hadGraphMaterialized,
