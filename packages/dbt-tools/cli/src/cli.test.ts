@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { Command } from "commander";
 import {
   validateResourceId,
   validateSafePath,
@@ -10,6 +11,7 @@ import {
   getCommandSchema,
   getAllSchemas,
 } from "@dbt-tools/core";
+import { createProgram, run } from "./cli";
 
 describe("CLI Integration", () => {
   describe("Core service integration", () => {
@@ -30,69 +32,58 @@ describe("CLI Integration", () => {
   });
 
   describe("Command schema validation", () => {
-    it("should have schema for all commands", () => {
+    it("should have schema for all command families", () => {
       const schemas = getAllSchemas();
-      expect(schemas).toHaveProperty("summary");
-      expect(schemas).toHaveProperty("deps");
-      expect(schemas).toHaveProperty("graph");
-      expect(schemas).toHaveProperty("run-report");
-      expect(schemas).toHaveProperty("schema");
-      // New commands
-      expect(schemas).toHaveProperty("inventory");
-      expect(schemas).toHaveProperty("timeline");
-      expect(schemas).toHaveProperty("search");
-      expect(schemas).toHaveProperty("status");
-      expect(schemas).toHaveProperty("freshness");
+      expect(schemas.subcommands).toHaveProperty("inspect");
+      expect(schemas.subcommands).toHaveProperty("find");
+      expect(schemas.subcommands).toHaveProperty("trace");
+      expect(schemas.subcommands).toHaveProperty("export");
+      expect(schemas.subcommands).toHaveProperty("check");
+      expect(schemas.subcommands).toHaveProperty("describe");
     });
 
-    it("should have correct inventory schema", () => {
-      const schema = getCommandSchema("inventory");
+    it("should have correct inspect inventory schema", () => {
+      const schema = getCommandSchema("inspect inventory");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("inventory");
+      expect(schema?.command).toBe("inspect inventory");
       const typeOpt = schema?.options?.find((o) => o.name === "--type");
       expect(typeOpt).toBeDefined();
       const tagOpt = schema?.options?.find((o) => o.name === "--tag");
       expect(tagOpt).toBeDefined();
     });
 
-    it("should have correct timeline schema", () => {
-      const schema = getCommandSchema("timeline");
+    it("should have correct inspect timeline schema", () => {
+      const schema = getCommandSchema("inspect timeline");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("timeline");
+      expect(schema?.command).toBe("inspect timeline");
       const sortOpt = schema?.options?.find((o) => o.name === "--sort");
       expect(sortOpt?.type).toBe("enum");
       const topOpt = schema?.options?.find((o) => o.name === "--top");
       expect(topOpt?.type).toBe("number");
     });
 
-    it("should have correct search schema", () => {
-      const schema = getCommandSchema("search");
+    it("should have correct find resources schema", () => {
+      const schema = getCommandSchema("find resources");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("search");
+      expect(schema?.command).toBe("find resources");
       expect(schema?.arguments[0]?.name).toBe("query");
       expect(schema?.arguments[0]?.required).toBe(false);
     });
 
-    it("should have correct status schema", () => {
-      const schema = getCommandSchema("status");
+    it("should have correct check artifacts schema", () => {
+      const schema = getCommandSchema("check artifacts");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("status");
+      expect(schema?.command).toBe("check artifacts");
       const targetDirOpt = schema?.options?.find(
         (o) => o.name === "--target-dir",
       );
       expect(targetDirOpt).toBeDefined();
     });
 
-    it("freshness schema should have command = freshness", () => {
-      const schema = getCommandSchema("freshness");
+    it("should have correct trace lineage command schema", () => {
+      const schema = getCommandSchema("trace lineage");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("freshness");
-    });
-
-    it("should have correct deps command schema", () => {
-      const schema = getCommandSchema("deps");
-      expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("deps");
+      expect(schema?.command).toBe("trace lineage");
       expect(schema?.arguments.length).toBeGreaterThan(0);
       expect(schema?.arguments[0]?.name).toBe("resource-id");
       expect(schema?.arguments[0]?.required).toBe(true);
@@ -112,10 +103,10 @@ describe("CLI Integration", () => {
       expect(fieldOpt?.type).toBe("string");
     });
 
-    it("should have correct graph command schema with field-level", () => {
-      const schema = getCommandSchema("graph");
+    it("should have correct export graph command schema with field-level", () => {
+      const schema = getCommandSchema("export graph");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("graph");
+      expect(schema?.command).toBe("export graph");
 
       const fieldLevelOpt = schema?.options?.find(
         (o) => o.name === "--field-level",
@@ -130,10 +121,10 @@ describe("CLI Integration", () => {
       expect(catalogOpt?.type).toBe("string");
     });
 
-    it("should have run-report schema with bottleneck options", () => {
-      const schema = getCommandSchema("run-report");
+    it("should have inspect run schema with bottleneck options", () => {
+      const schema = getCommandSchema("inspect run");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("run-report");
+      expect(schema?.command).toBe("inspect run");
 
       const bottlenecksOpt = schema?.options?.find(
         (o) => o.name === "--bottlenecks",
@@ -155,6 +146,53 @@ describe("CLI Integration", () => {
     });
   });
 
+  describe("Program construction", () => {
+    it("creates a root program with the expected task families", () => {
+      const program = createProgram();
+      const subcommandNames = program.commands.map((command) => command.name());
+      expect(subcommandNames).toEqual([
+        "inspect",
+        "find",
+        "trace",
+        "export",
+        "check",
+        "describe",
+      ]);
+    });
+
+    it("creates nested inspect subcommands", () => {
+      const program = createProgram();
+      const inspect = program.commands.find(
+        (command) => command.name() === "inspect",
+      );
+      expect(inspect).toBeInstanceOf(Command);
+      expect(inspect?.commands.map((command) => command.name())).toEqual([
+        "summary",
+        "run",
+        "timeline",
+        "inventory",
+      ]);
+    });
+
+    it("fails legacy commands with a targeted migration message", () => {
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+        code?: string | number | null,
+      ) => {
+        throw new Error(`exit:${code}`);
+      }) as typeof process.exit);
+      const errorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+
+      expect(() => run(["node", "dbt-tools", "deps"])).toThrow("exit:1");
+      expect(errorSpy).toHaveBeenCalled();
+      expect(errorSpy.mock.calls[0]?.[0]).toContain("trace lineage");
+
+      exitSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+  });
+
   describe("Input validation patterns", () => {
     it("should validate resource IDs correctly", () => {
       expect(() =>
@@ -169,7 +207,7 @@ describe("CLI Integration", () => {
       expect(() => validateSafePath("../../.ssh")).toThrow();
     });
 
-    it("should reject invalid depth (NaN / non-integer) for deps", () => {
+    it("should reject invalid depth (NaN / non-integer) for lineage", () => {
       expect(() => validateDepth(undefined)).not.toThrow();
       expect(() => validateDepth(1)).not.toThrow();
       expect(() => validateDepth(Number.NaN)).toThrow("Invalid depth");
@@ -180,7 +218,7 @@ describe("CLI Integration", () => {
   });
 
   describe("Output formatting", () => {
-    it("should format deps output correctly", () => {
+    it("should format lineage output correctly", () => {
       const result = {
         resource_id: "model.test.example",
         direction: "downstream" as const,

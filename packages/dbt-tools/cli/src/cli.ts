@@ -32,7 +32,18 @@ import {
 } from "./cli-actions";
 import { CLI_PACKAGE_VERSION } from "./version";
 
-const program = new Command();
+const LEGACY_COMMAND_SUGGESTIONS: Record<string, string> = {
+  summary: "inspect summary",
+  "run-report": "inspect run",
+  timeline: "inspect timeline",
+  inventory: "inspect inventory",
+  search: "find resources",
+  deps: "trace lineage",
+  graph: "export graph",
+  status: "check artifacts",
+  freshness: "check artifacts",
+  schema: "describe schema",
+};
 
 /** CLI option/argument description constants (avoid no-duplicate-string) */
 const ARG_MANIFEST_PATH = "[manifest-path]";
@@ -50,18 +61,13 @@ const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
 
-program
-  .name("dbt-tools")
-  .description("Command-line interface for dbt artifact analysis")
-  .version(CLI_PACKAGE_VERSION);
-
 /**
  * Handle errors with proper formatting
  */
-function handleError(error: unknown, isTTY: boolean): void {
+function handleError(error: unknown, tty: boolean): never {
   const formatted = ErrorHandler.formatError(
     error instanceof Error ? error : new Error(String(error)),
-    isTTY,
+    tty,
   );
 
   if (typeof formatted === "string") {
@@ -112,239 +118,129 @@ function tryApplyFieldLevelLineageToGraph(
   }
 }
 
-/**
- * Summary command: Basic summary of project structure
- */
-program
-  .command("summary")
-  .description("Provide summary statistics for dbt manifest")
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
-    (
-      manifestPath: string | undefined,
-      options: {
-        targetDir?: string;
-        fields?: string;
-        json?: boolean;
-        noJson?: boolean;
-      },
-    ) => {
-      try {
-        // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          manifestPath,
-          undefined,
-          options.targetDir,
-        );
+function addSharedJsonOptions(command: Command): Command {
+  return command.option(OPT_JSON, DESC_JSON).option(OPT_NO_JSON, DESC_NO_JSON);
+}
 
-        // Validate path
-        validateSafePath(paths.manifest);
+function configureProgram(program: Command): Command {
+  return program
+    .name("dbt-tools")
+    .description("Command-line interface for dbt artifact analysis")
+    .version(CLI_PACKAGE_VERSION)
+    .showSuggestionAfterError()
+    .showHelpAfterError();
+}
 
-        // Load manifest
-        const manifest = loadManifest(paths.manifest);
-        const graph = new ManifestGraph(manifest);
-        let summary = graph.getSummary();
+function registerInspectCommands(program: Command): void {
+  const inspect = program
+    .command("inspect")
+    .description("Inspect dbt artifacts and derived analysis views");
 
-        // Apply field filtering if requested
-        if (options.fields) {
-          summary = FieldFilter.filterFields(
-            summary,
-            options.fields,
-          ) as typeof summary;
-        }
-
-        // Format output
-        const useJson = shouldOutputJSON(options.json, options.noJson);
-
-        if (useJson) {
-          console.log(formatOutput(summary, true));
-        } else {
-          console.log(formatSummary(summary));
-        }
-      } catch (error) {
-        handleError(error, isTTY());
-      }
-    },
-  );
-
-/**
- * Graph export command: Export graph in various formats.
- * Supports optional subgraph focus via --focus, --focus-depth, --focus-direction,
- * and --resource-types.
- */
-program
-  .command("graph")
-  .description("Export dependency graph")
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
-  .option(OPT_FORMAT, DESC_GRAPH_FORMAT, DEFAULT_GRAPH_FORMAT)
-  .option("--output <path>", "Output file path (default: stdout)")
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_FIELDS, DESC_FIELDS)
-  .option("--field-level", "Include field-level (column-level) lineage")
-  .option("--catalog-path <path>", "Path to catalog.json file")
-  .option(
-    "--focus <resource-id>",
-    "Focus on a single node; exports its subgraph only",
+  addSharedJsonOptions(
+    inspect
+      .command("summary")
+      .description("Manifest-level summary statistics")
+      .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR),
   )
-  .option(
-    "--focus-depth <number>",
-    "Max traversal depth for --focus (default: unlimited)",
-    parseInt,
-  )
-  .option(
-    "--focus-direction <direction>",
-    "Traversal direction for --focus: upstream, downstream, or both (default: both)",
-    "both",
-  )
-  .option(
-    "--resource-types <types>",
-    "Comma-separated resource types to include (filters nodes when --focus is set)",
-  )
-  .action(
-    (
-      manifestPath: string | undefined,
-      options: {
-        format?: string;
-        output?: string;
-        targetDir?: string;
-        fields?: string;
-        fieldLevel?: boolean;
-        catalogPath?: string;
-        focus?: string;
-        focusDepth?: number;
-        focusDirection?: string;
-        resourceTypes?: string;
-      },
-    ) => {
-      try {
-        // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          manifestPath,
-          undefined,
-          options.targetDir,
-          options.catalogPath,
-        );
-
-        // Validate path
-        validateSafePath(paths.manifest);
-        if (options.output) {
-          validateSafePath(options.output);
-        }
-
-        const focusDirection = (options.focusDirection ?? "both").toLowerCase();
-        if (!["upstream", "downstream", "both"].includes(focusDirection)) {
-          throw new Error(
-            `--focus-direction must be one of: upstream, downstream, both`,
+    .option(OPT_FIELDS, DESC_FIELDS)
+    .action(
+      (
+        manifestPath: string | undefined,
+        options: {
+          targetDir?: string;
+          fields?: string;
+          json?: boolean;
+          noJson?: boolean;
+        },
+      ) => {
+        try {
+          const paths = resolveArtifactPaths(
+            manifestPath,
+            undefined,
+            options.targetDir,
           );
+
+          validateSafePath(paths.manifest);
+
+          const manifest = loadManifest(paths.manifest);
+          const graph = new ManifestGraph(manifest);
+          let summary = graph.getSummary();
+
+          if (options.fields) {
+            summary = FieldFilter.filterFields(
+              summary,
+              options.fields,
+            ) as typeof summary;
+          }
+
+          const useJson = shouldOutputJSON(options.json, options.noJson);
+
+          if (useJson) {
+            console.log(formatOutput(summary, true));
+          } else {
+            console.log(formatSummary(summary));
+          }
+        } catch (error) {
+          handleError(error, isTTY());
         }
+      },
+    );
 
-        if (options.focusDepth !== undefined) {
-          validateDepth(options.focusDepth);
-        }
-
-        // Load manifest
-        const manifest = loadManifest(paths.manifest);
-        const graph = new ManifestGraph(manifest);
-
-        // Enhance with field-level lineage if requested
-        if (options.fieldLevel && paths.catalog) {
-          tryApplyFieldLevelLineageToGraph(graph, manifest, paths.catalog);
-        }
-
-        let targetGraph = graph.getGraph();
-
-        // Apply subgraph focus if requested
-        if (options.focus) {
-          validateResourceId(options.focus);
-          const allowedTypes = options.resourceTypes
-            ? new Set(
-                options.resourceTypes
-                  .split(",")
-                  .map((t) => t.trim().toLowerCase())
-                  .filter(Boolean),
-              )
-            : undefined;
-          targetGraph = graph.buildSubgraph(
-            options.focus,
-            focusDirection as "upstream" | "downstream" | "both",
-            options.focusDepth,
-            allowedTypes,
-          );
-        }
-
-        const output = exportGraphToFormat(targetGraph, {
-          format: options.format,
-          output: options.output,
-          fields: options.fields,
-        });
-        writeGraphOutput(output, options.output);
-      } catch (error) {
-        handleError(error, isTTY());
-      }
-    },
-  );
-
-/**
- * Run report command: Execution summary from run_results.json
- */
-program
-  .command("run-report")
-  .description("Generate execution report from run_results.json")
-  .argument(
-    "[run-results-path]",
-    "Path to run_results.json file (defaults to ./target/run_results.json)",
-  )
-  .argument(
-    ARG_MANIFEST_PATH,
-    "Path to manifest.json file (optional, for critical path)",
-  )
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_FIELDS, DESC_FIELDS)
-  .option("--bottlenecks", "Include bottleneck section in report")
-  .option(
-    "--bottlenecks-top <n>",
-    "Top N slowest nodes (default: 10 when --bottlenecks)",
-    parseInt,
-  )
-  .option(
-    "--bottlenecks-threshold <s>",
-    "Nodes exceeding s seconds (alternative to top-N)",
-    parseFloat,
-  )
-  .option(
-    "--adapter-summary",
-    "Include adapter_response aggregates (and default top-5 slot/bytes in human output)",
-  )
-  .option(
-    "--adapter-top-by <metric>",
-    "Rank nodes by adapter metric: bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
-  )
-  .option(
-    "--adapter-top-n <n>",
-    "Top N for --adapter-top-by (default: 10)",
-    parseInt,
-  )
-  .option(
-    "--adapter-min-bytes <n>",
-    "When using --adapter-top-by, require bytes_processed >= n",
-    parseFloat,
-  )
-  .option(
-    "--adapter-min-slot-ms <n>",
-    "When using --adapter-top-by, require slot_ms >= n",
-    parseFloat,
-  )
-  .option(
-    "--adapter-min-rows-affected <n>",
-    "When using --adapter-top-by, require rows_affected >= n",
-    parseFloat,
-  )
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
+  addSharedJsonOptions(
+    inspect
+      .command("run")
+      .description("Aggregated execution report from run_results.json")
+      .argument(
+        "[run-results-path]",
+        "Path to run_results.json file (defaults to ./target/run_results.json)",
+      )
+      .argument(
+        ARG_MANIFEST_PATH,
+        "Path to manifest.json file (optional, for critical path)",
+      )
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+      .option(OPT_FIELDS, DESC_FIELDS)
+      .option("--bottlenecks", "Include bottleneck section in report")
+      .option(
+        "--bottlenecks-top <n>",
+        "Top N slowest nodes (default: 10 when --bottlenecks)",
+        parseInt,
+      )
+      .option(
+        "--bottlenecks-threshold <s>",
+        "Nodes exceeding s seconds (alternative to top-N)",
+        parseFloat,
+      )
+      .option(
+        "--adapter-summary",
+        "Include adapter_response aggregates (and default top-5 slot/bytes in human output)",
+      )
+      .option(
+        "--adapter-top-by <metric>",
+        "Rank nodes by adapter metric: bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
+      )
+      .option(
+        "--adapter-top-n <n>",
+        "Top N for --adapter-top-by (default: 10)",
+        parseInt,
+      )
+      .option(
+        "--adapter-min-bytes <n>",
+        "When using --adapter-top-by, require bytes_processed >= n",
+        parseFloat,
+      )
+      .option(
+        "--adapter-min-slot-ms <n>",
+        "When using --adapter-top-by, require slot_ms >= n",
+        parseFloat,
+      )
+      .option(
+        "--adapter-min-rows-affected <n>",
+        "When using --adapter-top-by, require rows_affected >= n",
+        parseFloat,
+      ),
+  ).action(
     (
       runResultsPath: string | undefined,
       manifestPath: string | undefined,
@@ -392,7 +288,6 @@ program
             ),
             isTTY(),
           );
-          return;
         }
         adapterTopBy = options.adapterTopBy as
           | "bytes_processed"
@@ -428,127 +323,39 @@ program
     },
   );
 
-/**
- * Deps command: Get upstream or downstream dependencies
- */
-program
-  .command("deps")
-  .description("Get upstream or downstream dependencies for a dbt resource")
-  .argument(
-    "<resource-id>",
-    "Unique ID of the dbt resource (e.g., model.my_project.customers)",
-  )
-  .option(
-    "--direction <direction>",
-    "Direction: upstream or downstream",
-    "downstream",
-  )
-  .option("--manifest-path <path>", "Path to manifest.json file")
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_FIELDS, DESC_FIELDS)
-  .option("--field <name>", "Specific field (column) to trace dependencies for")
-  .option("--catalog-path <path>", "Path to catalog.json file")
-  .option(
-    "--depth <number>",
-    "Max traversal depth; 1 = immediate neighbors, omit for all levels",
-    parseInt,
-  )
-  .option(OPT_FORMAT, "Output structure: flat list or nested tree", "tree")
-  .option(
-    "--build-order",
-    "Output upstream dependencies in topological build order (only with --direction upstream)",
-  )
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
-    (
-      resourceId: string,
-      options: {
-        direction?: string;
-        manifestPath?: string;
-        targetDir?: string;
-        fields?: string;
-        field?: string;
-        catalogPath?: string;
-        depth?: number;
-        format?: string;
-        buildOrder?: boolean;
-        json?: boolean;
-        noJson?: boolean;
-      },
-    ) => depsAction(resourceId, options, handleError, isTTY),
-  );
-
-/**
- * Inventory command: List and filter dbt resources from manifest
- */
-program
-  .command("inventory")
-  .description("List and filter dbt resources from manifest")
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
-  .option("--package <package>", "Filter by package name")
-  .option("--tag <tag>", "Filter by tag(s), comma-separated")
-  .option("--path <path>", "Filter by file path substring")
-  .option(OPT_FIELDS, DESC_FIELDS)
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
-    (
-      manifestPath: string | undefined,
-      options: {
-        type?: string;
-        package?: string;
-        tag?: string;
-        path?: string;
-        fields?: string;
-        targetDir?: string;
-        json?: boolean;
-        noJson?: boolean;
-      },
-    ) => inventoryAction(manifestPath, options, handleError, isTTY),
-  );
-
-/**
- * Timeline command: Per-node execution entries from run_results.json
- */
-program
-  .command("timeline")
-  .description(
-    "Show per-node execution timeline from run_results.json (row-level, unlike run-report)",
-  )
-  .argument(
-    "[run-results-path]",
-    "Path to run_results.json (defaults to ./target/run_results.json)",
-  )
-  .argument(
-    "[manifest-path]",
-    "Path to manifest.json (optional, enriches entries with name and type)",
-  )
-  .option(
-    "--sort <key>",
-    "Sort key: duration | start | query_id | adapter_code | adapter_message | bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
-    "duration",
-  )
-  .option("--top <n>", "Show top N entries only", parseInt)
-  .option("--failed-only", "Show only non-successful executions")
-  .option(
-    "--status <status>",
-    "Filter by status (comma-separated, e.g. error,warn)",
-  )
-  .option(
-    "--adapter-text <text>",
-    "Filter by normalized adapter text (query ID, code, message, location, project)",
-  )
-  .option(
-    OPT_FORMAT,
-    "Output format: json (default non-TTY), table (default TTY), csv",
-  )
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
+  addSharedJsonOptions(
+    inspect
+      .command("timeline")
+      .description("Row-level execution entries from run_results.json")
+      .argument(
+        "[run-results-path]",
+        "Path to run_results.json (defaults to ./target/run_results.json)",
+      )
+      .argument(
+        "[manifest-path]",
+        "Path to manifest.json (optional, enriches entries with name and type)",
+      )
+      .option(
+        "--sort <key>",
+        "Sort key: duration | start | query_id | adapter_code | adapter_message | bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
+        "duration",
+      )
+      .option("--top <n>", "Show top N entries only", parseInt)
+      .option("--failed-only", "Show only non-successful executions")
+      .option(
+        "--status <status>",
+        "Filter by status (comma-separated, e.g. error,warn)",
+      )
+      .option(
+        "--adapter-text <text>",
+        "Filter by normalized adapter text (query ID, code, message, location, project)",
+      )
+      .option(
+        OPT_FORMAT,
+        "Output format: json (default non-TTY), table (default TTY), csv",
+      )
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR),
+  ).action(
     (
       runResultsPath: string | undefined,
       manifestPath: string | undefined,
@@ -567,26 +374,55 @@ program
       timelineAction(runResultsPath, manifestPath, options, handleError, isTTY),
   );
 
-/**
- * Search command: Fast manifest search across dbt entities
- */
-program
-  .command("search")
-  .description("Search for dbt resources by name, tag, type, or free text")
-  .argument(
-    "[query]",
-    "Search query; supports key:value tokens like type:model tag:finance",
-  )
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
-  .option("--package <package>", "Filter by package name")
-  .option("--tag <tag>", "Filter by tag(s), comma-separated")
-  .option("--path <path>", "Filter by file path substring")
-  .option(OPT_FIELDS, DESC_FIELDS)
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action(
+  addSharedJsonOptions(
+    inspect
+      .command("inventory")
+      .description("Enumerate and filter manifest resources")
+      .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+      .option("--type <type>", "Filter by resource type(s), comma-separated")
+      .option("--package <package>", "Filter by package name")
+      .option("--tag <tag>", "Filter by tag(s), comma-separated")
+      .option("--path <path>", "Filter by file path substring")
+      .option(OPT_FIELDS, DESC_FIELDS)
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR),
+  ).action(
+    (
+      manifestPath: string | undefined,
+      options: {
+        type?: string;
+        package?: string;
+        tag?: string;
+        path?: string;
+        fields?: string;
+        targetDir?: string;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) => inventoryAction(manifestPath, options, handleError, isTTY),
+  );
+}
+
+function registerFindCommands(program: Command): void {
+  const find = program
+    .command("find")
+    .description("Find likely matches before narrowing into a focused command");
+
+  addSharedJsonOptions(
+    find
+      .command("resources")
+      .description("Discover likely resource matches from text and filters")
+      .argument(
+        "[query]",
+        "Search query; supports key:value tokens like type:model tag:finance",
+      )
+      .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+      .option("--type <type>", "Filter by resource type(s), comma-separated")
+      .option("--package <package>", "Filter by package name")
+      .option("--tag <tag>", "Filter by tag(s), comma-separated")
+      .option("--path <path>", "Filter by file path substring")
+      .option(OPT_FIELDS, DESC_FIELDS)
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR),
+  ).action(
     (
       query: string | undefined,
       manifestPath: string | undefined,
@@ -602,66 +438,267 @@ program
       },
     ) => searchAction(query, manifestPath, options, handleError, isTTY),
   );
+}
 
-/**
- * Status command: Report artifact presence, freshness, and readiness
- */
-program
-  .command("status")
-  .description(
-    "Report dbt artifact presence, modification times, and analysis readiness",
-  )
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+function registerTraceCommands(program: Command): void {
+  const trace = program
+    .command("trace")
+    .description("Trace lineage and traversal-based relationships");
+
+  addSharedJsonOptions(
+    trace
+      .command("lineage")
+      .description("Dependency traversal from a dbt resource")
+      .argument(
+        "<resource-id>",
+        "Unique ID of the dbt resource (e.g., model.my_project.customers)",
+      )
+      .option(
+        "--direction <direction>",
+        "Direction: upstream or downstream",
+        "downstream",
+      )
+      .option("--manifest-path <path>", "Path to manifest.json file")
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+      .option(OPT_FIELDS, DESC_FIELDS)
+      .option(
+        "--field <name>",
+        "Specific field (column) to trace dependencies for",
+      )
+      .option("--catalog-path <path>", "Path to catalog.json file")
+      .option(
+        "--depth <number>",
+        "Max traversal depth; 1 = immediate neighbors, omit for all levels",
+        parseInt,
+      )
+      .option(OPT_FORMAT, "Output structure: flat list or nested tree", "tree")
+      .option(
+        "--build-order",
+        "Output upstream dependencies in topological build order (only with --direction upstream)",
+      ),
+  ).action(
+    (
+      resourceId: string,
+      options: {
+        direction?: string;
+        manifestPath?: string;
+        targetDir?: string;
+        fields?: string;
+        field?: string;
+        catalogPath?: string;
+        depth?: number;
+        format?: string;
+        buildOrder?: boolean;
+        json?: boolean;
+        noJson?: boolean;
+      },
+    ) => depsAction(resourceId, options, handleError, isTTY),
   );
+}
 
-/**
- * Freshness command: Alias for status with freshness framing
- */
-program
-  .command("freshness")
-  .description("Alias for status – shows artifact recency and readiness")
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
-  .option(OPT_JSON, DESC_JSON)
-  .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
-  );
+function registerExportCommands(program: Command): void {
+  const exportCommand = program
+    .command("export")
+    .description("Export dbt-derived structures for downstream tooling");
 
-/**
- * Schema command: Get command schema for introspection
- */
-program
-  .command("schema")
-  .description("Get machine-readable schema for a command")
-  .argument(
-    "[command]",
-    "Command name (if omitted, returns all command schemas)",
-  )
-  .option("--json", "Force JSON output (always JSON by default)")
-  .action((command: string | undefined, _options: { json?: boolean }) => {
-    try {
-      let result: unknown;
+  exportCommand
+    .command("graph")
+    .description("Export dependency graph")
+    .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
+    .option(OPT_FORMAT, DESC_GRAPH_FORMAT, DEFAULT_GRAPH_FORMAT)
+    .option("--output <path>", "Output file path (default: stdout)")
+    .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+    .option(OPT_FIELDS, DESC_FIELDS)
+    .option("--field-level", "Include field-level (column-level) lineage")
+    .option("--catalog-path <path>", "Path to catalog.json file")
+    .option(
+      "--focus <resource-id>",
+      "Focus on a single node; exports its subgraph only",
+    )
+    .option(
+      "--focus-depth <number>",
+      "Max traversal depth for --focus (default: unlimited)",
+      parseInt,
+    )
+    .option(
+      "--focus-direction <direction>",
+      "Traversal direction for --focus: upstream, downstream, or both (default: both)",
+      "both",
+    )
+    .option(
+      "--resource-types <types>",
+      "Comma-separated resource types to include (filters nodes when --focus is set)",
+    )
+    .action(
+      (
+        manifestPath: string | undefined,
+        options: {
+          format?: string;
+          output?: string;
+          targetDir?: string;
+          fields?: string;
+          fieldLevel?: boolean;
+          catalogPath?: string;
+          focus?: string;
+          focusDepth?: number;
+          focusDirection?: string;
+          resourceTypes?: string;
+        },
+      ) => {
+        try {
+          const paths = resolveArtifactPaths(
+            manifestPath,
+            undefined,
+            options.targetDir,
+            options.catalogPath,
+          );
 
-      if (command) {
-        const schema = getCommandSchema(command);
-        if (!schema) {
-          throw new Error(`Unknown command: ${command}`);
+          validateSafePath(paths.manifest);
+          if (options.output) {
+            validateSafePath(options.output);
+          }
+
+          const focusDirection = (
+            options.focusDirection ?? "both"
+          ).toLowerCase();
+          if (!["upstream", "downstream", "both"].includes(focusDirection)) {
+            throw new Error(
+              `--focus-direction must be one of: upstream, downstream, both`,
+            );
+          }
+
+          if (options.focusDepth !== undefined) {
+            validateDepth(options.focusDepth);
+          }
+
+          const manifest = loadManifest(paths.manifest);
+          const graph = new ManifestGraph(manifest);
+
+          if (options.fieldLevel && paths.catalog) {
+            tryApplyFieldLevelLineageToGraph(graph, manifest, paths.catalog);
+          }
+
+          let targetGraph = graph.getGraph();
+
+          if (options.focus) {
+            validateResourceId(options.focus);
+            const allowedTypes = options.resourceTypes
+              ? new Set(
+                  options.resourceTypes
+                    .split(",")
+                    .map((t) => t.trim().toLowerCase())
+                    .filter(Boolean),
+                )
+              : undefined;
+            targetGraph = graph.buildSubgraph(
+              options.focus,
+              focusDirection as "upstream" | "downstream" | "both",
+              options.focusDepth,
+              allowedTypes,
+            );
+          }
+
+          const output = exportGraphToFormat(targetGraph, {
+            format: options.format,
+            output: options.output,
+            fields: options.fields,
+          });
+          writeGraphOutput(output, options.output);
+        } catch (error) {
+          handleError(error, isTTY());
         }
-        result = schema;
-      } else {
-        result = getAllSchemas();
-      }
+      },
+    );
+}
 
-      // Schema command always outputs JSON
-      console.log(formatOutput(result, true));
-    } catch (error) {
-      handleError(error, isTTY());
-    }
-  });
+function registerCheckCommands(program: Command): void {
+  const check = program
+    .command("check")
+    .description("Check artifact availability and operational readiness");
 
-// Parse command line arguments
-program.parse();
+  addSharedJsonOptions(
+    check
+      .command("artifacts")
+      .description("Artifact presence, recency, and readiness")
+      .option(OPT_TARGET_DIR, DESC_TARGET_DIR),
+  ).action(
+    (options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
+      statusAction(options, handleError, isTTY),
+  );
+}
+
+function registerDescribeCommands(program: Command): void {
+  const describe = program
+    .command("describe")
+    .description("Describe commands for human and machine discovery");
+
+  describe
+    .command("schema")
+    .description(
+      "Machine-readable schema for the full command tree or a specific path",
+    )
+    .argument(
+      "[command-path...]",
+      "Command path segments (if omitted, returns the full command tree)",
+    )
+    .option("--json", "Force JSON output (always JSON by default)")
+    .action(
+      (commandPath: string[] | undefined, _options: { json?: boolean }) => {
+        try {
+          const result =
+            commandPath && commandPath.length > 0
+              ? getCommandSchema(commandPath)
+              : getAllSchemas();
+
+          if (!result) {
+            throw new Error(`Unknown command path: ${commandPath?.join(" ")}`);
+          }
+
+          console.log(formatOutput(result, true));
+        } catch (error) {
+          handleError(error, isTTY());
+        }
+      },
+    );
+}
+
+function findLegacyCommandSuggestion(argv: string[]): string | null {
+  const firstToken = argv.find((token) => !token.startsWith("-"));
+  if (!firstToken) {
+    return null;
+  }
+
+  return LEGACY_COMMAND_SUGGESTIONS[firstToken] ?? null;
+}
+
+export function createProgram(): Command {
+  const program = configureProgram(new Command());
+
+  registerInspectCommands(program);
+  registerFindCommands(program);
+  registerTraceCommands(program);
+  registerExportCommands(program);
+  registerCheckCommands(program);
+  registerDescribeCommands(program);
+
+  return program;
+}
+
+export function run(argv = process.argv): void {
+  const suggestion = findLegacyCommandSuggestion(argv.slice(2));
+  if (suggestion) {
+    const attempted = argv.slice(2).find((token) => !token.startsWith("-"));
+    handleError(
+      new Error(
+        `Unknown command: ${attempted}. Use "dbt-tools ${suggestion}" instead.`,
+      ),
+      isTTY(),
+    );
+  }
+
+  createProgram().parse(argv);
+}
+
+if (require.main === module) {
+  run();
+}

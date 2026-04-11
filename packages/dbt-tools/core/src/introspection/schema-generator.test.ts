@@ -3,73 +3,60 @@ import { getCommandSchema, getAllSchemas } from "./schema-generator";
 
 describe("SchemaGenerator", () => {
   describe("getCommandSchema", () => {
-    it("should return schema for summary command", () => {
-      const schema = getCommandSchema("summary");
-      expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("summary");
-      expect(schema?.arguments).toBeInstanceOf(Array);
-      expect(schema?.options).toBeInstanceOf(Array);
+    it("returns the root schema tree", () => {
+      const schema = getAllSchemas();
+      expect(schema.kind).toBe("root");
+      expect(schema.path).toEqual([]);
+      expect(schema.subcommands).toHaveProperty("inspect");
+      expect(schema.subcommands).toHaveProperty("find");
+      expect(schema.subcommands).toHaveProperty("trace");
+      expect(schema.subcommands).toHaveProperty("export");
+      expect(schema.subcommands).toHaveProperty("check");
+      expect(schema.subcommands).toHaveProperty("describe");
     });
 
-    it("should return schema for deps command", () => {
-      const schema = getCommandSchema("deps");
+    it("returns schema for a command group path", () => {
+      const schema = getCommandSchema("inspect");
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("deps");
-      expect(schema?.arguments).toBeInstanceOf(Array);
-      expect(schema?.options).toBeInstanceOf(Array);
+      expect(schema?.kind).toBe("group");
+      expect(schema?.command).toBe("inspect");
+      expect(schema?.subcommands).toHaveProperty("summary");
+      expect(schema?.subcommands).toHaveProperty("run");
+    });
+
+    it("returns schema for a leaf command path", () => {
+      const schema = getCommandSchema("trace lineage");
+      expect(schema).not.toBeNull();
+      expect(schema?.kind).toBe("command");
+      expect(schema?.command).toBe("trace lineage");
       expect(schema?.arguments[0]?.name).toBe("resource-id");
       expect(schema?.arguments[0]?.required).toBe(true);
     });
 
-    it("should return schema for graph command", () => {
-      const schema = getCommandSchema("graph");
+    it("accepts array-based command path segments", () => {
+      const schema = getCommandSchema(["describe", "schema"]);
       expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("graph");
+      expect(schema?.command).toBe("describe schema");
+      expect(schema?.path).toEqual(["describe", "schema"]);
     });
 
-    it("should return schema for run-report command", () => {
-      const schema = getCommandSchema("run-report");
-      expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("run-report");
-    });
-
-    it("should return schema for schema command", () => {
-      const schema = getCommandSchema("schema");
-      expect(schema).not.toBeNull();
-      expect(schema?.command).toBe("schema");
-    });
-
-    it("should return null for invalid command", () => {
-      const schema = getCommandSchema("invalid-command");
+    it("returns null for an invalid command path", () => {
+      const schema = getCommandSchema("inspect invalid-command");
       expect(schema).toBeNull();
     });
   });
 
-  describe("getAllSchemas", () => {
-    it("should return all command schemas", () => {
-      const schemas = getAllSchemas();
-      expect(schemas).toHaveProperty("summary");
-      expect(schemas).toHaveProperty("deps");
-      expect(schemas).toHaveProperty("graph");
-      expect(schemas).toHaveProperty("run-report");
-      expect(schemas).toHaveProperty("schema");
-    });
-
-    it("should have complete schema structure for all commands", () => {
-      const schemas = getAllSchemas();
-      for (const [command, schema] of Object.entries(schemas)) {
-        expect(schema.command).toBe(command);
+  describe("schema structure", () => {
+    it("has complete schema structure for every node in the tree", () => {
+      const visit = (schema = getAllSchemas()): void => {
+        expect(schema.command).toBeTypeOf("string");
         expect(schema.description).toBeTruthy();
+        expect(schema.path).toBeInstanceOf(Array);
         expect(schema.arguments).toBeInstanceOf(Array);
         expect(schema.options).toBeInstanceOf(Array);
         expect(schema.output_format).toBeTruthy();
         expect(schema.example).toBeTruthy();
-      }
-    });
 
-    it("should have correct argument structure", () => {
-      const schemas = getAllSchemas();
-      for (const schema of Object.values(schemas)) {
         for (const arg of schema.arguments) {
           expect(arg).toHaveProperty("name");
           expect(arg).toHaveProperty("required");
@@ -78,12 +65,7 @@ describe("SchemaGenerator", () => {
           expect(typeof arg.required).toBe("boolean");
           expect(typeof arg.description).toBe("string");
         }
-      }
-    });
 
-    it("should have correct option structure", () => {
-      const schemas = getAllSchemas();
-      for (const schema of Object.values(schemas)) {
         for (const option of schema.options) {
           expect(option).toHaveProperty("name");
           expect(option).toHaveProperty("type");
@@ -92,27 +74,45 @@ describe("SchemaGenerator", () => {
           expect(typeof option.type).toBe("string");
           expect(typeof option.description).toBe("string");
         }
-      }
+
+        for (const child of Object.values(schema.subcommands ?? {})) {
+          visit(child);
+        }
+      };
+
+      visit();
     });
 
-    it("should have enum values for enum type options", () => {
-      const depsSchema = getCommandSchema("deps");
-      const directionOption = depsSchema?.options.find(
+    it("has enum values for trace lineage direction", () => {
+      const schema = getCommandSchema("trace lineage");
+      const directionOption = schema?.options.find(
         (opt) => opt.name === "--direction",
       );
       expect(directionOption?.type).toBe("enum");
       expect(directionOption?.values).toEqual(["upstream", "downstream"]);
     });
 
-    it("should have --format option for deps with flat and tree values", () => {
-      const depsSchema = getCommandSchema("deps");
-      const formatOption = depsSchema?.options.find(
+    it("has flat and tree format values for trace lineage", () => {
+      const schema = getCommandSchema("trace lineage");
+      const formatOption = schema?.options.find(
         (opt) => opt.name === "--format",
       );
       expect(formatOption).toBeDefined();
       expect(formatOption?.type).toBe("enum");
       expect(formatOption?.values).toEqual(["flat", "tree"]);
       expect(formatOption?.default).toBe("tree");
+    });
+
+    it("includes future-friendly grouped command families at the root", () => {
+      const root = getAllSchemas();
+      expect(Object.keys(root.subcommands ?? {})).toEqual([
+        "inspect",
+        "find",
+        "trace",
+        "export",
+        "check",
+        "describe",
+      ]);
     });
   });
 });

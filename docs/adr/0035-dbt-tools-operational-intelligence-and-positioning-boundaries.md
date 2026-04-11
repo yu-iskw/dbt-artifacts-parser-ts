@@ -30,7 +30,7 @@ Earlier positioning (see ADR-0006) emphasized **artifact-only** operation and **
 | Package           | Role                                                                                                                                                                                                                                                                                      |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@dbt-tools/core` | Reusable **analysis engine**: graph construction, execution analysis, snapshots, exports, and shared logic for CLI and web. Intended as a **substrate** other systems can build on—not a private implementation detail.                                                                   |
-| `@dbt-tools/cli`  | **Structured interface** for operators, scripts, CI, and coding agents: machine-readable JSON, `schema` introspection, `--fields` to bound payloads, validated inputs, stable error codes.                                                                                                |
+| `@dbt-tools/cli`  | **Structured interface** for operators, scripts, CI, and coding agents: a task-oriented command hierarchy, machine-readable JSON, dual-surface discovery via help and `describe schema`, `--fields` to bound payloads, validated inputs, and stable error codes.                          |
 | `@dbt-tools/web`  | **Deterministic investigation UI**: dependency and lineage views, execution timelines, inventory, health-oriented summaries—**valuable without an LLM**. Remote artifact sources (S3/GCS) are **optional, configured infrastructure**, not a multi-tenant SaaS assumption (see ADR-0029). |
 
 ### Messaging pillars (use consistently in docs)
@@ -39,6 +39,15 @@ Earlier positioning (see ADR-0006) emphasized **artifact-only** operation and **
 2. **Human + agent interface** — Useful interactively for operators and programmatically for automation, CI, agent skills, and multi-tool workflows.
 3. **Actionable without AI** — The web app should answer questions such as what failed, what is slow, what is on the critical path, what depends on a node, and what to inspect next, using artifact-driven views alone.
 4. **Local-first / controlled environments** — Default paths assume local `target/` artifacts; remote access is explicit configuration in trusted environments.
+
+### CLI interaction model
+
+`@dbt-tools/cli` uses a **task-oriented hierarchy** rather than a flat verb list.
+
+- Top-level families should communicate user intent first: inspect, find, trace, export, check, and describe.
+- CLI discovery is **dual-surface**: people should be able to orient through `--help`, while agents and automation can query `describe schema` for the same command tree.
+- Command-family structure is a **forward-growth mechanism**. New capabilities should prefer joining an existing family before introducing a new top-level family.
+- Human guessability is prioritized, but never by weakening machine-readable discovery or structured outputs.
 
 ### Explicit non-goals (category boundaries)
 
@@ -55,12 +64,14 @@ ADR-0006 remains authoritative for **artifact-only** scope, **offline/CI** use, 
 
 - One place to point contributors and readers for “what dbt-tools is” vs “what it is not.”
 - Aligns READMEs and user guides with package boundaries (core / CLI / web).
+- Gives the CLI a stable, extensible interaction model that is easier to teach and easier for agents to discover.
 - Reduces mistaken comparisons to Cloud, observability vendors, or chat-only tools.
 
 **Negative / risks:**
 
 - Docs require occasional refresh when capabilities grow; positioning language should stay tied to shipped behavior.
 - Historical ADRs (e.g. UX benchmarks in ADR-0018) must be read with this ADR so “benchmark product” is not confused with “category clone.”
+- CLI taxonomy changes are breaking product-surface changes and should be treated as deliberate decisions, not opportunistic naming churn.
 
 ## Alternatives considered
 
