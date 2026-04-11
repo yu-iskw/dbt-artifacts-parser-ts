@@ -3,7 +3,7 @@ import {
   loadTestManifest,
   loadTestRunResults,
 } from "dbt-artifacts-parser/test-utils";
-import { analyzeArtifacts } from "./services/analyze";
+import { analyzeArtifacts } from "./analyze";
 
 type FixtureMap = Record<string, unknown>;
 type FixtureObjectMap = Record<string, Record<string, unknown>>;
