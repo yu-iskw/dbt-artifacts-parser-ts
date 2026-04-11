@@ -1,12 +1,17 @@
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
+import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
+import type { ParsedSources } from "dbt-artifacts-parser/sources";
 import { buildAdapterTotals } from "../adapter-response-metrics";
 import { detectBottlenecks } from "../run-results-search";
+import type { ExecutionSummary } from "../execution-analyzer";
 import { ExecutionAnalyzer } from "../execution-analyzer";
 import { ManifestGraph } from "../manifest-graph";
 import type {
+  AnalysisArtifactInputs,
   AnalysisSnapshot,
   AnalysisSnapshotBuildTimings,
+  ParsedAnalysisArtifactInputs,
 } from "./analysis-snapshot-types";
 import type {
   GraphLike,
@@ -38,38 +43,58 @@ import {
   buildTimelineAdjacency,
 } from "./analysis-snapshot-executions";
 
-export function buildAnalysisSnapshotFromParsedArtifacts(
-  manifestJson: Record<string, unknown>,
-  runResultsJson: Record<string, unknown>,
-  manifest: ParsedManifest,
-  runResults: ParsedRunResults,
+function buildEmptyExecutionSummary(): ExecutionSummary {
+  return {
+    total_execution_time: 0,
+    total_nodes: 0,
+    nodes_by_status: {},
+    node_executions: [],
+  };
+}
+
+export function buildAnalysisSnapshotFromParsedArtifactBundle(
+  artifactInputs: ParsedAnalysisArtifactInputs,
 ): {
   analysis: AnalysisSnapshot;
   timings: AnalysisSnapshotBuildTimings;
   graph: ManifestGraph;
 } {
+  const {
+    manifestJson,
+    runResultsJson,
+    catalogJson,
+    sourcesJson,
+    manifest,
+    runResults,
+  } = artifactInputs;
   const graphStart = now();
   const graph = new ManifestGraph(manifest);
   const warehouseType = buildWarehouseType(manifestJson);
-  const analyzer = new ExecutionAnalyzer(runResults, graph, warehouseType);
+  const analyzer =
+    runResults == null
+      ? null
+      : new ExecutionAnalyzer(runResults, graph, warehouseType);
   const graphBuildMs = now() - graphStart;
 
   const snapshotStart = now();
-  const summary = analyzer.getSummary();
+  const summary = analyzer?.getSummary() ?? buildEmptyExecutionSummary();
   const manifestEntryLookup = buildManifestEntryLookup(manifestJson);
-  const ganttData = analyzer.getGanttData();
-  const nodeExecutions = analyzer.getNodeExecutions();
+  const ganttData = analyzer?.getGanttData() ?? [];
+  const nodeExecutions = analyzer?.getNodeExecutions() ?? [];
   const startTimestamps = nodeExecutions
     .map((e) => (e.started_at ? new Date(e.started_at).getTime() : null))
     .filter((t): t is number => t !== null);
   const runStartedAt: number | null =
     startTimestamps.length > 0 ? Math.min(...startTimestamps) : null;
 
-  const bottlenecks = detectBottlenecks(summary.node_executions, {
-    mode: "top_n",
-    top: 5,
-    graph,
-  });
+  const bottlenecks =
+    summary.node_executions.length === 0
+      ? undefined
+      : detectBottlenecks(summary.node_executions, {
+          mode: "top_n",
+          top: 5,
+          graph,
+        });
   const graphSummary = graph.getSummary();
   const ganttById = new Map(ganttData.map((item) => [item.unique_id, item]));
   const executionById = new Map(nodeExecutions.map((e) => [e.unique_id, e]));
@@ -81,6 +106,7 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
     executionById,
     manifestEntryLookup,
     warehouseType,
+    { catalogJson, sourcesJson },
   );
   const timelineProjectName = buildTimelineProjectName(
     manifestJson,
@@ -206,7 +232,8 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
     dependencyIndex,
     timelineAdjacency,
     selectedResourceId,
-    invocationId: buildInvocationId(runResultsJson),
+    invocationId:
+      runResultsJson == null ? null : buildInvocationId(runResultsJson),
     ...(adapterTotals != null ? { adapterTotals } : {}),
   };
 
@@ -220,10 +247,39 @@ export function buildAnalysisSnapshotFromParsedArtifacts(
   };
 }
 
+export function buildAnalysisSnapshotFromParsedArtifacts(
+  manifestJson: Record<string, unknown>,
+  runResultsJson: Record<string, unknown>,
+  manifest: ParsedManifest,
+  runResults: ParsedRunResults,
+): {
+  analysis: AnalysisSnapshot;
+  timings: AnalysisSnapshotBuildTimings;
+  graph: ManifestGraph;
+} {
+  return buildAnalysisSnapshotFromParsedArtifactBundle({
+    manifestJson,
+    runResultsJson,
+    manifest,
+    runResults,
+  });
+}
+
 export async function buildAnalysisSnapshotFromArtifacts(
   manifestJson: Record<string, unknown>,
   runResultsJson: Record<string, unknown>,
 ): Promise<AnalysisSnapshot> {
+  return buildAnalysisSnapshotFromArtifactBundle({
+    manifestJson,
+    runResultsJson,
+  });
+}
+
+export async function buildAnalysisSnapshotFromArtifactBundle(
+  artifactInputs: AnalysisArtifactInputs,
+): Promise<AnalysisSnapshot> {
+  const { manifestJson, runResultsJson, catalogJson, sourcesJson } =
+    artifactInputs;
   const [{ parseManifest }, { parseRunResults }] = await Promise.all([
     import("dbt-artifacts-parser/manifest") as Promise<{
       parseManifest: (
@@ -237,11 +293,55 @@ export async function buildAnalysisSnapshotFromArtifacts(
     }>,
   ]);
   const manifest = parseManifest(manifestJson);
-  const runResults = parseRunResults(runResultsJson);
-  return buildAnalysisSnapshotFromParsedArtifacts(
+  const parsedPromises: Array<
+    Promise<ParsedRunResults | ParsedCatalog | ParsedSources>
+  > = [];
+
+  if (runResultsJson != null) {
+    parsedPromises.push(
+      Promise.resolve(
+        parseRunResults(runResultsJson),
+      ) as Promise<ParsedRunResults>,
+    );
+  }
+  if (catalogJson != null) {
+    parsedPromises.push(
+      import("dbt-artifacts-parser/catalog").then(({ parseCatalog }) =>
+        parseCatalog(catalogJson),
+      ) as Promise<ParsedCatalog>,
+    );
+  }
+  if (sourcesJson != null) {
+    parsedPromises.push(
+      import("dbt-artifacts-parser/sources").then(({ parseSources }) =>
+        parseSources(sourcesJson),
+      ) as Promise<ParsedSources>,
+    );
+  }
+
+  const parsedValues = await Promise.all(parsedPromises);
+  let parsedIndex = 0;
+  const runResults =
+    runResultsJson != null
+      ? (parsedValues[parsedIndex++] as ParsedRunResults)
+      : undefined;
+  const catalog =
+    catalogJson != null
+      ? (parsedValues[parsedIndex++] as ParsedCatalog)
+      : undefined;
+  const sources =
+    sourcesJson != null
+      ? (parsedValues[parsedIndex++] as ParsedSources)
+      : undefined;
+
+  return buildAnalysisSnapshotFromParsedArtifactBundle({
     manifestJson,
     runResultsJson,
+    catalogJson,
+    sourcesJson,
     manifest,
     runResults,
-  ).analysis;
+    catalog,
+    sources,
+  }).analysis;
 }

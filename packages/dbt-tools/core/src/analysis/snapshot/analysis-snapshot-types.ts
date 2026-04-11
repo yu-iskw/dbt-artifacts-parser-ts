@@ -6,6 +6,10 @@ import type {
   AdapterResponseMetrics,
   AdapterTotalsSnapshot,
 } from "../adapter-response-metrics";
+import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
+import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
+import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
+import type { ParsedSources } from "dbt-artifacts-parser/sources";
 
 export interface GanttItem {
   unique_id: string;
@@ -59,6 +63,43 @@ export interface SemanticModelDefinition {
 
 export type ResourceDefinition = MetricDefinition | SemanticModelDefinition;
 
+export interface CatalogResourceStats {
+  columnCount: number;
+  tableType: string | null;
+  bytes: number | null;
+  rowCount: number | null;
+}
+
+export interface SourceFreshnessCriteria {
+  warnAfter: string | null;
+  errorAfter: string | null;
+  filter: string | null;
+}
+
+export interface SourceFreshnessDetails {
+  status: string;
+  statusTone: StatusTone;
+  maxLoadedAt: string | null;
+  snapshottedAt: string | null;
+  ageSeconds: number | null;
+  criteria: SourceFreshnessCriteria | null;
+  error: string | null;
+}
+
+export interface AnalysisArtifactInputs {
+  manifestJson: Record<string, unknown>;
+  runResultsJson?: Record<string, unknown>;
+  catalogJson?: Record<string, unknown>;
+  sourcesJson?: Record<string, unknown>;
+}
+
+export interface ParsedAnalysisArtifactInputs extends AnalysisArtifactInputs {
+  manifest: ParsedManifest;
+  runResults?: ParsedRunResults;
+  catalog?: ParsedCatalog;
+  sources?: ParsedSources;
+}
+
 export interface GraphSnapshot {
   totalNodes: number;
   totalEdges: number;
@@ -93,6 +134,8 @@ export interface ResourceNode {
   adapterMetrics?: AdapterResponseMetrics;
   /** Flattened `adapter_response` fields for display when present. */
   adapterResponseFields?: AdapterResponseField[];
+  catalogStats?: CatalogResourceStats | null;
+  sourceFreshness?: SourceFreshnessDetails | null;
 }
 
 export interface ResourceGroup {

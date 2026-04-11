@@ -26,7 +26,9 @@ export {
   getPresentAdapterTotalDescriptors,
 } from "./analysis/adapter-metric-descriptors";
 export {
+  buildAnalysisSnapshotFromArtifactBundle,
   buildAnalysisSnapshotFromArtifacts,
+  buildAnalysisSnapshotFromParsedArtifactBundle,
   buildAnalysisSnapshotFromParsedArtifacts,
 } from "./analysis/analysis-snapshot";
 export type {
@@ -55,8 +57,10 @@ export type {
   AdapterMetricValue,
 } from "./analysis/adapter-metric-descriptors";
 export type {
+  AnalysisArtifactInputs,
   AnalysisSnapshot,
   AnalysisSnapshotBuildTimings,
+  CatalogResourceStats,
   DependencyPreview,
   ExecutionRow,
   GanttItem,
@@ -65,11 +69,14 @@ export type {
   MaterializationProvenance,
   MetricDefinition,
   NodeExecutionSemantics,
+  ParsedAnalysisArtifactInputs,
   ResourceConnectionSummary,
   ResourceDefinition,
   ResourceGroup,
   ResourceNode,
   SemanticModelDefinition,
+  SourceFreshnessCriteria,
+  SourceFreshnessDetails,
   StatusBreakdownItem,
   StatusTone,
   ThreadStat,

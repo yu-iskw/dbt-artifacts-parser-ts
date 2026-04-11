@@ -68,6 +68,18 @@ describe("ArtifactSourceService", () => {
         ),
       },
       {
+        key: "scheduled/2026-03-28T10-00-00Z/catalog.json",
+        updatedAtMs: 1_000,
+        etag: "catalog-1",
+        bytes: new TextEncoder().encode('{"sources":{}}'),
+      },
+      {
+        key: "scheduled/2026-03-28T10-00-00Z/sources.json",
+        updatedAtMs: 1_000,
+        etag: "sources-1",
+        bytes: new TextEncoder().encode('{"results":[]}'),
+      },
+      {
         key: "scheduled/2026-03-29T10-00-00Z/manifest.json",
         updatedAtMs: 2_000,
         etag: "manifest-2",
@@ -119,6 +131,12 @@ describe("ArtifactSourceService", () => {
     expect(new TextDecoder().decode(payload?.runResultsBytes)).toContain(
       "run-1",
     );
+    expect(
+      new TextDecoder().decode(payload?.catalogBytes ?? new Uint8Array()),
+    ).toContain("sources");
+    expect(
+      new TextDecoder().decode(payload?.sourcesBytes ?? new Uint8Array()),
+    ).toContain("results");
   });
 
   it("reads the current local preload pair when a target dir is configured", async () => {
@@ -135,6 +153,8 @@ describe("ArtifactSourceService", () => {
       path.join(targetDir, "run_results.json"),
       '{"metadata":{"project_name":"local-run"}}',
     );
+    await fs.writeFile(path.join(targetDir, "catalog.json"), '{"nodes":{}}');
+    await fs.writeFile(path.join(targetDir, "sources.json"), '{"results":[]}');
 
     const service = new ArtifactSourceService({
       remoteConfig: null,
@@ -154,5 +174,11 @@ describe("ArtifactSourceService", () => {
     expect(new TextDecoder().decode(payload?.runResultsBytes)).toContain(
       "local-run",
     );
+    expect(
+      new TextDecoder().decode(payload?.catalogBytes ?? new Uint8Array()),
+    ).toContain("nodes");
+    expect(
+      new TextDecoder().decode(payload?.sourcesBytes ?? new Uint8Array()),
+    ).toContain("results");
   });
 });

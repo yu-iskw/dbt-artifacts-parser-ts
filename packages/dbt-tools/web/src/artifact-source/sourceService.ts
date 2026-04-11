@@ -2,8 +2,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  DBT_CATALOG_JSON,
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
+  DBT_SOURCES_JSON,
   getDbtToolsRemoteSourceConfigFromEnv,
   getDbtToolsTargetDirFromEnv,
   isDbtToolsDebugEnabled,
@@ -32,6 +34,8 @@ interface CurrentArtifactPayload {
   source: Exclude<WorkspaceArtifactSource, "upload">;
   manifestBytes: Uint8Array;
   runResultsBytes: Uint8Array;
+  catalogBytes?: Uint8Array;
+  sourcesBytes?: Uint8Array;
 }
 
 export interface ArtifactSourceAdapter {
@@ -73,6 +77,16 @@ function toArtifactSourceStatus(
 class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
   constructor(private readonly targetDir: string) {}
 
+  private async readOptionalBytes(
+    filePath: string,
+  ): Promise<Uint8Array | null> {
+    try {
+      return await fs.readFile(filePath);
+    } catch {
+      return null;
+    }
+  }
+
   async getStatus(): Promise<ArtifactSourceStatus> {
     return toArtifactSourceStatus({
       mode: "preload",
@@ -89,15 +103,20 @@ class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
 
   async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
     try {
-      const [manifestBytes, runResultsBytes] = await Promise.all([
-        fs.readFile(path.join(this.targetDir, DBT_MANIFEST_JSON)),
-        fs.readFile(path.join(this.targetDir, DBT_RUN_RESULTS_JSON)),
-      ]);
+      const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
+        await Promise.all([
+          fs.readFile(path.join(this.targetDir, DBT_MANIFEST_JSON)),
+          fs.readFile(path.join(this.targetDir, DBT_RUN_RESULTS_JSON)),
+          this.readOptionalBytes(path.join(this.targetDir, DBT_CATALOG_JSON)),
+          this.readOptionalBytes(path.join(this.targetDir, DBT_SOURCES_JSON)),
+        ]);
 
       return {
         source: "preload",
         manifestBytes,
         runResultsBytes,
+        ...(catalogBytes != null ? { catalogBytes } : {}),
+        ...(sourcesBytes != null ? { sourcesBytes } : {}),
       };
     } catch {
       return null;
@@ -141,6 +160,17 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
     return runs[0];
   }
 
+  private async readOptionalObjectBytes(
+    key: string | undefined,
+  ): Promise<Uint8Array | null> {
+    if (key == null) return null;
+    try {
+      return await this.client.readObjectBytes(this.config.bucket, key);
+    } catch {
+      return null;
+    }
+  }
+
   async getStatus(): Promise<ArtifactSourceStatus> {
     const runs = await this.resolveRuns();
     const currentRun = this.chooseCurrentRun(runs);
@@ -180,15 +210,23 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
     const currentRun = this.chooseCurrentRun(runs);
     if (currentRun == null) return null;
 
-    const [manifestBytes, runResultsBytes] = await Promise.all([
-      this.client.readObjectBytes(this.config.bucket, currentRun.manifestKey),
-      this.client.readObjectBytes(this.config.bucket, currentRun.runResultsKey),
-    ]);
+    const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
+      await Promise.all([
+        this.client.readObjectBytes(this.config.bucket, currentRun.manifestKey),
+        this.client.readObjectBytes(
+          this.config.bucket,
+          currentRun.runResultsKey,
+        ),
+        this.readOptionalObjectBytes(currentRun.catalogKey),
+        this.readOptionalObjectBytes(currentRun.sourcesKey),
+      ]);
 
     return {
       source: "remote",
       manifestBytes,
       runResultsBytes,
+      ...(catalogBytes != null ? { catalogBytes } : {}),
+      ...(sourcesBytes != null ? { sourcesBytes } : {}),
     };
   }
 
