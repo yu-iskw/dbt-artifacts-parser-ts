@@ -80,6 +80,7 @@ If the org uses Cursor business features, use the **admin dashboard** for org-wi
 - **Cursor vs Claude Code:** [`.cursor/sandbox.json`](.cursor/sandbox.json) applies to Cursor’s agent sandbox only; it does not change Claude Code. Keep egress allowlists aligned when you change registry or GitHub access in either file (see [Cursor (IDE)](#cursor-ide) for the allowlist table).
 - **Diagrams (draw.io):** Native `.drawio` (mxGraphModel) and optional draw.io Desktop CLI export — [`.claude/skills/drawio-cli/SKILL.md`](.claude/skills/drawio-cli/SKILL.md).
 - **Architecture Decision Records:** Records live in [`docs/adr/`](docs/adr/). Authoring and granularity rules: [`.claude/skills/manage-adr/SKILL.md`](.claude/skills/manage-adr/SKILL.md) (canonical copy in-repo). Drift checks: [`.claude/commands/mend-adr.md`](.claude/commands/mend-adr.md) (intent-first; avoid duplicating config paths into ADRs). New ADR skeleton: [`docs/adr/template.md`](docs/adr/template.md).
+- **Session postmortem (optional):** End-of-session structured retro; output stays in chat unless the user asks for follow-up edits — [`.claude/skills/postmortem/SKILL.md`](.claude/skills/postmortem/SKILL.md).
 
 ### Plugins (this repo)
 
