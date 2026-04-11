@@ -5,7 +5,7 @@ import {
   buildHealthSummaryBits,
 } from "@web/lib/analysis-workspace/healthOverviewHeadline";
 import { formatSeconds } from "@web/lib/analysis-workspace/utils";
-import { sourceBadgeLabel } from "@web/lib/artifactSource";
+import { sourceBadgeLabel } from "@web/lib/artifactSourceLabels";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type { WorkspaceSignal } from "@web/lib/analysis-workspace/types";
 

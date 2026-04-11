@@ -6,7 +6,7 @@ import {
   formatRunStartedAt,
   getInvocationTimestamp,
 } from "@web/lib/analysis-workspace/utils";
-import { sourceLabel } from "@web/lib/artifactSource";
+import { sourceLabel } from "@web/lib/artifactSourceLabels";
 import type {
   ThemePreference,
   WorkspaceSignal,

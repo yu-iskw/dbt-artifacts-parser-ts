@@ -1,5 +1,5 @@
 import type { AnalysisState } from "@web/types";
-import { sourceLabel } from "@web/lib/artifactSource";
+import { sourceLabel } from "@web/lib/artifactSourceLabels";
 import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
 import type { WorkspaceView } from "../AnalysisWorkspace";
 import { AppLogo } from "./AppLogo";
