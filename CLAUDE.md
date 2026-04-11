@@ -44,3 +44,21 @@ Run **`/status`** in Claude Code to see which settings layers are active and to 
 ## Plugins
 
 Official plugins enabled for this project are listed in `.claude/settings.json` under `enabledPlugins` and summarized in [AGENTS.md](AGENTS.md).
+
+## Session prerequisites
+
+Before running any quality gate or invoking the verifier, confirm:
+
+1. `node_modules/` is present at the repo root. If absent, run `pnpm install --frozen-lockfile` before anything else. Many tools (Trunk, ESLint, Vitest, Playwright) silently fail without it.
+2. Playwright browsers are installed for `@dbt-tools/web` E2E. If `pnpm test:e2e` or the `ui-feature-verify` skill reports missing browsers, run `pnpm --filter @dbt-tools/web exec playwright install chromium --with-deps` once. CI caches `~/.cache/ms-playwright`; local machines must install once per Playwright major.
+
+The session-start hook in `.claude/settings.json` covers the `node_modules` case automatically; browser binaries require the one-time manual step above.
+
+## Agent coordination
+
+When more than one agent runs concurrently, file-write conflicts waste tokens and produce incorrect commits. Follow these rules:
+
+- **Before spawning a background agent**, note which files it may write. Do not spawn a second agent that writes the same files as the foreground agent until the first write batch is committed.
+- **Explore agents** must read only. When dispatching two Explore agents, scope each to a disjoint directory set and merge their summaries before the main agent reads those files—this avoids double-reading.
+- **The verifier agent** is write-capable (step 7 runs `pnpm format`). Do not start the verifier while the foreground agent has uncommitted edits. Commit or stash first.
+- **Scope verification to the change.** For a UI-only change (`packages/dbt-tools/web/src/` only), use the `ui-feature-verify` skill instead of the full verifier. Reserve the full verifier (CodeQL, pack+npx smoke) for changes that touch published packages, scripts, or CI configuration.

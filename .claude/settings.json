@@ -39,6 +39,18 @@
     }
   },
   "_comment": "Project defaults (committed). Personal overrides: .claude/settings.local.json (gitignored). Verify layers with /status in Claude Code. Sandbox: /sandbox in REPL; autoAllowBashIfSandboxed trades fewer prompts for less review of sandboxed commands.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -d node_modules && test -x node_modules/.bin/pnpm || pnpm install --frozen-lockfile"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "code-review@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
