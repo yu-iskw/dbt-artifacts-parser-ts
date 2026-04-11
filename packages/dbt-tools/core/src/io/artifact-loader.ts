@@ -29,70 +29,38 @@ export interface ArtifactPaths {
 
 const DEFAULT_TARGET_DIR = "./target";
 
-function resolveManifestPath(
-  manifestPath?: string,
-  targetDir?: string,
+function resolveDbtArtifactJsonPath(
+  overridePath: string | undefined,
+  targetDir: string,
+  fileName: string,
 ): string {
-  if (manifestPath) {
-    if (manifestPath.endsWith(".json")) {
-      return resolveSafePath(manifestPath);
-    }
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates manifestPath before join.
-    return path.join(resolveSafePath(manifestPath), DBT_MANIFEST_JSON);
+  const basePath = overridePath ?? targetDir;
+  if (basePath.endsWith(".json")) {
+    return resolveSafePath(basePath);
   }
-
-  const effectiveTargetDir =
-    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
-  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), DBT_MANIFEST_JSON);
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates basePath before join.
+  return path.join(resolveSafePath(basePath), fileName);
 }
 
-function resolveRunResultsPath(
-  runResultsPath?: string,
-  targetDir?: string,
-): string {
-  if (runResultsPath) {
-    if (runResultsPath.endsWith(".json")) {
-      return resolveSafePath(runResultsPath);
-    }
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates runResultsPath before join.
-    return path.join(resolveSafePath(runResultsPath), DBT_RUN_RESULTS_JSON);
+function loadParsedJsonArtifact<T>(
+  artifactPath: string,
+  missingLabel: string,
+  parseFailureLabel: string,
+  parse: (json: Record<string, unknown>) => T,
+): T {
+  const fullPath = resolveSafePath(artifactPath);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`${missingLabel} not found: ${fullPath}`);
   }
 
-  const effectiveTargetDir =
-    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
-  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), DBT_RUN_RESULTS_JSON);
-}
-
-function resolveCatalogPath(catalogPath?: string, targetDir?: string): string {
-  if (catalogPath) {
-    if (catalogPath.endsWith(".json")) {
-      return resolveSafePath(catalogPath);
-    }
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates catalogPath before join.
-    return path.join(resolveSafePath(catalogPath), DBT_CATALOG_JSON);
+  const content = fs.readFileSync(fullPath, "utf-8");
+  try {
+    return parse(JSON.parse(content) as Record<string, unknown>);
+  } catch (error) {
+    throw new Error(
+      `Failed to parse ${parseFailureLabel} ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
-
-  const effectiveTargetDir =
-    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
-  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), DBT_CATALOG_JSON);
-}
-
-function resolveSourcesPath(sourcesPath?: string, targetDir?: string): string {
-  if (sourcesPath) {
-    if (sourcesPath.endsWith(".json")) {
-      return resolveSafePath(sourcesPath);
-    }
-    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates sourcesPath before join.
-    return path.join(resolveSafePath(sourcesPath), DBT_SOURCES_JSON);
-  }
-
-  const effectiveTargetDir =
-    targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
-  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal — resolveSafePath validates effectiveTargetDir before join.
-  return path.join(resolveSafePath(effectiveTargetDir), DBT_SOURCES_JSON);
 }
 
 /**
@@ -108,92 +76,74 @@ export function resolveArtifactPaths(
   const effectiveTargetDir =
     targetDir || getDbtToolsTargetDirFromEnv() || DEFAULT_TARGET_DIR;
 
-  const resolved: ArtifactPaths = {
-    manifest: resolveManifestPath(manifestPath, effectiveTargetDir),
-    runResults: resolveRunResultsPath(runResultsPath, effectiveTargetDir),
-    catalog: resolveCatalogPath(catalogPath, effectiveTargetDir),
-    sources: resolveSourcesPath(sourcesPath, effectiveTargetDir),
+  return {
+    manifest: resolveDbtArtifactJsonPath(
+      manifestPath,
+      effectiveTargetDir,
+      DBT_MANIFEST_JSON,
+    ),
+    runResults: resolveDbtArtifactJsonPath(
+      runResultsPath,
+      effectiveTargetDir,
+      DBT_RUN_RESULTS_JSON,
+    ),
+    catalog: resolveDbtArtifactJsonPath(
+      catalogPath,
+      effectiveTargetDir,
+      DBT_CATALOG_JSON,
+    ),
+    sources: resolveDbtArtifactJsonPath(
+      sourcesPath,
+      effectiveTargetDir,
+      DBT_SOURCES_JSON,
+    ),
   };
-
-  return resolved;
 }
 
 /**
  * Load and parse manifest.json file
  */
 export function loadManifest(manifestPath: string): ParsedManifest {
-  const fullPath = resolveSafePath(manifestPath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Manifest file not found: ${fullPath}`);
-  }
-
-  const content = fs.readFileSync(fullPath, "utf-8");
-  try {
-    const manifestJson = JSON.parse(content) as Record<string, unknown>;
-    return parseManifest(manifestJson);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse manifest file ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+  return loadParsedJsonArtifact(
+    manifestPath,
+    "Manifest file",
+    "manifest file",
+    parseManifest,
+  );
 }
 
 /**
  * Load and parse run_results.json file
  */
 export function loadRunResults(runResultsPath: string): ParsedRunResults {
-  const fullPath = resolveSafePath(runResultsPath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Run results file not found: ${fullPath}`);
-  }
-
-  const content = fs.readFileSync(fullPath, "utf-8");
-  try {
-    const runResultsJson = JSON.parse(content) as Record<string, unknown>;
-    return parseRunResults(runResultsJson);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse run results file ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+  return loadParsedJsonArtifact(
+    runResultsPath,
+    "Run results file",
+    "run results file",
+    parseRunResults,
+  );
 }
 
 /**
  * Load and parse catalog.json file
  */
 export function loadCatalog(catalogPath: string): ParsedCatalog {
-  const fullPath = resolveSafePath(catalogPath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Catalog file not found: ${fullPath}`);
-  }
-
-  const content = fs.readFileSync(fullPath, "utf-8");
-  try {
-    const catalogJson = JSON.parse(content) as Record<string, unknown>;
-    return parseCatalog(catalogJson);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse catalog file ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+  return loadParsedJsonArtifact(
+    catalogPath,
+    "Catalog file",
+    "catalog file",
+    parseCatalog,
+  );
 }
 
 /**
  * Load and parse sources.json file
  */
 export function loadSources(sourcesPath: string): ParsedSources {
-  const fullPath = resolveSafePath(sourcesPath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Sources file not found: ${fullPath}`);
-  }
-
-  const content = fs.readFileSync(fullPath, "utf-8");
-  try {
-    const sourcesJson = JSON.parse(content) as Record<string, unknown>;
-    return parseSources(sourcesJson);
-  } catch (error) {
-    throw new Error(
-      `Failed to parse sources file ${fullPath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+  return loadParsedJsonArtifact(
+    sourcesPath,
+    "Sources file",
+    "sources file",
+    parseSources,
+  );
 }
