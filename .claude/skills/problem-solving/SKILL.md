@@ -11,18 +11,18 @@ This skill enables a systematic and thorough evaluation of potential solutions f
 
 ## Instructions
 
-1.  **Analyze Intent & Issue**: Perform a broad and deep analysis.
-    - **Identify Stated Problem (X)**: What did the user explicitly ask for?
-    - **Discover Underlying Intent (Y)**: What is the user _actually_ trying to achieve? Look for the root goal.
-    - **XY Problem Check**: Explicitly evaluate if the user's request (X) is a sub-optimal path to their goal (Y). Challenge the premise if necessary.
-2.  **Determine Approaches**: Generate $n$ different approaches to satisfy the **Underlying Intent (Y)**.
-    - By default, $n = 5$.
-    - If the user specifies a different number of approaches, use that number.
-    - Include approaches that solve (Y) directly, even if they bypass the user's stated (X).
-3.  **Define Scoring Criteria**: Based on the nature of the issue and the underlying intent, define the most relevant criteria for evaluation (e.g., Feasibility, Complexity, Performance, Maintainability, Security).
-4.  **Score Approaches**: Evaluate each approach against the defined criteria using a scale of 0 to 100.
-5.  **Generate Report**: Use the `assets/templates/analysis-report.md` template to present your findings.
-    - Ensure the report is comprehensive and clearly justifies the scores and the final recommendation in the context of the true intent.
+1. **Analyze Intent & Issue**: Perform a broad and deep analysis.
+   - **Identify Stated Problem (X)**: What did the user explicitly ask for?
+   - **Discover Underlying Intent (Y)**: What is the user _actually_ trying to achieve? Look for the root goal.
+   - **XY Problem Check**: Explicitly evaluate if the user's request (X) is a sub-optimal path to their goal (Y). Challenge the premise if necessary.
+2. **Determine Approaches**: Generate $n$ different approaches to satisfy the **Underlying Intent (Y)**.
+   - By default, $n = 5$.
+   - If the user specifies a different number of approaches, use that number.
+   - Include approaches that solve (Y) directly, even if they bypass the user's stated (X).
+3. **Define Scoring Criteria**: Based on the nature of the issue and the underlying intent, define the most relevant criteria for evaluation (e.g., Feasibility, Complexity, Performance, Maintainability, Security).
+4. **Score Approaches**: Evaluate each approach against the defined criteria using a scale of 0 to 100.
+5. **Generate Report**: Use the [`assets/templates/analysis-report.md`](assets/templates/analysis-report.md) template to present your findings.
+   - Ensure the report is comprehensive and clearly justifies the scores and the final recommendation in the context of the true intent.
 
 ## Examples
 
