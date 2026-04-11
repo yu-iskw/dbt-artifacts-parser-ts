@@ -291,6 +291,7 @@ export function WorkspaceContent({
   analysis,
   analysisSource,
   preloadLoading,
+  currentRemoteRun,
   pendingRemoteRun,
   acceptingRemoteRun,
   preferences,
@@ -319,6 +320,7 @@ export function WorkspaceContent({
   analysis: AnalysisState | null;
   analysisSource: WorkspaceArtifactSource | null;
   preloadLoading: boolean;
+  currentRemoteRun: RemoteArtifactRun | null;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
   preferences: WorkspacePreferences;
@@ -352,6 +354,7 @@ export function WorkspaceContent({
         setThemePreference={setThemePreference}
         analysisSource={analysisSource}
         executionCount={analysis?.summary.total_nodes ?? null}
+        currentRemoteRun={currentRemoteRun}
         onLoadDifferent={onLoadDifferent}
         pendingRemoteRun={pendingRemoteRun}
         acceptingRemoteRun={acceptingRemoteRun}

@@ -35,9 +35,10 @@ interface CurrentArtifactPayload {
 }
 
 export interface ArtifactSourceAdapter {
-  getStatus(): Promise<ArtifactSourceStatus>;
-  getCurrentArtifacts(): Promise<CurrentArtifactPayload | null>;
-  switchToRun(runId?: string): Promise<ArtifactSourceStatus>;
+  getStatus(selectedRunId?: string): Promise<ArtifactSourceStatus>;
+  getCurrentArtifacts(
+    selectedRunId?: string,
+  ): Promise<CurrentArtifactPayload | null>;
 }
 
 export interface ArtifactSourceServiceOptions {
@@ -103,15 +104,9 @@ class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
       return null;
     }
   }
-
-  async switchToRun(): Promise<ArtifactSourceStatus> {
-    return this.getStatus();
-  }
 }
 
 class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
-  private currentRunId: string | null = null;
-
   constructor(
     private readonly config: DbtToolsRemoteSourceConfig,
     private readonly client: RemoteObjectStoreClient,
@@ -125,36 +120,34 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
     return discoverLatestArtifactRuns(objects, this.config.prefix);
   }
 
-  private chooseCurrentRun(
+  private chooseRun(
     runs: ResolvedArtifactRun[],
-  ): ResolvedArtifactRun | null {
-    if (runs.length === 0) return null;
-    if (this.currentRunId == null) {
-      this.currentRunId = runs[0].runId;
-      return runs[0];
+    selectedRunId?: string,
+  ): {
+    selectedRun: ResolvedArtifactRun | null;
+    pendingRun: ResolvedArtifactRun | null;
+  } {
+    const latestRun = runs[0] ?? null;
+    if (latestRun == null) {
+      return { selectedRun: null, pendingRun: null };
     }
 
-    const current = runs.find((run) => run.runId === this.currentRunId);
-    if (current) return current;
+    const selectedRun =
+      selectedRunId == null
+        ? latestRun
+        : (runs.find((run) => run.runId === selectedRunId) ?? latestRun);
+    const pendingRun = latestRun.runId === selectedRun.runId ? null : latestRun;
 
-    this.currentRunId = runs[0].runId;
-    return runs[0];
+    return { selectedRun, pendingRun };
   }
 
-  async getStatus(): Promise<ArtifactSourceStatus> {
+  async getStatus(selectedRunId?: string): Promise<ArtifactSourceStatus> {
     const runs = await this.resolveRuns();
-    const currentRun = this.chooseCurrentRun(runs);
-    const latestRun = runs[0] ?? null;
-    const pendingRun =
-      latestRun != null &&
-      currentRun != null &&
-      latestRun.runId !== currentRun.runId
-        ? latestRun
-        : null;
+    const { selectedRun, pendingRun } = this.chooseRun(runs, selectedRunId);
 
     return toArtifactSourceStatus({
       mode: "remote",
-      currentSource: currentRun == null ? null : "remote",
+      currentSource: selectedRun == null ? null : "remote",
       label: "Remote source",
       remoteProvider: this.config.provider,
       remoteLocation: toLocationLabel(
@@ -164,9 +157,9 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
       ),
       pollIntervalMs: this.config.pollIntervalMs,
       currentRun:
-        currentRun == null
+        selectedRun == null
           ? null
-          : toRemoteArtifactRun(this.config.provider, currentRun),
+          : toRemoteArtifactRun(this.config.provider, selectedRun),
       pendingRun:
         pendingRun == null
           ? null
@@ -175,14 +168,19 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
     });
   }
 
-  async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
+  async getCurrentArtifacts(
+    selectedRunId?: string,
+  ): Promise<CurrentArtifactPayload | null> {
     const runs = await this.resolveRuns();
-    const currentRun = this.chooseCurrentRun(runs);
-    if (currentRun == null) return null;
+    const { selectedRun } = this.chooseRun(runs, selectedRunId);
+    if (selectedRun == null) return null;
 
     const [manifestBytes, runResultsBytes] = await Promise.all([
-      this.client.readObjectBytes(this.config.bucket, currentRun.manifestKey),
-      this.client.readObjectBytes(this.config.bucket, currentRun.runResultsKey),
+      this.client.readObjectBytes(this.config.bucket, selectedRun.manifestKey),
+      this.client.readObjectBytes(
+        this.config.bucket,
+        selectedRun.runResultsKey,
+      ),
     ]);
 
     return {
@@ -190,19 +188,6 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
       manifestBytes,
       runResultsBytes,
     };
-  }
-
-  async switchToRun(runId?: string): Promise<ArtifactSourceStatus> {
-    const runs = await this.resolveRuns();
-    const target =
-      runId == null
-        ? runs[0]
-        : runs.find((candidate) => candidate.runId === runId);
-    if (target != null) {
-      this.currentRunId = target.runId;
-      debugLog("Switched remote artifact run", this.currentRunId);
-    }
-    return this.getStatus();
   }
 }
 
@@ -247,7 +232,7 @@ export class ArtifactSourceService {
     );
   }
 
-  async getStatus(): Promise<ArtifactSourceStatus> {
+  async getStatus(selectedRunId?: string): Promise<ArtifactSourceStatus> {
     if (this.adapter == null) {
       return toArtifactSourceStatus({
         mode: "none",
@@ -261,15 +246,12 @@ export class ArtifactSourceService {
         supportsSwitch: false,
       });
     }
-    return this.adapter.getStatus();
+    return this.adapter.getStatus(selectedRunId);
   }
 
-  async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
-    return this.adapter?.getCurrentArtifacts() ?? null;
-  }
-
-  async switchToRun(runId?: string): Promise<ArtifactSourceStatus> {
-    if (this.adapter == null) return this.getStatus();
-    return this.adapter.switchToRun(runId);
+  async getCurrentArtifacts(
+    selectedRunId?: string,
+  ): Promise<CurrentArtifactPayload | null> {
+    return this.adapter?.getCurrentArtifacts(selectedRunId) ?? null;
   }
 }

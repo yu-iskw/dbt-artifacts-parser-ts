@@ -11,6 +11,11 @@ interface UseAnalysisPreloadParams {
   setPreloadLoading: (loading: boolean) => void;
   setAnalysis: (a: AnalysisState | null) => void;
   setAnalysisSource: (s: WorkspaceArtifactSource | null) => void;
+  setCurrentRemoteRun: (
+    run: Awaited<
+      ReturnType<typeof loadCurrentManagedArtifacts>
+    >["status"]["currentRun"],
+  ) => void;
   setPendingRemoteRun: (
     run: Awaited<
       ReturnType<typeof loadCurrentManagedArtifacts>
@@ -18,6 +23,7 @@ interface UseAnalysisPreloadParams {
   ) => void;
   setRemotePollIntervalMs: (pollIntervalMs: number | null) => void;
   setError: (e: string | null) => void;
+  setSelectedRemoteRunId: (runId: string | null) => void;
   pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null };
 }
 
@@ -28,9 +34,11 @@ export function useAnalysisPreload({
   setPreloadLoading,
   setAnalysis,
   setAnalysisSource,
+  setCurrentRemoteRun,
   setPendingRemoteRun,
   setRemotePollIntervalMs,
   setError,
+  setSelectedRemoteRunId,
   pendingMetricsRef,
 }: UseAnalysisPreloadParams) {
   const attempted = useRef(false);
@@ -44,8 +52,10 @@ export function useAnalysisPreload({
     loadCurrentManagedArtifacts()
       .then(({ result, status }) => {
         setPreloadLoading(false);
+        setCurrentRemoteRun(status.currentRun);
         setPendingRemoteRun(status.pendingRun);
         setRemotePollIntervalMs(status.pollIntervalMs);
+        setSelectedRemoteRunId(status.currentRun?.runId ?? null);
         if (result) {
           debug("Preload: success, analysis loaded");
           pendingMetricsRef.current = result.metrics;
@@ -70,8 +80,10 @@ export function useAnalysisPreload({
     setPreloadLoading,
     setAnalysis,
     setAnalysisSource,
+    setCurrentRemoteRun,
     setPendingRemoteRun,
     setRemotePollIntervalMs,
     setError,
+    setSelectedRemoteRunId,
   ]);
 }

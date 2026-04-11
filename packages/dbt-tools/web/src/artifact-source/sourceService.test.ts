@@ -49,7 +49,7 @@ afterEach(async () => {
 });
 
 describe("ArtifactSourceService", () => {
-  it("uses the newest complete remote run and keeps a newer candidate pending until switched", async () => {
+  it("uses the newest complete remote run by default", async () => {
     const client = new FakeRemoteClient([
       {
         key: "scheduled/2026-03-28T10-00-00Z/manifest.json",
@@ -105,20 +105,104 @@ describe("ArtifactSourceService", () => {
     expect(initialStatus.currentRun?.runId).toBe("2026-03-29T10-00-00Z");
     expect(initialStatus.pendingRun).toBeNull();
     expect(initialStatus.pollIntervalMs).toBe(15_000);
+  });
 
-    await service.switchToRun("2026-03-28T10-00-00Z");
+  it("resolves a requested older remote run without mutating shared state", async () => {
+    const client = new FakeRemoteClient([
+      {
+        key: "scheduled/2026-03-28T10-00-00Z/manifest.json",
+        updatedAtMs: 1_000,
+        etag: "manifest-1",
+        bytes: new TextEncoder().encode(
+          '{"metadata":{"project_name":"run-1"}}',
+        ),
+      },
+      {
+        key: "scheduled/2026-03-28T10-00-00Z/run_results.json",
+        updatedAtMs: 1_000,
+        etag: "results-1",
+        bytes: new TextEncoder().encode(
+          '{"metadata":{"project_name":"run-1"}}',
+        ),
+      },
+      {
+        key: "scheduled/2026-03-29T10-00-00Z/manifest.json",
+        updatedAtMs: 2_000,
+        etag: "manifest-2",
+        bytes: new TextEncoder().encode(
+          '{"metadata":{"project_name":"run-2"}}',
+        ),
+      },
+      {
+        key: "scheduled/2026-03-29T10-00-00Z/run_results.json",
+        updatedAtMs: 2_000,
+        etag: "results-2",
+        bytes: new TextEncoder().encode(
+          '{"metadata":{"project_name":"run-2"}}',
+        ),
+      },
+    ]);
 
-    const switchedStatus = await service.getStatus();
+    const service = new ArtifactSourceService({
+      remoteConfig: {
+        provider: "s3",
+        bucket: "dbt-artifacts",
+        prefix: "scheduled",
+        pollIntervalMs: 15_000,
+      },
+      remoteClient: client,
+    });
+
+    const switchedStatus = await service.getStatus("2026-03-28T10-00-00Z");
     expect(switchedStatus.currentRun?.runId).toBe("2026-03-28T10-00-00Z");
     expect(switchedStatus.pendingRun?.runId).toBe("2026-03-29T10-00-00Z");
     expect(switchedStatus.supportsSwitch).toBe(true);
 
-    const payload = await service.getCurrentArtifacts();
+    const payload = await service.getCurrentArtifacts("2026-03-28T10-00-00Z");
     expect(payload?.source).toBe("remote");
     expect(new TextDecoder().decode(payload?.manifestBytes)).toContain("run-1");
     expect(new TextDecoder().decode(payload?.runResultsBytes)).toContain(
       "run-1",
     );
+
+    const latestStatus = await service.getStatus();
+    expect(latestStatus.currentRun?.runId).toBe("2026-03-29T10-00-00Z");
+    expect(latestStatus.pendingRun).toBeNull();
+  });
+
+  it("falls back to the latest run when a requested run is missing", async () => {
+    const client = new FakeRemoteClient([
+      {
+        key: "scheduled/2026-03-29T10-00-00Z/manifest.json",
+        updatedAtMs: 2_000,
+        etag: "manifest-2",
+        bytes: new TextEncoder().encode(
+          '{"metadata":{"project_name":"run-2"}}',
+        ),
+      },
+      {
+        key: "scheduled/2026-03-29T10-00-00Z/run_results.json",
+        updatedAtMs: 2_000,
+        etag: "results-2",
+        bytes: new TextEncoder().encode(
+          '{"metadata":{"project_name":"run-2"}}',
+        ),
+      },
+    ]);
+
+    const service = new ArtifactSourceService({
+      remoteConfig: {
+        provider: "s3",
+        bucket: "dbt-artifacts",
+        prefix: "scheduled",
+        pollIntervalMs: 15_000,
+      },
+      remoteClient: client,
+    });
+
+    const status = await service.getStatus("missing-run");
+    expect(status.currentRun?.runId).toBe("2026-03-29T10-00-00Z");
+    expect(status.pendingRun).toBeNull();
   });
 
   it("reads the current local preload pair when a target dir is configured", async () => {

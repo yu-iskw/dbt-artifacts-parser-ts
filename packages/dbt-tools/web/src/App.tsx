@@ -18,6 +18,7 @@ function AppContent() {
     analysisSource,
     error,
     preloadLoading,
+    currentRemoteRun,
     pendingRemoteRun,
     acceptingRemoteRun,
     onLoadDifferent,
@@ -78,6 +79,7 @@ function AppContent() {
       analysisSource={analysisSource}
       error={error}
       preloadLoading={preloadLoading}
+      currentRemoteRun={currentRemoteRun}
       pendingRemoteRun={pendingRemoteRun}
       acceptingRemoteRun={acceptingRemoteRun}
       onLoadDifferent={onLoadDifferent}

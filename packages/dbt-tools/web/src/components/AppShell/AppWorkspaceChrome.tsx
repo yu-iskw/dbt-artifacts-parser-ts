@@ -26,6 +26,7 @@ export interface AppWorkspaceChromeProps {
   analysisSource: WorkspaceArtifactSource | null;
   error: string | null;
   preloadLoading: boolean;
+  currentRemoteRun: RemoteArtifactRun | null;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
   onLoadDifferent: () => void;
@@ -45,6 +46,7 @@ export function AppWorkspaceChrome({
   analysisSource,
   error,
   preloadLoading,
+  currentRemoteRun,
   pendingRemoteRun,
   acceptingRemoteRun,
   onLoadDifferent,
@@ -140,6 +142,7 @@ export function AppWorkspaceChrome({
           analysis={analysis}
           analysisSource={analysisSource}
           preloadLoading={preloadLoading}
+          currentRemoteRun={currentRemoteRun}
           pendingRemoteRun={pendingRemoteRun}
           acceptingRemoteRun={acceptingRemoteRun}
           preferences={preferences}

@@ -78,6 +78,7 @@ function AppearanceSettings({
 function SessionSettings({
   analysisSource,
   executionCount,
+  currentRemoteRun,
   onLoadDifferent,
   pendingRemoteRun,
   acceptingRemoteRun,
@@ -85,6 +86,7 @@ function SessionSettings({
 }: {
   analysisSource: WorkspaceArtifactSource | null;
   executionCount: number | null;
+  currentRemoteRun: RemoteArtifactRun | null;
   onLoadDifferent: () => void;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
@@ -104,6 +106,9 @@ function SessionSettings({
               ? `${executionCount} executions are available in this session.`
               : "Load artifacts to unlock analysis views."}
           </p>
+          {analysisSource === "remote" && currentRemoteRun ? (
+            <p>Currently viewing: {currentRemoteRun.label}</p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -395,6 +400,7 @@ export function SettingsView({
   setThemePreference,
   analysisSource,
   executionCount,
+  currentRemoteRun,
   onLoadDifferent,
   pendingRemoteRun,
   acceptingRemoteRun,
@@ -406,6 +412,7 @@ export function SettingsView({
   setThemePreference: Dispatch<SetStateAction<ThemePreference>>;
   analysisSource: WorkspaceArtifactSource | null;
   executionCount: number | null;
+  currentRemoteRun: RemoteArtifactRun | null;
   onLoadDifferent: () => void;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
@@ -434,6 +441,7 @@ export function SettingsView({
         <SessionSettings
           analysisSource={analysisSource}
           executionCount={executionCount}
+          currentRemoteRun={currentRemoteRun}
           onLoadDifferent={onLoadDifferent}
           pendingRemoteRun={pendingRemoteRun}
           acceptingRemoteRun={acceptingRemoteRun}

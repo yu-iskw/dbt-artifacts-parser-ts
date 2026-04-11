@@ -10,12 +10,16 @@ import type { RemoteArtifactRun } from "../services/artifactSourceApi";
  */
 export function useRemoteArtifactPoll(
   analysisSource: WorkspaceArtifactSource | null,
+  selectedRemoteRunId: string | null,
+  setCurrentRemoteRun: (run: RemoteArtifactRun | null) => void,
   setPendingRemoteRun: (run: RemoteArtifactRun | null) => void,
   setRemotePollIntervalMs: (ms: number | null) => void,
+  setSelectedRemoteRunId: (runId: string | null) => void,
   remotePollIntervalMs: number | null,
 ): void {
   useEffect(() => {
     if (analysisSource !== "remote") {
+      setCurrentRemoteRun(null);
       setPendingRemoteRun(null);
       setRemotePollIntervalMs(null);
       return;
@@ -25,10 +29,14 @@ export function useRemoteArtifactPoll(
 
     const poll = async () => {
       try {
-        const status = await fetchArtifactSourceStatus();
+        const status = await fetchArtifactSourceStatus(
+          selectedRemoteRunId ?? undefined,
+        );
         if (!cancelled) {
+          setCurrentRemoteRun(status.currentRun);
           setPendingRemoteRun(status.pendingRun);
           setRemotePollIntervalMs(status.pollIntervalMs);
+          setSelectedRemoteRunId(status.currentRun?.runId ?? null);
         }
       } catch (pollError) {
         debug("Artifact source poll failed", pollError);
@@ -45,8 +53,11 @@ export function useRemoteArtifactPoll(
     };
   }, [
     analysisSource,
+    selectedRemoteRunId,
+    setCurrentRemoteRun,
     remotePollIntervalMs,
     setPendingRemoteRun,
     setRemotePollIntervalMs,
+    setSelectedRemoteRunId,
   ]);
 }

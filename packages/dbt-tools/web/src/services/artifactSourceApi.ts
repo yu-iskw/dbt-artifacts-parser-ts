@@ -32,6 +32,12 @@ export interface ArtifactSourceStatus {
   supportsSwitch: boolean;
 }
 
+function withRunId(pathname: string, runId?: string): string {
+  if (runId == null || runId.trim() === "") return pathname;
+  const params = new URLSearchParams({ runId });
+  return `${pathname}?${params.toString()}`;
+}
+
 const LEGACY_ARTIFACT_MANIFEST_RUN_RESULTS: readonly [string, string] = [
   "/api/manifest.json",
   "/api/run_results.json",
@@ -148,8 +154,10 @@ async function loadManagedArtifactsFallback(): Promise<{
   };
 }
 
-export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus> {
-  const response = await fetch("/api/artifact-source");
+export async function fetchArtifactSourceStatus(
+  runId?: string,
+): Promise<ArtifactSourceStatus> {
+  const response = await fetch(withRunId("/api/artifact-source", runId));
   if (!response.ok) {
     throw new Error("Failed to load artifact source status");
   }
@@ -158,8 +166,14 @@ export async function fetchArtifactSourceStatus(): Promise<ArtifactSourceStatus>
 
 export async function refetchFromApi(
   source: Exclude<WorkspaceArtifactSource, "upload"> = "preload",
+  runId?: string,
 ): Promise<AnalysisLoadResult | null> {
-  const currentPair = await fetchFirstArtifactPair();
+  const currentPair = await fetchFirstArtifactPair(
+    ARTIFACT_MANIFEST_RUN_RESULTS_URLS.map(([manifestPath, runResultsPath]) => [
+      withRunId(manifestPath, runId),
+      withRunId(runResultsPath, runId),
+    ]),
+  );
 
   if (currentPair == null) return null;
   return loadAnalysisFromBuffers(
@@ -169,13 +183,13 @@ export async function refetchFromApi(
   );
 }
 
-export async function loadCurrentManagedArtifacts(): Promise<{
+export async function loadCurrentManagedArtifacts(runId?: string): Promise<{
   status: ArtifactSourceStatus;
   result: AnalysisLoadResult | null;
 }> {
   let response: Response;
   try {
-    response = await fetch("/api/artifact-source");
+    response = await fetch(withRunId("/api/artifact-source", runId));
   } catch {
     return loadManagedArtifactsFallback();
   }
@@ -201,24 +215,9 @@ export async function loadCurrentManagedArtifacts(): Promise<{
 
   return {
     status,
-    result: await refetchFromApi(status.currentSource),
+    result: await refetchFromApi(
+      status.currentSource,
+      status.currentRun?.runId,
+    ),
   };
-}
-
-export async function switchToArtifactRun(
-  runId?: string,
-): Promise<ArtifactSourceStatus> {
-  const response = await fetch("/api/artifact-source/switch", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(runId ? { runId } : {}),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to switch artifact source run");
-  }
-
-  return (await response.json()) as ArtifactSourceStatus;
 }
