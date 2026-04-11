@@ -30,12 +30,12 @@ Do **not** commit API keys, tokens, or passwords into rules, `AGENTS.md`, prompt
 
 ## Claude Code configuration (this repo)
 
-| Item                                             | Purpose                                                                                         |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| [`.claude/settings.json`](.claude/settings.json) | Team-shared defaults: permissions, sandbox, network allowlist, plugins.                         |
-| `.claude/settings.local.json`                    | Machine-only overrides (gitignored). Precedence: local over project.                            |
-| [`.claude/skills/`](.claude/skills/)             | Project skills (build-fix, lint-fix, test-fix, codeql-fix, dbt-tools-web-pack-npx-smoke, etc.). |
-| [`.claude/agents/`](.claude/agents/)             | Subagents (e.g. verifier).                                                                      |
+| Item                                             | Purpose                                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [`.claude/settings.json`](.claude/settings.json) | Team-shared defaults: permissions, sandbox, network allowlist, plugins.                |
+| `.claude/settings.local.json`                    | Machine-only overrides (gitignored). Precedence: local over project.                   |
+| [`.claude/skills/`](.claude/skills/)             | Project skills: build-fix, lint-fix, test-fix, codeql-fix, pack-npx-smoke, postmortem. |
+| [`.claude/agents/`](.claude/agents/)             | Subagents (e.g. verifier).                                                             |
 
 Run **`/status`** in Claude Code to see which settings layers are active and to catch JSON errors ([settings scopes](https://docs.anthropic.com/en/docs/claude-code/settings#configuration-scopes)).
 
