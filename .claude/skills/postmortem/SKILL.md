@@ -22,7 +22,7 @@ Activate when the user says or implies:
 
 1. **Signal only:** If a finding would not materially help a **similar** future session, omit it.
 2. **Cap urgency:** At most **three** items under **Must** in "Changes for next session".
-3. **Doc updates:** The section **Suggested documentation or skill updates** must be **"None warranted"** unless the issue is **recurring** and **high impact** (e.g. repeated wrong quality gates, wrong tool assumptions, systematic repo misunderstanding).
+3. **Doc updates:** The section **Suggested documentation or skill updates** must be **"None warranted"** unless the issue is **recurring**, **high impact**, and plausibly preventable through focused workflow or verification guidance (e.g. repeated wrong quality gates, wrong tool assumptions, browser runtime drift that unit tests miss, systematic repo misunderstanding).
 
 ## Instructions
 
@@ -30,7 +30,7 @@ Activate when the user says or implies:
 2. Fill every section of the report template in [`references/postmortem-report-template.md`](references/postmortem-report-template.md) with concise bullets or short paragraphs. Prefer bullets over prose.
 3. End with **Changes for next session** ranked **Must / Should / Consider**.
 4. If **two or more** **Must**-level items are **mutually exclusive** or **order-ambiguous**, score those options in chat using [`references/solution-scorecard.md`](references/solution-scorecard.md) (read if not already in context). Output stays in the conversation; do not edit repo files.
-5. If and only if guardrail (3) applies, add **Suggested documentation or skill updates** with **proposed wording** as copy-paste snippets (still do not apply edits yourself).
+5. If and only if guardrail (3) applies, add **Suggested documentation or skill updates** with **proposed wording** as copy-paste snippets (still do not apply edits yourself). Prefer targeted verifier/skill guidance when that would likely prevent the same failure mode in a future session.
 
 ## Report template
 
@@ -49,3 +49,9 @@ Canonical section headings and placeholders live in [`references/postmortem-repo
 ### Example: Suggested documentation or skill updates
 
 None warranted.
+
+### Example: When doc or skill updates are warranted
+
+- Repeated `coverage:report` instability that is only discovered at the end of sessions.
+- Repeated browser or worker runtime regressions that pass unit tests but fail in live dev paths.
+- Repeated late discovery of complexity or parameter-count violations after large refactors.
