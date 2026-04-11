@@ -27,31 +27,27 @@ const actEnvironment = globalThis as typeof globalThis & {
 };
 
 function makeResource(overrides: Partial<ResourceNode> = {}): ResourceNode {
-  return {
-    uniqueId: overrides.uniqueId ?? "model.jaffle_shop.orders",
-    name: overrides.name ?? "orders",
-    resourceType: overrides.resourceType ?? "model",
-    packageName: overrides.packageName ?? "jaffle_shop",
-    path: overrides.path ?? "models/marts/orders.sql",
-    originalFilePath: overrides.originalFilePath ?? "models/marts/orders.sql",
-    patchPath: overrides.patchPath ?? null,
-    database: overrides.database ?? "warehouse",
-    schema: overrides.schema ?? "analytics",
-    description: overrides.description ?? "Order overview.",
-    compiledCode: overrides.compiledCode,
-    rawCode: overrides.rawCode,
-    definition: overrides.definition,
-    status: overrides.status ?? "success",
-    statusTone: overrides.statusTone ?? "positive",
-    executionTime: overrides.executionTime ?? 3.63,
-    threadId: overrides.threadId ?? "Thread-1 (worker)",
-    ...(overrides.adapterMetrics != null
-      ? { adapterMetrics: overrides.adapterMetrics }
-      : {}),
-    ...(overrides.adapterResponseFields != null
-      ? { adapterResponseFields: overrides.adapterResponseFields }
-      : {}),
+  const baseResource: ResourceNode = {
+    uniqueId: "model.jaffle_shop.orders",
+    name: "orders",
+    resourceType: "model",
+    packageName: "jaffle_shop",
+    path: "models/marts/orders.sql",
+    originalFilePath: "models/marts/orders.sql",
+    patchPath: null,
+    database: "warehouse",
+    schema: "analytics",
+    description: "Order overview.",
+    compiledCode: undefined,
+    rawCode: undefined,
+    definition: undefined,
+    status: "success",
+    statusTone: "positive",
+    executionTime: 3.63,
+    threadId: "Thread-1 (worker)",
   } as ResourceNode;
+
+  return Object.assign(baseResource, overrides);
 }
 
 function makeAnalysis(

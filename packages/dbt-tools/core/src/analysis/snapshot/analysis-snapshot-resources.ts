@@ -44,29 +44,22 @@ function mapDependencyNeighbors(
   graphologyGraph: ReturnType<GraphLike["getGraph"]>,
   uniqueId: string,
 ) {
+  const mapNeighbor = (entry: { nodeId: string; depth: number }) => {
+    const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
+    return {
+      uniqueId: entry.nodeId,
+      name: String(attrs?.name || entry.nodeId),
+      resourceType: String(attrs?.resource_type || "unknown"),
+      depth: entry.depth,
+    };
+  };
   const upstream = graph.getUpstream(uniqueId, 1);
   const downstream = graph.getDownstream(uniqueId, 1);
   return {
     upstreamCount: upstream.length,
     downstreamCount: downstream.length,
-    upstream: upstream.map((entry) => {
-      const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
-      return {
-        uniqueId: entry.nodeId,
-        name: String(attrs?.name || entry.nodeId),
-        resourceType: String(attrs?.resource_type || "unknown"),
-        depth: entry.depth,
-      };
-    }),
-    downstream: downstream.map((entry) => {
-      const attrs = graphologyGraph.getNodeAttributes(entry.nodeId);
-      return {
-        uniqueId: entry.nodeId,
-        name: String(attrs?.name || entry.nodeId),
-        resourceType: String(attrs?.resource_type || "unknown"),
-        depth: entry.depth,
-      };
-    }),
+    upstream: upstream.map(mapNeighbor),
+    downstream: downstream.map(mapNeighbor),
   };
 }
 
@@ -79,6 +72,12 @@ function buildResourceNode(
   manifestEntryLookup: ManifestEntryLookup,
   adapterType: string | null | undefined,
 ): ResourceNode {
+  const withValue = <T extends object, K extends string, V>(
+    condition: boolean,
+    key: K,
+    value: V,
+  ): T | Record<string, V> => (condition ? { [key]: value } : {});
+
   const core = readGraphResourceCore(uniqueId, attributes);
   const { resourceType } = core;
   const materializedRaw = optionalStringField(attributes, "materialized");
@@ -99,6 +98,12 @@ function buildResourceNode(
   const runMsg = execution?.message;
   const runResultMessage =
     typeof runMsg === "string" && runMsg.trim() !== "" ? runMsg.trim() : null;
+  const executionTime =
+    typeof execution?.execution_time === "number"
+      ? execution.execution_time
+      : null;
+  const threadId =
+    typeof execution?.thread_id === "string" ? execution.thread_id : null;
 
   return {
     ...core,
@@ -107,21 +112,29 @@ function buildResourceNode(
     definition: buildResourceDefinition(resourceType, attributes),
     status: execution?.status ? statusLabel(execution.status) : null,
     statusTone: statusTone(execution?.status),
-    executionTime:
-      typeof execution?.execution_time === "number"
-        ? execution.execution_time
-        : null,
-    threadId:
-      typeof execution?.thread_id === "string" ? execution.thread_id : null,
+    executionTime,
+    threadId,
     semantics,
-    ...(testAttachedTarget != null ? { testAttachedTarget } : {}),
-    ...(runResultMessage != null ? { runResultMessage } : {}),
-    ...(execution?.adapterMetrics != null
-      ? { adapterMetrics: execution.adapterMetrics }
-      : {}),
-    ...(execution?.adapterResponseFields != null
-      ? { adapterResponseFields: execution.adapterResponseFields }
-      : {}),
+    ...withValue(
+      testAttachedTarget != null,
+      "testAttachedTarget",
+      testAttachedTarget,
+    ),
+    ...withValue(
+      runResultMessage != null,
+      "runResultMessage",
+      runResultMessage,
+    ),
+    ...withValue(
+      execution?.adapterMetrics != null,
+      "adapterMetrics",
+      execution?.adapterMetrics,
+    ),
+    ...withValue(
+      execution?.adapterResponseFields != null,
+      "adapterResponseFields",
+      execution?.adapterResponseFields,
+    ),
   };
 }
 

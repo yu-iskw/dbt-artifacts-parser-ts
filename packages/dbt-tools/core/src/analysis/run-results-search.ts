@@ -94,38 +94,40 @@ function matchesUniqueId(uniqueId: string, pattern: string | RegExp): boolean {
   return matchesGlob(uniqueId, pattern);
 }
 
+const ADAPTER_METRIC_VALUE_ACCESSORS = {
+  query_id: (execution: NodeExecution) =>
+    execution.adapterMetrics?.queryId ?? "",
+  adapter_code: (execution: NodeExecution) =>
+    execution.adapterMetrics?.adapterCode ?? "",
+  adapter_message: (execution: NodeExecution) =>
+    execution.adapterMetrics?.adapterMessage ?? "",
+  bytes_processed: (execution: NodeExecution) =>
+    execution.adapterMetrics?.bytesProcessed,
+  bytes_billed: (execution: NodeExecution) =>
+    execution.adapterMetrics?.bytesBilled,
+  slot_ms: (execution: NodeExecution) => execution.adapterMetrics?.slotMs,
+  rows_affected: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsAffected,
+  project_id: (execution: NodeExecution) => execution.adapterMetrics?.projectId,
+  location: (execution: NodeExecution) => execution.adapterMetrics?.location,
+  rows_inserted: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsInserted,
+  rows_updated: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsUpdated,
+  rows_deleted: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsDeleted,
+  rows_duplicated: (execution: NodeExecution) =>
+    execution.adapterMetrics?.rowsDuplicated,
+} as const satisfies Record<
+  AdapterMetricSortKey,
+  (execution: NodeExecution) => number | string | undefined
+>;
+
 export function getAdapterMetricSortValue(
   execution: NodeExecution,
   sortKey: AdapterMetricSortKey,
 ): number | string | undefined {
-  switch (sortKey) {
-    case "query_id":
-      return execution.adapterMetrics?.queryId ?? "";
-    case "adapter_code":
-      return execution.adapterMetrics?.adapterCode ?? "";
-    case "adapter_message":
-      return execution.adapterMetrics?.adapterMessage ?? "";
-    case "bytes_processed":
-      return execution.adapterMetrics?.bytesProcessed;
-    case "bytes_billed":
-      return execution.adapterMetrics?.bytesBilled;
-    case "slot_ms":
-      return execution.adapterMetrics?.slotMs;
-    case "rows_affected":
-      return execution.adapterMetrics?.rowsAffected;
-    case "project_id":
-      return execution.adapterMetrics?.projectId;
-    case "location":
-      return execution.adapterMetrics?.location;
-    case "rows_inserted":
-      return execution.adapterMetrics?.rowsInserted;
-    case "rows_updated":
-      return execution.adapterMetrics?.rowsUpdated;
-    case "rows_deleted":
-      return execution.adapterMetrics?.rowsDeleted;
-    case "rows_duplicated":
-      return execution.adapterMetrics?.rowsDuplicated;
-  }
+  return ADAPTER_METRIC_VALUE_ACCESSORS[sortKey](execution);
 }
 
 function compareOptionalMetric(
@@ -193,17 +195,24 @@ const NUMERIC_SORT_ACCESSORS = Object.fromEntries(
   (execution: NodeExecution) => number
 >;
 
-/**
- * Search and filter NodeExecution array by criteria.
- * Pure function: returns new array, no side effects.
- */
-export function searchRunResults(
+function adapterTextMatches(execution: NodeExecution, token: string): boolean {
+  const metrics = execution.adapterMetrics;
+  if (metrics == null) return false;
+  return [
+    metrics.queryId,
+    metrics.adapterCode,
+    metrics.adapterMessage,
+    metrics.projectId,
+    metrics.location,
+  ].some((value) => value?.toLowerCase().includes(token) === true);
+}
+
+function applyRunResultsFilters(
   executions: NodeExecution[],
   criteria: RunResultsSearchCriteria,
 ): NodeExecution[] {
   let result = [...executions];
 
-  // Filter by status
   if (criteria.status !== undefined) {
     const statuses =
       typeof criteria.status === "string" ? [criteria.status] : criteria.status;
@@ -213,48 +222,53 @@ export function searchRunResults(
     );
   }
 
-  // Filter by execution time range
-  if (criteria.min_execution_time !== undefined) {
-    result = result.filter(
-      (e) => (e.execution_time ?? 0) >= criteria.min_execution_time!,
-    );
-  }
-  if (criteria.max_execution_time !== undefined) {
-    result = result.filter(
-      (e) => (e.execution_time ?? 0) <= criteria.max_execution_time!,
+  const numericFilters: Array<{
+    value: number | undefined;
+    keep: (execution: NodeExecution, expected: number) => boolean;
+  }> = [
+    {
+      value: criteria.min_execution_time,
+      keep: (execution, expected) =>
+        (execution.execution_time ?? 0) >= expected,
+    },
+    {
+      value: criteria.max_execution_time,
+      keep: (execution, expected) =>
+        (execution.execution_time ?? 0) <= expected,
+    },
+    {
+      value: criteria.min_bytes_processed,
+      keep: (execution, expected) =>
+        adapterNumericHeavyOrZero(execution, "bytes_processed") >= expected,
+    },
+    {
+      value: criteria.min_slot_ms,
+      keep: (execution, expected) =>
+        adapterNumericHeavyOrZero(execution, "slot_ms") >= expected,
+    },
+    {
+      value: criteria.min_rows_affected,
+      keep: (execution, expected) =>
+        adapterNumericHeavyOrZero(execution, "rows_affected") >= expected,
+    },
+  ];
+
+  for (const filter of numericFilters) {
+    if (filter.value === undefined) continue;
+    result = result.filter((execution) =>
+      filter.keep(execution, filter.value!),
     );
   }
 
-  // Filter by unique_id pattern
   if (criteria.unique_id_pattern !== undefined) {
     result = result.filter((e) =>
       matchesUniqueId(e.unique_id, criteria.unique_id_pattern!),
     );
   }
-
-  if (criteria.min_bytes_processed !== undefined) {
-    result = result.filter(
-      (e) =>
-        adapterNumericHeavyOrZero(e, "bytes_processed") >=
-        criteria.min_bytes_processed!,
-    );
-  }
-  if (criteria.min_slot_ms !== undefined) {
-    result = result.filter(
-      (e) => adapterNumericHeavyOrZero(e, "slot_ms") >= criteria.min_slot_ms!,
-    );
-  }
-  if (criteria.min_rows_affected !== undefined) {
-    result = result.filter(
-      (e) =>
-        adapterNumericHeavyOrZero(e, "rows_affected") >=
-        criteria.min_rows_affected!,
-    );
-  }
   if (criteria.has_adapter_key !== undefined) {
-    const key = criteria.has_adapter_key;
     result = result.filter(
-      (e) => e.adapterMetrics?.rawKeys.includes(key) === true,
+      (e) =>
+        e.adapterMetrics?.rawKeys.includes(criteria.has_adapter_key!) === true,
     );
   }
   if (
@@ -262,51 +276,58 @@ export function searchRunResults(
     criteria.adapter_text.trim() !== ""
   ) {
     const token = criteria.adapter_text.toLowerCase();
-    result = result.filter((e) => {
-      const metrics = e.adapterMetrics;
-      if (metrics == null) return false;
-      return [
-        metrics.queryId,
-        metrics.adapterCode,
-        metrics.adapterMessage,
-        metrics.projectId,
-        metrics.location,
-      ].some((value) => value?.toLowerCase().includes(token) === true);
-    });
+    result = result.filter((e) => adapterTextMatches(e, token));
   }
 
-  // Sort
+  return result;
+}
+
+function sortRunResults(
+  executions: NodeExecution[],
+  sortKey: NonNullable<RunResultsSearchCriteria["sort"]>,
+): NodeExecution[] {
+  return [...executions].sort((a, b) => {
+    if (sortKey in NUMERIC_SORT_ACCESSORS) {
+      const accessor =
+        NUMERIC_SORT_ACCESSORS[sortKey as keyof typeof NUMERIC_SORT_ACCESSORS];
+      return accessor(b) - accessor(a);
+    }
+    if (
+      sortKey === "query_id" ||
+      sortKey === "adapter_code" ||
+      sortKey === "adapter_message"
+    ) {
+      return compareOptionalMetric(
+        getAdapterMetricSortValue(a, sortKey),
+        getAdapterMetricSortValue(b, sortKey),
+      );
+    }
+    switch (sortKey) {
+      case "execution_time_asc":
+        return (a.execution_time ?? 0) - (b.execution_time ?? 0);
+      case "execution_time_desc":
+        return (b.execution_time ?? 0) - (a.execution_time ?? 0);
+      case "unique_id":
+        return a.unique_id.localeCompare(b.unique_id);
+      default:
+        return 0;
+    }
+  });
+}
+
+/**
+ * Search and filter NodeExecution array by criteria.
+ * Pure function: returns new array, no side effects.
+ */
+export function searchRunResults(
+  executions: NodeExecution[],
+  criteria: RunResultsSearchCriteria,
+): NodeExecution[] {
+  let result = applyRunResultsFilters(executions, criteria);
+
   const sortKey = criteria.sort;
   if (sortKey) {
-    result = [...result].sort((a, b) => {
-      if (sortKey in NUMERIC_SORT_ACCESSORS) {
-        const accessor =
-          NUMERIC_SORT_ACCESSORS[
-            sortKey as keyof typeof NUMERIC_SORT_ACCESSORS
-          ];
-        return accessor(b) - accessor(a);
-      }
-      if (
-        sortKey === "query_id" ||
-        sortKey === "adapter_code" ||
-        sortKey === "adapter_message"
-      ) {
-        return compareOptionalMetric(
-          getAdapterMetricSortValue(a, sortKey),
-          getAdapterMetricSortValue(b, sortKey),
-        );
-      }
-      switch (sortKey) {
-        case "execution_time_asc":
-          return (a.execution_time ?? 0) - (b.execution_time ?? 0);
-        case "execution_time_desc":
-          return (b.execution_time ?? 0) - (a.execution_time ?? 0);
-        case "unique_id":
-          return a.unique_id.localeCompare(b.unique_id);
-        default:
-          return 0;
-      }
-    });
+    result = sortRunResults(result, sortKey);
   }
 
   // Limit

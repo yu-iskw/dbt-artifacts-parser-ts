@@ -142,35 +142,49 @@ export function filterTicksForPixelDensity(
     const hw = measureTextWidth(getDisplayLabel(t)) / 2;
     return { ms: t.ms, label: t.label, x, hw };
   });
+  const toTickLabel = (entry: TickEntry) => ({
+    ms: entry.ms,
+    label: entry.label,
+  });
+  const enrichedByMs = new Map(
+    enriched.map((entry) => [entry.ms, entry] as const),
+  );
 
-  const out: Array<{ ms: number; label: string }> = [];
-  let last: TickEntry | null = null;
-  for (const e of enriched) {
-    if (!last) {
-      out.push({ ms: e.ms, label: e.label });
-      last = e;
-      continue;
+  const appendNonOverlappingTicks = () => {
+    const nextOut: Array<{ ms: number; label: string }> = [];
+    let last: TickEntry | null = null;
+    for (const entry of enriched) {
+      if (last == null) {
+        nextOut.push(toTickLabel(entry));
+        last = entry;
+        continue;
+      }
+      if (entry.x - entry.hw >= last.x + last.hw + minGapPx) {
+        nextOut.push(toTickLabel(entry));
+        last = entry;
+      }
     }
-    if (e.x - e.hw >= last.x + last.hw + minGapPx) {
-      out.push({ ms: e.ms, label: e.label });
-      last = e;
-    }
-  }
+    return nextOut;
+  };
 
-  const endEntry = enriched[enriched.length - 1]!;
-  if (endEntry.ms === rangeEnd && out[out.length - 1]?.ms !== rangeEnd) {
+  const ensureEndTick = (out: Array<{ ms: number; label: string }>) => {
+    const endEntry = enriched[enriched.length - 1]!;
+    if (endEntry.ms !== rangeEnd || out[out.length - 1]?.ms === rangeEnd) {
+      return out;
+    }
     while (out.length > 0) {
       const lo = out[out.length - 1]!;
-      const loE = enriched.find((x) => x.ms === lo.ms);
+      const loE = enrichedByMs.get(lo.ms);
       if (!loE) break;
       if (endEntry.x - endEntry.hw >= loE.x + loE.hw + minGapPx) break;
       out.pop();
     }
     if (out.length === 0) {
-      out.push({ ms: enriched[0]!.ms, label: enriched[0]!.label });
+      out.push(toTickLabel(enriched[0]!));
     }
-    out.push({ ms: endEntry.ms, label: endEntry.label });
-  }
+    out.push(toTickLabel(endEntry));
+    return out;
+  };
 
-  return out;
+  return ensureEndTick(appendNonOverlappingTicks());
 }

@@ -202,6 +202,134 @@ const ALLOWED_SORTS = new Set([
   "rows_duplicated",
 ]);
 
+type TimelineLookup = Map<string, { name: string; resource_type: string }>;
+
+function normalizeTimelineSortKey(sort: string | undefined): string {
+  return (sort ?? "duration").toLowerCase();
+}
+
+function validateTimelineSortKey(sortKey: string): void {
+  if (!ALLOWED_SORTS.has(sortKey)) {
+    throw new Error(`--sort must be one of: ${[...ALLOWED_SORTS].join(", ")}`);
+  }
+}
+
+function loadTimelineContext(
+  paths: ReturnType<typeof resolveArtifactPaths>,
+  manifestPath: string | undefined,
+): {
+  runResults: ReturnType<typeof loadRunResults>;
+  adapterType: string | null | undefined;
+  executions: NodeExecution[];
+  lookup: TimelineLookup | undefined;
+} {
+  const runResults = loadRunResults(paths.runResults);
+  let adapterType: string | null | undefined;
+  let executions: NodeExecution[] =
+    buildNodeExecutionsFromRunResults(runResults);
+  let lookup: TimelineLookup | undefined;
+
+  if (manifestPath) {
+    validateSafePath(paths.manifest);
+    try {
+      const manifest = loadManifest(paths.manifest);
+      const graph = new ManifestGraph(manifest);
+      lookup = buildNodeLookup(graph);
+      adapterType = manifest.metadata?.adapter_type ?? null;
+      executions = buildNodeExecutionsFromRunResults(runResults, adapterType);
+    } catch {
+      // manifest loading is best-effort for enrichment
+    }
+  }
+
+  return { runResults, adapterType, executions, lookup };
+}
+
+function applyTimelineFilters(
+  executions: NodeExecution[],
+  options: TimelineOptions,
+): NodeExecution[] {
+  let nextExecutions = executions;
+  if (options.failedOnly) {
+    nextExecutions = nextExecutions.filter(
+      (e) => e.status !== "success" && e.status !== "pass",
+    );
+  } else if (options.status) {
+    const statuses = options.status
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    nextExecutions = searchRunResults(nextExecutions, { status: statuses });
+  }
+  if (options.adapterText) {
+    nextExecutions = searchRunResults(nextExecutions, {
+      adapter_text: options.adapterText,
+    });
+  }
+  return nextExecutions;
+}
+
+function sortTimelineExecutions(
+  executions: NodeExecution[],
+  sortKey: string,
+): NodeExecution[] {
+  if (sortKey === "duration") {
+    return searchRunResults(executions, {
+      sort: "execution_time_desc",
+    });
+  }
+  if (sortKey === "start") {
+    return [...executions].sort((a, b) => {
+      const aTs = a.started_at ?? "";
+      const bTs = b.started_at ?? "";
+      return aTs.localeCompare(bTs);
+    });
+  }
+
+  const descendingSortKeys = new Set([
+    "bytes_processed",
+    "bytes_billed",
+    "slot_ms",
+    "rows_affected",
+    "rows_inserted",
+    "rows_updated",
+    "rows_deleted",
+    "rows_duplicated",
+  ]);
+  const searchSortKey = `${sortKey}${
+    descendingSortKeys.has(sortKey) ? "_desc" : ""
+  }` as
+    | "bytes_processed_desc"
+    | "bytes_billed_desc"
+    | "slot_ms_desc"
+    | "rows_affected_desc"
+    | "rows_inserted_desc"
+    | "rows_updated_desc"
+    | "rows_deleted_desc"
+    | "rows_duplicated_desc"
+    | "query_id"
+    | "adapter_code"
+    | "adapter_message";
+  return searchRunResults(executions, {
+    sort: searchSortKey,
+  });
+}
+
+function formatTimelineOutput(
+  result: TimelineResult,
+  options: TimelineOptions,
+): string {
+  const outputFormat = (options.format ?? "").toLowerCase();
+  const useJson = shouldOutputJSON(options.json, options.noJson);
+  if (outputFormat === "csv") {
+    return formatTimelineCsv(result.entries);
+  }
+  if (outputFormat === "table" || (!useJson && outputFormat !== "json")) {
+    return formatTimeline(result);
+  }
+  return formatOutput(result, true);
+}
+
 /**
  * Timeline action handler
  */
@@ -213,12 +341,8 @@ export function timelineAction(
   isTTY: () => boolean,
 ): void {
   try {
-    const sortKey = (options.sort ?? "duration").toLowerCase();
-    if (!ALLOWED_SORTS.has(sortKey)) {
-      throw new Error(
-        `--sort must be one of: ${[...ALLOWED_SORTS].join(", ")}`,
-      );
-    }
+    const sortKey = normalizeTimelineSortKey(options.sort);
+    validateTimelineSortKey(sortKey);
 
     const paths = resolveArtifactPaths(
       manifestPath,
@@ -227,102 +351,18 @@ export function timelineAction(
     );
     validateSafePath(paths.runResults);
 
-    const runResults = loadRunResults(paths.runResults);
-    let adapterType: string | null | undefined;
-    let executions: NodeExecution[] =
-      buildNodeExecutionsFromRunResults(runResults);
-
-    // Optionally enrich with manifest metadata
-    let lookup:
-      | Map<string, { name: string; resource_type: string }>
-      | undefined;
-    if (manifestPath) {
-      validateSafePath(paths.manifest);
-      try {
-        const manifest = loadManifest(paths.manifest);
-        const graph = new ManifestGraph(manifest);
-        lookup = buildNodeLookup(graph);
-        adapterType = manifest.metadata?.adapter_type ?? null;
-        executions = buildNodeExecutionsFromRunResults(runResults, adapterType);
-      } catch {
-        // manifest loading is best-effort for enrichment
-      }
-    }
-
-    // Apply status filters
-    if (options.failedOnly) {
-      executions = executions.filter(
-        (e) => e.status !== "success" && e.status !== "pass",
-      );
-    } else if (options.status) {
-      const statuses = options.status
-        .split(",")
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-      executions = searchRunResults(executions, { status: statuses });
-    }
-    if (options.adapterText) {
-      executions = searchRunResults(executions, {
-        adapter_text: options.adapterText,
-      });
-    }
-
-    // Sort
-    if (sortKey === "duration") {
-      executions = searchRunResults(executions, {
-        sort: "execution_time_desc",
-      });
-    } else if (sortKey === "start") {
-      executions = [...executions].sort((a, b) => {
-        const aTs = a.started_at ?? "";
-        const bTs = b.started_at ?? "";
-        return aTs.localeCompare(bTs);
-      });
-    } else {
-      const searchSortKey = `${sortKey}${
-        sortKey === "query_id" ||
-        sortKey === "adapter_code" ||
-        sortKey === "adapter_message"
-          ? ""
-          : "_desc"
-      }` as
-        | "bytes_processed_desc"
-        | "bytes_billed_desc"
-        | "slot_ms_desc"
-        | "rows_affected_desc"
-        | "rows_inserted_desc"
-        | "rows_updated_desc"
-        | "rows_deleted_desc"
-        | "rows_duplicated_desc"
-        | "query_id"
-        | "adapter_code"
-        | "adapter_message";
-      executions = searchRunResults(executions, {
-        sort: searchSortKey,
-      });
-    }
+    const context = loadTimelineContext(paths, manifestPath);
+    let executions = applyTimelineFilters(context.executions, options);
+    executions = sortTimelineExecutions(executions, sortKey);
 
     // Top N
     if (options.top !== undefined && options.top > 0) {
       executions = executions.slice(0, options.top);
     }
 
-    const entries = executions.map((e) => toTimelineEntry(e, lookup));
+    const entries = executions.map((e) => toTimelineEntry(e, context.lookup));
     const result: TimelineResult = { total: entries.length, entries };
-
-    const outputFormat = (options.format ?? "").toLowerCase();
-    const useJson = shouldOutputJSON(options.json, options.noJson);
-
-    if (outputFormat === "csv") {
-      console.log(formatTimelineCsv(entries));
-    } else if (
-      outputFormat === "table" ||
-      (!useJson && outputFormat !== "json")
-    ) {
-      console.log(formatTimeline(result));
-    } else {
-      console.log(formatOutput(result, true));
-    }
+    console.log(formatTimelineOutput(result, options));
   } catch (error) {
     handleError(error, isTTY());
   }

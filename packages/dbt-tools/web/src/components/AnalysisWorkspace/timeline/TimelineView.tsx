@@ -95,6 +95,15 @@ function parentHasFailureSignal(
   return !isPositiveStatus(item.status) || hasTestFail;
 }
 
+function matchesTimelineQuery(item: GanttItem, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+  return (
+    item.name.toLowerCase().includes(normalized) ||
+    item.unique_id.toLowerCase().includes(normalized)
+  );
+}
+
 function TimelineSurface({
   analysis,
   filters,
@@ -328,59 +337,49 @@ export function TimelineView({
     return m;
   }, [analysis.ganttData]);
 
-  const filteredParents: GanttItem[] = useMemo(
-    () =>
-      analysis.ganttData.filter((item) => {
-        if (TEST_RESOURCE_TYPES.has(item.resourceType)) return false;
-
-        if (
-          filters.activeTypes.size === 0 &&
-          !isDefaultTimelineResource(item, projectName)
-        ) {
-          return false;
-        }
-        if (
-          filters.activeStatuses.size > 0 &&
-          !filters.activeStatuses.has(item.status.toLowerCase())
-        ) {
-          return false;
-        }
-        if (
-          effectiveActiveTypes.size > 0 &&
-          !effectiveActiveTypes.has(item.resourceType ?? "")
-        ) {
-          return false;
-        }
-        if (deferredQuery) {
-          const q = deferredQuery.trim().toLowerCase();
-          if (
-            q &&
-            !item.name.toLowerCase().includes(q) &&
-            !item.unique_id.toLowerCase().includes(q)
-          ) {
-            return false;
-          }
-        }
-        if (filters.failuresOnly) {
-          const childTests = testsByParentId.get(item.unique_id) ?? [];
-          if (!parentHasFailureSignal(item, childTests, testStatsById)) {
-            return false;
-          }
-        }
+  const filteredParents: GanttItem[] = useMemo(() => {
+    const includeParentItem = (item: GanttItem) => {
+      if (TEST_RESOURCE_TYPES.has(item.resourceType)) return false;
+      if (
+        filters.activeTypes.size === 0 &&
+        !isDefaultTimelineResource(item, projectName)
+      ) {
+        return false;
+      }
+      if (
+        filters.activeStatuses.size > 0 &&
+        !filters.activeStatuses.has(item.status.toLowerCase())
+      ) {
+        return false;
+      }
+      if (
+        effectiveActiveTypes.size > 0 &&
+        !effectiveActiveTypes.has(item.resourceType ?? "")
+      ) {
+        return false;
+      }
+      if (!matchesTimelineQuery(item, deferredQuery)) {
+        return false;
+      }
+      if (!filters.failuresOnly) {
         return true;
-      }),
-    [
-      analysis.ganttData,
-      deferredQuery,
-      effectiveActiveTypes,
-      filters.activeStatuses,
-      filters.failuresOnly,
-      filters.activeTypes.size,
-      projectName,
-      testStatsById,
-      testsByParentId,
-    ],
-  );
+      }
+      const childTests = testsByParentId.get(item.unique_id) ?? [];
+      return parentHasFailureSignal(item, childTests, testStatsById);
+    };
+
+    return analysis.ganttData.filter(includeParentItem);
+  }, [
+    analysis.ganttData,
+    deferredQuery,
+    effectiveActiveTypes,
+    filters.activeStatuses,
+    filters.failuresOnly,
+    filters.activeTypes.size,
+    projectName,
+    testStatsById,
+    testsByParentId,
+  ]);
 
   const { displayedParents, neighborhoodUi } = useTimelineNeighborhoodRows(
     analysis,

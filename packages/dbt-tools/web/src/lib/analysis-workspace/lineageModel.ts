@@ -35,6 +35,8 @@ export interface LineageGraphModel {
 }
 
 export type DependencyIndex = AnalysisState["dependencyIndex"];
+type LineageColumnNode = { column: number; resources: ResourceNode[] };
+type LineageGraphEdge = { from: string; to: string };
 
 export function clampDepth(value: number): number {
   return Math.max(0, Math.min(10, value));
@@ -297,6 +299,112 @@ export function reorderGraphColumns(
   return nextColumns;
 }
 
+function getDisplayModeGeometry(displayMode: LineageDisplayMode) {
+  return displayMode === "summary"
+    ? {
+        nodeWidth: 176,
+        nodeHeight: 64,
+        nodeRadius: 14,
+        columnGap: 104,
+        rowGap: 24,
+        paddingX: 40,
+        paddingY: 40,
+      }
+    : {
+        nodeWidth: 212,
+        nodeHeight: 80,
+        nodeRadius: 18,
+        columnGap: 160,
+        rowGap: 40,
+        paddingX: 56,
+        paddingY: 52,
+      };
+}
+
+function computeLineageCanvasSize(
+  columnNodes: LineageColumnNode[],
+  geometry: ReturnType<typeof getDisplayModeGeometry>,
+) {
+  const columnCount = columnNodes.length;
+  const tallestColumn = Math.max(
+    1,
+    ...columnNodes.map((entry) => entry.resources.length),
+  );
+  return {
+    svgWidth:
+      geometry.paddingX * 2 +
+      columnCount * geometry.nodeWidth +
+      Math.max(0, columnCount - 1) * geometry.columnGap,
+    svgHeight:
+      geometry.paddingY * 2 +
+      tallestColumn * geometry.nodeHeight +
+      Math.max(0, tallestColumn - 1) * geometry.rowGap,
+  };
+}
+
+function buildLineageNodeLayouts(
+  columnNodes: LineageColumnNode[],
+  selectedId: string,
+  upstreamMap: Map<string, number>,
+  downstreamMap: Map<string, number>,
+  resourceTestStats: ReturnType<typeof buildResourceTestStats>,
+  geometry: ReturnType<typeof getDisplayModeGeometry>,
+  svgHeight: number,
+): Map<string, LineageGraphNodeLayout> {
+  const nodeLayouts = new Map<string, LineageGraphNodeLayout>();
+  columnNodes.forEach((entry, columnIndex) => {
+    const columnHeight =
+      entry.resources.length * geometry.nodeHeight +
+      Math.max(0, entry.resources.length - 1) * geometry.rowGap;
+    const startY =
+      geometry.paddingY +
+      (svgHeight - geometry.paddingY * 2 - columnHeight) / 2;
+    const x =
+      geometry.paddingX +
+      columnIndex * (geometry.nodeWidth + geometry.columnGap);
+
+    entry.resources.forEach((node, rowIndex) => {
+      const y = startY + rowIndex * (geometry.nodeHeight + geometry.rowGap);
+      const { depth, side } = resolveLineageSide(
+        node.uniqueId,
+        selectedId,
+        upstreamMap,
+        downstreamMap,
+      );
+      const nodeStats = resourceTestStats.get(node.uniqueId);
+      nodeLayouts.set(node.uniqueId, {
+        resource: node,
+        x,
+        y,
+        column: entry.column,
+        depth,
+        side,
+        passCount: nodeStats?.pass ?? 0,
+        failCount: (nodeStats?.error ?? 0) + (nodeStats?.warn ?? 0),
+        notExecutedCount: nodeStats?.notExecuted ?? 0,
+        skippedCount: nodeStats?.skipped ?? 0,
+      });
+    });
+  });
+  return nodeLayouts;
+}
+
+function collectDisplayedGraphEdges(
+  dependencyIndex: DependencyIndex,
+  displayedIds: Set<string>,
+): LineageGraphEdge[] {
+  const graphEdges: LineageGraphEdge[] = [];
+  for (const nodeId of displayedIds) {
+    const downstream = dependencyIndex[nodeId]?.downstream ?? [];
+    for (const entry of downstream) {
+      if (displayedIds.has(entry.uniqueId)) {
+        graphEdges.push({ from: nodeId, to: entry.uniqueId });
+      }
+    }
+  }
+  return graphEdges;
+}
+
 export function buildLineageGraphModel({
   resource,
   dependencySummary,
@@ -341,72 +449,23 @@ export function buildLineageGraphModel({
     Array.from(resourceById.values()),
     dependencyIndex,
   );
-
-  const columnCount = columnNodes.length;
-  const nodeWidth = displayMode === "summary" ? 176 : 212;
-  const nodeHeight = displayMode === "summary" ? 64 : 80;
-  const nodeRadius = displayMode === "summary" ? 14 : 18;
-  const columnGap = displayMode === "summary" ? 104 : 160;
-  const rowGap = displayMode === "summary" ? 24 : 40;
-  const paddingX = displayMode === "summary" ? 40 : 56;
-  const paddingY = displayMode === "summary" ? 40 : 52;
-  const svgWidth =
-    paddingX * 2 +
-    columnCount * nodeWidth +
-    Math.max(0, columnCount - 1) * columnGap;
-  const tallestColumn = Math.max(
-    1,
-    ...columnNodes.map((entry) => entry.resources.length),
+  const geometry = getDisplayModeGeometry(displayMode);
+  const { svgWidth, svgHeight } = computeLineageCanvasSize(
+    columnNodes,
+    geometry,
   );
-  const svgHeight =
-    paddingY * 2 +
-    tallestColumn * nodeHeight +
-    Math.max(0, tallestColumn - 1) * rowGap;
-
-  const nodeLayouts = new Map<string, LineageGraphNodeLayout>();
-  columnNodes.forEach((entry, columnIndex) => {
-    const columnHeight =
-      entry.resources.length * nodeHeight +
-      Math.max(0, entry.resources.length - 1) * rowGap;
-    const startY = paddingY + (svgHeight - paddingY * 2 - columnHeight) / 2;
-    const x = paddingX + columnIndex * (nodeWidth + columnGap);
-
-    entry.resources.forEach((node, rowIndex) => {
-      const y = startY + rowIndex * (nodeHeight + rowGap);
-      const { depth, side } = resolveLineageSide(
-        node.uniqueId,
-        resource.uniqueId,
-        upstreamMap,
-        downstreamMap,
-      );
-      const nodeStats = resourceTestStats.get(node.uniqueId);
-      nodeLayouts.set(node.uniqueId, {
-        resource: node,
-        x,
-        y,
-        column: entry.column,
-        depth,
-        side,
-        passCount: nodeStats?.pass ?? 0,
-        // Attention test outcomes (failed/errored or warned), not skipped/not-run.
-        failCount: (nodeStats?.error ?? 0) + (nodeStats?.warn ?? 0),
-        notExecutedCount: nodeStats?.notExecuted ?? 0,
-        skippedCount: nodeStats?.skipped ?? 0,
-      });
-    });
-  });
+  const nodeLayouts = buildLineageNodeLayouts(
+    columnNodes,
+    resource.uniqueId,
+    upstreamMap,
+    downstreamMap,
+    resourceTestStats,
+    geometry,
+    svgHeight,
+  );
 
   const displayedIds = new Set(nodeLayouts.keys());
-  const graphEdges: Array<{ from: string; to: string }> = [];
-  for (const nodeId of displayedIds) {
-    const relation = dependencyIndex[nodeId];
-    if (!relation) continue;
-    for (const downstreamId of relation.downstream.map((d) => d.uniqueId)) {
-      if (displayedIds.has(downstreamId)) {
-        graphEdges.push({ from: nodeId, to: downstreamId });
-      }
-    }
-  }
+  const graphEdges = collectDisplayedGraphEdges(dependencyIndex, displayedIds);
 
   return {
     upstreamMap,
@@ -420,9 +479,9 @@ export function buildLineageGraphModel({
       nodeLayouts.size > 1 &&
       ((dependencySummary?.upstreamCount ?? 0) > 0 ||
         (dependencySummary?.downstreamCount ?? 0) > 0),
-    nodeWidth,
-    nodeHeight,
-    nodeRadius,
+    nodeWidth: geometry.nodeWidth,
+    nodeHeight: geometry.nodeHeight,
+    nodeRadius: geometry.nodeRadius,
     displayMode,
   };
 }
@@ -559,28 +618,28 @@ export function getLensLegendItems(
   lensMode: LensMode,
   nodeLayouts: Map<string, LineageGraphNodeLayout>,
 ): LensLegendItem[] {
+  const buildStatusLegendItems = () => {
+    const order = ["positive", "warning", "danger", "skipped", "neutral"];
+    return order.map((tone) => ({
+      key: tone,
+      label: capitalizeFirst(tone),
+      color: STATUS_LENS_FILLS[tone],
+    }));
+  };
+
+  const buildTypeLegendItems = () =>
+    getLineageGraphTypes(nodeLayouts).map((type) => ({
+      key: type,
+      label: formatResourceLabel(type),
+      color: TYPE_LENS_FILLS[type] ?? TYPE_LENS_NEUTRAL,
+      borderColor: TYPE_LENS_SOLID[type] ?? "var(--dbt-type-generic)",
+    }));
+
   switch (lensMode) {
-    case "status": {
-      const tones = new Set<string>();
-      for (const layout of nodeLayouts.values()) {
-        tones.add(layout.resource.statusTone ?? "neutral");
-      }
-      const order = ["positive", "warning", "danger", "skipped", "neutral"];
-      return order.map((t) => ({
-        key: t,
-        label: capitalizeFirst(t),
-        color: STATUS_LENS_FILLS[t],
-      }));
-    }
-    case "type": {
-      const types = getLineageGraphTypes(nodeLayouts);
-      return types.map((type) => ({
-        key: type,
-        label: formatResourceLabel(type),
-        color: TYPE_LENS_FILLS[type] ?? TYPE_LENS_NEUTRAL,
-        borderColor: TYPE_LENS_SOLID[type] ?? "var(--dbt-type-generic)",
-      }));
-    }
+    case "status":
+      return buildStatusLegendItems();
+    case "type":
+      return buildTypeLegendItems();
     case "coverage":
       return [
         {
@@ -604,14 +663,15 @@ function reachableNodeIdsFromSelected(
   allowedIds: Set<string>,
 ): Set<string> {
   const adj = new Map<string, string[]>();
+  const addAdjacentNode = (from: string, to: string) => {
+    const neighbors = adj.get(from);
+    if (neighbors) neighbors.push(to);
+    else adj.set(from, [to]);
+  };
   for (const { from, to } of edges) {
     if (!allowedIds.has(from) || !allowedIds.has(to)) continue;
-    const a = adj.get(from);
-    if (a) a.push(to);
-    else adj.set(from, [to]);
-    const b = adj.get(to);
-    if (b) b.push(from);
-    else adj.set(to, [from]);
+    addAdjacentNode(from, to);
+    addAdjacentNode(to, from);
   }
 
   const visited = new Set<string>();

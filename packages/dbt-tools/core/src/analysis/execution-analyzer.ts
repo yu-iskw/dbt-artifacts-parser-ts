@@ -83,28 +83,44 @@ export function buildNodeExecutionsFromRunResults(
 
   const results = runResults.results as unknown as RunResultLike[];
 
-  return results.map((result) => {
+  const pickTiming = (result: RunResultLike) => {
     const timingArray = result.timing || [];
-    const executeTiming = timingArray.find((t) => t.name === "execute");
-    const compileTiming = timingArray.find((t) => t.name === "compile");
-    const timing = executeTiming || compileTiming || timingArray[0];
+    return (
+      timingArray.find((t) => t.name === "execute") ||
+      timingArray.find((t) => t.name === "compile") ||
+      timingArray[0]
+    );
+  };
 
-    const adapterRaw = coerceAdapterResponseInput(result.adapter_response);
-    // Use context-aware parser with adapter type hint
+  const normalizeMessage = (messageRaw: unknown): string | undefined =>
+    typeof messageRaw === "string" && messageRaw.trim() !== ""
+      ? messageRaw.trim()
+      : undefined;
+
+  const buildAdapterDetails = (adapterRaw: unknown) => {
     const adapterMetrics = normalizeAdapterResponseWithContext(adapterRaw, {
       adapterType,
     });
-    const adapterResponseFields = extractAdapterResponseFields(adapterRaw);
-    const includeAdapter =
-      adapterMetrics.rawKeys.length > 0 ||
-      adapterMetricsHasData(adapterMetrics);
-    const includeAdapterFields = isAdapterResponseObject(adapterRaw);
+    return {
+      adapterMetrics,
+      includeAdapter:
+        adapterMetrics.rawKeys.length > 0 ||
+        adapterMetricsHasData(adapterMetrics),
+      adapterResponseFields: extractAdapterResponseFields(adapterRaw),
+      includeAdapterFields: isAdapterResponseObject(adapterRaw),
+    };
+  };
 
-    const messageRaw = result.message;
-    const message =
-      typeof messageRaw === "string" && messageRaw.trim() !== ""
-        ? messageRaw.trim()
-        : undefined;
+  return results.map((result) => {
+    const timing = pickTiming(result);
+    const adapterRaw = coerceAdapterResponseInput(result.adapter_response);
+    const {
+      adapterMetrics,
+      includeAdapter,
+      adapterResponseFields,
+      includeAdapterFields,
+    } = buildAdapterDetails(adapterRaw);
+    const message = normalizeMessage(result.message);
 
     return {
       unique_id: result.unique_id || "",

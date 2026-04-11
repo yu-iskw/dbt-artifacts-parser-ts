@@ -304,6 +304,27 @@ interface ExtendedBfsVisitCtx {
   nextFrontier: Set<string>;
 }
 
+function addExtendedEdge(
+  ctx: ExtendedBfsVisitCtx,
+  fromId: string,
+  toId: string,
+): boolean {
+  const key = focusEdgeDedupeKey({ fromId, toId });
+  if (ctx.seen.has(key)) return false;
+  ctx.seen.add(key);
+  if (ctx.hop < 2) {
+    return false;
+  }
+  ctx.edges.push({
+    fromId,
+    toId,
+    tier: ctx.direction === "upstream" ? "primary" : "downstream",
+    hop: ctx.hop,
+    leg: ctx.direction,
+  });
+  return ctx.edges.length >= ctx.maxEdges;
+}
+
 function visitExtendedNeighborsForVertex(
   v: string,
   ctx: ExtendedBfsVisitCtx,
@@ -316,19 +337,7 @@ function visitExtendedNeighborsForVertex(
     if (!ctx.inTimeline(n)) continue;
     const fromId = ctx.direction === "upstream" ? n : v;
     const toId = ctx.direction === "upstream" ? v : n;
-    const key = focusEdgeDedupeKey({ fromId, toId });
-    if (ctx.seen.has(key)) continue;
-    ctx.seen.add(key);
-    if (ctx.hop >= 2) {
-      ctx.edges.push({
-        fromId,
-        toId,
-        tier: ctx.direction === "upstream" ? "primary" : "downstream",
-        hop: ctx.hop,
-        leg: ctx.direction,
-      });
-      if (ctx.edges.length >= ctx.maxEdges) return true;
-    }
+    if (addExtendedEdge(ctx, fromId, toId)) return true;
     ctx.nextFrontier.add(n);
   }
   return false;
@@ -466,6 +475,8 @@ function bfsTimelineNeighborhoodHalf(
   maxHops: number,
   leg: "upstream" | "downstream",
 ): Set<string> {
+  const getNeighbors = (entry: TimelineAdjacencyEntry) =>
+    leg === "upstream" ? entry.inbound : entry.outbound;
   const result = new Set<string>();
   result.add(focusId);
   let frontier = new Set<string>([focusId]);
@@ -474,13 +485,12 @@ function bfsTimelineNeighborhoodHalf(
     for (const v of frontier) {
       const entry = timelineAdjacency[v];
       if (!entry) continue;
-      const neighbors = leg === "upstream" ? entry.inbound : entry.outbound;
-      for (const n of neighbors) {
-        if (!candidateIds.has(n)) continue;
-        if (!result.has(n)) {
-          result.add(n);
-          nextFrontier.add(n);
+      for (const neighborId of getNeighbors(entry)) {
+        if (!candidateIds.has(neighborId) || result.has(neighborId)) {
+          continue;
         }
+        result.add(neighborId);
+        nextFrontier.add(neighborId);
       }
     }
     frontier = nextFrontier;

@@ -120,19 +120,18 @@ function filterExecutionsForAdapterTop(
   options: RunReportOptions,
 ): NodeExecution[] {
   let filtered = executions;
-  if (options.adapterMinBytes !== undefined) {
+  const filters = [
+    { key: "min_bytes_processed" as const, value: options.adapterMinBytes },
+    { key: "min_slot_ms" as const, value: options.adapterMinSlotMs },
+    {
+      key: "min_rows_affected" as const,
+      value: options.adapterMinRowsAffected,
+    },
+  ];
+  for (const filter of filters) {
+    if (filter.value === undefined) continue;
     filtered = searchRunResults(filtered, {
-      min_bytes_processed: options.adapterMinBytes,
-    });
-  }
-  if (options.adapterMinSlotMs !== undefined) {
-    filtered = searchRunResults(filtered, {
-      min_slot_ms: options.adapterMinSlotMs,
-    });
-  }
-  if (options.adapterMinRowsAffected !== undefined) {
-    filtered = searchRunResults(filtered, {
-      min_rows_affected: options.adapterMinRowsAffected,
+      [filter.key]: filter.value,
     });
   }
   return filtered;
@@ -152,6 +151,17 @@ function buildAdapterSections(
   const adapterTotals = buildAdapterTotals(
     adapterSource.map((e) => e.adapterMetrics),
   );
+  const summaryMetrics: Array<{
+    metric: AdapterHeavyMetric;
+    label: string;
+  }> = [
+    { metric: "slot_ms", label: "Top 5 by slot_ms (summary)" },
+    {
+      metric: "bytes_processed",
+      label: "Top 5 by bytes_processed (summary)",
+    },
+    { metric: "rows_affected", label: "Top 5 by rows_affected (summary)" },
+  ];
 
   if (options.adapterSummary && adapterTotals != null) {
     jsonParts.adapter_totals = adapterTotals;
@@ -159,38 +169,15 @@ function buildAdapterSections(
     humanParts.push(formatAdapterNodeDetailsHuman(adapterSource));
 
     if (!options.adapterTopBy && adapterTotals.nodesWithAdapterData > 0) {
-      const bySlot = detectAdapterHeavyNodes(adapterSource, {
-        metric: "slot_ms",
-        top: 5,
-        graph,
-      });
-      const byBytes = detectAdapterHeavyNodes(adapterSource, {
-        metric: "bytes_processed",
-        top: 5,
-        graph,
-      });
-      const byRows = detectAdapterHeavyNodes(adapterSource, {
-        metric: "rows_affected",
-        top: 5,
-        graph,
-      });
-      if (bySlot.total_metric > 0) {
-        humanParts.push(
-          formatAdapterHeavyHuman(bySlot, "Top 5 by slot_ms (summary)"),
-        );
-      }
-      if (byBytes.total_metric > 0) {
-        humanParts.push(
-          formatAdapterHeavyHuman(
-            byBytes,
-            "Top 5 by bytes_processed (summary)",
-          ),
-        );
-      }
-      if (byRows.total_metric > 0) {
-        humanParts.push(
-          formatAdapterHeavyHuman(byRows, "Top 5 by rows_affected (summary)"),
-        );
+      for (const summaryMetric of summaryMetrics) {
+        const heavy = detectAdapterHeavyNodes(adapterSource, {
+          metric: summaryMetric.metric,
+          top: 5,
+          graph,
+        });
+        if (heavy.total_metric > 0) {
+          humanParts.push(formatAdapterHeavyHuman(heavy, summaryMetric.label));
+        }
       }
     }
   }
