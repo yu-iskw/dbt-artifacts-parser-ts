@@ -17,6 +17,14 @@ This aligns with the workspace rule for AI agent feedback: both `lint:report` an
 
 Optimize for fast failure. Run the cheapest high-signal checks first, then the slower gates. **Dependency order below is canonical**; where marked safe, you may **spawn parallel subagents** (e.g. multiple Task invocations) so independent gates run at the same time, then join results before the next batch.
 
+## Early risk triage (before the canonical sequence, when applicable)
+
+Run these narrow checks early when the task shape suggests they are likely to fail late and waste work. These do **not** replace the canonical steps below; they reduce the chance of discovering a high-cost blocker only at the end.
+
+- **Coverage gate health:** If `pnpm coverage:report` is a required completion gate and the task touches broad test/runtime infrastructure, affects many packages, or the environment seems unstable, isolate whether `pnpm coverage:report` is healthy **before** relying on it as the final gate.
+- **Web runtime path health:** If the task changes browser runtime wiring in `@dbt-tools/web` (for example workers, Vite aliases, package subpath imports, artifact preload/current routes, or other dev-vs-build resolution paths), run a narrow real browser/runtime check early. Do not rely only on unit tests or mocked preview paths for these changes.
+- **Lint-shape risk:** If the implementation is likely to add helper plumbing, orchestration branches, or large UI sections, expect `pnpm lint:report` to catch file-size, complexity, and parameter-count regressions. Prefer checking that early instead of waiting for the end of the session.
+
 ## Parallel batches (optional)
 
 - **Batch A — safe in parallel:** steps **1** (`pnpm lint:report`) and **2** (`pnpm test`). They do not run two Vitest suites at once and do not invoke CodeQL’s clean step. Dispatch two subagents (or parallel shells), wait for both; if one fails, apply the matching fixer (`lint-fix` / `test-fix`) and re-run only the failed gate(s) until batch A is green.

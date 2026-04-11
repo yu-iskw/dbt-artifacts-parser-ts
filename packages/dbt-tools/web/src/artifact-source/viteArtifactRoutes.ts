@@ -1,5 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { DBT_MANIFEST_JSON, DBT_RUN_RESULTS_JSON } from "@dbt-tools/core";
+import {
+  DBT_CATALOG_JSON,
+  DBT_MANIFEST_JSON,
+  DBT_RUN_RESULTS_JSON,
+  DBT_SOURCES_JSON,
+} from "@dbt-tools/core";
 import type { ArtifactSourceService } from "./sourceService";
 
 async function readJsonBody(
@@ -29,6 +34,18 @@ function sendJson(
   res.setHeader("Content-Type", "application/json");
   res.statusCode = statusCode;
   res.end(JSON.stringify(payload));
+}
+
+function currentArtifactBytes(
+  pathname: string,
+  current: Awaited<ReturnType<ArtifactSourceService["getCurrentArtifacts"]>>,
+): Uint8Array | null {
+  if (current == null) return null;
+  if (pathname.endsWith(DBT_MANIFEST_JSON)) return current.manifestBytes;
+  if (pathname.endsWith(DBT_RUN_RESULTS_JSON)) return current.runResultsBytes;
+  if (pathname.endsWith(DBT_CATALOG_JSON)) return current.catalogBytes ?? null;
+  if (pathname.endsWith(DBT_SOURCES_JSON)) return current.sourcesBytes ?? null;
+  return null;
 }
 
 /**
@@ -63,18 +80,20 @@ export async function tryHandleArtifactSourceViteRequest(
     (pathname === `/api/${DBT_MANIFEST_JSON}` ||
       pathname === `/api/artifacts/current/${DBT_MANIFEST_JSON}` ||
       pathname === `/api/${DBT_RUN_RESULTS_JSON}` ||
-      pathname === `/api/artifacts/current/${DBT_RUN_RESULTS_JSON}`)
+      pathname === `/api/artifacts/current/${DBT_RUN_RESULTS_JSON}` ||
+      pathname === `/api/${DBT_CATALOG_JSON}` ||
+      pathname === `/api/artifacts/current/${DBT_CATALOG_JSON}` ||
+      pathname === `/api/${DBT_SOURCES_JSON}` ||
+      pathname === `/api/artifacts/current/${DBT_SOURCES_JSON}`)
   ) {
     const current = await service.getCurrentArtifacts();
-    if (current == null) {
+    const bytes = currentArtifactBytes(pathname, current);
+    if (bytes == null) {
       res.statusCode = 404;
       res.end();
       return true;
     }
 
-    const bytes = pathname.endsWith(DBT_MANIFEST_JSON)
-      ? current.manifestBytes
-      : current.runResultsBytes;
     res.setHeader("Content-Type", "application/json");
     res.statusCode = 200;
     res.end(Buffer.from(bytes));

@@ -1,9 +1,16 @@
 import type { AnalysisSnapshot } from "@dbt-tools/core/browser";
 import type { WorkspaceArtifactSource } from "../lib/artifactSourceKind";
 
-export const ANALYSIS_WORKER_PROTOCOL_VERSION = 2;
+export const ANALYSIS_WORKER_PROTOCOL_VERSION = 3;
 
 export type AnalysisLoadSource = WorkspaceArtifactSource;
+
+export interface AnalysisArtifactBufferInputs {
+  manifestBytes: ArrayBuffer;
+  runResultsBytes?: ArrayBuffer;
+  catalogBytes?: ArrayBuffer;
+  sourcesBytes?: ArrayBuffer;
+}
 
 export interface AnalysisWorkerTimings {
   decodeMs: number;
@@ -17,8 +24,7 @@ export interface LoadAnalysisMessage {
   type: "load-analysis";
   protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
   requestId: number;
-  manifestBytes: ArrayBuffer;
-  runResultsBytes: ArrayBuffer;
+  artifactBuffers: AnalysisArtifactBufferInputs;
   source: AnalysisLoadSource;
 }
 

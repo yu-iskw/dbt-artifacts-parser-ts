@@ -1,5 +1,10 @@
 import path from "node:path";
-import { DBT_MANIFEST_JSON, DBT_RUN_RESULTS_JSON } from "@dbt-tools/core";
+import {
+  DBT_CATALOG_JSON,
+  DBT_MANIFEST_JSON,
+  DBT_RUN_RESULTS_JSON,
+  DBT_SOURCES_JSON,
+} from "@dbt-tools/core";
 import type {
   RemoteArtifactProvider,
   RemoteArtifactRun,
@@ -17,6 +22,8 @@ export interface ResolvedArtifactRun {
   runId: string;
   manifestKey: string;
   runResultsKey: string;
+  catalogKey?: string;
+  sourcesKey?: string;
   updatedAtMs: number;
   versionToken: string;
 }
@@ -53,7 +60,12 @@ export function discoverLatestArtifactRuns(
 ): ResolvedArtifactRun[] {
   const grouped = new Map<
     string,
-    { manifest?: RemoteObjectMetadata; runResults?: RemoteObjectMetadata }
+    {
+      manifest?: RemoteObjectMetadata;
+      runResults?: RemoteObjectMetadata;
+      catalog?: RemoteObjectMetadata;
+      sources?: RemoteObjectMetadata;
+    }
   >();
 
   for (const object of objects) {
@@ -61,7 +73,12 @@ export function discoverLatestArtifactRuns(
     if (relativeKey == null) continue;
 
     const fileName = path.posix.basename(relativeKey);
-    if (fileName !== DBT_MANIFEST_JSON && fileName !== DBT_RUN_RESULTS_JSON)
+    if (
+      fileName !== DBT_MANIFEST_JSON &&
+      fileName !== DBT_RUN_RESULTS_JSON &&
+      fileName !== DBT_CATALOG_JSON &&
+      fileName !== DBT_SOURCES_JSON
+    )
       continue;
 
     const runId = runIdForKey(relativeKey);
@@ -69,6 +86,8 @@ export function discoverLatestArtifactRuns(
 
     if (fileName === DBT_MANIFEST_JSON) current.manifest = object;
     if (fileName === DBT_RUN_RESULTS_JSON) current.runResults = object;
+    if (fileName === DBT_CATALOG_JSON) current.catalog = object;
+    if (fileName === DBT_SOURCES_JSON) current.sources = object;
 
     grouped.set(runId, current);
   }
@@ -81,11 +100,20 @@ export function discoverLatestArtifactRuns(
           runId,
           manifestKey: parts.manifest.key,
           runResultsKey: parts.runResults.key,
+          ...(parts.catalog != null ? { catalogKey: parts.catalog.key } : {}),
+          ...(parts.sources != null ? { sourcesKey: parts.sources.key } : {}),
           updatedAtMs: Math.max(
             parts.manifest.updatedAtMs,
             parts.runResults.updatedAtMs,
           ),
-          versionToken: versionTokenForKeys([parts.manifest, parts.runResults]),
+          versionToken: versionTokenForKeys(
+            [
+              parts.manifest,
+              parts.runResults,
+              parts.catalog,
+              parts.sources,
+            ].filter((part): part is RemoteObjectMetadata => part != null),
+          ),
         },
       ];
     })

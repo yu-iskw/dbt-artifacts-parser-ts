@@ -1,6 +1,8 @@
 export type {
+  AnalysisArtifactInputs,
   AnalysisSnapshot,
   AnalysisSnapshotBuildTimings,
+  CatalogResourceStats,
   DependencyPreview,
   ExecutionRow,
   GanttItem,
@@ -11,6 +13,9 @@ export type {
   ResourceGroup,
   ResourceNode,
   SemanticModelDefinition,
+  ParsedAnalysisArtifactInputs,
+  SourceFreshnessCriteria,
+  SourceFreshnessDetails,
   StatusBreakdownItem,
   StatusTone,
   ThreadStat,
@@ -31,6 +36,8 @@ export {
 } from "./node-execution-semantics";
 
 export {
+  buildAnalysisSnapshotFromArtifactBundle,
   buildAnalysisSnapshotFromArtifacts,
+  buildAnalysisSnapshotFromParsedArtifactBundle,
   buildAnalysisSnapshotFromParsedArtifacts,
 } from "./snapshot/analysis-snapshot-build";

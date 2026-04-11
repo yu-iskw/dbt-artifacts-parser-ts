@@ -1,10 +1,12 @@
 /// <reference lib="webworker" />
 
 import { parseManifest } from "dbt-artifacts-parser/manifest";
+import { parseCatalog } from "dbt-artifacts-parser/catalog";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
+import { parseSources } from "dbt-artifacts-parser/sources";
 import { matchesResource } from "../lib/analysis-workspace/utils";
 import {
-  buildAnalysisSnapshotFromParsedArtifacts,
+  buildAnalysisSnapshotFromParsedArtifactBundle,
   type AnalysisSnapshot,
   type ManifestGraph,
 } from "@dbt-tools/core/browser";
@@ -66,6 +68,12 @@ function buildSearchResourcesErrorResponse(
 function decodeJsonBytes(bytes: ArrayBuffer): Record<string, unknown> {
   const text = new TextDecoder().decode(bytes);
   return JSON.parse(text) as Record<string, unknown>;
+}
+
+function decodeOptionalJsonBytes(
+  bytes: ArrayBuffer | undefined,
+): Record<string, unknown> | undefined {
+  return bytes == null ? undefined : decodeJsonBytes(bytes);
 }
 
 function readCodeFromGraph(
@@ -157,13 +165,24 @@ export async function handleLoadAnalysisMessage(
     cachedResources = null;
     const totalStart = now();
     const decodeStart = now();
-    const manifestJson = decodeJsonBytes(payload.manifestBytes);
-    const runResultsJson = decodeJsonBytes(payload.runResultsBytes);
+    const manifestJson = decodeJsonBytes(payload.artifactBuffers.manifestBytes);
+    const runResultsJson = decodeOptionalJsonBytes(
+      payload.artifactBuffers.runResultsBytes,
+    );
+    const catalogJson = decodeOptionalJsonBytes(
+      payload.artifactBuffers.catalogBytes,
+    );
+    const sourcesJson = decodeOptionalJsonBytes(
+      payload.artifactBuffers.sourcesBytes,
+    );
     const decodeMs = now() - decodeStart;
 
     const parseStart = now();
     const manifest = parseManifest(manifestJson);
-    const runResults = parseRunResults(runResultsJson);
+    const runResults =
+      runResultsJson == null ? undefined : parseRunResults(runResultsJson);
+    const catalog = catalogJson == null ? undefined : parseCatalog(catalogJson);
+    const sources = sourcesJson == null ? undefined : parseSources(sourcesJson);
     const parseMs = now() - parseStart;
 
     const {
@@ -174,12 +193,16 @@ export async function handleLoadAnalysisMessage(
       analysis: AnalysisSnapshot;
       timings: { graphBuildMs: number; snapshotBuildMs: number };
       graph: ManifestGraph;
-    } = buildAnalysisSnapshotFromParsedArtifacts(
+    } = buildAnalysisSnapshotFromParsedArtifactBundle({
       manifestJson,
       runResultsJson,
+      catalogJson,
+      sourcesJson,
       manifest,
       runResults,
-    );
+      catalog,
+      sources,
+    });
 
     cachedGraph = graph;
     cachedResources = analysis.resources;

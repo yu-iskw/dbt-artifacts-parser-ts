@@ -34,6 +34,8 @@ describe("statusAction", () => {
     const parsed = JSON.parse(output) as StatusResult;
     expect(parsed.manifest.exists).toBe(true);
     expect(parsed.run_results.exists).toBe(false);
+    expect(parsed.catalog.exists).toBe(false);
+    expect(parsed.sources.exists).toBe(false);
     expect(parsed.readiness).toBe("manifest-only");
   });
 
@@ -47,6 +49,8 @@ describe("statusAction", () => {
     const parsed = JSON.parse(output) as StatusResult;
     expect(parsed.manifest.exists).toBe(true);
     expect(parsed.run_results.exists).toBe(true);
+    expect(parsed.catalog.exists).toBe(false);
+    expect(parsed.sources.exists).toBe(false);
     expect(parsed.readiness).toBe("full");
   });
 
@@ -58,6 +62,8 @@ describe("statusAction", () => {
     expect(parsed).toHaveProperty("target_dir");
     expect(parsed).toHaveProperty("manifest");
     expect(parsed).toHaveProperty("run_results");
+    expect(parsed).toHaveProperty("catalog");
+    expect(parsed).toHaveProperty("sources");
     expect(parsed).toHaveProperty("readiness");
     expect(parsed).toHaveProperty("summary");
 
@@ -65,6 +71,10 @@ describe("statusAction", () => {
     expect(parsed.manifest).toHaveProperty("exists");
     expect(parsed.run_results).toHaveProperty("path");
     expect(parsed.run_results).toHaveProperty("exists");
+    expect(parsed.catalog).toHaveProperty("path");
+    expect(parsed.catalog).toHaveProperty("exists");
+    expect(parsed.sources).toHaveProperty("path");
+    expect(parsed.sources).toHaveProperty("exists");
   });
 
   it("reports unavailable when target dir has no artifacts", () => {
@@ -83,6 +93,8 @@ describe("statusAction", () => {
     expect(parsed.readiness).toBe("unavailable");
     expect(parsed.manifest.exists).toBe(false);
     expect(parsed.run_results.exists).toBe(false);
+    expect(parsed.catalog.exists).toBe(false);
+    expect(parsed.sources.exists).toBe(false);
   });
 
   it("outputs human-readable format", () => {
@@ -92,6 +104,8 @@ describe("statusAction", () => {
     expect(output).toContain("dbt Artifact Status");
     expect(output).toContain("manifest.json");
     expect(output).toContain("run_results.json");
+    expect(output).toContain("catalog.json");
+    expect(output).toContain("sources.json");
     expect(output).toContain("Readiness:");
   });
 
@@ -120,6 +134,8 @@ describe("formatStatus", () => {
       target_dir: "./target",
       manifest: { path: "./target/manifest.json", exists: false },
       run_results: { path: "./target/run_results.json", exists: false },
+      catalog: { path: "./target/catalog.json", exists: false },
+      sources: { path: "./target/sources.json", exists: false },
       readiness: "unavailable",
       summary: "manifest.json not found. Most commands require manifest.json.",
     };
@@ -145,6 +161,8 @@ describe("formatStatus", () => {
         modified_at: now,
         age_seconds: 30,
       },
+      catalog: { path: "./target/catalog.json", exists: false },
+      sources: { path: "./target/sources.json", exists: false },
       readiness: "full",
       latest_modified_at: now,
       age_seconds: 30,
@@ -166,6 +184,8 @@ describe("formatStatus", () => {
         age_seconds: 120,
       },
       run_results: { path: "./target/run_results.json", exists: false },
+      catalog: { path: "./target/catalog.json", exists: false },
+      sources: { path: "./target/sources.json", exists: false },
       readiness: "manifest-only",
       latest_modified_at: now,
       age_seconds: 120,
@@ -174,5 +194,42 @@ describe("formatStatus", () => {
     const output = formatStatus(result);
     expect(output).toContain("manifest-only");
     expect(output).toContain("2m ago");
+  });
+
+  it("formats optional artifact presence when available", () => {
+    const now = new Date().toISOString();
+    const result: StatusResult = {
+      target_dir: "./target",
+      manifest: {
+        path: "./target/manifest.json",
+        exists: true,
+        modified_at: now,
+        age_seconds: 5,
+      },
+      run_results: {
+        path: "./target/run_results.json",
+        exists: true,
+        modified_at: now,
+        age_seconds: 5,
+      },
+      catalog: {
+        path: "./target/catalog.json",
+        exists: true,
+        modified_at: now,
+        age_seconds: 5,
+      },
+      sources: {
+        path: "./target/sources.json",
+        exists: true,
+        modified_at: now,
+        age_seconds: 5,
+      },
+      readiness: "full",
+      summary: "All artifacts present.",
+    };
+
+    const output = formatStatus(result);
+    expect(output).toContain("catalog.json");
+    expect(output).toContain("sources.json");
   });
 });

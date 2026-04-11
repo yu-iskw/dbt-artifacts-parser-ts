@@ -79,11 +79,23 @@ describe("artifactApi preload integration", () => {
         .fn()
         .mockResolvedValueOnce({
           ok: true,
+          headers: { get: vi.fn().mockReturnValue("application/json") },
           arrayBuffer: vi.fn().mockResolvedValue(manifestBytes),
         })
         .mockResolvedValueOnce({
           ok: true,
+          headers: { get: vi.fn().mockReturnValue("application/json") },
           arrayBuffer: vi.fn().mockResolvedValue(runResultsBytes),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          headers: { get: vi.fn().mockReturnValue("application/json") },
+          arrayBuffer: vi.fn(),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          headers: { get: vi.fn().mockReturnValue("application/json") },
+          arrayBuffer: vi.fn(),
         }) as typeof fetch,
     );
 
@@ -92,11 +104,30 @@ describe("artifactApi preload integration", () => {
       expect(worker.postMessage).toHaveBeenCalledTimes(1);
     });
     const request = worker.postMessage.mock.calls[0]?.[0] as
-      | { type: string; requestId: number; source: string }
+      | {
+          type: string;
+          requestId: number;
+          source: string;
+          artifactBuffers: object;
+        }
       | undefined;
 
     expect(request?.type).toBe("load-analysis");
     expect(request?.source).toBe("preload");
+    expect(request?.artifactBuffers).toEqual(
+      expect.objectContaining({
+        manifestBytes: expect.any(ArrayBuffer),
+        runResultsBytes: expect.any(ArrayBuffer),
+      }),
+    );
+    expect(
+      (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls,
+    ).toEqual([
+      ["/api/artifacts/current/manifest.json"],
+      ["/api/artifacts/current/run_results.json"],
+      ["/api/artifacts/current/catalog.json"],
+      ["/api/artifacts/current/sources.json"],
+    ]);
 
     worker.onmessage?.({
       data: {
