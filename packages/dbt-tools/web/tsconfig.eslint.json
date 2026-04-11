@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["src/dbt-target-plugin.ts"]
+  "exclude": ["src/artifact-source/dbt-target-plugin.ts"]
 }

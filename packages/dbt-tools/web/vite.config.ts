@@ -1,7 +1,7 @@
 import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { dbtTargetPlugin } from "./src/dbt-target-plugin";
+import { dbtTargetPlugin } from "./src/artifact-source/dbt-target-plugin";
 import { createSharedSourceEntryAliases } from "../../../tooling/source-entry-aliases.mjs";
 
 const sharedAliases = createSharedSourceEntryAliases(

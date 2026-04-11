@@ -22,7 +22,7 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["src/dbt-target-plugin.ts", "src/**/*.test.ts"],
+  "exclude": ["src/artifact-source/dbt-target-plugin.ts", "src/**/*.test.ts"],
   "references": [
     {
       "path": "./tsconfig.node.json"
