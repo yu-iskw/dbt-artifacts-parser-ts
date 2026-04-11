@@ -1,7 +1,7 @@
 import { type Dispatch, type SetStateAction } from "react";
 import type { RunsViewState } from "@web/lib/analysis-workspace/types";
 import { defaultRunsSortDirection } from "@web/lib/analysis-workspace/runsSort";
-import type { RunsResultsSourceState } from "@web/hooks/useRunsResultsSource";
+import type { RunsResultsSourceState } from "@web/hooks/analysis/useRunsResultsSource";
 import {
   isRunsAdapterSortBy,
   type RunsAdapterColumnLayout,

@@ -21,13 +21,13 @@ import {
   getInitialSidebarCollapsed,
   SIDEBAR_STORAGE_KEY,
   type NavigationSelectionTarget,
-} from "../components/AppShell/appNavigation";
+} from "../../components/AppShell/appNavigation";
 import {
   applySearchToWorkspaceState,
   buildNextUrlFromWorkspaceState,
   createInitialNavigationState,
   mergeTimelineSelection,
-} from "../components/AppShell/workspaceUrlSync";
+} from "../../components/AppShell/workspaceUrlSync";
 
 export interface UseWorkspaceUrlStateResult {
   activeView: WorkspaceView;

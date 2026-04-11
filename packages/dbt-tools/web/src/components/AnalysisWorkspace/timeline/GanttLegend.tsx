@@ -8,7 +8,7 @@ import {
   getResourceTypeSoftFill,
   getThemeHex,
 } from "@web/constants/themeColors";
-import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
+import { useSyncedDocumentTheme } from "@web/hooks/workspace/useTheme";
 import { GANTT_LEGEND_PRIMARY_TYPES } from "@web/lib/analysis-workspace/constants";
 import {
   MATERIALIZATION_KIND_ORDER,

@@ -18,7 +18,7 @@ import {
   nextRunsSort,
   runsColumnHeaderSortUi,
 } from "@web/lib/analysis-workspace/runsSort";
-import type { RunsResultsSourceState } from "@web/hooks/useRunsResultsSource";
+import type { RunsResultsSourceState } from "@web/hooks/analysis/useRunsResultsSource";
 import {
   badgeClassName,
   formatSeconds,

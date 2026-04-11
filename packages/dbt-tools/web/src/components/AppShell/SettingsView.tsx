@@ -6,7 +6,7 @@ import type {
   WorkspaceArtifactSource,
 } from "@web/services/artifactSourceApi";
 import { SectionCard, WorkspaceScaffold } from "../AnalysisWorkspace/shared";
-import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
+import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePreferences";
 
 const ACTIVE_PILL_CLASS = "workspace-pill workspace-pill--active";
 const INACTIVE_PILL_CLASS = "workspace-pill";

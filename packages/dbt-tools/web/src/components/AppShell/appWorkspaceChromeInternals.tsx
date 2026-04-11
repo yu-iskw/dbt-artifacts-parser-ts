@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { AnalysisWorkspace } from "../AnalysisWorkspace";
 import { FileUpload } from "../FileUpload";
-import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
+import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePreferences";
 import {
   formatRunStartedAt,
   getInvocationTimestamp,
@@ -11,8 +11,8 @@ import type {
   ThemePreference,
   WorkspaceSignal,
 } from "@web/lib/analysis-workspace/types";
-import type { UseWorkspaceUrlStateResult } from "@web/hooks/useWorkspaceUrlState";
-import type { OmniboxResultsSnapshot } from "@web/hooks/useOmniboxResults";
+import type { UseWorkspaceUrlStateResult } from "@web/hooks/workspace/useWorkspaceUrlState";
+import type { OmniboxResultsSnapshot } from "@web/hooks/analysis/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";
 import type {
   RemoteArtifactRun,

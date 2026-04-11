@@ -3,14 +3,14 @@ import { useAnalysisPreload } from "./useAnalysisPreload";
 import { useDbtArtifactsReload } from "./useDbtArtifactsReload";
 import { useRemoteArtifactPoll } from "./useRemoteArtifactPoll";
 import type { AnalysisState } from "@web/types";
-import type { AnalysisLoadResult } from "../services/analysisLoader";
-import { debug, markDebug, measureDebug } from "../debug";
+import type { AnalysisLoadResult } from "../../services/analysisLoader";
+import { debug, markDebug, measureDebug } from "../../debug";
 import {
   refetchFromApi,
   switchToArtifactRun,
   type RemoteArtifactRun,
   type WorkspaceArtifactSource,
-} from "../services/artifactApi";
+} from "../../services/artifactApi";
 
 export interface UseAnalysisPageResult {
   analysis: AnalysisState | null;

@@ -3,10 +3,10 @@ import type { WorkspaceSignal } from "./components/AnalysisWorkspace";
 import { AppWorkspaceChrome } from "./components/AppShell/AppWorkspaceChrome";
 import { buildWorkspaceSignals } from "./components/AppShell/workspaceSignals";
 import { ToastProvider, useToast } from "./components/ui/Toast";
-import { useAnalysisPage } from "./hooks/useAnalysisPage";
-import { useTheme } from "./hooks/useTheme";
-import { useWorkspacePreferences } from "./hooks/useWorkspacePreferences";
-import { useWorkspaceUrlState } from "./hooks/useWorkspaceUrlState";
+import { useAnalysisPage } from "./hooks/artifacts/useAnalysisPage";
+import { useTheme } from "./hooks/workspace/useTheme";
+import { useWorkspacePreferences } from "./hooks/workspace/useWorkspacePreferences";
+import { useWorkspaceUrlState } from "./hooks/workspace/useWorkspaceUrlState";
 import type { AnalysisState } from "@web/types";
 
 function AppContent() {

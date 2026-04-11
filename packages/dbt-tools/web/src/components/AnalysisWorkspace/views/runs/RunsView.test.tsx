@@ -11,13 +11,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AnalysisState, ExecutionRow } from "@web/types";
 import type { RunsViewState } from "@web/lib/analysis-workspace/types";
-import { useRunsResultsSource } from "@web/hooks/useRunsResultsSource";
+import { useRunsResultsSource } from "@web/hooks/analysis/useRunsResultsSource";
 import { RunsView } from "./RunsView";
 
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: vi.fn(),
 }));
-vi.mock("@web/hooks/useRunsResultsSource");
+vi.mock("@web/hooks/analysis/useRunsResultsSource");
 
 const mockUseVirtualizer = vi.mocked(useVirtualizer);
 const mockUseRunsResultsSource = vi.mocked(useRunsResultsSource);

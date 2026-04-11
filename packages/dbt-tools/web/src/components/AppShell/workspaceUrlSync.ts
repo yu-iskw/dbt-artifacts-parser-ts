@@ -6,7 +6,7 @@ import type {
   TimelineFilterState,
   WorkspaceView,
 } from "@web/lib/analysis-workspace/types";
-import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
+import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePreferences";
 import {
   buildInitialLineageViewState,
   getInitialAssetTab,

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { debug } from "../debug";
-import { fetchArtifactSourceStatus } from "../services/artifactApi";
+import { debug } from "../../debug";
+import { fetchArtifactSourceStatus } from "../../services/artifactApi";
 import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
-import type { RemoteArtifactRun } from "../services/artifactSourceApi";
+import type { RemoteArtifactRun } from "../../services/artifactSourceApi";
 
 /**
  * Polls `/api/artifact-source` while the workspace is in remote mode so the UI

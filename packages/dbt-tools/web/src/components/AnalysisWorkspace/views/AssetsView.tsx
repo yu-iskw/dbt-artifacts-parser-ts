@@ -17,7 +17,7 @@ import { ResourceTypeBadge } from "../shared";
 import { MaterializationSemanticsBadge } from "../MaterializationSemanticsBadge";
 import { LineagePanel } from "../lineage/LineagePanel";
 import { AssetTestsSection } from "./AssetTestsSection";
-import { useResourceCode } from "@web/hooks/useResourceCode";
+import { useResourceCode } from "@web/hooks/analysis/useResourceCode";
 import { AssetSummarySection } from "./AssetSummarySection";
 import { AssetSqlOrDefinitionCard } from "./AssetsViewSqlDefinitionCard";
 

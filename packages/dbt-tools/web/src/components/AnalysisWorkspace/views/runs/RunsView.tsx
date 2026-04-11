@@ -4,7 +4,7 @@ import type {
   InvestigationSelectionState,
   RunsViewState,
 } from "@web/lib/analysis-workspace/types";
-import { useRunsResultsSource } from "@web/hooks/useRunsResultsSource";
+import { useRunsResultsSource } from "@web/hooks/analysis/useRunsResultsSource";
 import {
   getRunsAdapterColumnLayout,
   isRunsAdapterSortBy,

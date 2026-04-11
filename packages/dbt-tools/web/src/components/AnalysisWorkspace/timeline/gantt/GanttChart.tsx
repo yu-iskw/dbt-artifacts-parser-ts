@@ -1,6 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
+import { useSyncedDocumentTheme } from "@web/hooks/workspace/useTheme";
 import type {
   TimelineDependencyDirection,
   TimeWindow,

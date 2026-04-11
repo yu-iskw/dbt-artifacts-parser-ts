@@ -1,10 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { WorkspaceSignal } from "../AnalysisWorkspace";
 import { ErrorBanner } from "../ErrorBanner";
-import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
+import type { WorkspacePreferences } from "@web/hooks/workspace/useWorkspacePreferences";
 import type { ThemePreference } from "@web/lib/analysis-workspace/types";
-import type { UseWorkspaceUrlStateResult } from "@web/hooks/useWorkspaceUrlState";
-import { useOmniboxResults } from "@web/hooks/useOmniboxResults";
+import type { UseWorkspaceUrlStateResult } from "@web/hooks/workspace/useWorkspaceUrlState";
+import { useOmniboxResults } from "@web/hooks/analysis/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";
 import type {
   RemoteArtifactRun,

@@ -2,10 +2,10 @@ import { useEffect, useRef } from "react";
 import {
   loadCurrentManagedArtifacts,
   type WorkspaceArtifactSource,
-} from "../services/artifactApi";
-import { debug } from "../debug";
+} from "../../services/artifactApi";
+import { debug } from "../../debug";
 import type { AnalysisState } from "@web/types";
-import type { AnalysisLoadResult } from "../services/analysisLoader";
+import type { AnalysisLoadResult } from "../../services/analysisLoader";
 
 interface UseAnalysisPreloadParams {
   setPreloadLoading: (loading: boolean) => void;

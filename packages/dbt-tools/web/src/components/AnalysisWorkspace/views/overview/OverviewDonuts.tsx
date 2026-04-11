@@ -1,5 +1,5 @@
 import { useId, useMemo } from "react";
-import { useSyncedDocumentTheme } from "@web/hooks/useTheme";
+import { useSyncedDocumentTheme } from "@web/hooks/workspace/useTheme";
 import type { ExecutionRow, StatusTone } from "@web/types";
 import { getStatusTonePalette } from "@web/lib/analysis-workspace/constants";
 import {

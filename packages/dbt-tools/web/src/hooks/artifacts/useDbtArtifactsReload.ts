@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { refetchFromApi } from "../services/artifactApi";
-import { debug } from "../debug";
+import { refetchFromApi } from "../../services/artifactApi";
+import { debug } from "../../debug";
 import type { AnalysisState } from "@web/types";
-import type { AnalysisLoadResult } from "../services/analysisLoader";
-import type { WorkspaceArtifactSource } from "../services/artifactSourceApi";
+import type { AnalysisLoadResult } from "../../services/analysisLoader";
+import type { WorkspaceArtifactSource } from "../../services/artifactSourceApi";
 
 /**
  * Subscribes to dbt-artifacts-changed (Vite HMR) when analysis came from preload.
