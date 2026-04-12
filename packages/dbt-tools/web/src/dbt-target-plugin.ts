@@ -5,10 +5,12 @@ import {
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
   DBT_SOURCES_JSON,
+} from "../../core/src/io/artifact-filenames";
+import {
   getDbtToolsReloadDebounceMs,
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
-} from "@dbt-tools/core";
+} from "../../core/src/config/dbt-tools-env";
 import { ArtifactSourceService } from "./artifact-source/sourceService";
 import { resolveWatchableLocalTargetDir } from "./artifact-source/resolveLocalTargetDir";
 import { tryHandleArtifactSourceViteRequest } from "./artifact-source/viteArtifactRoutes";

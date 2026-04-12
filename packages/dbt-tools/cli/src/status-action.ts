@@ -5,7 +5,11 @@
 import * as fs from "fs";
 import * as path from "path";
 import {
+  discoverArtifactCandidateSets,
+  discoverLocalArtifactFiles,
   resolveArtifactPaths,
+  selectArtifactCandidate,
+  validateRequiredArtifacts,
   validateSafePath,
   formatOutput,
   shouldOutputJSON,
@@ -13,6 +17,9 @@ import {
 
 export type StatusOptions = {
   targetDir?: string;
+  sourceType?: "local" | "s3" | "gcs";
+  location?: string;
+  candidate?: string;
   json?: boolean;
   noJson?: boolean;
 };
@@ -77,6 +84,26 @@ function humanAge(seconds: number): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+async function resolveStatusTargetDir(
+  options: StatusOptions,
+): Promise<string | undefined> {
+  if (!options.location) return options.targetDir;
+  if ((options.sourceType ?? "local") !== "local") {
+    throw new Error(
+      "CLI status currently supports --source-type local only. Use web server mode for remote discovery.",
+    );
+  }
+
+  const files = await discoverLocalArtifactFiles(options.location);
+  const candidates = discoverArtifactCandidateSets(files);
+  const selected = selectArtifactCandidate(candidates, options.candidate);
+  validateRequiredArtifacts(selected);
+
+  return selected.candidateId === "current"
+    ? options.location
+    : path.join(options.location, selected.candidateId);
+}
+
 /**
  * Format status as human-readable output.
  */
@@ -116,13 +143,18 @@ export function formatStatus(result: StatusResult): string {
 /**
  * Status / freshness action handler
  */
-export function statusAction(
+export async function statusAction(
   options: StatusOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
-    const paths = resolveArtifactPaths(undefined, undefined, options.targetDir);
+    const effectiveTargetDir = await resolveStatusTargetDir(options);
+    const paths = resolveArtifactPaths(
+      undefined,
+      undefined,
+      effectiveTargetDir,
+    );
 
     // Validate paths before accessing filesystem
     validateSafePath(paths.manifest);
@@ -147,7 +179,6 @@ export function statusAction(
       readiness = "full";
     }
 
-    // Latest modified artifact
     let latestModifiedAt: string | undefined;
     let latestAgeSeconds: number | undefined;
 

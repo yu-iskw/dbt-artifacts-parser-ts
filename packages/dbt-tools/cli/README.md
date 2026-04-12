@@ -52,6 +52,7 @@ pnpm add -g @dbt-tools/cli
 - **Timeline**: Inspect per-node execution timing (row-level, unlike `run-report`)
 - **Search**: Discover resources by name, tag, type, or free-text query
 - **Status / Freshness**: Check if artifacts are present and how recent they are
+- **Directory/prefix discovery**: `status`/`freshness` can discover candidate artifact sets from a single `--location` using `--source-type` and optional `--candidate`.
 - **Subgraph focus**: Export a focused subgraph for any node via `graph --focus`
 
 ---
@@ -444,6 +445,8 @@ This command does **not** parse artifact content — it only checks the filesyst
 ```bash
 # Check default ./target directory
 dbt-tools status
+# Discover from a single location and choose candidate explicitly when needed
+dbt-tools status --source-type local --location ./target --candidate current
 
 # Custom target directory
 dbt-tools status --target-dir ./custom-target
@@ -629,6 +632,8 @@ Compose with other tooling as needed (e.g. warehouse job metadata, CI environmen
 ```bash
 # Check artifact readiness before doing any analysis
 dbt-tools status
+# Discover from a single location and choose candidate explicitly when needed
+dbt-tools status --source-type local --location ./target --candidate current
 
 # Find a resource before querying its deps
 dbt-tools search orders --json | jq '.results[0].unique_id'

@@ -24,11 +24,11 @@ describe("statusAction", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("reports manifest-only readiness when only manifest exists", () => {
+  it("reports manifest-only readiness when only manifest exists", async () => {
     // Create a manifest.json but no run_results.json in tmpDir
     fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
 
-    statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
+    await statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -39,11 +39,11 @@ describe("statusAction", () => {
     expect(parsed.readiness).toBe("manifest-only");
   });
 
-  it("reports full readiness when both artifacts exist", () => {
+  it("reports full readiness when both artifacts exist", async () => {
     fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
     fs.writeFileSync(path.join(tmpDir, "run_results.json"), "{}");
 
-    statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
+    await statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -54,8 +54,8 @@ describe("statusAction", () => {
     expect(parsed.readiness).toBe("full");
   });
 
-  it("outputs required JSON fields", () => {
-    statusAction({ json: true }, handleError, isTTY);
+  it("outputs required JSON fields", async () => {
+    await statusAction({ json: true }, handleError, isTTY);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -77,12 +77,12 @@ describe("statusAction", () => {
     expect(parsed.sources).toHaveProperty("exists");
   });
 
-  it("reports unavailable when target dir has no artifacts", () => {
+  it("reports unavailable when target dir has no artifacts", async () => {
     const nonexistentTarget = path.join(
       os.tmpdir(),
       `dbt-tools-status-missing-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
     );
-    statusAction(
+    await statusAction(
       { targetDir: nonexistentTarget, json: true },
       handleError,
       isTTY,
@@ -97,8 +97,12 @@ describe("statusAction", () => {
     expect(parsed.sources.exists).toBe(false);
   });
 
-  it("outputs human-readable format", () => {
-    statusAction({ targetDir: tmpDir, noJson: true }, handleError, () => true);
+  it("outputs human-readable format", async () => {
+    await statusAction(
+      { targetDir: tmpDir, noJson: true },
+      handleError,
+      () => true,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     expect(output).toContain("dbt Artifact Status");
@@ -109,16 +113,16 @@ describe("statusAction", () => {
     expect(output).toContain("Readiness:");
   });
 
-  it("rejects path traversal in targetDir", () => {
-    expect(() =>
+  it("rejects path traversal in targetDir", async () => {
+    await expect(
       statusAction({ targetDir: "../../etc" }, handleError, isTTY),
-    ).toThrow();
+    ).rejects.toThrow(/Path traversal detected/);
   });
 
-  it("includes modification time when artifact exists", () => {
+  it("includes modification time when artifact exists", async () => {
     fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
 
-    statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
+    await statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;

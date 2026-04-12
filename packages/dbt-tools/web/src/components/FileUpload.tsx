@@ -1,223 +1,213 @@
 import { useMemo, useState } from "react";
 import { Spinner } from "./ui/Spinner";
 import { useToast } from "./ui/Toast";
+import type { AnalysisLoadResult } from "../services/analysisLoader";
 import {
-  loadAnalysisFromBuffers,
-  type AnalysisLoadResult,
-} from "../services/analysisLoader";
+  discoverArtifactCandidates,
+  loadDiscoveredArtifactCandidate,
+  refetchFromApi,
+  type ArtifactDiscoveryResponse,
+  type DiscoverSourceType,
+} from "@web/services/artifactApi";
 
 interface FileUploadProps {
   onAnalysis: (result: AnalysisLoadResult) => void;
   onError: (error: string | null) => void;
 }
 
-interface FileInputRowProps {
-  id: string;
+const SOURCE_OPTIONS: ReadonlyArray<{
+  value: DiscoverSourceType;
   label: string;
-  file: File | null;
-  onFileChange: (file: File | null) => void;
-}
-
-function FileInputRow({ id, label, file, onFileChange }: FileInputRowProps) {
-  return (
-    <div className="file-input-card">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="file"
-        accept=".json"
-        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-      />
-      {file && <span className="file-input-card__filename">{file.name}</span>}
-    </div>
-  );
-}
-
-const WORKSPACE_FEATURES = [
-  {
-    title: "Health-first overview",
-    body: "Spot failing nodes, long-running bottlenecks, and critical-path pressure before opening individual assets.",
-  },
-  {
-    title: "Catalog-style context",
-    body: "Browse lineage-adjacent metadata such as descriptions, packages, execution status, and dependency depth in one flow.",
-  },
-  {
-    title: "Timeline investigation",
-    body: "Shift from summary to execution sequencing without leaving the workspace, inspired by dbt docs and observability tools.",
-  },
-] as const;
+}> = [
+  { value: "local", label: "Local directory" },
+  { value: "s3", label: "S3 prefix (s3://bucket/prefix)" },
+  { value: "gcs", label: "GCS prefix (gcs://bucket/prefix)" },
+];
 
 export function FileUpload({ onAnalysis, onError }: FileUploadProps) {
   const { toast } = useToast();
-  const [manifestFile, setManifestFile] = useState<File | null>(null);
-  const [runResultsFile, setRunResultsFile] = useState<File | null>(null);
-  const [catalogFile, setCatalogFile] = useState<File | null>(null);
-  const [sourcesFile, setSourcesFile] = useState<File | null>(null);
+  const [sourceType, setSourceType] = useState<DiscoverSourceType>("local");
+  const [location, setLocation] = useState("");
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("");
+  const [discovery, setDiscovery] = useState<ArtifactDiscoveryResponse | null>(
+    null,
+  );
+  const [discovering, setDiscovering] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleAnalyze() {
-    if (!manifestFile || !runResultsFile) {
-      onError("Please select both manifest.json and run_results.json");
+  const selectedCandidate = useMemo(
+    () =>
+      discovery?.candidates.find(
+        (candidate) => candidate.candidateId === selectedCandidateId,
+      ) ?? null,
+    [discovery, selectedCandidateId],
+  );
+
+  async function handleDiscover() {
+    setDiscovering(true);
+    onError(null);
+    try {
+      const result = await discoverArtifactCandidates({ sourceType, location });
+      setDiscovery(result);
+      const defaultCandidate = result.candidates[0]?.candidateId ?? "";
+      setSelectedCandidateId(defaultCandidate);
+      if (result.candidates.length === 0) {
+        onError("No supported dbt artifacts were discovered at this location.");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to discover artifacts";
+      onError(message);
+      toast(message, "danger");
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  async function handleLoad() {
+    if (selectedCandidateId.trim() === "") {
+      onError("Select a candidate artifact set before loading.");
       return;
     }
 
     setLoading(true);
     onError(null);
-
     try {
-      const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
-        await Promise.all([
-          manifestFile.arrayBuffer(),
-          runResultsFile.arrayBuffer(),
-          catalogFile?.arrayBuffer() ?? Promise.resolve(undefined),
-          sourcesFile?.arrayBuffer() ?? Promise.resolve(undefined),
-        ]);
-      const result = await loadAnalysisFromBuffers(
-        {
-          manifestBytes,
-          runResultsBytes,
-          ...(catalogBytes != null ? { catalogBytes } : {}),
-          ...(sourcesBytes != null ? { sourcesBytes } : {}),
-        },
-        "upload",
+      await loadDiscoveredArtifactCandidate({
+        sourceType,
+        location,
+        candidateId: selectedCandidateId,
+      });
+
+      const loaded = await refetchFromApi(
+        sourceType === "local" ? "preload" : "remote",
       );
-      onAnalysis(result);
+      if (loaded == null) {
+        throw new Error("Artifacts were selected but could not be loaded.");
+      }
+
+      onAnalysis(loaded);
+
+      const warningCount = selectedCandidate?.warnings.length ?? 0;
       toast(
-        `Analyzed ${result.analysis.summary.total_nodes} executions successfully`,
-        "positive",
+        warningCount > 0
+          ? `Loaded with ${warningCount} optional artifact warning${warningCount === 1 ? "" : "s"}`
+          : `Loaded ${selectedCandidateId}`,
+        warningCount > 0 ? "warning" : "positive",
       );
-    } catch (err) {
+    } catch (error) {
       const message =
-        err instanceof Error ? err.message : "Failed to parse artifacts";
+        error instanceof Error ? error.message : "Failed to load artifacts";
       onError(message);
-      toast(`Parse failed — ${message}`, "danger");
+      toast(message, "danger");
     } finally {
       setLoading(false);
     }
   }
 
-  const canAnalyze = manifestFile && runResultsFile && !loading;
-  const readinessLabel = useMemo(() => {
-    if (manifestFile && runResultsFile) return "Ready to analyze";
-    if (manifestFile || runResultsFile) return "Waiting for one more file";
-    return "Add both dbt artifacts to continue";
-  }, [manifestFile, runResultsFile]);
+  const requiresExplicitSelection = (discovery?.candidates.length ?? 0) > 1;
 
   return (
     <section className="upload-hero">
       <div className="upload-hero__copy">
-        <p className="eyebrow">Bring your artifacts</p>
-        <h2>
-          Review dbt runs like a modern control plane, not a raw JSON dump.
-        </h2>
+        <p className="eyebrow">Artifact source</p>
+        <h2>Load dbt artifacts from one directory or object-storage prefix.</h2>
         <p>
-          Start from the two artifacts that power <code>dbt docs</code> and most
-          run analysis workflows: a matching <code>manifest.json</code> and
-          <code> run_results.json</code> pair.
+          Select a source type, provide a single location, discover candidate
+          artifact sets, and explicitly choose which set to load.
         </p>
-
-        <div className="upload-hero__callout">
-          <span className="upload-hero__callout-badge">Recommended flow</span>
-          <strong>
-            Run <code>dbt docs generate</code> after a representative job.
-          </strong>
-          <p>
-            That keeps lineage, metadata, and runtime results aligned so the
-            workspace can feel closer to dbt Docs for discovery and closer to
-            Elementary for health triage.
-          </p>
-        </div>
-
-        <div className="upload-feature-grid">
-          {WORKSPACE_FEATURES.map((feature) => (
-            <article key={feature.title} className="upload-feature-card">
-              <strong>{feature.title}</strong>
-              <p>{feature.body}</p>
-            </article>
-          ))}
-        </div>
       </div>
 
       <div className="upload-panel">
-        <div className="upload-panel__header">
-          <div>
-            <p className="eyebrow">Artifact intake</p>
-            <h3>Open investigation workspace</h3>
-          </div>
-          <span className="upload-panel__status">{readinessLabel}</span>
-        </div>
-
         <div className="upload-panel__inputs">
-          <FileInputRow
-            id="manifest-input"
-            label="manifest.json"
-            file={manifestFile}
-            onFileChange={setManifestFile}
-          />
-          <FileInputRow
-            id="run-results-input"
-            label="run_results.json"
-            file={runResultsFile}
-            onFileChange={setRunResultsFile}
-          />
-          <FileInputRow
-            id="catalog-input"
-            label="catalog.json (optional)"
-            file={catalogFile}
-            onFileChange={setCatalogFile}
-          />
-          <FileInputRow
-            id="sources-input"
-            label="sources.json (optional)"
-            file={sourcesFile}
-            onFileChange={setSourcesFile}
-          />
-        </div>
+          <label>
+            Source type
+            <select
+              value={sourceType}
+              onChange={(event) =>
+                setSourceType(event.target.value as DiscoverSourceType)
+              }
+            >
+              {SOURCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <div className="upload-panel__tips">
-          <div>
-            <strong>Best when files come from the same run.</strong>
-            <span>
-              Mismatched manifests and run results usually surface missing nodes
-              or stale timings.
-            </span>
-          </div>
-          <div>
-            <strong>Use local outputs or DBT_TOOLS_TARGET_DIR.</strong>
-            <span>
-              The app supports both uploaded artifacts and auto-loaded local
-              targets for faster iteration.
-            </span>
-          </div>
-          <div>
-            <strong>
-              Bring catalog and freshness artifacts when you have them.
-            </strong>
-            <span>
-              <code>catalog.json</code> and <code>sources.json</code> enrich the
-              workspace, but they are never required.
-            </span>
-          </div>
-        </div>
+          <label>
+            Location
+            <input
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              placeholder={
+                sourceType === "local"
+                  ? "/path/to/target"
+                  : `${sourceType}://bucket/path/to/prefix`
+              }
+            />
+          </label>
 
-        <button
-          type="button"
-          onClick={() => {
-            void handleAnalyze();
-          }}
-          disabled={!canAnalyze}
-          className="primary-action"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-          }}
-        >
-          {loading && <Spinner size={16} />}
-          {loading ? "Analyzing…" : "Analyze artifacts"}
-        </button>
+          <button
+            type="button"
+            className="primary-action"
+            onClick={() => void handleDiscover()}
+            disabled={discovering || loading}
+          >
+            {discovering ? <Spinner size={16} /> : null}
+            {discovering ? "Discovering…" : "Discover artifact sets"}
+          </button>
+
+          {discovery != null && discovery.candidates.length > 0 ? (
+            <>
+              <label>
+                Candidate set
+                <select
+                  value={selectedCandidateId}
+                  onChange={(event) =>
+                    setSelectedCandidateId(event.target.value)
+                  }
+                >
+                  {discovery.candidates.map((candidate) => (
+                    <option
+                      key={candidate.candidateId}
+                      value={candidate.candidateId}
+                    >
+                      {candidate.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {requiresExplicitSelection ? (
+                <p>
+                  Multiple candidates found. Selection is required before
+                  loading.
+                </p>
+              ) : null}
+
+              {selectedCandidate?.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+
+              <button
+                type="button"
+                className="primary-action"
+                onClick={() => void handleLoad()}
+                disabled={
+                  loading ||
+                  discovering ||
+                  selectedCandidate == null ||
+                  !selectedCandidate.isLoadable
+                }
+              >
+                {loading ? <Spinner size={16} /> : null}
+                {loading ? "Loading…" : "Load selected artifacts"}
+              </button>
+            </>
+          ) : null}
+        </div>
       </div>
     </section>
   );

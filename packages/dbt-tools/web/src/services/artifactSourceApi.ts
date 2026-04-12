@@ -20,6 +20,27 @@ export interface RemoteArtifactRun {
   versionToken: string;
 }
 
+export type DiscoverSourceType = "local" | "s3" | "gcs";
+
+export interface ArtifactDiscoveryCandidate {
+  candidateId: string;
+  label: string;
+  missingRequired: string[];
+  missingOptional: string[];
+  warnings: string[];
+  features: {
+    catalogMetadata: boolean;
+    sourceFreshness: boolean;
+  };
+  isLoadable: boolean;
+}
+
+export interface ArtifactDiscoveryResponse {
+  sourceType: DiscoverSourceType;
+  location: string;
+  candidates: ArtifactDiscoveryCandidate[];
+}
+
 export interface ArtifactSourceStatus {
   mode: ManagedArtifactSourceMode;
   currentSource: Exclude<WorkspaceArtifactSource, "upload"> | null;
@@ -243,6 +264,49 @@ export async function switchToArtifactRun(
 
   if (!response.ok) {
     throw new Error("Failed to switch artifact source run");
+  }
+
+  return (await response.json()) as ArtifactSourceStatus;
+}
+
+export async function discoverArtifactCandidates(input: {
+  sourceType: DiscoverSourceType;
+  location: string;
+}): Promise<ArtifactDiscoveryResponse> {
+  const response = await fetch("/api/artifact-source/discover", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => ({}))) as {
+      message?: string;
+    };
+    throw new Error(errorPayload.message ?? "Failed to discover artifacts");
+  }
+
+  return (await response.json()) as ArtifactDiscoveryResponse;
+}
+
+export async function loadDiscoveredArtifactCandidate(input: {
+  sourceType: DiscoverSourceType;
+  location: string;
+  candidateId: string;
+}): Promise<ArtifactSourceStatus> {
+  const response = await fetch("/api/artifact-source/load", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => ({}))) as {
+      message?: string;
+    };
+    throw new Error(
+      errorPayload.message ?? "Failed to load artifact candidate",
+    );
   }
 
   return (await response.json()) as ArtifactSourceStatus;

@@ -8,7 +8,11 @@ export {
   loadCurrentManagedArtifacts,
   refetchFromApi,
   switchToArtifactRun,
+  discoverArtifactCandidates,
+  loadDiscoveredArtifactCandidate,
   type ArtifactSourceStatus,
   type RemoteArtifactRun,
   type WorkspaceArtifactSource,
+  type DiscoverSourceType,
+  type ArtifactDiscoveryResponse,
 } from "./artifactSourceApi";

@@ -4,7 +4,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { Storage } from "@google-cloud/storage";
-import type { DbtToolsRemoteSourceConfig } from "@dbt-tools/core";
+import type { DbtToolsRemoteSourceConfig } from "../../../core/src/config/dbt-tools-env";
 import type { RemoteObjectMetadata } from "./discovery";
 
 export interface RemoteObjectStoreClient {

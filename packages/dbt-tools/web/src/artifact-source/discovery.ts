@@ -4,7 +4,12 @@ import {
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
   DBT_SOURCES_JSON,
-} from "@dbt-tools/core";
+} from "../../../core/src/io/artifact-filenames";
+import {
+  discoverArtifactCandidateSets,
+  type ArtifactCandidateSet,
+  type DiscoveredArtifactFile,
+} from "../../../core/src/io/artifact-discovery";
 import type {
   RemoteArtifactProvider,
   RemoteArtifactRun,
@@ -26,6 +31,7 @@ export interface ResolvedArtifactRun {
   sourcesKey?: string;
   updatedAtMs: number;
   versionToken: string;
+  missingOptional: string[];
 }
 
 function toRelativeKey(key: string, prefix: string): string | null {
@@ -39,11 +45,6 @@ function toRelativeKey(key: string, prefix: string): string | null {
   return null;
 }
 
-function runIdForKey(relativeKey: string): string {
-  const dir = path.posix.dirname(relativeKey);
-  return dir === "." ? "current" : dir;
-}
-
 function versionTokenForKeys(parts: RemoteObjectMetadata[]): string {
   return parts
     .map((part) =>
@@ -54,68 +55,113 @@ function versionTokenForKeys(parts: RemoteObjectMetadata[]): string {
     .join("|");
 }
 
-export function discoverLatestArtifactRuns(
+function toDiscoveredFiles(
   objects: RemoteObjectMetadata[],
   prefix: string,
-): ResolvedArtifactRun[] {
-  const grouped = new Map<
-    string,
-    {
-      manifest?: RemoteObjectMetadata;
-      runResults?: RemoteObjectMetadata;
-      catalog?: RemoteObjectMetadata;
-      sources?: RemoteObjectMetadata;
-    }
-  >();
+): DiscoveredArtifactFile[] {
+  const files: DiscoveredArtifactFile[] = [];
 
   for (const object of objects) {
     const relativeKey = toRelativeKey(object.key, prefix);
-    if (relativeKey == null) continue;
-
+    if (relativeKey == null || relativeKey === "") continue;
     const fileName = path.posix.basename(relativeKey);
     if (
       fileName !== DBT_MANIFEST_JSON &&
       fileName !== DBT_RUN_RESULTS_JSON &&
       fileName !== DBT_CATALOG_JSON &&
       fileName !== DBT_SOURCES_JSON
-    )
+    ) {
       continue;
+    }
 
-    const runId = runIdForKey(relativeKey);
-    const current = grouped.get(runId) ?? {};
-
-    if (fileName === DBT_MANIFEST_JSON) current.manifest = object;
-    if (fileName === DBT_RUN_RESULTS_JSON) current.runResults = object;
-    if (fileName === DBT_CATALOG_JSON) current.catalog = object;
-    if (fileName === DBT_SOURCES_JSON) current.sources = object;
-
-    grouped.set(runId, current);
+    files.push({
+      relativePath: relativeKey,
+      filename: fileName,
+      updatedAtMs: object.updatedAtMs,
+    });
   }
 
-  return [...grouped.entries()]
-    .flatMap(([runId, parts]) => {
-      if (parts.manifest == null || parts.runResults == null) return [];
-      return [
-        {
-          runId,
-          manifestKey: parts.manifest.key,
-          runResultsKey: parts.runResults.key,
-          ...(parts.catalog != null ? { catalogKey: parts.catalog.key } : {}),
-          ...(parts.sources != null ? { sourcesKey: parts.sources.key } : {}),
-          updatedAtMs: Math.max(
-            parts.manifest.updatedAtMs,
-            parts.runResults.updatedAtMs,
-          ),
-          versionToken: versionTokenForKeys(
-            [
-              parts.manifest,
-              parts.runResults,
-              parts.catalog,
-              parts.sources,
-            ].filter((part): part is RemoteObjectMetadata => part != null),
-          ),
-        },
-      ];
+  return files;
+}
+
+function candidateToResolvedRun(
+  candidate: ArtifactCandidateSet,
+  byPath: Map<string, RemoteObjectMetadata>,
+  prefix: string,
+): ResolvedArtifactRun | null {
+  const manifestRelative = candidate.artifacts[DBT_MANIFEST_JSON]?.relativePath;
+  const runResultsRelative =
+    candidate.artifacts[DBT_RUN_RESULTS_JSON]?.relativePath;
+  if (manifestRelative == null || runResultsRelative == null) return null;
+
+  const manifestKey =
+    prefix.trim() === ""
+      ? manifestRelative
+      : `${normalizeArtifactPrefix(prefix)}/${manifestRelative}`;
+  const runResultsKey =
+    prefix.trim() === ""
+      ? runResultsRelative
+      : `${normalizeArtifactPrefix(prefix)}/${runResultsRelative}`;
+
+  const manifestObj = byPath.get(manifestRelative);
+  const runObj = byPath.get(runResultsRelative);
+  if (manifestObj == null || runObj == null) return null;
+
+  const catalogRelative = candidate.artifacts[DBT_CATALOG_JSON]?.relativePath;
+  const sourcesRelative = candidate.artifacts[DBT_SOURCES_JSON]?.relativePath;
+  const catalogObj = catalogRelative ? byPath.get(catalogRelative) : undefined;
+  const sourcesObj = sourcesRelative ? byPath.get(sourcesRelative) : undefined;
+
+  return {
+    runId: candidate.candidateId,
+    manifestKey,
+    runResultsKey,
+    ...(catalogRelative
+      ? {
+          catalogKey:
+            prefix.trim() === ""
+              ? catalogRelative
+              : `${normalizeArtifactPrefix(prefix)}/${catalogRelative}`,
+        }
+      : {}),
+    ...(sourcesRelative
+      ? {
+          sourcesKey:
+            prefix.trim() === ""
+              ? sourcesRelative
+              : `${normalizeArtifactPrefix(prefix)}/${sourcesRelative}`,
+        }
+      : {}),
+    updatedAtMs: Math.max(manifestObj.updatedAtMs, runObj.updatedAtMs),
+    versionToken: versionTokenForKeys(
+      [manifestObj, runObj, catalogObj, sourcesObj].filter(
+        (part): part is RemoteObjectMetadata => part != null,
+      ),
+    ),
+    missingOptional: candidate.missingOptional,
+  };
+}
+
+export function discoverLatestArtifactRuns(
+  objects: RemoteObjectMetadata[],
+  prefix: string,
+): ResolvedArtifactRun[] {
+  const discoveredFiles = toDiscoveredFiles(objects, prefix);
+  const candidates = discoverArtifactCandidateSets(discoveredFiles);
+  const byRelativePath = new Map<string, RemoteObjectMetadata>();
+
+  for (const object of objects) {
+    const relativeKey = toRelativeKey(object.key, prefix);
+    if (relativeKey != null && relativeKey !== "") {
+      byRelativePath.set(relativeKey, object);
+    }
+  }
+
+  return candidates
+    .flatMap((candidate) => {
+      if (!candidate.isLoadable) return [];
+      const run = candidateToResolvedRun(candidate, byRelativePath, prefix);
+      return run == null ? [] : [run];
     })
     .sort((left, right) => {
       if (right.updatedAtMs !== left.updatedAtMs) {

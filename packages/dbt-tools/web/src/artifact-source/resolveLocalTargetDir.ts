@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getDbtToolsTargetDirFromEnv } from "@dbt-tools/core";
+import { getDbtToolsTargetDirFromEnv } from "../../../core/src/config/dbt-tools-env";
 
 export function expandDbtTargetDirFromEnvValue(targetDir: string): string {
   return targetDir.replace(/^~($|\/)/, `${process.env.HOME ?? ""}$1`).trim();

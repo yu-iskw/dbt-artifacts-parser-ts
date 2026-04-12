@@ -4,29 +4,24 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loadAnalysisFromBuffers } = vi.hoisted(() => ({
-  loadAnalysisFromBuffers: vi.fn(),
+const { mockDiscover, mockLoadCandidate, mockRefetch } = vi.hoisted(() => ({
+  mockDiscover: vi.fn(),
+  mockLoadCandidate: vi.fn(),
+  mockRefetch: vi.fn(),
 }));
 
-vi.mock("../services/analysisLoader", () => ({
-  loadAnalysisFromBuffers,
+vi.mock("@web/services/artifactApi", () => ({
+  discoverArtifactCandidates: (...args: unknown[]) => mockDiscover(...args),
+  loadDiscoveredArtifactCandidate: (...args: unknown[]) =>
+    mockLoadCandidate(...args),
+  refetchFromApi: (...args: unknown[]) => mockRefetch(...args),
+}));
+
+vi.mock("./ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
 }));
 
 import { FileUpload } from "./FileUpload";
-
-function createFile(name: string, contents: string): File {
-  return new File([contents], name, { type: "application/json" });
-}
-
-async function setInputFile(input: HTMLInputElement, file: File) {
-  Object.defineProperty(input, "files", {
-    configurable: true,
-    value: [file],
-  });
-  await act(async () => {
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-}
 
 describe("FileUpload", () => {
   let root: Root;
@@ -36,12 +31,31 @@ describe("FileUpload", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    loadAnalysisFromBuffers.mockReset();
-    loadAnalysisFromBuffers.mockResolvedValue({
-      analysis: {
-        summary: { total_nodes: 4 },
-      },
-      metrics: { source: "upload" },
+
+    mockDiscover.mockReset();
+    mockLoadCandidate.mockReset();
+    mockRefetch.mockReset();
+
+    mockDiscover.mockResolvedValue({
+      sourceType: "local",
+      location: expect.any(String),
+      candidates: [
+        {
+          candidateId: "current",
+          label: "current",
+          missingRequired: [],
+          missingOptional: ["catalog.json", "sources.json"],
+          warnings: ["Optional artifact missing: catalog.json"],
+          features: { catalogMetadata: false, sourceFreshness: false },
+          isLoadable: true,
+        },
+      ],
+    });
+
+    mockLoadCandidate.mockResolvedValue({ currentSource: "preload" });
+    mockRefetch.mockResolvedValue({
+      analysis: { summary: { total_nodes: 3 } },
+      metrics: { source: "preload" },
     });
   });
 
@@ -52,7 +66,7 @@ describe("FileUpload", () => {
     container.remove();
   });
 
-  it("uploads the required artifact pair without optional files", async () => {
+  it("discovers and loads selected candidate", async () => {
     const onAnalysis = vi.fn();
     const onError = vi.fn();
 
@@ -60,79 +74,70 @@ describe("FileUpload", () => {
       root.render(<FileUpload onAnalysis={onAnalysis} onError={onError} />);
     });
 
-    const manifestInput = container.querySelector(
-      "#manifest-input",
-    ) as HTMLInputElement;
-    const runResultsInput = container.querySelector(
-      "#run-results-input",
-    ) as HTMLInputElement;
-
-    await setInputFile(manifestInput, createFile("manifest.json", "{}"));
-    await setInputFile(
-      runResultsInput,
-      createFile("run_results.json", '{"results":[]}'),
-    );
+    const locationInput = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      locationInput.value = "/tmp/target";
+      locationInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
 
     await act(async () => {
       (
-        container.querySelector("button.primary-action") as HTMLButtonElement
+        [...container.querySelectorAll("button")].find((button) =>
+          button.textContent?.includes("Discover artifact sets"),
+        ) as HTMLButtonElement
       ).click();
+      await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(loadAnalysisFromBuffers).toHaveBeenCalledWith(
-      expect.objectContaining({
-        manifestBytes: expect.any(ArrayBuffer),
-        runResultsBytes: expect.any(ArrayBuffer),
-      }),
-      "upload",
-    );
-    expect(loadAnalysisFromBuffers.mock.calls[0]?.[0]).not.toHaveProperty(
-      "catalogBytes",
-    );
-    expect(loadAnalysisFromBuffers.mock.calls[0]?.[0]).not.toHaveProperty(
-      "sourcesBytes",
-    );
+    const loadButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Load selected artifacts"),
+    ) as HTMLButtonElement | undefined;
+    expect(loadButton).toBeDefined();
+
+    await act(async () => {
+      loadButton?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockDiscover).toHaveBeenCalled();
+    expect(mockLoadCandidate).toHaveBeenCalledWith({
+      sourceType: "local",
+      location: expect.any(String),
+      candidateId: "current",
+    });
     expect(onAnalysis).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalledWith(expect.any(String));
   });
 
-  it("passes optional catalog and sources buffers when selected", async () => {
+  it("reports discovery errors", async () => {
+    mockDiscover.mockRejectedValueOnce(new Error("Bad location"));
+
+    const onAnalysis = vi.fn();
+    const onError = vi.fn();
+
     await act(async () => {
-      root.render(<FileUpload onAnalysis={vi.fn()} onError={vi.fn()} />);
+      root.render(<FileUpload onAnalysis={onAnalysis} onError={onError} />);
     });
 
-    await setInputFile(
-      container.querySelector("#manifest-input") as HTMLInputElement,
-      createFile("manifest.json", "{}"),
-    );
-    await setInputFile(
-      container.querySelector("#run-results-input") as HTMLInputElement,
-      createFile("run_results.json", '{"results":[]}'),
-    );
-    await setInputFile(
-      container.querySelector("#catalog-input") as HTMLInputElement,
-      createFile("catalog.json", '{"nodes":{}}'),
-    );
-    await setInputFile(
-      container.querySelector("#sources-input") as HTMLInputElement,
-      createFile("sources.json", '{"results":[]}'),
-    );
+    const locationInput = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      locationInput.value = "/tmp/target";
+      locationInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
 
     await act(async () => {
       (
-        container.querySelector("button.primary-action") as HTMLButtonElement
+        [...container.querySelectorAll("button")].find((button) =>
+          button.textContent?.includes("Discover artifact sets"),
+        ) as HTMLButtonElement
       ).click();
+      await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(loadAnalysisFromBuffers).toHaveBeenCalledWith(
-      expect.objectContaining({
-        manifestBytes: expect.any(ArrayBuffer),
-        runResultsBytes: expect.any(ArrayBuffer),
-        catalogBytes: expect.any(ArrayBuffer),
-        sourcesBytes: expect.any(ArrayBuffer),
-      }),
-      "upload",
-    );
+    expect(onError).toHaveBeenCalledWith("Bad location");
+    expect(onAnalysis).not.toHaveBeenCalled();
   });
 });

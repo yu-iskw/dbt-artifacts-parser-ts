@@ -4,7 +4,7 @@ import {
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
   DBT_SOURCES_JSON,
-} from "@dbt-tools/core";
+} from "../../../core/src/io/artifact-filenames";
 import type { ArtifactSourceService } from "./sourceService";
 
 async function readJsonBody(
@@ -36,6 +36,14 @@ function sendJson(
   res.end(JSON.stringify(payload));
 }
 
+function sendError(
+  res: ServerResponse,
+  message: string,
+  statusCode = 400,
+): void {
+  sendJson(res, statusCode, { message });
+}
+
 function currentArtifactBytes(
   pathname: string,
   current: Awaited<ReturnType<ArtifactSourceService["getCurrentArtifacts"]>>,
@@ -63,25 +71,84 @@ function requestPathname(req: IncomingMessage): string | null {
   return req.url?.split("?")[0] ?? null;
 }
 
-function isArtifactStatusRequest(
-  req: IncomingMessage,
-  pathname: string,
-): boolean {
-  return req.method === "GET" && pathname === "/api/artifact-source";
+function parseSourceType(value: unknown): "local" | "s3" | "gcs" | null {
+  return value === "local" || value === "s3" || value === "gcs" ? value : null;
 }
 
-function isArtifactSwitchRequest(
+async function handleDiscoverRequest(
   req: IncomingMessage,
-  pathname: string,
-): boolean {
-  return req.method === "POST" && pathname === "/api/artifact-source/switch";
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<boolean> {
+  if (
+    req.method !== "POST" ||
+    requestPathname(req) !== "/api/artifact-source/discover"
+  ) {
+    return false;
+  }
+
+  const body = await readJsonBody(req);
+  const sourceType = parseSourceType(body.sourceType);
+  if (sourceType == null || typeof body.location !== "string") {
+    sendError(res, "Invalid discovery request payload.");
+    return true;
+  }
+
+  try {
+    sendJson(
+      res,
+      200,
+      await service.discover({ sourceType, location: body.location }),
+    );
+  } catch (error) {
+    sendError(
+      res,
+      error instanceof Error ? error.message : "Failed to discover artifacts",
+    );
+  }
+  return true;
 }
 
-function isCurrentArtifactRequest(
+async function handleLoadRequest(
   req: IncomingMessage,
-  pathname: string,
-): boolean {
-  return req.method === "GET" && CURRENT_ARTIFACT_PATHS.has(pathname);
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<boolean> {
+  if (
+    req.method !== "POST" ||
+    requestPathname(req) !== "/api/artifact-source/load"
+  ) {
+    return false;
+  }
+
+  const body = await readJsonBody(req);
+  const sourceType = parseSourceType(body.sourceType);
+  if (
+    sourceType == null ||
+    typeof body.location !== "string" ||
+    typeof body.candidateId !== "string"
+  ) {
+    sendError(res, "Invalid load request payload.");
+    return true;
+  }
+
+  try {
+    sendJson(
+      res,
+      200,
+      await service.loadCandidate({
+        sourceType,
+        location: body.location,
+        candidateId: body.candidateId,
+      }),
+    );
+  } catch (error) {
+    sendError(
+      res,
+      error instanceof Error ? error.message : "Failed to load artifacts",
+    );
+  }
+  return true;
 }
 
 /**
@@ -96,12 +163,12 @@ export async function tryHandleArtifactSourceViteRequest(
   const pathname = requestPathname(req);
   if (!pathname) return false;
 
-  if (isArtifactStatusRequest(req, pathname)) {
+  if (req.method === "GET" && pathname === "/api/artifact-source") {
     sendJson(res, 200, await service.getStatus());
     return true;
   }
 
-  if (isArtifactSwitchRequest(req, pathname)) {
+  if (req.method === "POST" && pathname === "/api/artifact-source/switch") {
     const body = await readJsonBody(req);
     const runId =
       typeof body.runId === "string" && body.runId.trim() !== ""
@@ -111,20 +178,23 @@ export async function tryHandleArtifactSourceViteRequest(
     return true;
   }
 
-  if (isCurrentArtifactRequest(req, pathname)) {
-    const current = await service.getCurrentArtifacts();
-    const bytes = currentArtifactBytes(pathname, current);
-    if (bytes == null) {
-      res.statusCode = 404;
-      res.end();
-      return true;
-    }
+  if (await handleDiscoverRequest(req, res, service)) return true;
+  if (await handleLoadRequest(req, res, service)) return true;
 
-    res.setHeader("Content-Type", "application/json");
-    res.statusCode = 200;
-    res.end(Buffer.from(bytes));
+  if (req.method !== "GET" || !CURRENT_ARTIFACT_PATHS.has(pathname)) {
+    return false;
+  }
+
+  const current = await service.getCurrentArtifacts();
+  const bytes = currentArtifactBytes(pathname, current);
+  if (bytes == null) {
+    res.statusCode = 404;
+    res.end();
     return true;
   }
 
-  return false;
+  res.setHeader("Content-Type", "application/json");
+  res.statusCode = 200;
+  res.end(Buffer.from(bytes));
+  return true;
 }

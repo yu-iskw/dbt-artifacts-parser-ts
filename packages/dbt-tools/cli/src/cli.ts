@@ -49,6 +49,12 @@ const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
+const OPT_SOURCE_TYPE = "--source-type <type>";
+const DESC_SOURCE_TYPE = "Artifact source type: local | s3 | gcs";
+const OPT_LOCATION = "--location <location>";
+const DESC_LOCATION = "Artifact directory/prefix location";
+const OPT_CANDIDATE = "--candidate <id>";
+const DESC_CANDIDATE = "Candidate set ID when multiple are discovered";
 
 program
   .name("dbt-tools")
@@ -612,10 +618,20 @@ program
     "Report dbt artifact presence, modification times, and analysis readiness",
   )
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_SOURCE_TYPE, DESC_SOURCE_TYPE, "local")
+  .option(OPT_LOCATION, DESC_LOCATION)
+  .option(OPT_CANDIDATE, DESC_CANDIDATE)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+  .action(
+    async (options: {
+      targetDir?: string;
+      sourceType?: "local" | "s3" | "gcs";
+      location?: string;
+      candidate?: string;
+      json?: boolean;
+      noJson?: boolean;
+    }) => statusAction(options, handleError, isTTY),
   );
 
 /**
@@ -625,10 +641,20 @@ program
   .command("freshness")
   .description("Alias for status – shows artifact recency and readiness")
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_SOURCE_TYPE, DESC_SOURCE_TYPE, "local")
+  .option(OPT_LOCATION, DESC_LOCATION)
+  .option(OPT_CANDIDATE, DESC_CANDIDATE)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+  .action(
+    async (options: {
+      targetDir?: string;
+      sourceType?: "local" | "s3" | "gcs";
+      location?: string;
+      candidate?: string;
+      json?: boolean;
+      noJson?: boolean;
+    }) => statusAction(options, handleError, isTTY),
   );
 
 /**
