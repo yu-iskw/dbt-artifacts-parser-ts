@@ -106,6 +106,7 @@ If violations remain:
    - For broad shared TypeScript refactors, run **`pnpm build`** after the first green **`pnpm lint:eslint`** pass; if build breaks, use the **`build-fix`** skill loop before final verification.
    - **Escape hatch:** re-run **`pnpm format:without-trunk`**, **`pnpm lint:without-trunk`**, **`pnpm lint:report`**.
    - For CSS-heavy changes, include **`pnpm lint:stylelint`** in verify if you did not run full `pnpm lint` / `pnpm lint:without-trunk`.
+   - For **Markdown**, **`.claude/`**, **`.github/workflows/`**, **`.trunk/`**, or other files Trunk owns, include **`pnpm lint:trunk`** (or full **`pnpm lint`**) when Trunk is available—**`pnpm lint:report` does not run markdownlint**.
    - Before relying on CI: run **`pnpm lint`** from a repo with **`pnpm install`** completed when possible.
 4. Repeat up to **3** iterations to avoid unbounded loops.
 
@@ -113,12 +114,29 @@ If violations remain:
 
 ## Verifier integration
 
-When used by the verifier agent, confirm at minimum:
+The **verifier** subagent owns **step ordering**, **parallelism**, the **step 7 stability loop** (**`stability_iterations`**, cap **3**, and **which gates rerun** after normalization)—see [`.claude/agents/verifier.md`](../../../.claude/agents/verifier.md) **Step 7 — normalization stability loop (cap: 3)**.
 
-- `pnpm lint:report` exits **0**
-- `pnpm knip` exits **0**
+### Full normalization (verifier step 7, loop item 1)
 
-When using the **escape hatch** (`*:without-trunk`), also run **`pnpm lint:eslint`** and **`pnpm lint:stylelint`** (or a single **`pnpm lint:without-trunk`**) so non-ESLint issues (especially CSS) are not missed.
+Use the **Order rule** above in this skill:
+
+- **Path A — Launcher present:** **`pnpm format`** then **`pnpm lint`** (equivalent high-level sequence; see **Commands for this repo** and **Typical fix sequence — launcher present** for the decomposed chain).
+- **Path B — Escape hatch:** **`pnpm format:without-trunk`** then **`pnpm lint:without-trunk`** when Trunk/launcher cannot run—see **Path B** under **Order rule**; do **not** use `pnpm format` / `pnpm lint` on Path B.
+
+### After normalization leaves a dirty tree
+
+When **`pnpm format` / `pnpm lint`** (Path A) or the Path B equivalents still leave **non-empty** `git status --porcelain`, the verifier **only** re-runs **steps 1–3** (lint report gate, unit test gate, coverage report gate)—not build, pack smoke, or CodeQL. See the verifier’s **Normalization: what reruns automatically vs what does not**.
+
+### Minimum vs merge-ready (when acting for the verifier)
+
+Confirm at minimum:
+
+- **`pnpm lint:report`** exits **0** (ESLint-only; see **Commands** table — it does **not** run markdownlint or other Trunk linters).
+- **`pnpm knip`** exits **0**
+
+A **full** verifier run completes **step 7**, which includes **full lint** (Path A: **`pnpm lint`** includes **`pnpm lint:trunk`** and **Knip**). If you only run the minimum above and the change set touches **Markdown**, **`.claude/`**, **workflows**, or **`.trunk/`**, also run **`pnpm lint:trunk`** (or full **`pnpm lint`**) before claiming merge-ready so Trunk-owned checks match pre-push parity.
+
+When using the **escape hatch** (`*:without-trunk`), also run **`pnpm lint:eslint`** and **`pnpm lint:stylelint`** (or a single **`pnpm lint:without-trunk`**) so non-ESLint issues (especially CSS) are not missed. Trunk-only checks (markdownlint, actionlint, etc.) still require **`pnpm lint:trunk`** / **`pnpm lint`** when the launcher is available.
 
 Re-run the relevant commands after fixes before marking the step complete.
 

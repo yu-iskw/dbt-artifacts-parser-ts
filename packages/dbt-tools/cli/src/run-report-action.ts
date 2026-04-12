@@ -4,7 +4,6 @@
 import {
   ManifestGraph,
   ExecutionAnalyzer,
-  resolveArtifactPaths,
   loadManifest,
   loadRunResults,
   validateSafePath,
@@ -24,6 +23,10 @@ import {
   type NodeExecution,
   type AdapterHeavyMetric,
 } from "@dbt-tools/core";
+import {
+  resolveCliArtifactPaths,
+  type ArtifactRootCliOptions,
+} from "./cli-artifact-resolve";
 
 type RunReportOptions = {
   targetDir?: string;
@@ -39,7 +42,7 @@ type RunReportOptions = {
   adapterMinBytes?: number;
   adapterMinSlotMs?: number;
   adapterMinRowsAffected?: number;
-};
+} & ArtifactRootCliOptions;
 
 /** Create a minimal summary when no analyzer is available */
 function createMinimalSummary(
@@ -203,22 +206,35 @@ function buildAdapterSections(
 /**
  * Run report action handler
  */
-export function runReportAction(
+export async function runReportAction(
   runResultsPath: string | undefined,
   manifestPath: string | undefined,
   options: RunReportOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
-    const paths = resolveArtifactPaths(
-      manifestPath,
-      runResultsPath,
-      options.targetDir,
+    const paths = await resolveCliArtifactPaths(
+      {
+        manifestPath,
+        runResultsPath,
+        targetDir: options.targetDir,
+      },
+      {
+        source: options.source,
+        location: options.location,
+        runId: options.runId,
+      },
     );
 
+    const useManifestGraph =
+      Boolean(manifestPath) ||
+      options.source === "local" ||
+      options.source === "s3" ||
+      options.source === "gcs";
+
     validateSafePath(paths.runResults);
-    if (manifestPath) {
+    if (useManifestGraph) {
       validateSafePath(paths.manifest);
     }
 
@@ -227,7 +243,7 @@ export function runReportAction(
     let analyzer: ExecutionAnalyzer | undefined;
     let graph: ManifestGraph | undefined;
     let adapterType: string | null | undefined;
-    if (manifestPath) {
+    if (useManifestGraph) {
       const manifest = loadManifest(paths.manifest);
       graph = new ManifestGraph(manifest);
       adapterType = manifest.metadata?.adapter_type ?? null;

@@ -20,6 +20,14 @@ export interface CommandSchema {
   example: string;
 }
 
+type SchemaOption = {
+  name: string;
+  type: string;
+  values?: string[];
+  default?: string;
+  description: string;
+};
+
 const ARG_MANIFEST_PATH = "manifest-path";
 const OPT_TARGET_DIR = "--target-dir";
 const OPT_JSON = "--json";
@@ -38,6 +46,33 @@ const DESC_RUN_RESULTS_PATH =
   "Path to run_results.json file (defaults to ./target/run_results.json)";
 const DESC_MANIFEST_OPTIONAL =
   "Path to manifest.json file (optional, for critical path analysis)";
+const DESC_ARTIFACT_SOURCE =
+  "Directory/prefix mode: local | s3 | gcs (requires --location)";
+const DESC_ARTIFACT_LOCATION =
+  "Local directory, or s3://bucket/prefix / gs://bucket/prefix (remote credentials use default AWS/GCP chains plus DBT_TOOLS_REMOTE_SOURCE JSON when set)";
+const DESC_ARTIFACT_RUN_ID =
+  "When multiple candidate runs exist under the location, select one (e.g. current or a subdirectory name)";
+
+function getArtifactRootCliSchemaOptions(): SchemaOption[] {
+  return [
+    {
+      name: "--source",
+      type: "enum",
+      values: ["local", "s3", "gcs"],
+      description: DESC_ARTIFACT_SOURCE,
+    },
+    {
+      name: "--location",
+      type: TYPE_STRING,
+      description: DESC_ARTIFACT_LOCATION,
+    },
+    {
+      name: "--run-id",
+      type: TYPE_STRING,
+      description: DESC_ARTIFACT_RUN_ID,
+    },
+  ];
+}
 
 function getSummarySchema(): CommandSchema {
   return {
@@ -71,6 +106,7 @@ function getSummarySchema(): CommandSchema {
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_HUMAN,
       },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools summary",
@@ -145,6 +181,7 @@ function getGraphSchema(): CommandSchema {
         description:
           "Comma-separated resource types to keep in the subgraph (e.g. model,test); focus node is always included",
       },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: "json, dot, or gexf",
     example: "dbt-tools graph --focus model.my_project.orders --focus-depth 2",
@@ -232,19 +269,12 @@ function getRunReportSchema(): CommandSchema {
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_HUMAN,
       },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools run-report --bottlenecks",
   };
 }
-
-type SchemaOption = {
-  name: string;
-  type: string;
-  values?: string[];
-  default?: string;
-  description: string;
-};
 
 function getDepsSchemaOptions(): SchemaOption[] {
   return [
@@ -302,6 +332,7 @@ function getDepsSchemaOptions(): SchemaOption[] {
     },
     { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
     { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+    ...getArtifactRootCliSchemaOptions(),
   ];
 }
 
@@ -399,6 +430,7 @@ function getInventorySchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools inventory --type model --tag finance",
@@ -458,6 +490,7 @@ function getTimelineSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: "json, table, or csv",
     example: "dbt-tools timeline --sort duration --top 20 --failed-only",
@@ -514,6 +547,7 @@ function getSearchSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools search orders",
@@ -534,6 +568,7 @@ function getStatusSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools status --target-dir ./target",

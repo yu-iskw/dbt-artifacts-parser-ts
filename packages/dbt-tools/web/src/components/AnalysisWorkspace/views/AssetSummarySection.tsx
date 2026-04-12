@@ -13,6 +13,7 @@ import {
 } from "@web/lib/analysis-workspace/utils";
 import { ResourceMarkdownDescription } from "../ResourceMarkdownDescription";
 import { SectionCard } from "../shared";
+import { useArtifactCapability } from "@web/contexts/ArtifactCapabilityContext";
 
 function warehouseRelationLabel(resource: ResourceNode): string {
   const rel = resource.semantics?.relationName?.trim();
@@ -140,6 +141,7 @@ export function AssetSummarySection({
   /** When set, adapter fields fall back from the run row if missing on `resource`. */
   executionRow?: ExecutionRow | null;
 }) {
+  const artifactCapability = useArtifactCapability();
   const adapterMetrics =
     resource.adapterMetrics ?? executionRow?.adapterMetrics;
   const adapterResponseFields =
@@ -151,6 +153,28 @@ export function AssetSummarySection({
 
   return (
     <div className="asset-summary-stack">
+      {artifactCapability.missingCatalog ||
+      artifactCapability.missingSources ? (
+        <SectionCard
+          title="Optional artifacts"
+          subtitle="Capabilities limited for this session because some JSON files were not part of the load."
+        >
+          <ul className="resource-spotlight__description resource-spotlight__description--muted">
+            {artifactCapability.missingCatalog ? (
+              <li>
+                <code>catalog.json</code> was not loaded — column counts and
+                richer warehouse metadata may be absent.
+              </li>
+            ) : null}
+            {artifactCapability.missingSources ? (
+              <li>
+                <code>sources.json</code> was not loaded — source freshness
+                evidence is unavailable.
+              </li>
+            ) : null}
+          </ul>
+        </SectionCard>
+      ) : null}
       <SectionCard
         title="Resource"
         subtitle="Path, relation, and description from the project manifest."

@@ -27,8 +27,14 @@ describe("searchAction", () => {
     consoleLogSpy.mockRestore();
   });
 
-  it("returns all resources when no query or filters", () => {
-    searchAction(undefined, manifestPath, { json: true }, handleError, isTTY);
+  it("returns all resources when no query or filters", async () => {
+    await searchAction(
+      undefined,
+      manifestPath,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as { total: number; results: unknown[] };
@@ -36,8 +42,14 @@ describe("searchAction", () => {
     expect(parsed.results.length).toBe(parsed.total);
   });
 
-  it("returns structured result shape", () => {
-    searchAction("orders", manifestPath, { json: true }, handleError, isTTY);
+  it("returns structured result shape", async () => {
+    await searchAction(
+      "orders",
+      manifestPath,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -62,8 +74,14 @@ describe("searchAction", () => {
     }
   });
 
-  it("returns results matching a name substring", () => {
-    searchAction("customers", manifestPath, { json: true }, handleError, isTTY);
+  it("returns results matching a name substring", async () => {
+    await searchAction(
+      "customers",
+      manifestPath,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -87,8 +105,8 @@ describe("searchAction", () => {
     ).toBe(true);
   });
 
-  it("supports inline type: filter in query", () => {
-    searchAction(
+  it("supports inline type: filter in query", async () => {
+    await searchAction(
       "type:model",
       manifestPath,
       { json: true },
@@ -104,8 +122,8 @@ describe("searchAction", () => {
     expect(parsed.results.every((r) => r.resource_type === "model")).toBe(true);
   });
 
-  it("supports --type flag", () => {
-    searchAction(
+  it("supports --type flag", async () => {
+    await searchAction(
       undefined,
       manifestPath,
       { type: "source", json: true },
@@ -123,8 +141,8 @@ describe("searchAction", () => {
     );
   });
 
-  it("supports --package flag", () => {
-    searchAction(
+  it("supports --package flag", async () => {
+    await searchAction(
       undefined,
       manifestPath,
       { package: "jaffle_shop", json: true },
@@ -142,8 +160,8 @@ describe("searchAction", () => {
     );
   });
 
-  it("returns empty results for unmatched query", () => {
-    searchAction(
+  it("returns empty results for unmatched query", async () => {
+    await searchAction(
       "zzz_no_such_model_xyz",
       manifestPath,
       { json: true },
@@ -156,8 +174,8 @@ describe("searchAction", () => {
     expect(parsed.total).toBe(0);
   });
 
-  it("outputs human-readable format in TTY mode", () => {
-    searchAction(
+  it("outputs human-readable format in TTY mode", async () => {
+    await searchAction(
       "customers",
       manifestPath,
       { noJson: true },
@@ -169,8 +187,14 @@ describe("searchAction", () => {
     expect(output).toContain("Search results");
   });
 
-  it("excludes field-type nodes", () => {
-    searchAction(undefined, manifestPath, { json: true }, handleError, isTTY);
+  it("excludes field-type nodes", async () => {
+    await searchAction(
+      undefined,
+      manifestPath,
+      { json: true },
+      handleError,
+      isTTY,
+    );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -179,14 +203,14 @@ describe("searchAction", () => {
     expect(parsed.results.every((r) => r.resource_type !== "field")).toBe(true);
   });
 
-  it("throws for control characters in query", () => {
-    expect(() =>
+  it("throws for control characters in query", async () => {
+    await expect(
       searchAction("\x00bad", manifestPath, {}, handleError, isTTY),
-    ).toThrow();
+    ).rejects.toThrow();
   });
 
-  it("throws when manifest is not found", () => {
-    expect(() =>
+  it("throws when manifest is not found", async () => {
+    await expect(
       searchAction(
         "orders",
         "/nonexistent/manifest.json",
@@ -194,7 +218,7 @@ describe("searchAction", () => {
         handleError,
         isTTY,
       ),
-    ).toThrow(/not found/);
+    ).rejects.toThrow(/not found/);
   });
 });
 

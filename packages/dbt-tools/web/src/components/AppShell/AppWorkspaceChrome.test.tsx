@@ -3,6 +3,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ArtifactLocationSnapshot } from "@web/lib/artifactSource";
 import type { AnalysisState } from "@web/types";
 import { AppWorkspaceChrome } from "./AppWorkspaceChrome";
 
@@ -101,7 +102,10 @@ function makeWorkspace() {
   };
 }
 
-function renderChrome(analysis: AnalysisState | null) {
+function renderChrome(
+  analysis: AnalysisState | null,
+  artifactLocationSnapshot: ArtifactLocationSnapshot | null = null,
+) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -112,12 +116,12 @@ function renderChrome(analysis: AnalysisState | null) {
         workspace={makeWorkspace() as never}
         analysis={analysis}
         analysisSource="preload"
+        artifactLocationSnapshot={artifactLocationSnapshot}
         error={null}
         preloadLoading={false}
         pendingRemoteRun={null}
         acceptingRemoteRun={false}
-        onLoadDifferent={vi.fn()}
-        onAnalysis={vi.fn()}
+        onManagedAnalysisLoaded={vi.fn()}
         onError={vi.fn()}
         onAcceptPendingRemoteRun={vi.fn(async () => {})}
         themePreference="light"
@@ -257,12 +261,12 @@ describe("AppWorkspaceChrome header", () => {
           workspace={workspace as never}
           analysis={null}
           analysisSource={null}
+          artifactLocationSnapshot={null}
           error={null}
           preloadLoading={false}
           pendingRemoteRun={null}
           acceptingRemoteRun={false}
-          onLoadDifferent={vi.fn()}
-          onAnalysis={vi.fn()}
+          onManagedAnalysisLoaded={vi.fn()}
           onError={vi.fn()}
           onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="system"
@@ -296,6 +300,69 @@ describe("AppWorkspaceChrome header", () => {
     cleanupRoot(root, container);
   });
 
+  it("settings session shows configured artifact location when snapshot is set", () => {
+    const workspace = {
+      ...makeWorkspace(),
+      activeView: "settings",
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <AppWorkspaceChrome
+          workspace={workspace as never}
+          analysis={
+            {
+              resources: [],
+              summary: { total_nodes: 12 },
+            } as unknown as AnalysisState
+          }
+          analysisSource="preload"
+          artifactLocationSnapshot={{
+            sourceKind: "local",
+            locationDisplay: "/tmp/dbt-target",
+          }}
+          error={null}
+          preloadLoading={false}
+          pendingRemoteRun={null}
+          acceptingRemoteRun={false}
+          onManagedAnalysisLoaded={vi.fn()}
+          onError={vi.fn()}
+          onAcceptPendingRemoteRun={vi.fn(async () => {})}
+          themePreference="system"
+          setThemePreference={vi.fn()}
+          preferences={{
+            theme: "system",
+            sidebarCollapsedDefault: true,
+            timelineDefaults: {
+              showTests: false,
+              failuresOnly: false,
+              dependencyDirection: "both",
+              dependencyDepthHops: 2,
+            },
+            inventoryDefaults: {
+              explorerMode: "project",
+              lineageLensMode: "type",
+              lineageUpstreamDepth: 2,
+              lineageDownstreamDepth: 2,
+              allDepsMode: false,
+            },
+          }}
+          setPreferences={vi.fn()}
+          workspaceSignals={[]}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Configured location");
+    expect(container.textContent).toContain("Local directory");
+    expect(container.textContent).toContain("/tmp/dbt-target");
+
+    cleanupRoot(root, container);
+  });
+
   it("shows searching copy while async omnibox results are pending", () => {
     mockOmniboxResults.mockReturnValue({ results: [], loading: true });
     const workspace = {
@@ -312,12 +379,12 @@ describe("AppWorkspaceChrome header", () => {
           workspace={workspace as never}
           analysis={{ resources: [], summary: { total_nodes: 0 } } as never}
           analysisSource="preload"
+          artifactLocationSnapshot={null}
           error={null}
           preloadLoading={false}
           pendingRemoteRun={null}
           acceptingRemoteRun={false}
-          onLoadDifferent={vi.fn()}
-          onAnalysis={vi.fn()}
+          onManagedAnalysisLoaded={vi.fn()}
           onError={vi.fn()}
           onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="light"
@@ -366,12 +433,12 @@ describe("AppWorkspaceChrome header", () => {
           workspace={workspace as never}
           analysis={{ resources: [], summary: { total_nodes: 0 } } as never}
           analysisSource="preload"
+          artifactLocationSnapshot={null}
           error={null}
           preloadLoading={false}
           pendingRemoteRun={null}
           acceptingRemoteRun={false}
-          onLoadDifferent={vi.fn()}
-          onAnalysis={vi.fn()}
+          onManagedAnalysisLoaded={vi.fn()}
           onError={vi.fn()}
           onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="light"
@@ -415,6 +482,7 @@ describe("AppWorkspaceChrome header", () => {
           workspace={makeWorkspace() as never}
           analysis={{ resources: [], summary: { total_nodes: 0 } } as never}
           analysisSource="remote"
+          artifactLocationSnapshot={null}
           error={null}
           preloadLoading={false}
           pendingRemoteRun={{
@@ -424,8 +492,7 @@ describe("AppWorkspaceChrome header", () => {
             versionToken: "v1",
           }}
           acceptingRemoteRun={false}
-          onLoadDifferent={vi.fn()}
-          onAnalysis={vi.fn()}
+          onManagedAnalysisLoaded={vi.fn()}
           onError={vi.fn()}
           onAcceptPendingRemoteRun={vi.fn(async () => {})}
           themePreference="light"

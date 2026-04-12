@@ -3,7 +3,6 @@
 import { Command } from "commander";
 import {
   ManifestGraph,
-  resolveArtifactPaths,
   loadManifest,
   loadCatalog,
   validateSafePath,
@@ -30,9 +29,16 @@ import {
   searchAction,
   statusAction,
 } from "./cli-actions";
+import { resolveCliArtifactPaths } from "./cli-artifact-resolve";
 import { CLI_PACKAGE_VERSION } from "./version";
 
 const program = new Command();
+
+type ArtifactRootFlags = {
+  source?: string;
+  location?: string;
+  runId?: string;
+};
 
 /** CLI option/argument description constants (avoid no-duplicate-string) */
 const ARG_MANIFEST_PATH = "[manifest-path]";
@@ -49,6 +55,15 @@ const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
+const OPT_ARTIFACT_SOURCE = "--source <kind>";
+const DESC_ARTIFACT_SOURCE =
+  "Directory/prefix mode: local | s3 | gcs (requires --location)";
+const OPT_ARTIFACT_LOCATION = "--location <string>";
+const DESC_ARTIFACT_LOCATION =
+  "Directory, or s3://bucket/prefix / gs://bucket/prefix";
+const OPT_ARTIFACT_RUN_ID = "--run-id <id>";
+const DESC_ARTIFACT_RUN_ID =
+  "When multiple candidate runs exist, pass the run id (e.g. current)";
 
 program
   .name("dbt-tools")
@@ -122,22 +137,28 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       manifestPath: string | undefined,
       options: {
         targetDir?: string;
         fields?: string;
         json?: boolean;
         noJson?: boolean;
-      },
+      } & ArtifactRootFlags,
     ) => {
       try {
         // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          manifestPath,
-          undefined,
-          options.targetDir,
+        const paths = await resolveCliArtifactPaths(
+          { manifestPath, targetDir: options.targetDir },
+          {
+            source: options.source,
+            location: options.location,
+            runId: options.runId,
+          },
         );
 
         // Validate path
@@ -203,8 +224,11 @@ program
     "--resource-types <types>",
     "Comma-separated resource types to include (filters nodes when --focus is set)",
   )
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       manifestPath: string | undefined,
       options: {
         format?: string;
@@ -217,15 +241,21 @@ program
         focusDepth?: number;
         focusDirection?: string;
         resourceTypes?: string;
-      },
+      } & ArtifactRootFlags,
     ) => {
       try {
         // Resolve artifact paths
-        const paths = resolveArtifactPaths(
-          manifestPath,
-          undefined,
-          options.targetDir,
-          options.catalogPath,
+        const paths = await resolveCliArtifactPaths(
+          {
+            manifestPath,
+            targetDir: options.targetDir,
+            catalogPath: options.catalogPath,
+          },
+          {
+            source: options.source,
+            location: options.location,
+            runId: options.runId,
+          },
         );
 
         // Validate path
@@ -344,8 +374,11 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       runResultsPath: string | undefined,
       manifestPath: string | undefined,
       options: {
@@ -362,7 +395,7 @@ program
         adapterMinRowsAffected?: number;
         json?: boolean;
         noJson?: boolean;
-      },
+      } & ArtifactRootFlags,
     ) => {
       const allowed = new Set([
         "bytes_processed",
@@ -404,7 +437,7 @@ program
           | "rows_deleted"
           | "rows_duplicated";
       }
-      runReportAction(
+      await runReportAction(
         runResultsPath,
         manifestPath,
         {
@@ -421,6 +454,9 @@ program
           adapterMinRowsAffected: options.adapterMinRowsAffected,
           json: options.json,
           noJson: options.noJson,
+          source: options.source,
+          location: options.location,
+          runId: options.runId,
         },
         handleError,
         isTTY,
@@ -460,8 +496,11 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       resourceId: string,
       options: {
         direction?: string;
@@ -475,8 +514,10 @@ program
         buildOrder?: boolean;
         json?: boolean;
         noJson?: boolean;
-      },
-    ) => depsAction(resourceId, options, handleError, isTTY),
+      } & ArtifactRootFlags,
+    ) => {
+      await depsAction(resourceId, options, handleError, isTTY);
+    },
   );
 
 /**
@@ -494,8 +535,11 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       manifestPath: string | undefined,
       options: {
         type?: string;
@@ -506,8 +550,10 @@ program
         targetDir?: string;
         json?: boolean;
         noJson?: boolean;
-      },
-    ) => inventoryAction(manifestPath, options, handleError, isTTY),
+      } & ArtifactRootFlags,
+    ) => {
+      await inventoryAction(manifestPath, options, handleError, isTTY);
+    },
   );
 
 /**
@@ -548,8 +594,11 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       runResultsPath: string | undefined,
       manifestPath: string | undefined,
       options: {
@@ -562,9 +611,16 @@ program
         targetDir?: string;
         json?: boolean;
         noJson?: boolean;
-      },
-    ) =>
-      timelineAction(runResultsPath, manifestPath, options, handleError, isTTY),
+      } & ArtifactRootFlags,
+    ) => {
+      await timelineAction(
+        runResultsPath,
+        manifestPath,
+        options,
+        handleError,
+        isTTY,
+      );
+    },
   );
 
 /**
@@ -586,8 +642,11 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
-    (
+    async (
       query: string | undefined,
       manifestPath: string | undefined,
       options: {
@@ -599,8 +658,10 @@ program
         targetDir?: string;
         json?: boolean;
         noJson?: boolean;
-      },
-    ) => searchAction(query, manifestPath, options, handleError, isTTY),
+      } & ArtifactRootFlags,
+    ) => {
+      await searchAction(query, manifestPath, options, handleError, isTTY);
+    },
   );
 
 /**
@@ -614,8 +675,19 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
+  .action(
+    async (
+      options: {
+        targetDir?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await statusAction(options, handleError, isTTY);
+    },
   );
 
 /**
@@ -627,8 +699,19 @@ program
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
+  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
+  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
+  .action(
+    async (
+      options: {
+        targetDir?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await statusAction(options, handleError, isTTY);
+    },
   );
 
 /**

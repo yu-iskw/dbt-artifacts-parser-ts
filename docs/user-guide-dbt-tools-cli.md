@@ -10,6 +10,7 @@ Extended notes for operators and automation using **`dbt-tools`**. The CLI is th
 - **Defaults:** artifact paths under **`./target`** (`manifest.json`, `run_results.json`)
 - **Output:** JSON when stdout is **not** a TTY; human text in an interactive terminal — override with `--json` / `--no-json`
 - **Discovery:** `dbt-tools schema` and `dbt-tools schema <command>` for machine-readable option metadata
+- **Directory / prefix mode:** every artifact command accepts **`--source`** (`local` \| `s3` \| `gcs`), **`--location`**, and optional **`--run-id`** when discovery finds multiple complete `manifest.json` + `run_results.json` sets—same grouping rules as `@dbt-tools/web`. Do not mix with per-file path flags for the same invocation.
 
 Install:
 

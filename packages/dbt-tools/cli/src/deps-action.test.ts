@@ -27,8 +27,8 @@ describe("depsAction", () => {
     consoleLogSpy.mockRestore();
   });
 
-  it("outputs upstream deps for a model with tree format", () => {
-    depsAction(
+  it("outputs upstream deps for a model with tree format", async () => {
+    await depsAction(
       "model.jaffle_shop.stg_products",
       {
         manifestPath,
@@ -47,8 +47,8 @@ describe("depsAction", () => {
     );
   });
 
-  it("outputs upstream deps with flat format", () => {
-    depsAction(
+  it("outputs upstream deps with flat format", async () => {
+    await depsAction(
       "model.jaffle_shop.stg_products",
       {
         manifestPath,
@@ -64,8 +64,8 @@ describe("depsAction", () => {
     expect(output).toContain("model.jaffle_shop.stg_products");
   });
 
-  it("outputs downstream deps for a model", () => {
-    depsAction(
+  it("outputs downstream deps for a model", async () => {
+    await depsAction(
       "model.jaffle_shop.stg_products",
       {
         manifestPath,
@@ -81,8 +81,8 @@ describe("depsAction", () => {
     expect(output).toContain("model.jaffle_shop.stg_products");
   });
 
-  it("outputs JSON when json option is true", () => {
-    depsAction(
+  it("outputs JSON when json option is true", async () => {
+    await depsAction(
       "model.jaffle_shop.stg_products",
       {
         manifestPath,
@@ -104,8 +104,8 @@ describe("depsAction", () => {
     );
   });
 
-  it("respects depth option", () => {
-    depsAction(
+  it("respects depth option", async () => {
+    await depsAction(
       "model.jaffle_shop.customers",
       {
         manifestPath,
@@ -120,8 +120,8 @@ describe("depsAction", () => {
     expect(consoleLogSpy).toHaveBeenCalled();
   });
 
-  it("throws for invalid direction", () => {
-    expect(() =>
+  it("throws for invalid direction", async () => {
+    await expect(
       depsAction(
         "model.jaffle_shop.stg_products",
         {
@@ -132,11 +132,11 @@ describe("depsAction", () => {
         handleError,
         isTTY,
       ),
-    ).toThrow(/Invalid direction/);
+    ).rejects.toThrow(/Invalid direction/);
   });
 
-  it("throws for invalid resource id", () => {
-    expect(() =>
+  it("throws for invalid resource id", async () => {
+    await expect(
       depsAction(
         "",
         {
@@ -147,6 +147,6 @@ describe("depsAction", () => {
         handleError,
         isTTY,
       ),
-    ).toThrow();
+    ).rejects.toThrow();
   });
 });

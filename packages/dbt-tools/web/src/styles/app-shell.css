@@ -631,6 +631,43 @@
   color: var(--text-tertiary);
 }
 
+.artifact-load-panel__inputs select,
+.artifact-load-panel__inputs input[type="text"] {
+  width: 100%;
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.artifact-load-panel__radio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-1) 0;
+}
+
+.artifact-load-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.artifact-load-panel__actions--load-only {
+  justify-content: flex-end;
+}
+
+.artifact-load-panel__actions .primary-action,
+.artifact-load-panel__actions .secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
 .workspace-layout {
   display: grid;
 

@@ -81,6 +81,9 @@ describe("CLI Integration", () => {
         (o) => o.name === "--target-dir",
       );
       expect(targetDirOpt).toBeDefined();
+      expect(schema?.options?.some((o) => o.name === "--source")).toBe(true);
+      expect(schema?.options?.some((o) => o.name === "--location")).toBe(true);
+      expect(schema?.options?.some((o) => o.name === "--run-id")).toBe(true);
     });
 
     it("freshness schema should have command = freshness", () => {

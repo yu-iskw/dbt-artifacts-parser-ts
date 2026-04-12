@@ -25,6 +25,8 @@ export type {
 // I/O exports
 export * from "./io/artifact-filenames";
 export * from "./io/artifact-loader";
+export * from "./io/artifact-discovery";
+export * from "./io/artifact-location";
 
 // Validation exports
 export * from "./validation/input-validator";

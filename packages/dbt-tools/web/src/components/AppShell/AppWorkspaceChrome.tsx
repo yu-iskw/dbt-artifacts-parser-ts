@@ -6,7 +6,9 @@ import type { ThemePreference } from "@web/lib/analysis-workspace/types";
 import type { UseWorkspaceUrlStateResult } from "@web/hooks/useWorkspaceUrlState";
 import { useOmniboxResults } from "@web/hooks/useOmniboxResults";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";
+import type { ArtifactLocationSnapshot } from "@web/lib/artifactSource";
 import type {
+  MissingOptionalArtifactsState,
   RemoteArtifactRun,
   WorkspaceArtifactSource,
 } from "@web/services/artifactSourceApi";
@@ -24,12 +26,16 @@ export interface AppWorkspaceChromeProps {
   workspace: UseWorkspaceUrlStateResult;
   analysis: AnalysisState | null;
   analysisSource: WorkspaceArtifactSource | null;
+  artifactLocationSnapshot: ArtifactLocationSnapshot | null;
   error: string | null;
   preloadLoading: boolean;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
-  onLoadDifferent: () => void;
-  onAnalysis: (result: AnalysisLoadResult) => void;
+  onManagedAnalysisLoaded: (
+    result: AnalysisLoadResult,
+    source: "preload" | "remote",
+    optionalArtifacts: MissingOptionalArtifactsState,
+  ) => void;
   onError: (error: string | null) => void;
   onAcceptPendingRemoteRun: () => Promise<void>;
   themePreference: ThemePreference;
@@ -43,12 +49,12 @@ export function AppWorkspaceChrome({
   workspace,
   analysis,
   analysisSource,
+  artifactLocationSnapshot,
   error,
   preloadLoading,
   pendingRemoteRun,
   acceptingRemoteRun,
-  onLoadDifferent,
-  onAnalysis,
+  onManagedAnalysisLoaded,
   onError,
   onAcceptPendingRemoteRun,
   themePreference,
@@ -139,6 +145,7 @@ export function AppWorkspaceChrome({
           activeView={activeView}
           analysis={analysis}
           analysisSource={analysisSource}
+          artifactLocationSnapshot={artifactLocationSnapshot}
           preloadLoading={preloadLoading}
           pendingRemoteRun={pendingRemoteRun}
           acceptingRemoteRun={acceptingRemoteRun}
@@ -146,8 +153,7 @@ export function AppWorkspaceChrome({
           setPreferences={setPreferences}
           themePreference={themePreference}
           setThemePreference={setThemePreference}
-          onLoadDifferent={onLoadDifferent}
-          onAnalysis={onAnalysis}
+          onManagedAnalysisLoaded={onManagedAnalysisLoaded}
           onError={onError}
           onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
           workspaceSignals={workspaceSignals}

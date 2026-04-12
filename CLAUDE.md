@@ -2,7 +2,7 @@
 
 ## Canonical instructions
 
-Full stack layout, web app structure, publish workflows, and cross-tool notes (Cursor, Codex, commands) live in **[AGENTS.md](AGENTS.md)**. Read it when you need detail beyond this file.
+**[AGENTS.md](AGENTS.md) is canonical** for stack layout, web app structure, publish workflows, and cross-tool notes (Cursor, Codex, commands). If this file and AGENTS disagree, **AGENTS wins**—update this digest. Read AGENTS when you need detail beyond this file (see **Agent documentation split** there).
 
 ## Environment
 
@@ -12,17 +12,11 @@ Full stack layout, web app structure, publish workflows, and cross-tool notes (C
 
 ## Quality gates (before claiming work complete)
 
-From the repository root:
+From the repository root, run the same **three** checks as in [AGENTS.md](AGENTS.md) **Quality gates**: **`pnpm lint:report`**, **`pnpm coverage:report`**, and **`pnpm knip`** (each must exit 0). **Documentation-only** work, **Playwright when to run**, **coverage harness notes**, and **suppression policy** are all defined there—do not rely on this file for the full rules.
 
-1. **`pnpm lint:report`** — must exit 0 (writes `lint-report.json`).
-2. **`pnpm coverage:report`** — must exit 0 (writes `coverage-report.json`). If coverage is below thresholds, add or improve unit tests until it passes.
-3. **`pnpm knip`** — must exit 0 (dead code / unused deps; see `knip.json`).
+Thresholds (same as AGENTS): lines 60%, branches 50%, functions 60%, statements 60%.
 
-Thresholds: lines 60%, branches 50%, functions 60%, statements 60%.
-
-**Violations:** Fix root causes first; avoid inline linter/SAST suppressions unless technically unavoidable, with the narrowest scope and a short justification. Full policy: [AGENTS.md](AGENTS.md) (Quality gates — **Linter and static-analysis violations (agent default)**).
-
-Same expectations are documented in [`.cursor/rules/coverage-and-lint-reports.mdc`](.cursor/rules/coverage-and-lint-reports.mdc) and [AGENTS.md](AGENTS.md).
+Cursor mirror: [`.cursor/rules/coverage-and-lint-reports.mdc`](.cursor/rules/coverage-and-lint-reports.mdc).
 
 ## Secrets and AI context
 
@@ -30,12 +24,12 @@ Do **not** commit API keys, tokens, or passwords into rules, `AGENTS.md`, prompt
 
 ## Claude Code configuration (this repo)
 
-| Item                                             | Purpose                                                                                |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| [`.claude/settings.json`](.claude/settings.json) | Team-shared defaults: permissions, sandbox, network allowlist, plugins.                |
-| `.claude/settings.local.json`                    | Machine-only overrides (gitignored). Precedence: local over project.                   |
-| [`.claude/skills/`](.claude/skills/)             | Project skills: build-fix, lint-fix, test-fix, codeql-fix, pack-npx-smoke, postmortem. |
-| [`.claude/agents/`](.claude/agents/)             | Subagents (e.g. verifier).                                                             |
+| Item                                             | Purpose                                                                                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`.claude/settings.json`](.claude/settings.json) | Team-shared defaults: permissions, sandbox, network allowlist, plugins.                                                               |
+| `.claude/settings.local.json`                    | Machine-only overrides (gitignored). Precedence: local over project.                                                                  |
+| [`.claude/skills/`](.claude/skills/)             | Project skills; each skill is `*/SKILL.md` under this directory (navigational index only—**not** an exhaustive catalog in this file). |
+| [`.claude/agents/`](.claude/agents/)             | Subagents (for example verifier).                                                                                                     |
 
 Run **`/status`** in Claude Code to see which settings layers are active and to catch JSON errors ([settings scopes](https://docs.anthropic.com/en/docs/claude-code/settings#configuration-scopes)).
 

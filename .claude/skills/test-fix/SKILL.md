@@ -55,6 +55,8 @@ pnpm test
 
 ## Verifier integration
 
+**Verifier step 3** is the **coverage report gate**—use the **Coverage report** command in **Commands for this repo** above (`pnpm coverage:report`).
+
 When used by the verifier agent, the verifier also runs `pnpm coverage:report` after tests pass. If `coverage:report` fails (belowThreshold or test failures), add or improve tests per this skill's fixer loop and re-run `pnpm coverage:report` until it exits 0.
 
 ## Other projects

@@ -27,8 +27,8 @@ describe("inventoryAction", () => {
     consoleLogSpy.mockRestore();
   });
 
-  it("outputs JSON inventory of all resources", () => {
-    inventoryAction(manifestPath, { json: true }, handleError, isTTY);
+  it("outputs JSON inventory of all resources", async () => {
+    await inventoryAction(manifestPath, { json: true }, handleError, isTTY);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -40,8 +40,8 @@ describe("inventoryAction", () => {
     expect(parsed.entries.length).toBe(parsed.total);
   });
 
-  it("filters by resource type", () => {
-    inventoryAction(
+  it("filters by resource type", async () => {
+    await inventoryAction(
       manifestPath,
       { type: "model", json: true },
       handleError,
@@ -56,8 +56,8 @@ describe("inventoryAction", () => {
     expect(parsed.entries.length).toBeGreaterThan(0);
   });
 
-  it("filters by multiple types comma-separated", () => {
-    inventoryAction(
+  it("filters by multiple types comma-separated", async () => {
+    await inventoryAction(
       manifestPath,
       { type: "model,source", json: true },
       handleError,
@@ -77,8 +77,8 @@ describe("inventoryAction", () => {
     ).toBe(true);
   });
 
-  it("filters by package name", () => {
-    inventoryAction(
+  it("filters by package name", async () => {
+    await inventoryAction(
       manifestPath,
       { package: "jaffle_shop", json: true },
       handleError,
@@ -95,8 +95,8 @@ describe("inventoryAction", () => {
     );
   });
 
-  it("filters by tag (no match returns empty)", () => {
-    inventoryAction(
+  it("filters by tag (no match returns empty)", async () => {
+    await inventoryAction(
       manifestPath,
       { tag: "nonexistent_tag_xyz", json: true },
       handleError,
@@ -108,8 +108,8 @@ describe("inventoryAction", () => {
     expect(parsed.total).toBe(0);
   });
 
-  it("supports --fields to project output fields", () => {
-    inventoryAction(
+  it("supports --fields to project output fields", async () => {
+    await inventoryAction(
       manifestPath,
       { type: "model", fields: "entries", json: true },
       handleError,
@@ -123,8 +123,13 @@ describe("inventoryAction", () => {
     expect(parsed).not.toHaveProperty("total");
   });
 
-  it("outputs human-readable format when noJson is set", () => {
-    inventoryAction(manifestPath, { noJson: true }, handleError, () => true);
+  it("outputs human-readable format when noJson is set", async () => {
+    await inventoryAction(
+      manifestPath,
+      { noJson: true },
+      handleError,
+      () => true,
+    );
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -132,15 +137,15 @@ describe("inventoryAction", () => {
     expect(output).toContain("Total resources:");
   });
 
-  it("throws when manifest is not found", () => {
-    expect(() =>
+  it("throws when manifest is not found", async () => {
+    await expect(
       inventoryAction(
         "/nonexistent/path/manifest.json",
         { json: true },
         handleError,
         isTTY,
       ),
-    ).toThrow(/not found/);
+    ).rejects.toThrow(/not found/);
   });
 });
 

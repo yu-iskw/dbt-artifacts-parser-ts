@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 import {
   loadCurrentManagedArtifacts,
+  type MissingOptionalArtifactsState,
   type WorkspaceArtifactSource,
 } from "../services/artifactApi";
+import type { ArtifactSourceStatus } from "../services/artifactSourceApi";
 import { debug } from "../debug";
 import type { AnalysisState } from "@web/types";
 import type { AnalysisLoadResult } from "../services/analysisLoader";
@@ -19,6 +21,8 @@ interface UseAnalysisPreloadParams {
   setRemotePollIntervalMs: (pollIntervalMs: number | null) => void;
   setError: (e: string | null) => void;
   pendingMetricsRef: { current: AnalysisLoadResult["metrics"] | null };
+  setArtifactCapability: (c: MissingOptionalArtifactsState) => void;
+  onArtifactSourceStatus?: (status: ArtifactSourceStatus) => void;
 }
 
 /**
@@ -32,6 +36,8 @@ export function useAnalysisPreload({
   setRemotePollIntervalMs,
   setError,
   pendingMetricsRef,
+  setArtifactCapability,
+  onArtifactSourceStatus,
 }: UseAnalysisPreloadParams) {
   const attempted = useRef(false);
 
@@ -46,14 +52,25 @@ export function useAnalysisPreload({
         setPreloadLoading(false);
         setPendingRemoteRun(status.pendingRun);
         setRemotePollIntervalMs(status.pollIntervalMs);
+        onArtifactSourceStatus?.(status);
         if (result) {
           debug("Preload: success, analysis loaded");
           pendingMetricsRef.current = result.metrics;
           setAnalysis(result.analysis);
           setAnalysisSource(status.currentSource);
           setError(null);
+          setArtifactCapability(
+            status.missingOptionalArtifacts ?? {
+              missingCatalog: false,
+              missingSources: false,
+            },
+          );
         } else {
           setAnalysisSource(status.currentSource);
+          setArtifactCapability({
+            missingCatalog: false,
+            missingSources: false,
+          });
         }
       })
       .catch((err) => {
@@ -73,5 +90,7 @@ export function useAnalysisPreload({
     setPendingRemoteRun,
     setRemotePollIntervalMs,
     setError,
+    setArtifactCapability,
+    onArtifactSourceStatus,
   ]);
 }

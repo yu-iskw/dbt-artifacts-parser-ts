@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { debug } from "../debug";
 import { fetchArtifactSourceStatus } from "../services/artifactApi";
 import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
-import type { RemoteArtifactRun } from "../services/artifactSourceApi";
+import type {
+  ArtifactSourceStatus,
+  RemoteArtifactRun,
+} from "../services/artifactSourceApi";
 
 /**
  * Polls `/api/artifact-source` while the workspace is in remote mode so the UI
@@ -13,6 +16,7 @@ export function useRemoteArtifactPoll(
   setPendingRemoteRun: (run: RemoteArtifactRun | null) => void,
   setRemotePollIntervalMs: (ms: number | null) => void,
   remotePollIntervalMs: number | null,
+  onPollStatus?: (status: ArtifactSourceStatus) => void,
 ): void {
   useEffect(() => {
     if (analysisSource !== "remote") {
@@ -29,6 +33,7 @@ export function useRemoteArtifactPoll(
         if (!cancelled) {
           setPendingRemoteRun(status.pendingRun);
           setRemotePollIntervalMs(status.pollIntervalMs);
+          onPollStatus?.(status);
         }
       } catch (pollError) {
         debug("Artifact source poll failed", pollError);
@@ -48,5 +53,6 @@ export function useRemoteArtifactPoll(
     remotePollIntervalMs,
     setPendingRemoteRun,
     setRemotePollIntervalMs,
+    onPollStatus,
   ]);
 }
