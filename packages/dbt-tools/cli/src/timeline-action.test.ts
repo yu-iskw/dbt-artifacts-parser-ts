@@ -38,8 +38,8 @@ describe("timelineAction", () => {
     consoleLogSpy.mockRestore();
   });
 
-  it("outputs JSON timeline with required fields", () => {
-    timelineAction(
+  it("outputs JSON timeline with required fields", async () => {
+    await timelineAction(
       runResultsPath,
       undefined,
       { json: true },
@@ -67,8 +67,8 @@ describe("timelineAction", () => {
     expect(first).toHaveProperty("execution_time");
   });
 
-  it("is sorted by duration descending by default", () => {
-    timelineAction(
+  it("is sorted by duration descending by default", async () => {
+    await timelineAction(
       runResultsPath,
       undefined,
       { json: true },
@@ -86,8 +86,8 @@ describe("timelineAction", () => {
     }
   });
 
-  it("respects --top option", () => {
-    timelineAction(
+  it("respects --top option", async () => {
+    await timelineAction(
       runResultsPath,
       undefined,
       { top: 3, json: true },
@@ -100,8 +100,8 @@ describe("timelineAction", () => {
     expect(parsed.entries.length).toBeLessThanOrEqual(3);
   });
 
-  it("enriches entries with name and type when manifest is provided", () => {
-    timelineAction(
+  it("enriches entries with name and type when manifest is provided", async () => {
+    await timelineAction(
       runResultsPath,
       manifestPath,
       { json: true },
@@ -117,8 +117,8 @@ describe("timelineAction", () => {
     expect(enriched.length).toBeGreaterThan(0);
   });
 
-  it("filters by --failed-only", () => {
-    timelineAction(
+  it("filters by --failed-only", async () => {
+    await timelineAction(
       runResultsPath,
       undefined,
       { failedOnly: true, json: true },
@@ -137,8 +137,8 @@ describe("timelineAction", () => {
     ).toBe(true);
   });
 
-  it("outputs human-readable table in TTY mode", () => {
-    timelineAction(
+  it("outputs human-readable table in TTY mode", async () => {
+    await timelineAction(
       runResultsPath,
       undefined,
       { noJson: true },
@@ -151,8 +151,8 @@ describe("timelineAction", () => {
     expect(output).toContain("Status");
   });
 
-  it("outputs CSV when --format csv", () => {
-    timelineAction(
+  it("outputs CSV when --format csv", async () => {
+    await timelineAction(
       runResultsPath,
       undefined,
       { format: "csv" },
@@ -168,8 +168,8 @@ describe("timelineAction", () => {
     expect(lines.length).toBeGreaterThan(1);
   });
 
-  it("includes normalized adapter metrics in JSON entries when available", () => {
-    timelineAction(
+  it("includes normalized adapter metrics in JSON entries when available", async () => {
+    await timelineAction(
       runResultsPath,
       manifestPath,
       { json: true },
@@ -186,8 +186,8 @@ describe("timelineAction", () => {
     ).toBe(true);
   });
 
-  it("throws for invalid sort option", () => {
-    expect(() =>
+  it("throws for invalid sort option", async () => {
+    await expect(
       timelineAction(
         runResultsPath,
         undefined,
@@ -195,11 +195,11 @@ describe("timelineAction", () => {
         handleError,
         isTTY,
       ),
-    ).toThrow(/--sort must be one of/);
+    ).rejects.toThrow(/--sort must be one of/);
   });
 
-  it("throws when run_results not found", () => {
-    expect(() =>
+  it("throws when run_results not found", async () => {
+    await expect(
       timelineAction(
         "/nonexistent/run_results.json",
         undefined,
@@ -207,7 +207,7 @@ describe("timelineAction", () => {
         handleError,
         isTTY,
       ),
-    ).toThrow(/not found/);
+    ).rejects.toThrow(/not found/);
   });
 });
 

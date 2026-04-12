@@ -1,10 +1,25 @@
-import type { Dispatch, SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import type { ThemePreference } from "@web/lib/analysis-workspace/types";
-import { sourceLabel } from "@web/lib/artifactSource";
+import type { ArtifactLocationSnapshot } from "@web/lib/artifactSource";
+import {
+  sourceLabel,
+  userArtifactSourceKindLabel,
+} from "@web/lib/artifactSource";
+import type { AnalysisLoadResult } from "@web/services/analysisLoader";
 import type {
+  MissingOptionalArtifactsState,
   RemoteArtifactRun,
   WorkspaceArtifactSource,
 } from "@web/services/artifactSourceApi";
+import { ArtifactLoadPanel } from "../ArtifactLoadPanel";
 import { SectionCard, WorkspaceScaffold } from "../AnalysisWorkspace/shared";
 import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
 
@@ -13,6 +28,106 @@ const INACTIVE_PILL_CLASS = "workspace-pill";
 
 function pillClass(active: boolean) {
   return active ? ACTIVE_PILL_CLASS : INACTIVE_PILL_CLASS;
+}
+
+function ChangeArtifactLocationModal({
+  open,
+  onClose,
+  returnFocusRef,
+  onManagedAnalysisLoaded,
+  onError,
+}: {
+  open: boolean;
+  onClose: () => void;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
+  onManagedAnalysisLoaded: (
+    result: AnalysisLoadResult,
+    source: "preload" | "remote",
+    optionalArtifacts: MissingOptionalArtifactsState,
+  ) => void;
+  onError: (message: string | null) => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) {
+      if (wasOpenRef.current) {
+        returnFocusRef.current?.focus();
+      }
+      wasOpenRef.current = false;
+      return;
+    }
+    wasOpenRef.current = true;
+    panelRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose, returnFocusRef]);
+
+  if (!open) return null;
+
+  return (
+    <div className="settings-artifact-dialog" aria-hidden={false}>
+      <button
+        type="button"
+        className="settings-artifact-dialog__backdrop"
+        aria-label="Close change location dialog"
+        onClick={() => {
+          onError(null);
+          onClose();
+        }}
+      />
+      <div
+        ref={panelRef}
+        className="settings-artifact-dialog__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-artifact-dialog-title"
+        tabIndex={-1}
+      >
+        <header className="settings-artifact-dialog__header">
+          <div>
+            <p className="eyebrow">Artifacts</p>
+            <h2 id="settings-artifact-dialog-title">
+              Change artifact location
+            </h2>
+            <p className="settings-artifact-dialog__lede">
+              Use the same directory or cloud prefix flow as the main workspace
+              load screen. Credentials stay on the server.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="settings-artifact-dialog__close"
+            aria-label="Close"
+            onClick={() => {
+              onError(null);
+              onClose();
+            }}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div className="settings-artifact-dialog__body">
+          <ArtifactLoadPanel
+            onManagedLoad={onManagedAnalysisLoaded}
+            onError={onError}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SettingsHero({
@@ -78,18 +193,31 @@ function AppearanceSettings({
 function SessionSettings({
   analysisSource,
   executionCount,
-  onLoadDifferent,
+  artifactLocationSnapshot,
+  onOpenChangeLocation,
+  changeLocationTriggerRef,
   pendingRemoteRun,
   acceptingRemoteRun,
   onAcceptPendingRemoteRun,
 }: {
   analysisSource: WorkspaceArtifactSource | null;
   executionCount: number | null;
-  onLoadDifferent: () => void;
+  artifactLocationSnapshot: ArtifactLocationSnapshot | null;
+  onOpenChangeLocation: () => void;
+  changeLocationTriggerRef: RefObject<HTMLButtonElement | null>;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
   onAcceptPendingRemoteRun: () => Promise<void>;
 }) {
+  const kindLabel = userArtifactSourceKindLabel(
+    artifactLocationSnapshot?.sourceKind,
+  );
+  const pathLine =
+    artifactLocationSnapshot?.locationDisplay != null &&
+    artifactLocationSnapshot.locationDisplay.trim() !== ""
+      ? artifactLocationSnapshot.locationDisplay
+      : null;
+
   return (
     <SectionCard
       title="Session"
@@ -105,13 +233,42 @@ function SessionSettings({
               : "Load artifacts to unlock analysis views."}
           </p>
         </div>
-        <button
-          type="button"
-          className="primary-action settings-primary-action"
-          onClick={onLoadDifferent}
-        >
-          Load different artifacts
-        </button>
+        <div className="settings-readout">
+          <span className="settings-field-label">Configured location</span>
+          {pathLine != null ? (
+            <>
+              {kindLabel != null ? <strong>{kindLabel}</strong> : null}
+              <p
+                className="settings-mono-path settings-session__path"
+                title={pathLine}
+              >
+                {pathLine}
+              </p>
+            </>
+          ) : kindLabel != null ? (
+            <>
+              <strong>{kindLabel}</strong>
+              <p className="settings-readout-muted">
+                Path label was not returned for this session.
+              </p>
+            </>
+          ) : (
+            <p className="settings-readout-muted">
+              Nothing configured yet. Use Change location… to open the load
+              wizard and point this session at a directory or cloud prefix.
+            </p>
+          )}
+        </div>
+        <div className="settings-session__actions">
+          <button
+            ref={changeLocationTriggerRef}
+            type="button"
+            className="primary-action settings-primary-action"
+            onClick={onOpenChangeLocation}
+          >
+            Change location…
+          </button>
+        </div>
         {pendingRemoteRun && (
           <button
             type="button"
@@ -394,8 +551,10 @@ export function SettingsView({
   themePreference,
   setThemePreference,
   analysisSource,
+  artifactLocationSnapshot,
   executionCount,
-  onLoadDifferent,
+  onManagedAnalysisLoaded,
+  onError,
   pendingRemoteRun,
   acceptingRemoteRun,
   onAcceptPendingRemoteRun,
@@ -405,12 +564,33 @@ export function SettingsView({
   themePreference: ThemePreference;
   setThemePreference: Dispatch<SetStateAction<ThemePreference>>;
   analysisSource: WorkspaceArtifactSource | null;
+  artifactLocationSnapshot: ArtifactLocationSnapshot | null;
   executionCount: number | null;
-  onLoadDifferent: () => void;
+  onManagedAnalysisLoaded: (
+    result: AnalysisLoadResult,
+    source: "preload" | "remote",
+    optionalArtifacts: MissingOptionalArtifactsState,
+  ) => void;
+  onError: (message: string | null) => void;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
   onAcceptPendingRemoteRun: () => Promise<void>;
 }) {
+  const [changeLocationOpen, setChangeLocationOpen] = useState(false);
+  const changeLocationTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleManagedFromModal = useCallback(
+    (
+      result: AnalysisLoadResult,
+      source: "preload" | "remote",
+      optionalArtifacts: MissingOptionalArtifactsState,
+    ) => {
+      setChangeLocationOpen(false);
+      onManagedAnalysisLoaded(result, source, optionalArtifacts);
+    },
+    [onManagedAnalysisLoaded],
+  );
+
   const updateThemePreference = (value: ThemePreference) => {
     setThemePreference(value);
     setPreferences((current) => ({ ...current, theme: value }));
@@ -422,6 +602,16 @@ export function SettingsView({
       description="Workspace defaults, visual preferences, and session controls."
       className="settings-view"
     >
+      <ChangeArtifactLocationModal
+        open={changeLocationOpen}
+        onClose={() => {
+          onError(null);
+          setChangeLocationOpen(false);
+        }}
+        returnFocusRef={changeLocationTriggerRef}
+        onManagedAnalysisLoaded={handleManagedFromModal}
+        onError={onError}
+      />
       <div className="settings-grid">
         <SettingsHero
           analysisSource={analysisSource}
@@ -434,7 +624,9 @@ export function SettingsView({
         <SessionSettings
           analysisSource={analysisSource}
           executionCount={executionCount}
-          onLoadDifferent={onLoadDifferent}
+          artifactLocationSnapshot={artifactLocationSnapshot}
+          onOpenChangeLocation={() => setChangeLocationOpen(true)}
+          changeLocationTriggerRef={changeLocationTriggerRef}
           pendingRemoteRun={pendingRemoteRun}
           acceptingRemoteRun={acceptingRemoteRun}
           onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}

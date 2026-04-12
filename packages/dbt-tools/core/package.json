@@ -21,6 +21,10 @@
     "./browser": {
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
+    },
+    "./artifact-io": {
+      "types": "./dist/artifact-io.d.ts",
+      "default": "./dist/artifact-io.js"
     }
   },
   "main": "dist/index.js",
@@ -37,6 +41,8 @@
     "test:watch": "vitest packages/dbt-tools/core/src"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1025.0",
+    "@google-cloud/storage": "^7.19.0",
     "dbt-artifacts-parser": "workspace:*",
     "graphology": "^0.26.0",
     "graphology-dag": "^0.4.1",

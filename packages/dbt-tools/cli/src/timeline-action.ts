@@ -5,7 +5,6 @@
  */
 import {
   ManifestGraph,
-  resolveArtifactPaths,
   loadManifest,
   loadRunResults,
   validateSafePath,
@@ -18,7 +17,12 @@ import {
   shouldOutputJSON,
   type NodeExecution,
   type AdapterResponseMetrics,
+  type ArtifactPaths,
 } from "@dbt-tools/core";
+import {
+  resolveCliArtifactPaths,
+  type ArtifactRootCliOptions,
+} from "./cli-artifact-resolve";
 
 export type TimelineOptions = {
   sort?: string;
@@ -30,7 +34,7 @@ export type TimelineOptions = {
   targetDir?: string;
   json?: boolean;
   noJson?: boolean;
-};
+} & ArtifactRootCliOptions;
 
 export type TimelineEntry = {
   unique_id: string;
@@ -215,8 +219,8 @@ function validateTimelineSortKey(sortKey: string): void {
 }
 
 function loadTimelineContext(
-  paths: ReturnType<typeof resolveArtifactPaths>,
-  manifestPath: string | undefined,
+  paths: ArtifactPaths,
+  enrichWithManifest: boolean,
 ): {
   runResults: ReturnType<typeof loadRunResults>;
   adapterType: string | null | undefined;
@@ -229,7 +233,7 @@ function loadTimelineContext(
     buildNodeExecutionsFromRunResults(runResults);
   let lookup: TimelineLookup | undefined;
 
-  if (manifestPath) {
+  if (enrichWithManifest) {
     validateSafePath(paths.manifest);
     try {
       const manifest = loadManifest(paths.manifest);
@@ -333,25 +337,39 @@ function formatTimelineOutput(
 /**
  * Timeline action handler
  */
-export function timelineAction(
+export async function timelineAction(
   runResultsPath: string | undefined,
   manifestPath: string | undefined,
   options: TimelineOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
     const sortKey = normalizeTimelineSortKey(options.sort);
     validateTimelineSortKey(sortKey);
 
-    const paths = resolveArtifactPaths(
-      manifestPath,
-      runResultsPath,
-      options.targetDir,
+    const paths = await resolveCliArtifactPaths(
+      {
+        manifestPath,
+        runResultsPath,
+        targetDir: options.targetDir,
+      },
+      {
+        source: options.source,
+        location: options.location,
+        runId: options.runId,
+      },
     );
     validateSafePath(paths.runResults);
 
-    const context = loadTimelineContext(paths, manifestPath);
+    const hasSourceMode =
+      options.source === "local" ||
+      options.source === "s3" ||
+      options.source === "gcs";
+    const enrichWithManifest =
+      (manifestPath != null && manifestPath !== "") || hasSourceMode;
+
+    const context = loadTimelineContext(paths, enrichWithManifest);
     let executions = applyTimelineFilters(context.executions, options);
     executions = sortTimelineExecutions(executions, sortKey);
 

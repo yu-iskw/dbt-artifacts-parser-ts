@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { AnalysisWorkspace } from "../AnalysisWorkspace";
-import { FileUpload } from "../FileUpload";
+import { ArtifactLoadPanel } from "../ArtifactLoadPanel";
 import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
 import {
   formatRunStartedAt,
@@ -13,8 +13,10 @@ import type {
 } from "@web/lib/analysis-workspace/types";
 import type { UseWorkspaceUrlStateResult } from "@web/hooks/useWorkspaceUrlState";
 import type { OmniboxResultsSnapshot } from "@web/hooks/useOmniboxResults";
+import type { ArtifactLocationSnapshot } from "@web/lib/artifactSource";
 import type { AnalysisLoadResult } from "@web/services/analysisLoader";
 import type {
+  MissingOptionalArtifactsState,
   RemoteArtifactRun,
   WorkspaceArtifactSource,
 } from "@web/services/artifactSourceApi";
@@ -290,6 +292,7 @@ export function WorkspaceContent({
   activeView,
   analysis,
   analysisSource,
+  artifactLocationSnapshot,
   preloadLoading,
   pendingRemoteRun,
   acceptingRemoteRun,
@@ -297,8 +300,7 @@ export function WorkspaceContent({
   setPreferences,
   themePreference,
   setThemePreference,
-  onLoadDifferent,
-  onAnalysis,
+  onManagedAnalysisLoaded,
   onError,
   onAcceptPendingRemoteRun,
   workspaceSignals,
@@ -318,6 +320,7 @@ export function WorkspaceContent({
   activeView: UseWorkspaceUrlStateResult["activeView"];
   analysis: AnalysisState | null;
   analysisSource: WorkspaceArtifactSource | null;
+  artifactLocationSnapshot: ArtifactLocationSnapshot | null;
   preloadLoading: boolean;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
@@ -325,8 +328,11 @@ export function WorkspaceContent({
   setPreferences: Dispatch<SetStateAction<WorkspacePreferences>>;
   themePreference: ThemePreference;
   setThemePreference: Dispatch<SetStateAction<ThemePreference>>;
-  onLoadDifferent: () => void;
-  onAnalysis: (result: AnalysisLoadResult) => void;
+  onManagedAnalysisLoaded: (
+    result: AnalysisLoadResult,
+    source: "preload" | "remote",
+    optionalArtifacts: MissingOptionalArtifactsState,
+  ) => void;
   onError: (error: string | null) => void;
   onAcceptPendingRemoteRun: () => Promise<void>;
   workspaceSignals: WorkspaceSignal[];
@@ -351,8 +357,10 @@ export function WorkspaceContent({
         themePreference={themePreference}
         setThemePreference={setThemePreference}
         analysisSource={analysisSource}
+        artifactLocationSnapshot={artifactLocationSnapshot}
         executionCount={analysis?.summary.total_nodes ?? null}
-        onLoadDifferent={onLoadDifferent}
+        onManagedAnalysisLoaded={onManagedAnalysisLoaded}
+        onError={onError}
         pendingRemoteRun={pendingRemoteRun}
         acceptingRemoteRun={acceptingRemoteRun}
         onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
@@ -387,5 +395,10 @@ export function WorkspaceContent({
     return <LoadingCard />;
   }
 
-  return <FileUpload onAnalysis={onAnalysis} onError={onError} />;
+  return (
+    <ArtifactLoadPanel
+      onManagedLoad={onManagedAnalysisLoaded}
+      onError={onError}
+    />
+  );
 }

@@ -3,7 +3,6 @@
  */
 import {
   ManifestGraph,
-  resolveArtifactPaths,
   loadManifest,
   loadCatalog,
   validateSafePath,
@@ -17,6 +16,10 @@ import {
   shouldOutputJSON,
 } from "@dbt-tools/core";
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
+import {
+  resolveCliArtifactPaths,
+  type ArtifactRootCliOptions,
+} from "./cli-artifact-resolve";
 
 type DepsOptions = {
   direction?: string;
@@ -30,7 +33,7 @@ type DepsOptions = {
   buildOrder?: boolean;
   json?: boolean;
   noJson?: boolean;
-};
+} & ArtifactRootCliOptions;
 
 /** Add field-level lineage to graph and return targetId */
 function addFieldLevelLineage(
@@ -81,12 +84,12 @@ function addFieldLevelLineage(
 /**
  * Deps action handler
  */
-export function depsAction(
+export async function depsAction(
   resourceId: string,
   options: DepsOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
     validateResourceId(resourceId);
 
@@ -110,11 +113,17 @@ export function depsAction(
       throw new Error(`--build-order is only valid with --direction upstream`);
     }
 
-    const paths = resolveArtifactPaths(
-      options.manifestPath,
-      undefined,
-      options.targetDir,
-      options.catalogPath,
+    const paths = await resolveCliArtifactPaths(
+      {
+        manifestPath: options.manifestPath,
+        targetDir: options.targetDir,
+        catalogPath: options.catalogPath,
+      },
+      {
+        source: options.source,
+        location: options.location,
+        runId: options.runId,
+      },
     );
 
     validateSafePath(paths.manifest);

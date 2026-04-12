@@ -4,8 +4,8 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { Storage } from "@google-cloud/storage";
-import type { DbtToolsRemoteSourceConfig } from "@dbt-tools/core";
-import type { RemoteObjectMetadata } from "./discovery";
+import type { DbtToolsRemoteSourceConfig } from "../config/dbt-tools-env";
+import type { RemoteObjectMetadata } from "./artifact-discovery";
 
 export interface RemoteObjectStoreClient {
   listObjects(bucket: string, prefix: string): Promise<RemoteObjectMetadata[]>;

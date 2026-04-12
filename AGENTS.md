@@ -1,5 +1,12 @@
 # Agent instructions (dbt-artifacts-parser-ts)
 
+## Agent documentation split
+
+- **This file (`AGENTS.md`) is canonical** for humans and all agent tools (Cursor, Codex, Claude Code, and similar): stack, packages, full quality gates, commands, and policy detail.
+- **[`CLAUDE.md`](CLAUDE.md)** is a **Claude Code entry digest**: pointers here, a few repeated high-signal invariants, and **Claude-only** workflow (for example [`.claude/settings.json`](.claude/settings.json), session prerequisites, multi-agent coordination). It is **not** a full duplicate of this file.
+- **Single authority:** If anything disagrees, **this file wins**; update `CLAUDE.md` (or replace duplicated prose with a link to the relevant section here).
+- **Edit workflow:** When you change **shared agent policy** (quality gate commands, thresholds, when to run Playwright, verifier expectations, doc-only gate rules), edit **this file first**, then update any short repeated lines in `CLAUDE.md` only if they still duplicate that fact.
+
 ## Tech stack
 
 - **Package manager:** pnpm (monorepo)
@@ -36,7 +43,17 @@ From the repository root:
 
 - `pnpm lint:report` — writes `lint-report.json`; must exit 0
 - `pnpm coverage:report` — writes `coverage-report.json`; must exit 0. If coverage is below thresholds, add or improve unit tests (lines 60%, branches 50%, functions 60%, statements 60%)
+- **Vitest + v8 coverage stability:** `pnpm coverage:report` runs Vitest via [`scripts/coverage-score.mjs`](scripts/coverage-score.mjs) with [`vitest.coverage.mjs`](vitest.coverage.mjs), which sets **`maxWorkers: 1`** (Vitest 4 top-level pool control) so the coverage harness avoids multi-worker parallelism that can trigger intermittent **SIGSEGV** with `@vitest/coverage-v8`. Regular **`pnpm test`** still uses the default settings in [`vitest.config.mjs`](vitest.config.mjs). If coverage still crashes after a retry, capture **Node version** (see [`.node-version`](.node-version)), **OS**, and any **native stack** from the crash; try adding **`fileParallelism: false`** next to `maxWorkers` in [`vitest.coverage.mjs`](vitest.coverage.mjs), or temporarily switch the coverage-only config to **`pool: "forks"`** with **`maxWorkers: 1`** (keep the same coverage `include` / `exclude` / thresholds), and report upstream (Vitest / Node issue).
 - `pnpm knip` — unused exports/files/deps (monorepo); must exit 0. Configuration: [`knip.json`](knip.json). `ignoreExportsUsedInFile` is enabled; parser package ignores noisy `types` issues; `scripts/preprocess-refs.js` and the `@apidevtools/json-schema-ref-parser` devDependency are scoped to generation scripts (see `ignoreFiles` / `ignoreDependencies`).
+- **`pnpm coverage:report` does not run Playwright** — it runs **Vitest** with coverage via [`vitest.coverage.mjs`](vitest.coverage.mjs) (see **Vitest + v8 coverage stability** below). Browser journeys are a separate gate.
+- **Playwright when web journeys or E2E specs change:** if the change touches [`packages/dbt-tools/web/e2e/`](packages/dbt-tools/web/e2e/) or **material `@dbt-tools/web` user flows** (settings, artifact load, workspace navigation, and similar), also run **`pnpm test:e2e`** from the repository root before claiming the work complete (same script as **Commands** — **E2E tests** below).
+
+### Documentation-only and agent-skills edits
+
+- **Documentation-only** changes (for example `*.md`, `.claude/**`, `.cursor/rules/**`, or `docs/**` when you do not change executable code, build config, or scripts) **do not** waive **`pnpm lint:report`**, **`pnpm knip`**, or **`pnpm coverage:report`** for **agent completion claims**—run all three from the repository root like any other task.
+- **Only the user** may explicitly narrow which gates apply (for example “lint only”); agents should treat that as **exceptional** and default to the **full trio** unless the user clearly relaxes scope.
+- **`pnpm coverage:report`** stays **repo-wide** and is typically **slower** than **`pnpm test`** alone (see **Vitest + v8 coverage stability** above); doc-only work does not change that contract.
+
 - Full **`pnpm format`**, **`pnpm lint`**, and **`pnpm verify:normalize`** run Trunk before ESLint / Prettier / Stylelint / Knip; see **Commands** — **Trunk (lint/format orchestration)** below.
 - **Verifier subagent** ([`.claude/agents/verifier.md`](.claude/agents/verifier.md)): a full verification run always ends with `pnpm format` and `pnpm lint` (same as `pnpm verify:normalize`). If that leaves the working tree dirty, follow the agent’s **stability loop**: re-run `pnpm lint:report`, `pnpm test`, and `pnpm coverage:report` (up to three passes), re-applying normalization until clean or the cap is hit.
 - **ESLint vs TypeScript 6:** `@typescript-eslint/*` 8.57.x still declares a peer range that excludes TypeScript 6 while this repo uses TypeScript 6, so `pnpm lint:eslint` may log a “not officially supported” warning. That is informational until [typescript-eslint#12123](https://github.com/typescript-eslint/typescript-eslint/issues/12123) ships; when a release widens the peer range, bump `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` to the **same** new version and refresh the lockfile.
@@ -127,9 +144,11 @@ Optionally install OpenAI’s `frontend-skill` in the Codex app for composition 
 
 - Architecture Decision Records should center on **decisions** (options, trade-offs, invariants, boundaries), not exhaustive file paths, line-level wiring, or duplicated configuration and token tables; use at most a thin pointer when disambiguation is needed. Drift workflows such as **mend-adr** should target **intent-level** claims, not volatile path churn. Granular detail belongs in code, tests, and this file.
 - Documentation for **published** `@dbt-tools/web` should be **npm-first** (`npx`, `dbt-tools-web` binary): lead with end-user install/run, push monorepo and contributor detail to later README sections, [`CONTRIBUTING.md`](CONTRIBUTING.md), and the long-form guide [`docs/user-guide-dbt-tools-web.md`](docs/user-guide-dbt-tools-web.md).
+- For substantial UI or cross-surface workflow work, the user often asks for a **detailed plan with diagrams** (flow or architecture) before implementation.
 
 ## Learned Workspace Facts
 
+- Artifact loading is oriented around **directory/prefix discovery** (not only per-file picking), with the **web app and CLI aligned** on the same resolution model; implementation spans `@dbt-tools/core` artifact I/O/discovery and `@dbt-tools/web` `artifact-source/` plus CLI resolve paths.
 - Scaling `@dbt-tools/web` to enormous manifests depends critically on `@dbt-tools/core` snapshot construction and payload size, not only on React rendering; the codebase uses bounded dependency previews, direct-neighbor counts (with matching UI labels), lazy SQL via the analysis worker protocol, a virtualized explorer, and worker-assisted resource search for global queries; see [`docs/adr/0027-large-manifest-web-performance-dependency-index-and-lazy-sql.md`](docs/adr/0027-large-manifest-web-performance-dependency-index-and-lazy-sql.md).
 - The `@dbt-tools/web` package runs a production build before Playwright in its `test:e2e` script; root `pnpm test:e2e` therefore builds the web app so preview mode has `dist/`.
 - Implementations typed against graph interfaces used during snapshot construction should mirror `ManifestGraph` call signatures (for example optional `maxDepth` on `getUpstream` / `getDownstream`) so `tsc` passes when the E2E script triggers a build.

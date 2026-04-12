@@ -3,6 +3,7 @@ import type { WorkspaceSignal } from "./components/AnalysisWorkspace";
 import { AppWorkspaceChrome } from "./components/AppShell/AppWorkspaceChrome";
 import { buildWorkspaceSignals } from "./components/AppShell/workspaceSignals";
 import { ToastProvider, useToast } from "./components/ui/Toast";
+import { ArtifactCapabilityContext } from "./contexts/ArtifactCapabilityContext";
 import { useAnalysisPage } from "./hooks/useAnalysisPage";
 import { useTheme } from "./hooks/useTheme";
 import { useWorkspacePreferences } from "./hooks/useWorkspacePreferences";
@@ -16,12 +17,13 @@ function AppContent() {
   const {
     analysis,
     analysisSource,
+    artifactLocationSnapshot,
     error,
     preloadLoading,
     pendingRemoteRun,
     acceptingRemoteRun,
-    onLoadDifferent,
-    onAnalysis,
+    onManagedAnalysisLoaded,
+    artifactCapability,
     onError,
     onAcceptPendingRemoteRun,
   } = useAnalysisPage();
@@ -72,24 +74,26 @@ function AppContent() {
     : [];
 
   return (
-    <AppWorkspaceChrome
-      workspace={workspace}
-      analysis={analysis}
-      analysisSource={analysisSource}
-      error={error}
-      preloadLoading={preloadLoading}
-      pendingRemoteRun={pendingRemoteRun}
-      acceptingRemoteRun={acceptingRemoteRun}
-      onLoadDifferent={onLoadDifferent}
-      onAnalysis={onAnalysis}
-      onError={onError}
-      onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
-      themePreference={themePreference}
-      setPreferences={setPreferences}
-      preferences={preferences}
-      setThemePreference={setThemePreference}
-      workspaceSignals={workspaceSignals}
-    />
+    <ArtifactCapabilityContext.Provider value={artifactCapability}>
+      <AppWorkspaceChrome
+        workspace={workspace}
+        analysis={analysis}
+        analysisSource={analysisSource}
+        artifactLocationSnapshot={artifactLocationSnapshot}
+        error={error}
+        preloadLoading={preloadLoading}
+        pendingRemoteRun={pendingRemoteRun}
+        acceptingRemoteRun={acceptingRemoteRun}
+        onManagedAnalysisLoaded={onManagedAnalysisLoaded}
+        onError={onError}
+        onAcceptPendingRemoteRun={onAcceptPendingRemoteRun}
+        themePreference={themePreference}
+        setPreferences={setPreferences}
+        preferences={preferences}
+        setThemePreference={setThemePreference}
+        workspaceSignals={workspaceSignals}
+      />
+    </ArtifactCapabilityContext.Provider>
   );
 }
 

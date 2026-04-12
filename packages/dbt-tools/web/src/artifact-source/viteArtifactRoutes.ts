@@ -5,6 +5,7 @@ import {
   DBT_RUN_RESULTS_JSON,
   DBT_SOURCES_JSON,
 } from "@dbt-tools/core";
+import type { ArtifactSourceKind } from "@dbt-tools/core";
 import type { ArtifactSourceService } from "./sourceService";
 
 async function readJsonBody(
@@ -77,11 +78,84 @@ function isArtifactSwitchRequest(
   return req.method === "POST" && pathname === "/api/artifact-source/switch";
 }
 
+function isArtifactConfigureRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "POST" && pathname === "/api/artifact-source/configure";
+}
+
 function isCurrentArtifactRequest(
   req: IncomingMessage,
   pathname: string,
 ): boolean {
   return req.method === "GET" && CURRENT_ARTIFACT_PATHS.has(pathname);
+}
+
+async function respondArtifactStatus(
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  sendJson(res, 200, await service.getStatus());
+}
+
+async function respondArtifactSwitch(
+  req: IncomingMessage,
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  const body = await readJsonBody(req);
+  const runId =
+    typeof body.runId === "string" && body.runId.trim() !== ""
+      ? body.runId
+      : undefined;
+  sendJson(res, 200, await service.switchToRun(runId));
+}
+
+async function respondArtifactConfigure(
+  req: IncomingMessage,
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  const body = await readJsonBody(req);
+  const typeRaw = body.type;
+  const locationRaw = body.location;
+  const location = typeof locationRaw === "string" ? locationRaw.trim() : "";
+  if (typeRaw !== "local" && typeRaw !== "s3" && typeRaw !== "gcs") {
+    sendJson(res, 400, {
+      error: "Invalid or missing type (expected local, s3, or gcs).",
+    });
+    return;
+  }
+  try {
+    const status = await service.configureArtifactSource(
+      typeRaw as ArtifactSourceKind,
+      location,
+    );
+    sendJson(res, 200, status);
+  } catch (error) {
+    sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Invalid configuration.",
+    });
+  }
+}
+
+async function respondCurrentArtifactBytes(
+  pathname: string,
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  const current = await service.getCurrentArtifacts();
+  const bytes = currentArtifactBytes(pathname, current);
+  if (bytes == null) {
+    res.statusCode = 404;
+    res.end();
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/json");
+  res.statusCode = 200;
+  res.end(Buffer.from(bytes));
 }
 
 /**
@@ -97,32 +171,22 @@ export async function tryHandleArtifactSourceViteRequest(
   if (!pathname) return false;
 
   if (isArtifactStatusRequest(req, pathname)) {
-    sendJson(res, 200, await service.getStatus());
+    await respondArtifactStatus(res, service);
     return true;
   }
 
   if (isArtifactSwitchRequest(req, pathname)) {
-    const body = await readJsonBody(req);
-    const runId =
-      typeof body.runId === "string" && body.runId.trim() !== ""
-        ? body.runId
-        : undefined;
-    sendJson(res, 200, await service.switchToRun(runId));
+    await respondArtifactSwitch(req, res, service);
+    return true;
+  }
+
+  if (isArtifactConfigureRequest(req, pathname)) {
+    await respondArtifactConfigure(req, res, service);
     return true;
   }
 
   if (isCurrentArtifactRequest(req, pathname)) {
-    const current = await service.getCurrentArtifacts();
-    const bytes = currentArtifactBytes(pathname, current);
-    if (bytes == null) {
-      res.statusCode = 404;
-      res.end();
-      return true;
-    }
-
-    res.setHeader("Content-Type", "application/json");
-    res.statusCode = 200;
-    res.end(Buffer.from(bytes));
+    await respondCurrentArtifactBytes(pathname, res, service);
     return true;
   }
 

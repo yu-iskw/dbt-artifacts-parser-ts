@@ -20,7 +20,7 @@ export function useDbtArtifactsReload(
 
     const handler = () => {
       debug("Reload: dbt-artifacts-changed received, refetching");
-      refetchFromApi()
+      refetchFromApi("preload")
         .then((result) => {
           if (result) {
             pendingMetricsRef.current = result.metrics;

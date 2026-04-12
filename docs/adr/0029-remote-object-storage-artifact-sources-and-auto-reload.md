@@ -153,6 +153,10 @@ flowchart LR
 - Treat pair completeness as a hard invariant so partial uploads do not surface in the app.
 - Make remote-source status visible in the UI so users understand whether they are viewing the current run or a newer run is pending.
 
+## Addendum (directory / prefix loading, 2026-04)
+
+The product **Load artifacts** flow standardizes on **one source type** (`local` \| `s3` \| `gcs`) plus a **single location** string, with shared discovery logic in **`@dbt-tools/core`**. Browser file upload is no longer a first-class path. When multiple complete pairs exist under a location, the user **must pick a run**; the backend does not silently choose one. **`@dbt-tools/cli`** exposes the same model via **`--source`**, **`--location`**, and **`--run-id`** on all artifact commands, alongside legacy **`--target-dir`** / positional paths.
+
 ## Alternatives considered
 
 - **Browser-direct fixed URLs with manual refresh**: Rejected because it handles private storage poorly and gives a weak scheduled-run experience.

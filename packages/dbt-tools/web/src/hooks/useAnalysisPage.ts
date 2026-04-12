@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  artifactLocationSnapshotFromStatus,
+  type ArtifactLocationSnapshot,
+} from "@web/lib/artifactSource";
 import { useAnalysisPreload } from "./useAnalysisPreload";
 import { useDbtArtifactsReload } from "./useDbtArtifactsReload";
 import { useRemoteArtifactPoll } from "./useRemoteArtifactPoll";
@@ -6,21 +10,30 @@ import type { AnalysisState } from "@web/types";
 import type { AnalysisLoadResult } from "../services/analysisLoader";
 import { debug, markDebug, measureDebug } from "../debug";
 import {
+  fetchArtifactSourceStatus,
   refetchFromApi,
   switchToArtifactRun,
+  type MissingOptionalArtifactsState,
   type RemoteArtifactRun,
   type WorkspaceArtifactSource,
 } from "../services/artifactApi";
+import type { ArtifactSourceStatus } from "../services/artifactSourceApi";
 
 export interface UseAnalysisPageResult {
   analysis: AnalysisState | null;
   analysisSource: WorkspaceArtifactSource | null;
+  artifactLocationSnapshot: ArtifactLocationSnapshot | null;
+  artifactCapability: MissingOptionalArtifactsState;
   error: string | null;
   preloadLoading: boolean;
   pendingRemoteRun: RemoteArtifactRun | null;
   acceptingRemoteRun: boolean;
   onLoadDifferent: () => void;
-  onAnalysis: (result: AnalysisLoadResult) => void;
+  onManagedAnalysisLoaded: (
+    result: AnalysisLoadResult,
+    source: "preload" | "remote",
+    optionalArtifacts: MissingOptionalArtifactsState,
+  ) => void;
   onError: (error: string | null) => void;
   onAcceptPendingRemoteRun: () => Promise<void>;
 }
@@ -40,7 +53,33 @@ export function useAnalysisPage(): UseAnalysisPageResult {
   const [remotePollIntervalMs, setRemotePollIntervalMs] = useState<
     number | null
   >(null);
+  const [artifactCapability, setArtifactCapability] =
+    useState<MissingOptionalArtifactsState>({
+      missingCatalog: false,
+      missingSources: false,
+    });
+  const [artifactLocationSnapshot, setArtifactLocationSnapshot] =
+    useState<ArtifactLocationSnapshot | null>(null);
   const pendingMetricsRef = useRef<AnalysisLoadResult["metrics"] | null>(null);
+
+  const mergeSnapshotFromStatus = useCallback(
+    (status: ArtifactSourceStatus) => {
+      setArtifactLocationSnapshot((prev) => {
+        const next = artifactLocationSnapshotFromStatus(status);
+        if (next == null && prev == null) return prev;
+        if (
+          next != null &&
+          prev != null &&
+          next.sourceKind === prev.sourceKind &&
+          next.locationDisplay === prev.locationDisplay
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   useAnalysisPreload({
     setPreloadLoading,
@@ -50,6 +89,8 @@ export function useAnalysisPage(): UseAnalysisPageResult {
     setRemotePollIntervalMs,
     setError,
     pendingMetricsRef,
+    setArtifactCapability,
+    onArtifactSourceStatus: mergeSnapshotFromStatus,
   });
 
   useDbtArtifactsReload(
@@ -64,6 +105,7 @@ export function useAnalysisPage(): UseAnalysisPageResult {
     setPendingRemoteRun,
     setRemotePollIntervalMs,
     remotePollIntervalMs,
+    mergeSnapshotFromStatus,
   );
 
   useEffect(() => {
@@ -91,6 +133,8 @@ export function useAnalysisPage(): UseAnalysisPageResult {
   return {
     analysis,
     analysisSource,
+    artifactLocationSnapshot,
+    artifactCapability,
     error,
     preloadLoading,
     pendingRemoteRun,
@@ -101,12 +145,23 @@ export function useAnalysisPage(): UseAnalysisPageResult {
       setPendingRemoteRun(null);
       setRemotePollIntervalMs(null);
       setError(null);
+      setArtifactLocationSnapshot(null);
+      setArtifactCapability({
+        missingCatalog: false,
+        missingSources: false,
+      });
     },
-    onAnalysis: (result) => {
+    onManagedAnalysisLoaded: (result, source, optionalArtifacts) => {
       pendingMetricsRef.current = result.metrics;
-      setAnalysisSource("upload");
+      setAnalysisSource(source);
       setPendingRemoteRun(null);
       setAnalysis(result.analysis);
+      setArtifactCapability(optionalArtifacts);
+      void fetchArtifactSourceStatus()
+        .then(mergeSnapshotFromStatus)
+        .catch(() => {
+          /* status refresh is best-effort */
+        });
     },
     onError: setError,
     onAcceptPendingRemoteRun: async () => {
@@ -122,8 +177,15 @@ export function useAnalysisPage(): UseAnalysisPageResult {
           setAnalysisSource(status.currentSource);
           setRemotePollIntervalMs(status.pollIntervalMs);
           setError(null);
+          setArtifactCapability(
+            status.missingOptionalArtifacts ?? {
+              missingCatalog: false,
+              missingSources: false,
+            },
+          );
         }
         setPendingRemoteRun(status.pendingRun);
+        mergeSnapshotFromStatus(status);
       } catch (switchError) {
         setError(
           switchError instanceof Error

@@ -164,6 +164,12 @@ CI publishes `@dbt-tools/*` in order via [`.github/workflows/publish-dbt-tools.y
 
 ---
 
+## Pull requests
+
+When you change **quality gates, coverage thresholds, or other shared agent policy** in [AGENTS.md](./AGENTS.md), confirm [CLAUDE.md](./CLAUDE.md) still matches or only defers with links (see **Agent documentation split** in AGENTS.md).
+
+---
+
 ## Commit Conventions
 
 Use concise, imperative commit messages:

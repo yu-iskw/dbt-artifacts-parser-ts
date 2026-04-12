@@ -20,6 +20,13 @@ export interface RemoteArtifactRun {
   versionToken: string;
 }
 
+export type UserArtifactSourceKind = "local" | "s3" | "gcs";
+
+export interface MissingOptionalArtifactsState {
+  missingCatalog: boolean;
+  missingSources: boolean;
+}
+
 export interface ArtifactSourceStatus {
   mode: ManagedArtifactSourceMode;
   currentSource: Exclude<WorkspaceArtifactSource, "upload"> | null;
@@ -31,6 +38,13 @@ export interface ArtifactSourceStatus {
   currentRun: RemoteArtifactRun | null;
   pendingRun: RemoteArtifactRun | null;
   supportsSwitch: boolean;
+  /** When true, artifact bytes are not served until {@link #currentRun} is chosen. */
+  needsSelection?: boolean;
+  candidates?: RemoteArtifactRun[];
+  discoveryError?: string | null;
+  sourceKind?: UserArtifactSourceKind | null;
+  locationDisplay?: string | null;
+  missingOptionalArtifacts?: MissingOptionalArtifactsState;
 }
 
 type ArtifactUrlSet = {
@@ -67,6 +81,12 @@ function emptyManagedArtifactStatusFields(): Pick<
   | "currentRun"
   | "pendingRun"
   | "supportsSwitch"
+  | "needsSelection"
+  | "candidates"
+  | "discoveryError"
+  | "sourceKind"
+  | "locationDisplay"
+  | "missingOptionalArtifacts"
 > {
   return {
     checkedAtMs: Date.now(),
@@ -76,6 +96,12 @@ function emptyManagedArtifactStatusFields(): Pick<
     currentRun: null,
     pendingRun: null,
     supportsSwitch: false,
+    needsSelection: false,
+    candidates: undefined,
+    discoveryError: null,
+    sourceKind: null,
+    locationDisplay: null,
+    missingOptionalArtifacts: undefined,
   };
 }
 
@@ -246,4 +272,32 @@ export async function switchToArtifactRun(
   }
 
   return (await response.json()) as ArtifactSourceStatus;
+}
+
+export async function configureArtifactSourceFromApi(
+  kind: UserArtifactSourceKind,
+  location: string,
+): Promise<ArtifactSourceStatus> {
+  const response = await fetch("/api/artifact-source/configure", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type: kind, location }),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as
+    | ArtifactSourceStatus
+    | { error?: string };
+
+  if (!response.ok) {
+    const message =
+      typeof (data as { error?: string }).error === "string" &&
+      (data as { error: string }).error.trim() !== ""
+        ? (data as { error: string }).error
+        : "Failed to configure artifact source";
+    throw new Error(message);
+  }
+
+  return data as ArtifactSourceStatus;
 }

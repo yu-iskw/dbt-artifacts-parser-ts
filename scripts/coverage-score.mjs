@@ -35,13 +35,24 @@ function vitestChildEnv() {
 }
 
 function run() {
-  // 1. Run vitest with coverage
-  const r = spawnSync("pnpm", ["exec", "vitest", "run", "--coverage"], {
-    cwd: projectRoot,
-    encoding: "utf8",
-    stdio: "inherit",
-    env: vitestChildEnv(),
-  });
+  // 1. Run vitest with coverage (vitest.coverage.mjs serializes workers; see AGENTS.md)
+  const r = spawnSync(
+    "pnpm",
+    [
+      "exec",
+      "vitest",
+      "run",
+      "--coverage",
+      "--config",
+      join(projectRoot, "vitest.coverage.mjs"),
+    ],
+    {
+      cwd: projectRoot,
+      encoding: "utf8",
+      stdio: "inherit",
+      env: vitestChildEnv(),
+    },
+  );
 
   if (r.status !== 0) {
     console.error("Vitest coverage run failed.");
@@ -187,15 +198,6 @@ function run() {
     for (const [pkg, pct] of Object.entries(byPackageFormatted)) {
       console.log(
         `  ${pkg}: lines=${pct.lines?.toFixed(1)}% branches=${pct.branches?.toFixed(1)}% functions=${pct.functions?.toFixed(1)}% statements=${pct.statements?.toFixed(1)}%`,
-      );
-    }
-  }
-
-  if (belowThreshold && Object.keys(byPackageFormatted).length > 0) {
-    console.log("Per-package coverage:");
-    for (const [pkg, pct] of Object.entries(byPackageFormatted)) {
-      console.log(
-        `  ${pkg}: lines=${pct.lines.toFixed(1)}% branches=${pct.branches.toFixed(1)}% functions=${pct.functions.toFixed(1)}% statements=${pct.statements.toFixed(1)}%`,
       );
     }
   }

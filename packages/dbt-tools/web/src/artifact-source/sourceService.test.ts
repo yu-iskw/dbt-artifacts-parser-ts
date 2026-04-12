@@ -114,9 +114,18 @@ describe("ArtifactSourceService", () => {
 
     const initialStatus = await service.getStatus();
     expect(initialStatus.mode).toBe("remote");
-    expect(initialStatus.currentRun?.runId).toBe("2026-03-29T10-00-00Z");
-    expect(initialStatus.pendingRun).toBeNull();
+    expect(initialStatus.needsSelection).toBe(true);
+    expect(initialStatus.currentRun).toBeNull();
+    expect(initialStatus.candidates?.map((c) => c.runId).sort()).toEqual(
+      ["2026-03-28T10-00-00Z", "2026-03-29T10-00-00Z"].sort(),
+    );
     expect(initialStatus.pollIntervalMs).toBe(15_000);
+
+    await service.switchToRun("2026-03-29T10-00-00Z");
+    const afterSelect = await service.getStatus();
+    expect(afterSelect.needsSelection).toBe(false);
+    expect(afterSelect.currentRun?.runId).toBe("2026-03-29T10-00-00Z");
+    expect(afterSelect.pendingRun).toBeNull();
 
     await service.switchToRun("2026-03-28T10-00-00Z");
 

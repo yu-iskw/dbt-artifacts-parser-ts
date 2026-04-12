@@ -524,7 +524,7 @@ export class ManifestGraph {
     let totalNodes = 0;
 
     // Count nodes by type
-    this.graph.forEachNode((nodeId, attributes) => {
+    this.graph.forEachNode((_nodeId, attributes) => {
       totalNodes++;
       const type = attributes.resource_type || "unknown";
       nodesByType[type] = (nodesByType[type] || 0) + 1;

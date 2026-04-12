@@ -20,6 +20,10 @@ Legacy env names (`DBT_TARGET`, `DBT_TARGET_DIR`) still work with a one-time dep
 
 Open the URL Vite prints (e.g. `http://localhost:5173/`).
 
+### Load artifacts (UI)
+
+Without env prefill, use the in-app **Load artifacts** panel: choose **local**, **S3**, or **GCS**, enter a **location** (directory path or `s3://` / `gs://` bucket prefix), run **Discover**, then **select a run** when more than one complete `manifest.json` + `run_results.json` pair exists. Cloud credentials never enter the browser—they stay in the Node server (same model as `DBT_TOOLS_REMOTE_SOURCE` in [ADR-0029](./adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)).
+
 ### Debug logging
 
 - **Server-side (Vite middleware):** `DBT_TOOLS_DEBUG=1` (legacy: `DBT_DEBUG`)
@@ -59,7 +63,7 @@ DBT_TOOLS_WATCH=0 DBT_TOOLS_TARGET_DIR=./target pnpm dev
 
 ### Remote artifact sources (`DBT_TOOLS_REMOTE_SOURCE`)
 
-The dev server (and **`dbt-tools-web`**) can resolve the latest complete **`manifest.json` + `run_results.json`** pair under an object-storage prefix, **poll** for newer runs, and the UI **prompts before switching** the workspace. Credentials stay in the **Node process** (AWS default chain, GCS ADC / `GOOGLE_APPLICATION_CREDENTIALS`), not in the browser.
+The dev server (and **`dbt-tools-web`**) can list keys under a bucket prefix, discover complete **`manifest.json` + `run_results.json`** pairs (non-recursive layout: root files or one subdirectory level per candidate), **poll** for changes, and surface newer runs in the UI **without switching your selected run automatically**. Credentials stay in the **Node process** (AWS default chain, GCS ADC / `GOOGLE_APPLICATION_CREDENTIALS`), not in the browser.
 
 Details and semantics: [ADR-0029](./adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md).
 

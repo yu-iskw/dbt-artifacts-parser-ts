@@ -3,7 +3,6 @@
  */
 import {
   ManifestGraph,
-  resolveArtifactPaths,
   loadManifest,
   validateSafePath,
   validateNoControlChars,
@@ -12,6 +11,10 @@ import {
   shouldOutputJSON,
   type GraphNodeAttributes,
 } from "@dbt-tools/core";
+import {
+  resolveCliArtifactPaths,
+  type ArtifactRootCliOptions,
+} from "./cli-artifact-resolve";
 
 export type SearchOptions = {
   type?: string;
@@ -22,7 +25,7 @@ export type SearchOptions = {
   targetDir?: string;
   json?: boolean;
   noJson?: boolean;
-};
+} & ArtifactRootCliOptions;
 
 export type SearchResult = {
   unique_id: string;
@@ -178,22 +181,25 @@ export function formatSearch(output: SearchOutput): string {
 /**
  * Search action handler
  */
-export function searchAction(
+export async function searchAction(
   query: string | undefined,
   manifestPath: string | undefined,
   options: SearchOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
     if (query) {
       validateNoControlChars(query);
     }
 
-    const paths = resolveArtifactPaths(
-      manifestPath,
-      undefined,
-      options.targetDir,
+    const paths = await resolveCliArtifactPaths(
+      { manifestPath, targetDir: options.targetDir },
+      {
+        source: options.source,
+        location: options.location,
+        runId: options.runId,
+      },
     );
     validateSafePath(paths.manifest);
 

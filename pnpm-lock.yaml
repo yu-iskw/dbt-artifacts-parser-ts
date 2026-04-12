@@ -106,6 +106,12 @@ importers:
 
   packages/dbt-tools/core:
     dependencies:
+      "@aws-sdk/client-s3":
+        specifier: ^3.1025.0
+        version: 3.1025.0
+      "@google-cloud/storage":
+        specifier: ^7.19.0
+        version: 7.19.0
       dbt-artifacts-parser:
         specifier: workspace:*
         version: link:../../dbt-artifacts-parser
@@ -131,15 +137,9 @@ importers:
 
   packages/dbt-tools/web:
     dependencies:
-      "@aws-sdk/client-s3":
-        specifier: ^3.1025.0
-        version: 3.1025.0
       "@dbt-tools/core":
         specifier: workspace:*
         version: link:../core
-      "@google-cloud/storage":
-        specifier: ^7.19.0
-        version: 7.19.0
       "@tanstack/react-virtual":
         specifier: ^3.13.23
         version: 3.13.23(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

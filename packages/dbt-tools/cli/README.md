@@ -53,6 +53,29 @@ pnpm add -g @dbt-tools/cli
 - **Search**: Discover resources by name, tag, type, or free-text query
 - **Status / Freshness**: Check if artifacts are present and how recent they are
 - **Subgraph focus**: Export a focused subgraph for any node via `graph --focus`
+- **Directory / object-prefix mode**: Optional **`--source`** (`local` \| `s3` \| `gcs`) + **`--location`** + optional **`--run-id`** on every artifact command, aligned with the web app’s discovery rules (see below)
+
+---
+
+## Artifact root (`--source` / `--location` / `--run-id`)
+
+Instead of **`--target-dir`** and per-command path overrides, you can point all commands at a **single location**:
+
+- **`local`**: absolute or cwd-relative directory containing `manifest.json` and `run_results.json` (each either at the **root** of that directory or in an **immediate subdirectory**—deeper nesting is ignored for grouping).
+- **`s3`** / **`gcs`**: `s3://bucket/prefix` or `gs://bucket/prefix` (or `bucket/prefix` with `--source` disambiguating). Objects are downloaded to a temp directory for the duration of the command. **Credentials** use the normal AWS / GCP client chains; optional JSON in **`DBT_TOOLS_REMOTE_SOURCE`** still supplies region, endpoint, GCS project id, etc. (see [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)).
+
+When **more than one** complete pair exists, pass **`--run-id`** (for example `current` for root-level files, or the subdirectory name). Do **not** combine `--source`/`--location` with `--manifest-path`, explicit positional manifest paths, **`--catalog-path`**, or other per-file overrides for the same command.
+
+```bash
+# Local directory that holds manifest.json + run_results.json
+dbt-tools summary --source local --location ./target
+
+# Same discovery against a prefix (requires cloud credentials in the environment)
+dbt-tools status --source s3 --location s3://my-bucket/dbt/artifacts/prod
+
+# Multiple runs under the prefix: pick one explicitly
+dbt-tools run-report --source gcs --location gs://my-bucket/runs --run-id 2025-04-01T120000Z
+```
 
 ---
 

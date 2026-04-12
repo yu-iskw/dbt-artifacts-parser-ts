@@ -1,34 +1,39 @@
-/** Node (Vite dev) service: local target dir vs remote S3/GCS; drives middleware routes. */
+/** Node (Vite dev) service: configurable local path or remote S3/GCS; drives middleware routes. */
 import fs from "node:fs/promises";
-import path from "node:path";
 import {
-  DBT_CATALOG_JSON,
-  DBT_MANIFEST_JSON,
-  DBT_RUN_RESULTS_JSON,
-  DBT_SOURCES_JSON,
   getDbtToolsRemoteSourceConfigFromEnv,
   getDbtToolsTargetDirFromEnv,
   isDbtToolsDebugEnabled,
+  mergeRemoteSourceConfigWithParsedLocation,
+  parseArtifactSourceLocation,
+  type ArtifactDiscoveryResult,
+  type ArtifactSourceKind,
   type DbtToolsRemoteSourceConfig,
 } from "@dbt-tools/core";
 import {
+  createRemoteObjectStoreClient,
+  type RemoteObjectStoreClient,
+} from "@dbt-tools/core/artifact-io";
+import {
   discoverLatestArtifactRuns,
+  discoverLocalResolvedArtifactRuns,
+  discoverRemoteArtifactDiscovery,
+  toLocalManagedArtifactRun,
   toRemoteArtifactRun,
   type ResolvedArtifactRun,
 } from "./discovery";
 import { normalizeArtifactPrefix } from "./prefix";
-import {
-  createRemoteObjectStoreClient,
-  type RemoteObjectStoreClient,
-} from "./remoteObjectStore";
 import { resolveLocalArtifactTargetDirFromEnv } from "./resolveLocalTargetDir";
 import type {
   ArtifactSourceStatus,
+  ManagedArtifactSourceMode,
+  MissingOptionalArtifactsState,
   RemoteArtifactProvider,
+  RemoteArtifactRun,
   WorkspaceArtifactSource,
 } from "../services/artifactSourceApi";
 
-export type { RemoteObjectStoreClient };
+export type { RemoteObjectStoreClient } from "@dbt-tools/core/artifact-io";
 
 interface CurrentArtifactPayload {
   source: Exclude<WorkspaceArtifactSource, "upload">;
@@ -49,6 +54,8 @@ export interface ArtifactSourceServiceOptions {
   remoteClient?: RemoteObjectStoreClient;
   targetDir?: string | null;
   adapter?: ArtifactSourceAdapter | null;
+  cwd?: string;
+  seedFromEnv?: boolean;
 }
 
 function debugLog(...args: unknown[]) {
@@ -57,12 +64,12 @@ function debugLog(...args: unknown[]) {
   }
 }
 
-function toLocationLabel(
+function toRemoteLocationLabel(
   provider: RemoteArtifactProvider,
   bucket: string,
   prefix: string,
 ) {
-  return `${provider.toUpperCase()} ${bucket}/${prefix}`;
+  return `${provider.toUpperCase()} ${bucket}/${normalizeArtifactPrefix(prefix)}`;
 }
 
 function toArtifactSourceStatus(
@@ -74,151 +81,310 @@ function toArtifactSourceStatus(
   };
 }
 
-class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
-  constructor(private readonly targetDir: string) {}
+function runToUiRow(
+  mode: ManagedArtifactSourceMode,
+  provider: RemoteArtifactProvider | null,
+  run: ResolvedArtifactRun,
+): RemoteArtifactRun {
+  if (mode === "remote" && provider != null) {
+    return toRemoteArtifactRun(provider, run);
+  }
+  return toLocalManagedArtifactRun(run);
+}
 
-  private async readOptionalBytes(
-    filePath: string,
-  ): Promise<Uint8Array | null> {
-    try {
-      return await fs.readFile(filePath);
-    } catch {
-      return null;
+function missingOptionalFromRun(
+  run: ResolvedArtifactRun,
+): MissingOptionalArtifactsState {
+  return {
+    missingCatalog: run.catalogKey == null,
+    missingSources: run.sourcesKey == null,
+  };
+}
+
+export class ArtifactSourceService {
+  private readonly cwd: string;
+  private readonly seedFromEnv: boolean;
+
+  private delegatedAdapter: ArtifactSourceAdapter | null = null;
+  private initPromise: Promise<void> | null = null;
+
+  private mode: "none" | "preload" | "remote" = "none";
+
+  private localDir: string | null = null;
+  private locationDisplay: string | null = null;
+  private sourceKind: ArtifactSourceKind | null = null;
+
+  private remoteConfig: DbtToolsRemoteSourceConfig | null = null;
+  private remoteClient: RemoteObjectStoreClient | null = null;
+  private remoteProvider: RemoteArtifactProvider | null = null;
+
+  private runs: ResolvedArtifactRun[] = [];
+  private discoveryResult: ArtifactDiscoveryResult | null = null;
+  private selectedRunId: string | null = null;
+
+  constructor(options: ArtifactSourceServiceOptions = {}) {
+    this.cwd = options.cwd ?? process.cwd();
+    this.seedFromEnv = options.seedFromEnv !== false;
+
+    if (options.adapter !== undefined) {
+      this.delegatedAdapter = options.adapter;
+      return;
+    }
+
+    if (options.remoteConfig !== undefined || options.targetDir !== undefined) {
+      this.initPromise = this.bootstrapFromExplicitOptions(options);
+      return;
+    }
+
+    if (this.seedFromEnv) {
+      this.initPromise = this.seedFromEnvironment();
     }
   }
 
-  async getStatus(): Promise<ArtifactSourceStatus> {
+  private async ensureReady(): Promise<void> {
+    if (this.delegatedAdapter != null) return;
+    if (this.initPromise != null) {
+      await this.initPromise;
+    }
+  }
+
+  private async bootstrapFromExplicitOptions(
+    options: ArtifactSourceServiceOptions,
+  ): Promise<void> {
+    if (options.remoteConfig != null) {
+      await this.applyRemoteConfiguration(
+        options.remoteConfig,
+        options.remoteClient ??
+          createRemoteObjectStoreClient(options.remoteConfig),
+        true,
+      );
+      return;
+    }
+
+    if (options.targetDir != null) {
+      const resolved = resolveLocalArtifactTargetDirFromEnv(
+        this.cwd,
+        options.targetDir,
+      );
+      await this.applyLocalDirectory(resolved, true);
+    }
+  }
+
+  private async seedFromEnvironment(): Promise<void> {
+    const remoteEnv = getDbtToolsRemoteSourceConfigFromEnv();
+    if (remoteEnv != null) {
+      await this.applyRemoteConfiguration(
+        remoteEnv,
+        createRemoteObjectStoreClient(remoteEnv),
+        true,
+      );
+      return;
+    }
+
+    const rawTarget = getDbtToolsTargetDirFromEnv();
+    if (rawTarget == null) return;
+
+    const resolved = resolveLocalArtifactTargetDirFromEnv(this.cwd, rawTarget);
+    await this.applyLocalDirectory(resolved, true);
+  }
+
+  private pickEnvDefaultRunId(runs: ResolvedArtifactRun[]): string | null {
+    if (runs.length === 1) return runs[0]!.runId;
+    return null;
+  }
+
+  private discoveryErrorMessage(): string | null {
+    return this.discoveryResult != null && !this.discoveryResult.ok
+      ? this.discoveryResult.failure.message
+      : null;
+  }
+
+  private resolveSelectedRun(): ResolvedArtifactRun | null {
+    if (this.selectedRunId == null) return null;
+    return this.runs.find((r) => r.runId === this.selectedRunId) ?? null;
+  }
+
+  private statusWhenNone(): ArtifactSourceStatus {
     return toArtifactSourceStatus({
-      mode: "preload",
-      currentSource: "preload",
-      label: "Live target",
+      mode: "none",
+      currentSource: null,
+      label: "Waiting for artifacts",
       remoteProvider: null,
       remoteLocation: null,
       pollIntervalMs: null,
       currentRun: null,
       pendingRun: null,
       supportsSwitch: false,
+      needsSelection: false,
+      candidates: undefined,
+      discoveryError: null,
+      sourceKind: null,
+      locationDisplay: null,
+      missingOptionalArtifacts: undefined,
     });
   }
 
-  async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
-    try {
-      const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
-        await Promise.all([
-          fs.readFile(path.join(this.targetDir, DBT_MANIFEST_JSON)),
-          fs.readFile(path.join(this.targetDir, DBT_RUN_RESULTS_JSON)),
-          this.readOptionalBytes(path.join(this.targetDir, DBT_CATALOG_JSON)),
-          this.readOptionalBytes(path.join(this.targetDir, DBT_SOURCES_JSON)),
-        ]);
-
-      return {
-        source: "preload",
-        manifestBytes,
-        runResultsBytes,
-        ...(catalogBytes != null ? { catalogBytes } : {}),
-        ...(sourcesBytes != null ? { sourcesBytes } : {}),
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  async switchToRun(): Promise<ArtifactSourceStatus> {
-    return this.getStatus();
-  }
-}
-
-class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
-  private currentRunId: string | null = null;
-
-  constructor(
-    private readonly config: DbtToolsRemoteSourceConfig,
-    private readonly client: RemoteObjectStoreClient,
-  ) {}
-
-  private async resolveRuns(): Promise<ResolvedArtifactRun[]> {
-    const objects = await this.client.listObjects(
-      this.config.bucket,
-      normalizeArtifactPrefix(this.config.prefix),
+  private mapRunsToUiRows(): RemoteArtifactRun[] {
+    return this.runs.map((run) =>
+      runToUiRow(this.mode, this.remoteProvider, run),
     );
-    return discoverLatestArtifactRuns(objects, this.config.prefix);
   }
 
-  private chooseCurrentRun(
-    runs: ResolvedArtifactRun[],
-  ): ResolvedArtifactRun | null {
-    if (runs.length === 0) return null;
-    if (this.currentRunId == null) {
-      this.currentRunId = runs[0].runId;
-      return runs[0];
-    }
-
-    const current = runs.find((run) => run.runId === this.currentRunId);
-    if (current) return current;
-
-    this.currentRunId = runs[0].runId;
-    return runs[0];
+  private runToUiOrNull(
+    run: ResolvedArtifactRun | null,
+  ): RemoteArtifactRun | null {
+    if (run == null) return null;
+    return runToUiRow(this.mode, this.remoteProvider, run);
   }
 
-  private async readOptionalObjectBytes(
-    key: string | undefined,
-  ): Promise<Uint8Array | null> {
-    if (key == null) return null;
-    try {
-      return await this.client.readObjectBytes(this.config.bucket, key);
-    } catch {
+  private needsExplicitRunSelection(discoveryError: string | null): boolean {
+    return (
+      this.runs.length > 0 &&
+      this.selectedRunId == null &&
+      discoveryError == null
+    );
+  }
+
+  private optionalArtifactsForResolved(
+    currentResolved: ResolvedArtifactRun | null,
+  ): MissingOptionalArtifactsState | undefined {
+    return currentResolved == null
+      ? undefined
+      : missingOptionalFromRun(currentResolved);
+  }
+
+  private remotePollIntervalOrNull(): number | null {
+    if (this.mode !== "remote") return null;
+    return this.remoteConfig?.pollIntervalMs ?? null;
+  }
+
+  private remoteSupportsPendingSwitch(
+    pendingRun: RemoteArtifactRun | null,
+    needsSelection: boolean,
+  ): boolean {
+    return this.mode === "remote" && pendingRun != null && !needsSelection;
+  }
+
+  private currentManagedSourceOrNull(params: {
+    needsSelection: boolean;
+    discoveryError: string | null;
+    currentResolved: ResolvedArtifactRun | null;
+  }): Exclude<WorkspaceArtifactSource, "upload"> | null {
+    if (
+      params.needsSelection ||
+      params.discoveryError != null ||
+      params.currentResolved == null
+    ) {
       return null;
     }
+    if (this.mode === "none") return null;
+    return this.mode;
   }
 
-  async getStatus(): Promise<ArtifactSourceStatus> {
-    const runs = await this.resolveRuns();
-    const currentRun = this.chooseCurrentRun(runs);
-    const latestRun = runs[0] ?? null;
-    const pendingRun =
-      latestRun != null &&
-      currentRun != null &&
-      latestRun.runId !== currentRun.runId
-        ? latestRun
-        : null;
-
-    return toArtifactSourceStatus({
-      mode: "remote",
-      currentSource: currentRun == null ? null : "remote",
-      label: "Remote source",
-      remoteProvider: this.config.provider,
-      remoteLocation: toLocationLabel(
-        this.config.provider,
-        this.config.bucket,
-        normalizeArtifactPrefix(this.config.prefix),
-      ),
-      pollIntervalMs: this.config.pollIntervalMs,
-      currentRun:
-        currentRun == null
-          ? null
-          : toRemoteArtifactRun(this.config.provider, currentRun),
-      pendingRun:
-        pendingRun == null
-          ? null
-          : toRemoteArtifactRun(this.config.provider, pendingRun),
-      supportsSwitch: pendingRun != null,
+  private buildActiveArtifactStatus(): Omit<
+    ArtifactSourceStatus,
+    "checkedAtMs"
+  > {
+    const discoveryError = this.discoveryErrorMessage();
+    const candidatesUi = this.mapRunsToUiRows();
+    const currentResolved = this.resolveSelectedRun();
+    const currentRunUi = this.runToUiOrNull(currentResolved);
+    const pendingRun = this.pendingRunAfterLatest(currentResolved);
+    const needsSelection = this.needsExplicitRunSelection(discoveryError);
+    const missingOptionalArtifacts =
+      this.optionalArtifactsForResolved(currentResolved);
+    const supportsSwitch = this.remoteSupportsPendingSwitch(
+      pendingRun,
+      needsSelection,
+    );
+    const pollIntervalMs = this.remotePollIntervalOrNull();
+    const currentSource = this.currentManagedSourceOrNull({
+      needsSelection,
+      discoveryError,
+      currentResolved,
     });
+
+    return {
+      mode: this.mode,
+      currentSource,
+      label: this.locationDisplay ?? "Artifacts",
+      remoteProvider: this.remoteProvider,
+      remoteLocation: this.mode === "remote" ? this.locationDisplay : null,
+      pollIntervalMs,
+      currentRun: currentRunUi,
+      pendingRun,
+      supportsSwitch,
+      needsSelection,
+      candidates: candidatesUi.length > 0 ? candidatesUi : undefined,
+      discoveryError,
+      sourceKind: this.sourceKind ?? undefined,
+      locationDisplay: this.locationDisplay,
+      missingOptionalArtifacts,
+    };
   }
 
-  async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
-    const runs = await this.resolveRuns();
-    const currentRun = this.chooseCurrentRun(runs);
-    if (currentRun == null) return null;
+  private pendingRunAfterLatest(
+    currentResolved: ResolvedArtifactRun | null,
+  ): RemoteArtifactRun | null {
+    const latestRun = this.runs[0] ?? null;
+    if (
+      this.mode !== "remote" ||
+      this.remoteProvider == null ||
+      latestRun == null ||
+      currentResolved == null ||
+      latestRun.runId === currentResolved.runId
+    ) {
+      return null;
+    }
+    return runToUiRow("remote", this.remoteProvider, latestRun);
+  }
+
+  private async readPreloadArtifacts(
+    run: ResolvedArtifactRun,
+  ): Promise<CurrentArtifactPayload> {
+    const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
+      await Promise.all([
+        fs.readFile(run.manifestKey),
+        fs.readFile(run.runResultsKey),
+        run.catalogKey != null
+          ? fs.readFile(run.catalogKey).catch(() => null)
+          : Promise.resolve(null),
+        run.sourcesKey != null
+          ? fs.readFile(run.sourcesKey).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+    return {
+      source: "preload",
+      manifestBytes,
+      runResultsBytes,
+      ...(catalogBytes != null ? { catalogBytes } : {}),
+      ...(sourcesBytes != null ? { sourcesBytes } : {}),
+    };
+  }
+
+  private async readRemoteArtifacts(
+    run: ResolvedArtifactRun,
+    bucket: string,
+    client: RemoteObjectStoreClient,
+  ): Promise<CurrentArtifactPayload> {
+    const readOptional = async (
+      key: string | undefined,
+    ): Promise<Uint8Array | null> => {
+      if (key == null) return null;
+      try {
+        return await client.readObjectBytes(bucket, key);
+      } catch {
+        return null;
+      }
+    };
 
     const [manifestBytes, runResultsBytes, catalogBytes, sourcesBytes] =
       await Promise.all([
-        this.client.readObjectBytes(this.config.bucket, currentRun.manifestKey),
-        this.client.readObjectBytes(
-          this.config.bucket,
-          currentRun.runResultsKey,
-        ),
-        this.readOptionalObjectBytes(currentRun.catalogKey),
-        this.readOptionalObjectBytes(currentRun.sourcesKey),
+        client.readObjectBytes(bucket, run.manifestKey),
+        client.readObjectBytes(bucket, run.runResultsKey),
+        readOptional(run.catalogKey),
+        readOptional(run.sourcesKey),
       ]);
 
     return {
@@ -230,84 +396,156 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
     };
   }
 
-  async switchToRun(runId?: string): Promise<ArtifactSourceStatus> {
-    const runs = await this.resolveRuns();
-    const target =
-      runId == null
-        ? runs[0]
-        : runs.find((candidate) => candidate.runId === runId);
-    if (target != null) {
-      this.currentRunId = target.runId;
-      debugLog("Switched remote artifact run", this.currentRunId);
+  private async applyLocalDirectory(
+    resolvedDir: string,
+    fromEnvBootstrap: boolean,
+  ): Promise<void> {
+    this.mode = "preload";
+    this.localDir = resolvedDir;
+    this.remoteConfig = null;
+    this.remoteClient = null;
+    this.remoteProvider = null;
+    this.sourceKind = "local";
+    this.locationDisplay = resolvedDir;
+
+    const { runs, discovery } =
+      await discoverLocalResolvedArtifactRuns(resolvedDir);
+    this.discoveryResult = discovery;
+    this.runs = runs;
+
+    if (!discovery.ok) {
+      this.selectedRunId = null;
+      debugLog("Local discovery failed", discovery.failure.message);
+      return;
     }
-    return this.getStatus();
+
+    this.selectedRunId = fromEnvBootstrap
+      ? this.pickEnvDefaultRunId(runs)
+      : null;
   }
-}
 
-export class ArtifactSourceService {
-  private adapter: ArtifactSourceAdapter | null;
-
-  constructor(options: ArtifactSourceServiceOptions = {}) {
-    if (options.adapter !== undefined) {
-      this.adapter = options.adapter;
-      return;
-    }
-
-    const remoteConfig =
-      options.remoteConfig === undefined
-        ? getDbtToolsRemoteSourceConfigFromEnv()
-        : options.remoteConfig;
-    if (remoteConfig != null) {
-      debugLog(
-        "Configured remote artifact source",
-        remoteConfig.provider,
-        remoteConfig.bucket,
-        remoteConfig.prefix,
-      );
-      this.adapter = new RemoteArtifactSourceAdapter(
-        remoteConfig,
-        options.remoteClient ?? createRemoteObjectStoreClient(remoteConfig),
-      );
-      return;
-    }
-
-    const targetDir =
-      options.targetDir === undefined
-        ? getDbtToolsTargetDirFromEnv()
-        : options.targetDir;
-    if (targetDir == null) {
-      this.adapter = null;
-      return;
-    }
-
-    this.adapter = new LocalArtifactSourceAdapter(
-      resolveLocalArtifactTargetDirFromEnv(process.cwd(), targetDir),
+  private async applyRemoteConfiguration(
+    config: DbtToolsRemoteSourceConfig,
+    client: RemoteObjectStoreClient,
+    fromEnvBootstrap: boolean,
+  ): Promise<void> {
+    this.mode = "remote";
+    this.localDir = null;
+    this.remoteConfig = config;
+    this.remoteClient = client;
+    this.remoteProvider = config.provider;
+    this.sourceKind = config.provider;
+    this.locationDisplay = toRemoteLocationLabel(
+      config.provider,
+      config.bucket,
+      config.prefix,
     );
+
+    const prefixNorm = normalizeArtifactPrefix(config.prefix);
+    const objects = await client.listObjects(config.bucket, prefixNorm);
+    const discovery = discoverRemoteArtifactDiscovery(objects, config.prefix);
+    this.discoveryResult = discovery;
+
+    if (!discovery.ok) {
+      this.runs = [];
+      this.selectedRunId = null;
+      debugLog("Remote discovery failed", discovery.failure.message);
+      return;
+    }
+
+    const runs = discoverLatestArtifactRuns(objects, config.prefix);
+    this.runs = runs;
+
+    this.selectedRunId = fromEnvBootstrap
+      ? this.pickEnvDefaultRunId(runs)
+      : null;
+  }
+
+  /**
+   * User-driven configuration (UI or API). Always requires explicit run
+   * selection when more than one candidate exists.
+   */
+  async configureArtifactSource(
+    kind: ArtifactSourceKind,
+    location: string,
+  ): Promise<ArtifactSourceStatus> {
+    await this.ensureReady();
+
+    const parsed = parseArtifactSourceLocation(kind, location, this.cwd);
+    if (parsed.kind === "local") {
+      await this.applyLocalDirectory(parsed.resolvedPath, false);
+    } else {
+      const env = getDbtToolsRemoteSourceConfigFromEnv();
+      const merged = mergeRemoteSourceConfigWithParsedLocation(env, parsed);
+      const client = createRemoteObjectStoreClient(merged);
+      await this.applyRemoteConfiguration(merged, client, false);
+    }
+
+    return this.getStatus();
   }
 
   async getStatus(): Promise<ArtifactSourceStatus> {
-    if (this.adapter == null) {
-      return toArtifactSourceStatus({
-        mode: "none",
-        currentSource: null,
-        label: "Waiting for artifacts",
-        remoteProvider: null,
-        remoteLocation: null,
-        pollIntervalMs: null,
-        currentRun: null,
-        pendingRun: null,
-        supportsSwitch: false,
-      });
+    await this.ensureReady();
+
+    if (this.delegatedAdapter != null) {
+      return this.delegatedAdapter.getStatus();
     }
-    return this.adapter.getStatus();
+
+    if (this.mode === "none") {
+      return this.statusWhenNone();
+    }
+
+    return toArtifactSourceStatus(this.buildActiveArtifactStatus());
   }
 
   async getCurrentArtifacts(): Promise<CurrentArtifactPayload | null> {
-    return this.adapter?.getCurrentArtifacts() ?? null;
+    await this.ensureReady();
+
+    if (this.delegatedAdapter != null) {
+      return this.delegatedAdapter.getCurrentArtifacts();
+    }
+
+    if (this.selectedRunId == null || this.discoveryResult?.ok !== true) {
+      return null;
+    }
+
+    const run = this.runs.find((r) => r.runId === this.selectedRunId);
+    if (run == null) return null;
+
+    if (this.mode === "preload" && this.localDir != null) {
+      return this.readPreloadArtifacts(run);
+    }
+
+    if (
+      this.mode === "remote" &&
+      this.remoteClient != null &&
+      this.remoteConfig != null
+    ) {
+      return this.readRemoteArtifacts(
+        run,
+        this.remoteConfig.bucket,
+        this.remoteClient,
+      );
+    }
+
+    return null;
   }
 
   async switchToRun(runId?: string): Promise<ArtifactSourceStatus> {
-    if (this.adapter == null) return this.getStatus();
-    return this.adapter.switchToRun(runId);
+    await this.ensureReady();
+
+    if (this.delegatedAdapter != null) {
+      return this.delegatedAdapter.switchToRun(runId);
+    }
+
+    if (runId != null && runId.trim() !== "") {
+      const found = this.runs.some((r) => r.runId === runId);
+      if (found) {
+        this.selectedRunId = runId;
+        debugLog("Selected artifact run", this.selectedRunId);
+      }
+    }
+
+    return this.getStatus();
   }
 }

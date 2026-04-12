@@ -5,17 +5,20 @@
 import * as fs from "fs";
 import * as path from "path";
 import {
-  resolveArtifactPaths,
   validateSafePath,
   formatOutput,
   shouldOutputJSON,
 } from "@dbt-tools/core";
+import {
+  resolveCliArtifactPaths,
+  type ArtifactRootCliOptions,
+} from "./cli-artifact-resolve";
 
 export type StatusOptions = {
   targetDir?: string;
   json?: boolean;
   noJson?: boolean;
-};
+} & ArtifactRootCliOptions;
 
 export type ArtifactFileStatus = {
   path: string;
@@ -116,13 +119,20 @@ export function formatStatus(result: StatusResult): string {
 /**
  * Status / freshness action handler
  */
-export function statusAction(
+export async function statusAction(
   options: StatusOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
-    const paths = resolveArtifactPaths(undefined, undefined, options.targetDir);
+    const paths = await resolveCliArtifactPaths(
+      { targetDir: options.targetDir },
+      {
+        source: options.source,
+        location: options.location,
+        runId: options.runId,
+      },
+    );
 
     // Validate paths before accessing filesystem
     validateSafePath(paths.manifest);

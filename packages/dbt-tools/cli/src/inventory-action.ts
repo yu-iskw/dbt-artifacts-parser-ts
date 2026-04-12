@@ -3,7 +3,6 @@
  */
 import {
   ManifestGraph,
-  resolveArtifactPaths,
   loadManifest,
   validateSafePath,
   FieldFilter,
@@ -11,6 +10,10 @@ import {
   shouldOutputJSON,
   type GraphNodeAttributes,
 } from "@dbt-tools/core";
+import {
+  resolveCliArtifactPaths,
+  type ArtifactRootCliOptions,
+} from "./cli-artifact-resolve";
 
 export type InventoryOptions = {
   type?: string;
@@ -21,7 +24,7 @@ export type InventoryOptions = {
   targetDir?: string;
   json?: boolean;
   noJson?: boolean;
-};
+} & ArtifactRootCliOptions;
 
 export type InventoryEntry = {
   unique_id: string;
@@ -114,17 +117,20 @@ export function formatInventory(result: InventoryResult): string {
 /**
  * Inventory action handler
  */
-export function inventoryAction(
+export async function inventoryAction(
   manifestPath: string | undefined,
   options: InventoryOptions,
   handleError: (error: unknown, isTTY: boolean) => void,
   isTTY: () => boolean,
-): void {
+): Promise<void> {
   try {
-    const paths = resolveArtifactPaths(
-      manifestPath,
-      undefined,
-      options.targetDir,
+    const paths = await resolveCliArtifactPaths(
+      { manifestPath, targetDir: options.targetDir },
+      {
+        source: options.source,
+        location: options.location,
+        runId: options.runId,
+      },
     );
     validateSafePath(paths.manifest);
 

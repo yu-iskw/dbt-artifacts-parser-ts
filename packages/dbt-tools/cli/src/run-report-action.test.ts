@@ -21,7 +21,7 @@ describe("runReportAction", () => {
     consoleLogSpy.mockRestore();
   });
 
-  it("outputs minimal execution summary without manifest when only run_results provided", () => {
+  it("outputs minimal execution summary without manifest when only run_results provided", async () => {
     const runResultsPath = getTestResourcePath(
       "run_results",
       "v6",
@@ -30,7 +30,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(
+    await runReportAction(
       runResultsPath,
       undefined,
       { json: true },
@@ -49,7 +49,7 @@ describe("runReportAction", () => {
     expect((parsed.node_executions as unknown[]).length).toBeGreaterThan(0);
   });
 
-  it("outputs execution summary with manifest and run_results fixtures", () => {
+  it("outputs execution summary with manifest and run_results fixtures", async () => {
     const manifestPath = getTestResourcePath(
       "manifest",
       "v12",
@@ -65,7 +65,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(runResultsPath, manifestPath, {}, handleError, isTTY);
+    await runReportAction(runResultsPath, manifestPath, {}, handleError, isTTY);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -74,7 +74,7 @@ describe("runReportAction", () => {
     expect(output).toContain("node_executions");
   });
 
-  it("outputs JSON when json option is set", () => {
+  it("outputs JSON when json option is set", async () => {
     const manifestPath = getTestResourcePath(
       "manifest",
       "v12",
@@ -90,7 +90,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(
+    await runReportAction(
       runResultsPath,
       manifestPath,
       { json: true },
@@ -106,7 +106,7 @@ describe("runReportAction", () => {
     expect(parsed).toHaveProperty("node_executions");
   });
 
-  it("includes bottlenecks when --bottlenecks option is set", () => {
+  it("includes bottlenecks when --bottlenecks option is set", async () => {
     const manifestPath = getTestResourcePath(
       "manifest",
       "v12",
@@ -122,7 +122,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(
+    await runReportAction(
       runResultsPath,
       manifestPath,
       { bottlenecks: true, json: true },
@@ -141,7 +141,7 @@ describe("runReportAction", () => {
     expect(bottlenecks.nodes[0]).toHaveProperty("execution_time");
   });
 
-  it("includes adapter_totals in JSON when --adapter-summary", () => {
+  it("includes adapter_totals in JSON when --adapter-summary", async () => {
     const manifestPath = getTestResourcePath(
       "manifest",
       "v12",
@@ -157,7 +157,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(
+    await runReportAction(
       runResultsPath,
       manifestPath,
       { adapterSummary: true, json: true },
@@ -172,7 +172,7 @@ describe("runReportAction", () => {
     expect(totals.nodesWithAdapterData).toBeGreaterThan(0);
   });
 
-  it("includes adapter_top in JSON when --adapter-top-by", () => {
+  it("includes adapter_top in JSON when --adapter-top-by", async () => {
     const manifestPath = getTestResourcePath(
       "manifest",
       "v12",
@@ -188,7 +188,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(
+    await runReportAction(
       runResultsPath,
       manifestPath,
       {
@@ -209,7 +209,7 @@ describe("runReportAction", () => {
     expect(top.nodes.length).toBeGreaterThan(0);
   });
 
-  it("renders human adapter sections when adapter summary is enabled", () => {
+  it("renders human adapter sections when adapter summary is enabled", async () => {
     const manifestPath = getTestResourcePath(
       "manifest",
       "v12",
@@ -225,7 +225,7 @@ describe("runReportAction", () => {
       "run_results.json",
     );
 
-    runReportAction(
+    await runReportAction(
       runResultsPath,
       manifestPath,
       { adapterSummary: true, noJson: true },

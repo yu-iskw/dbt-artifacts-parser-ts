@@ -10,7 +10,7 @@
       "entry": ["scripts/**/*.mjs"],
       "project": ["scripts/**/*.mjs"],
       "vitest": {
-        "config": ["vitest.config.mjs"],
+        "config": ["vitest.config.mjs", "vitest.coverage.mjs"],
         "entry": ["packages/**/*.test.ts", "packages/**/*.test.tsx"]
       }
     },
