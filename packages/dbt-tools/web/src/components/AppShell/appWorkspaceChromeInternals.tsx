@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { AnalysisWorkspace } from "../AnalysisWorkspace";
-import { FileUpload } from "../FileUpload";
+import { LocationSourceLoader } from "../LocationSourceLoader/LocationSourceLoader";
 import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
 import {
   formatRunStartedAt,
@@ -387,5 +387,5 @@ export function WorkspaceContent({
     return <LoadingCard />;
   }
 
-  return <FileUpload onAnalysis={onAnalysis} onError={onError} />;
+  return <LocationSourceLoader onAnalysis={onAnalysis} onError={onError} />;
 }

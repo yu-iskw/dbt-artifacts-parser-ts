@@ -4,3 +4,4 @@ export { inventoryAction } from "./inventory-action";
 export { timelineAction } from "./timeline-action";
 export { searchAction } from "./search-action";
 export { statusAction } from "./status-action";
+export { discoverAction } from "./discover-action";

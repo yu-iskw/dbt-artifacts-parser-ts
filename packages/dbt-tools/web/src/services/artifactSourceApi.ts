@@ -8,6 +8,21 @@ import {
 } from "./analysisLoader";
 import type { AnalysisArtifactBufferInputs } from "../workers/analysisProtocol";
 import type { WorkspaceArtifactSource } from "@web/lib/artifactSourceKind";
+import type {
+  ActivateArtifactRequest,
+  ArtifactCandidateSummary,
+  ArtifactSourceType,
+  DiscoverArtifactsRequest,
+  DiscoverArtifactsResponse,
+} from "../artifact-source/discoveryContract";
+
+export type {
+  ArtifactSourceType,
+  DiscoverArtifactsRequest,
+  DiscoverArtifactsResponse,
+  ActivateArtifactRequest,
+  ArtifactCandidateSummary,
+};
 
 export type { WorkspaceArtifactSource };
 export type ManagedArtifactSourceMode = "none" | "preload" | "remote";
@@ -243,6 +258,60 @@ export async function switchToArtifactRun(
 
   if (!response.ok) {
     throw new Error("Failed to switch artifact source run");
+  }
+
+  return (await response.json()) as ArtifactSourceStatus;
+}
+
+/**
+ * Ask the server to discover artifact candidates at the given location.
+ * Does not change the active source.
+ */
+export async function discoverArtifactSource(
+  req: DiscoverArtifactsRequest,
+): Promise<DiscoverArtifactsResponse> {
+  const response = await fetch("/api/artifact-source/discover", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "Failed to discover artifact source";
+    try {
+      const body = (await response.json()) as { message?: string };
+      if (body.message) errorMessage = body.message;
+    } catch {
+      // ignore parse failure
+    }
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as DiscoverArtifactsResponse;
+}
+
+/**
+ * Ask the server to activate a specific artifact candidate.
+ * After this succeeds, call refetchFromApi("runtime") to load the artifacts.
+ */
+export async function activateArtifactSource(
+  req: ActivateArtifactRequest,
+): Promise<ArtifactSourceStatus> {
+  const response = await fetch("/api/artifact-source/activate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "Failed to activate artifact source";
+    try {
+      const body = (await response.json()) as { message?: string };
+      if (body.message) errorMessage = body.message;
+    } catch {
+      // ignore parse failure
+    }
+    throw new Error(errorMessage);
   }
 
   return (await response.json()) as ArtifactSourceStatus;

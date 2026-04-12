@@ -6,16 +6,25 @@ import {
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
   DBT_SOURCES_JSON,
+  discoverLocalArtifactRuns,
   getDbtToolsRemoteSourceConfigFromEnv,
   getDbtToolsTargetDirFromEnv,
   isDbtToolsDebugEnabled,
+  validateSafePath,
   type DbtToolsRemoteSourceConfig,
+  type LocalArtifactRun,
 } from "@dbt-tools/core";
 import {
   discoverLatestArtifactRuns,
   toRemoteArtifactRun,
   type ResolvedArtifactRun,
 } from "./discovery";
+import {
+  type ActivateArtifactRequest,
+  type ArtifactCandidateSummary,
+  type DiscoverArtifactsRequest,
+  type DiscoverArtifactsResponse,
+} from "./discoveryContract";
 import { normalizeArtifactPrefix } from "./prefix";
 import {
   createRemoteObjectStoreClient,
@@ -74,6 +83,10 @@ function toArtifactSourceStatus(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Local adapter
+// ---------------------------------------------------------------------------
+
 class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
   constructor(private readonly targetDir: string) {}
 
@@ -127,6 +140,10 @@ class LocalArtifactSourceAdapter implements ArtifactSourceAdapter {
     return this.getStatus();
   }
 }
+
+// ---------------------------------------------------------------------------
+// Remote adapter
+// ---------------------------------------------------------------------------
 
 class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
   private currentRunId: string | null = null;
@@ -244,6 +261,98 @@ class RemoteArtifactSourceAdapter implements ArtifactSourceAdapter {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Discovery helpers
+// ---------------------------------------------------------------------------
+
+function localRunToCandidate(run: LocalArtifactRun): ArtifactCandidateSummary {
+  const missingOptional: string[] = [];
+  if (run.catalogPath == null) missingOptional.push(DBT_CATALOG_JSON);
+  if (run.sourcesPath == null) missingOptional.push(DBT_SOURCES_JSON);
+
+  return {
+    candidateId: run.runId,
+    label:
+      run.runId === "current" ? "Current artifacts" : `Run: ${run.runId}`,
+    updatedAtMs: run.updatedAtMs,
+    hasManifest: true,
+    hasRunResults: true,
+    hasCatalog: run.catalogPath != null,
+    hasSources: run.sourcesPath != null,
+    missingOptional,
+  };
+}
+
+function remoteRunToCandidate(
+  provider: RemoteArtifactProvider,
+  run: ResolvedArtifactRun,
+): ArtifactCandidateSummary {
+  const missingOptional: string[] = [];
+  if (run.catalogKey == null) missingOptional.push(DBT_CATALOG_JSON);
+  if (run.sourcesKey == null) missingOptional.push(DBT_SOURCES_JSON);
+
+  return {
+    candidateId: run.runId,
+    label: toRemoteArtifactRun(provider, run).label,
+    updatedAtMs: run.updatedAtMs,
+    hasManifest: true,
+    hasRunResults: true,
+    hasCatalog: run.catalogKey != null,
+    hasSources: run.sourcesKey != null,
+    missingOptional,
+  };
+}
+
+/**
+ * Parse a "bucket/prefix" location string into its components.
+ * Everything before the first "/" is the bucket; the rest is the prefix.
+ */
+function parseBucketPrefix(location: string): {
+  bucket: string;
+  prefix: string;
+} {
+  const slashIndex = location.indexOf("/");
+  if (slashIndex === -1) {
+    return { bucket: location, prefix: "" };
+  }
+  return {
+    bucket: location.slice(0, slashIndex),
+    prefix: location.slice(slashIndex + 1),
+  };
+}
+
+/**
+ * Build a DbtToolsRemoteSourceConfig for an ad-hoc discover/activate request,
+ * using the server-configured credentials (from DBT_TOOLS_REMOTE_SOURCE) with
+ * the user-supplied bucket/prefix.
+ */
+function buildAdHocRemoteConfig(
+  provider: "s3" | "gcs",
+  bucket: string,
+  prefix: string,
+): DbtToolsRemoteSourceConfig {
+  const envConfig = getDbtToolsRemoteSourceConfigFromEnv();
+  return {
+    provider,
+    bucket,
+    prefix,
+    pollIntervalMs: envConfig?.pollIntervalMs ?? 30_000,
+    region: envConfig?.provider === provider ? envConfig.region : undefined,
+    endpoint:
+      envConfig?.provider === provider ? envConfig.endpoint : undefined,
+    forcePathStyle:
+      envConfig?.provider === provider
+        ? envConfig.forcePathStyle
+        : undefined,
+    projectId:
+      envConfig?.provider === provider ? envConfig.projectId : undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Main service
+// ---------------------------------------------------------------------------
+
 export class ArtifactSourceService {
   private adapter: ArtifactSourceAdapter | null;
 
@@ -285,6 +394,11 @@ export class ArtifactSourceService {
     );
   }
 
+  /** Replace the active adapter with one supplied at runtime. */
+  setRuntimeAdapter(adapter: ArtifactSourceAdapter | null): void {
+    this.adapter = adapter;
+  }
+
   async getStatus(): Promise<ArtifactSourceStatus> {
     if (this.adapter == null) {
       return toArtifactSourceStatus({
@@ -309,5 +423,133 @@ export class ArtifactSourceService {
   async switchToRun(runId?: string): Promise<ArtifactSourceStatus> {
     if (this.adapter == null) return this.getStatus();
     return this.adapter.switchToRun(runId);
+  }
+
+  /**
+   * Discover artifact candidates at the given location without changing the
+   * active adapter. Returns a list of candidates the caller can present to the
+   * user for explicit selection.
+   */
+  async discover(
+    request: DiscoverArtifactsRequest,
+  ): Promise<DiscoverArtifactsResponse> {
+    const { sourceType, location } = request;
+
+    try {
+      if (sourceType === "local") {
+        validateSafePath(location);
+        const runs = discoverLocalArtifactRuns(location);
+        const candidates = runs.map(localRunToCandidate);
+
+        if (candidates.length === 0) {
+          return {
+            sourceType,
+            location,
+            candidates: [],
+            error: `No complete artifact pair found at "${location}". Both manifest.json and run_results.json are required.`,
+          };
+        }
+
+        return { sourceType, location, candidates };
+      }
+
+      // S3 or GCS
+      const provider = sourceType; // "s3" | "gcs"
+      const { bucket, prefix } = parseBucketPrefix(location);
+
+      if (!bucket) {
+        return {
+          sourceType,
+          location,
+          candidates: [],
+          error: `Invalid location "${location}". Expected format: "bucket/prefix".`,
+        };
+      }
+
+      const config = buildAdHocRemoteConfig(provider, bucket, prefix);
+      const client = createRemoteObjectStoreClient(config);
+
+      const objects = await client.listObjects(
+        bucket,
+        normalizeArtifactPrefix(prefix),
+      );
+      const runs = discoverLatestArtifactRuns(objects, prefix);
+      const candidates = runs.map((run) =>
+        remoteRunToCandidate(provider, run),
+      );
+
+      if (candidates.length === 0) {
+        return {
+          sourceType,
+          location,
+          candidates: [],
+          error: `No complete artifact pair found at "${location}". Both manifest.json and run_results.json are required.`,
+        };
+      }
+
+      return { sourceType, location, candidates };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        sourceType,
+        location,
+        candidates: [],
+        error: message,
+      };
+    }
+  }
+
+  /**
+   * Discover candidates at the given location, select the one matching
+   * `candidateId`, create the appropriate adapter, and replace the active
+   * adapter. Returns the new status.
+   *
+   * @throws {Error} when candidateId is not found or no candidates exist.
+   */
+  async activate(request: ActivateArtifactRequest): Promise<ArtifactSourceStatus> {
+    const { sourceType, location, candidateId } = request;
+
+    const discovery = await this.discover({ sourceType, location });
+
+    if (discovery.error != null && discovery.candidates.length === 0) {
+      throw new Error(discovery.error);
+    }
+
+    const candidate = discovery.candidates.find(
+      (c) => c.candidateId === candidateId,
+    );
+    if (candidate == null) {
+      throw new Error(
+        `Candidate "${candidateId}" not found at "${location}".`,
+      );
+    }
+
+    if (sourceType === "local") {
+      // Point the local adapter at the correct directory.
+      // "current" → root location; otherwise → subdirectory with the run name.
+      validateSafePath(location);
+      const resolvedBase = path.resolve(location);
+      const targetDir =
+        candidateId === "current"
+          ? resolvedBase
+          : path.join(resolvedBase, candidateId);
+
+      const newAdapter = new LocalArtifactSourceAdapter(targetDir);
+      this.setRuntimeAdapter(newAdapter);
+      debugLog("Activated local artifact source", targetDir);
+      return this.getStatus();
+    }
+
+    // S3 or GCS
+    const provider = sourceType; // "s3" | "gcs"
+    const { bucket, prefix } = parseBucketPrefix(location);
+    const config = buildAdHocRemoteConfig(provider, bucket, prefix);
+    const client = createRemoteObjectStoreClient(config);
+    const newAdapter = new RemoteArtifactSourceAdapter(config, client);
+
+    this.setRuntimeAdapter(newAdapter);
+    debugLog("Activated remote artifact source", provider, bucket, prefix);
+
+    return newAdapter.switchToRun(candidateId);
   }
 }

@@ -29,6 +29,7 @@ import {
   timelineAction,
   searchAction,
   statusAction,
+  discoverAction,
 } from "./cli-actions";
 import { CLI_PACKAGE_VERSION } from "./version";
 
@@ -39,7 +40,14 @@ const ARG_MANIFEST_PATH = "[manifest-path]";
 const DESC_MANIFEST =
   "Path to manifest.json file (defaults to ./target/manifest.json)";
 const OPT_TARGET_DIR = "--target-dir <dir>";
-const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
+const DESC_TARGET_DIR =
+  "Target directory (defaults to ./target). Alias: --location";
+const OPT_LOCATION = "--location <path>";
+const DESC_LOCATION =
+  "Directory or prefix to scan (--source-type local) or load from. Supersedes --target-dir when both are set.";
+const OPT_SOURCE_TYPE = "--source-type <type>";
+const DESC_SOURCE_TYPE =
+  "Artifact source type: local (default), s3, or gcs. S3/GCS require the web server.";
 const OPT_JSON = "--json";
 const DESC_JSON = "Force JSON output";
 const OPT_NO_JSON = "--no-json";
@@ -612,10 +620,23 @@ program
     "Report dbt artifact presence, modification times, and analysis readiness",
   )
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_LOCATION, DESC_LOCATION)
+  .option(OPT_SOURCE_TYPE, DESC_SOURCE_TYPE)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+  .action(
+    (options: {
+      targetDir?: string;
+      location?: string;
+      sourceType?: string;
+      json?: boolean;
+      noJson?: boolean;
+    }) =>
+      statusAction(
+        { targetDir: options.location ?? options.targetDir, json: options.json, noJson: options.noJson },
+        handleError,
+        isTTY,
+      ),
   );
 
 /**
@@ -625,10 +646,46 @@ program
   .command("freshness")
   .description("Alias for status – shows artifact recency and readiness")
   .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_LOCATION, DESC_LOCATION)
+  .option(OPT_SOURCE_TYPE, DESC_SOURCE_TYPE)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .action((options: { targetDir?: string; json?: boolean; noJson?: boolean }) =>
-    statusAction(options, handleError, isTTY),
+  .action(
+    (options: {
+      targetDir?: string;
+      location?: string;
+      sourceType?: string;
+      json?: boolean;
+      noJson?: boolean;
+    }) =>
+      statusAction(
+        { targetDir: options.location ?? options.targetDir, json: options.json, noJson: options.noJson },
+        handleError,
+        isTTY,
+      ),
+  );
+
+/**
+ * Discover command: Scan a directory/prefix for dbt artifact sets
+ */
+program
+  .command("discover")
+  .description(
+    "Scan a directory for dbt artifact sets and report which artifacts are present",
+  )
+  .option(OPT_SOURCE_TYPE, DESC_SOURCE_TYPE)
+  .option(OPT_LOCATION, DESC_LOCATION)
+  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    (options: {
+      sourceType?: string;
+      location?: string;
+      targetDir?: string;
+      json?: boolean;
+      noJson?: boolean;
+    }) => discoverAction(options, handleError, isTTY),
   );
 
 /**

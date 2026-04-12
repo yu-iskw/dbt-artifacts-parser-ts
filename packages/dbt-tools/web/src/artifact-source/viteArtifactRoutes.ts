@@ -6,6 +6,11 @@ import {
   DBT_SOURCES_JSON,
 } from "@dbt-tools/core";
 import type { ArtifactSourceService } from "./sourceService";
+import type {
+  ActivateArtifactRequest,
+  ArtifactSourceType,
+  DiscoverArtifactsRequest,
+} from "./discoveryContract";
 
 async function readJsonBody(
   request: IncomingMessage,
@@ -77,11 +82,123 @@ function isArtifactSwitchRequest(
   return req.method === "POST" && pathname === "/api/artifact-source/switch";
 }
 
+function isArtifactDiscoverRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "POST" && pathname === "/api/artifact-source/discover";
+}
+
+function isArtifactActivateRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "POST" && pathname === "/api/artifact-source/activate";
+}
+
 function isCurrentArtifactRequest(
   req: IncomingMessage,
   pathname: string,
 ): boolean {
   return req.method === "GET" && CURRENT_ARTIFACT_PATHS.has(pathname);
+}
+
+const VALID_SOURCE_TYPES = new Set<ArtifactSourceType>(["local", "s3", "gcs"]);
+
+function parseDiscoverBody(
+  body: Record<string, unknown>,
+): DiscoverArtifactsRequest | null {
+  const { sourceType, location } = body;
+  if (
+    typeof sourceType !== "string" ||
+    !VALID_SOURCE_TYPES.has(sourceType as ArtifactSourceType) ||
+    typeof location !== "string" ||
+    location.trim() === ""
+  ) {
+    return null;
+  }
+  return {
+    sourceType: sourceType as ArtifactSourceType,
+    location: location.trim(),
+  };
+}
+
+function parseActivateBody(
+  body: Record<string, unknown>,
+): ActivateArtifactRequest | null {
+  const { sourceType, location, candidateId } = body;
+  if (
+    typeof sourceType !== "string" ||
+    !VALID_SOURCE_TYPES.has(sourceType as ArtifactSourceType) ||
+    typeof location !== "string" ||
+    location.trim() === "" ||
+    typeof candidateId !== "string" ||
+    candidateId.trim() === ""
+  ) {
+    return null;
+  }
+  return {
+    sourceType: sourceType as ArtifactSourceType,
+    location: location.trim(),
+    candidateId: candidateId.trim(),
+  };
+}
+
+async function handleDiscover(
+  req: IncomingMessage,
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  const body = await readJsonBody(req);
+  const discoverReq = parseDiscoverBody(body);
+  if (discoverReq == null) {
+    sendJson(res, 400, {
+      error: "invalid_request",
+      message:
+        'Request body must include "sourceType" (local|s3|gcs) and a non-empty "location".',
+    });
+    return;
+  }
+  const result = await service.discover(discoverReq);
+  if (result.error != null && result.candidates.length === 0) {
+    sendJson(res, 422, {
+      error: "no_candidates",
+      message: result.error,
+      sourceType: result.sourceType,
+      location: result.location,
+      candidates: [],
+    });
+    return;
+  }
+  sendJson(res, 200, result);
+}
+
+async function handleActivate(
+  req: IncomingMessage,
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  const body = await readJsonBody(req);
+  const activateReq = parseActivateBody(body);
+  if (activateReq == null) {
+    sendJson(res, 400, {
+      error: "invalid_request",
+      message:
+        'Request body must include "sourceType" (local|s3|gcs), a non-empty "location", and a non-empty "candidateId".',
+    });
+    return;
+  }
+  try {
+    sendJson(res, 200, await service.activate(activateReq));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isNotFound =
+      message.includes("not found") || message.includes("No complete");
+    sendJson(res, isNotFound ? 422 : 500, {
+      error: isNotFound ? "activation_failed" : "internal_error",
+      message,
+    });
+  }
 }
 
 /**
@@ -111,6 +228,16 @@ export async function tryHandleArtifactSourceViteRequest(
     return true;
   }
 
+  if (isArtifactDiscoverRequest(req, pathname)) {
+    await handleDiscover(req, res, service);
+    return true;
+  }
+
+  if (isArtifactActivateRequest(req, pathname)) {
+    await handleActivate(req, res, service);
+    return true;
+  }
+
   if (isCurrentArtifactRequest(req, pathname)) {
     const current = await service.getCurrentArtifacts();
     const bytes = currentArtifactBytes(pathname, current);
@@ -119,7 +246,6 @@ export async function tryHandleArtifactSourceViteRequest(
       res.end();
       return true;
     }
-
     res.setHeader("Content-Type", "application/json");
     res.statusCode = 200;
     res.end(Buffer.from(bytes));
