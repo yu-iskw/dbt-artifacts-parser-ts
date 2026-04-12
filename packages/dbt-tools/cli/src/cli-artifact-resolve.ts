@@ -50,10 +50,11 @@ function pickRun<T extends PickableRun>(
     );
   }
   if (runId != null && runId.trim() !== "") {
-    const found = runs.find((r) => r.runId === runId);
+    const normalizedRunId = runId.trim();
+    const found = runs.find((r) => r.runId === normalizedRunId);
     if (found == null) {
       throw new Error(
-        `Unknown --run-id "${runId}". Candidates: ${runs.map((r) => r.runId).join(", ")}`,
+        `Unknown --run-id "${normalizedRunId}". Candidates: ${runs.map((r) => r.runId).join(", ")}`,
       );
     }
     return found;
@@ -174,8 +175,8 @@ function assertNotMixedWithLegacyPaths(legacy: LegacyArtifactCliInput): void {
   const hasLegacy =
     (legacy.manifestPath != null && legacy.manifestPath.trim() !== "") ||
     (legacy.runResultsPath != null && legacy.runResultsPath.trim() !== "") ||
-    (legacy.catalogPath != null && legacy.catalogPath !== "") ||
-    (legacy.sourcesPath != null && legacy.sourcesPath !== "");
+    (legacy.catalogPath != null && legacy.catalogPath.trim() !== "") ||
+    (legacy.sourcesPath != null && legacy.sourcesPath.trim() !== "");
   if (hasLegacy) {
     throw new Error(
       "Do not combine --source/--location with manifest, run_results, catalog, or sources path arguments; use directory/prefix mode only.",

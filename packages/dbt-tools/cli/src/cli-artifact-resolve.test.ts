@@ -43,4 +43,34 @@ describe("cli-artifact-resolve", () => {
       ),
     ).rejects.toThrow(/Do not combine --source/);
   });
+
+  it("resolveCliArtifactPaths picks run when --run-id has surrounding whitespace", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-cli-artifact-"));
+    for (const run of ["runAlpha", "runBeta"]) {
+      const sub = path.join(dir, run);
+      await fs.mkdir(sub, { recursive: true });
+      await fs.writeFile(path.join(sub, "manifest.json"), "{}");
+      await fs.writeFile(path.join(sub, "run_results.json"), "{}");
+    }
+    const paths = await resolveCliArtifactPaths(
+      {},
+      { source: "local", location: dir, runId: "  runAlpha  " },
+    );
+    expect(paths.manifest).toBe(path.join(dir, "runAlpha", "manifest.json"));
+    expect(paths.runResults).toBe(
+      path.join(dir, "runAlpha", "run_results.json"),
+    );
+  });
+
+  it("resolveCliArtifactPaths ignores whitespace-only legacy catalog/sources in source mode", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-cli-artifact-"));
+    await fs.writeFile(path.join(dir, "manifest.json"), "{}");
+    await fs.writeFile(path.join(dir, "run_results.json"), "{}");
+    const paths = await resolveCliArtifactPaths(
+      { catalogPath: "   ", sourcesPath: "\t" },
+      { source: "local", location: dir },
+    );
+    expect(paths.manifest).toBe(path.join(dir, "manifest.json"));
+    expect(paths.runResults).toBe(path.join(dir, "run_results.json"));
+  });
 });
