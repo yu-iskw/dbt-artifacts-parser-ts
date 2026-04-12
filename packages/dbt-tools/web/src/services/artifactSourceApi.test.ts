@@ -9,6 +9,8 @@ vi.mock("./analysisLoader", () => ({
 }));
 
 import {
+  configureArtifactSourceFromApi,
+  discoverArtifactSourceFromApi,
   fetchArtifactSourceStatus,
   loadCurrentManagedArtifacts,
   refetchFromApi,
@@ -416,5 +418,76 @@ describe("artifactSourceApi", () => {
     await expect(fetchArtifactSourceStatus()).rejects.toThrow(
       "Failed to load artifact source status",
     );
+  });
+
+  it("posts discovery requests to the preview endpoint", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        sourceKind: "local",
+        locationDisplay: "/tmp/target",
+        candidates: [
+          {
+            runId: "current",
+            label: "Local (root)",
+            updatedAtMs: 1,
+            versionToken: "v1",
+          },
+        ],
+        needsSelection: false,
+        discoveryError: null,
+      }),
+    );
+
+    await expect(
+      discoverArtifactSourceFromApi("local", "/tmp/target"),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        sourceKind: "local",
+        locationDisplay: "/tmp/target",
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith("/api/artifact-source/discover", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ type: "local", location: "/tmp/target" }),
+    });
+  });
+
+  it("includes runId when committing a configured artifact source", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        mode: "preload",
+        currentSource: "preload",
+        label: "Artifacts",
+        checkedAtMs: 1,
+        remoteProvider: null,
+        remoteLocation: null,
+        pollIntervalMs: null,
+        currentRun: {
+          runId: "runBeta",
+          label: "Local (runBeta)",
+          updatedAtMs: 2,
+          versionToken: "beta",
+        },
+        pendingRun: null,
+        supportsSwitch: false,
+      }),
+    );
+
+    await configureArtifactSourceFromApi("local", "/tmp/target", "runBeta");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/artifact-source/configure", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "local",
+        location: "/tmp/target",
+        runId: "runBeta",
+      }),
+    });
   });
 });

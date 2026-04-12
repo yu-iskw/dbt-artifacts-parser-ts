@@ -27,6 +27,14 @@ export interface MissingOptionalArtifactsState {
   missingSources: boolean;
 }
 
+export interface ArtifactSourceDiscoveryResult {
+  sourceKind: UserArtifactSourceKind;
+  locationDisplay: string;
+  candidates?: RemoteArtifactRun[];
+  needsSelection: boolean;
+  discoveryError: string | null;
+}
+
 export interface ArtifactSourceStatus {
   mode: ManagedArtifactSourceMode;
   currentSource: Exclude<WorkspaceArtifactSource, "upload"> | null;
@@ -274,16 +282,49 @@ export async function switchToArtifactRun(
   return (await response.json()) as ArtifactSourceStatus;
 }
 
+export async function discoverArtifactSourceFromApi(
+  kind: UserArtifactSourceKind,
+  location: string,
+): Promise<ArtifactSourceDiscoveryResult> {
+  const response = await fetch("/api/artifact-source/discover", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type: kind, location }),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as
+    | ArtifactSourceDiscoveryResult
+    | { error?: string };
+
+  if (!response.ok) {
+    const message =
+      typeof (data as { error?: string }).error === "string" &&
+      (data as { error: string }).error.trim() !== ""
+        ? (data as { error: string }).error
+        : "Failed to configure artifact source";
+    throw new Error(message);
+  }
+
+  return data as ArtifactSourceDiscoveryResult;
+}
+
 export async function configureArtifactSourceFromApi(
   kind: UserArtifactSourceKind,
   location: string,
+  runId?: string,
 ): Promise<ArtifactSourceStatus> {
   const response = await fetch("/api/artifact-source/configure", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ type: kind, location }),
+    body: JSON.stringify({
+      type: kind,
+      location,
+      ...(runId != null && runId.trim() !== "" ? { runId } : {}),
+    }),
   });
 
   const data = (await response.json().catch(() => ({}))) as

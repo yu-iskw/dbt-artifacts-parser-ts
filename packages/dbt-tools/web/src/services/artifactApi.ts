@@ -5,10 +5,12 @@
  */
 export {
   configureArtifactSourceFromApi,
+  discoverArtifactSourceFromApi,
   fetchArtifactSourceStatus,
   loadCurrentManagedArtifacts,
   refetchFromApi,
   switchToArtifactRun,
+  type ArtifactSourceDiscoveryResult,
   type ArtifactSourceStatus,
   type MissingOptionalArtifactsState,
   type RemoteArtifactRun,

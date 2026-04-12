@@ -51,24 +51,13 @@ const MULTI_CANDIDATE_RUN_BETA = {
   versionToken: "v-beta",
 } as const;
 
-function multiCandidateConfigureStatus() {
+function multiCandidateDiscoveryStatus() {
   return {
-    mode: "preload" as const,
-    currentSource: null,
-    label: "Mock multi-run location",
-    checkedAtMs: Date.now(),
-    remoteProvider: null,
-    remoteLocation: null,
-    pollIntervalMs: null,
-    currentRun: null,
-    pendingRun: null,
-    supportsSwitch: false,
-    needsSelection: true,
-    discoveryError: null,
-    candidates: [MULTI_CANDIDATE_RUN_ALPHA, MULTI_CANDIDATE_RUN_BETA],
     sourceKind: "local" as const,
     locationDisplay: "/mock/multi",
-    missingOptionalArtifacts: undefined,
+    candidates: [MULTI_CANDIDATE_RUN_ALPHA, MULTI_CANDIDATE_RUN_BETA],
+    needsSelection: true,
+    discoveryError: null,
   };
 }
 
@@ -100,24 +89,13 @@ const SOLO_RUN = {
   versionToken: "v-solo",
 } as const;
 
-function singleCandidateConfigureStatus() {
+function singleCandidateDiscoveryStatus() {
   return {
-    mode: "preload" as const,
-    currentSource: null,
-    label: "Mock single-run location",
-    checkedAtMs: Date.now(),
-    remoteProvider: null,
-    remoteLocation: null,
-    pollIntervalMs: null,
-    currentRun: null,
-    pendingRun: null,
-    supportsSwitch: false,
-    needsSelection: false,
-    discoveryError: null,
-    candidates: [SOLO_RUN],
     sourceKind: "local" as const,
     locationDisplay: "/mock/solo",
-    missingOptionalArtifacts: undefined,
+    candidates: [SOLO_RUN],
+    needsSelection: false,
+    discoveryError: null,
   };
 }
 
@@ -228,7 +206,7 @@ async function registerArtifactJsonByteRoutes(
 }
 
 /**
- * Mock POST configure (two candidates, needs selection) + POST switch + artifact bytes.
+ * Mock POST discover (two candidates, needs selection) + POST configure + artifact bytes.
  * Register before `goto("/")`. GET `/api/artifact-source` returns `mode: "none"` so the
  * client does not fall through to legacy manifest URLs while artifact byte routes are mocked.
  */
@@ -239,7 +217,7 @@ export async function registerMultiCandidateArtifactSourceMocks(
     sourcesPath?: string;
   },
 ) {
-  await page.route("**/api/artifact-source/configure", async (route) => {
+  await page.route("**/api/artifact-source/discover", async (route) => {
     if (route.request().method() !== "POST") {
       await route.fulfill({ status: 405 });
       return;
@@ -247,10 +225,10 @@ export async function registerMultiCandidateArtifactSourceMocks(
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(multiCandidateConfigureStatus()),
+      body: JSON.stringify(multiCandidateDiscoveryStatus()),
     });
   });
-  await page.route("**/api/artifact-source/switch", async (route) => {
+  await page.route("**/api/artifact-source/configure", async (route) => {
     if (route.request().method() !== "POST") {
       await route.fulfill({ status: 405 });
       return;
@@ -288,7 +266,7 @@ export async function registerMultiCandidateArtifactSourceMocks(
 }
 
 /**
- * Mock POST configure (one candidate, no selection step) + POST switch + artifact bytes.
+ * Mock POST discover (one candidate, no selection step) + POST configure + artifact bytes.
  * Discover triggers auto-load in the UI when needsSelection is false.
  */
 export async function registerSingleCandidateArtifactSourceMocks(
@@ -298,7 +276,7 @@ export async function registerSingleCandidateArtifactSourceMocks(
     sourcesPath?: string;
   },
 ) {
-  await page.route("**/api/artifact-source/configure", async (route) => {
+  await page.route("**/api/artifact-source/discover", async (route) => {
     if (route.request().method() !== "POST") {
       await route.fulfill({ status: 405 });
       return;
@@ -306,10 +284,10 @@ export async function registerSingleCandidateArtifactSourceMocks(
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(singleCandidateConfigureStatus()),
+      body: JSON.stringify(singleCandidateDiscoveryStatus()),
     });
   });
-  await page.route("**/api/artifact-source/switch", async (route) => {
+  await page.route("**/api/artifact-source/configure", async (route) => {
     if (route.request().method() !== "POST") {
       await route.fulfill({ status: 405 });
       return;

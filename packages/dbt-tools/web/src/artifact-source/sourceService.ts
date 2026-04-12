@@ -25,6 +25,7 @@ import {
 import { normalizeArtifactPrefix } from "./prefix";
 import { resolveLocalArtifactTargetDirFromEnv } from "./resolveLocalTargetDir";
 import type {
+  ArtifactSourceDiscoveryResult,
   ArtifactSourceStatus,
   ManagedArtifactSourceMode,
   MissingOptionalArtifactsState,
@@ -99,6 +100,18 @@ function missingOptionalFromRun(
     missingCatalog: run.catalogKey == null,
     missingSources: run.sourcesKey == null,
   };
+}
+
+interface DiscoveredArtifactSource {
+  mode: "preload" | "remote";
+  sourceKind: ArtifactSourceKind;
+  locationDisplay: string;
+  remoteProvider: RemoteArtifactProvider | null;
+  localDir: string | null;
+  remoteConfig: DbtToolsRemoteSourceConfig | null;
+  remoteClient: RemoteObjectStoreClient | null;
+  runs: ResolvedArtifactRun[];
+  discoveryResult: ArtifactDiscoveryResult;
 }
 
 export class ArtifactSourceService {
@@ -188,7 +201,11 @@ export class ArtifactSourceService {
     await this.applyLocalDirectory(resolved, true);
   }
 
-  private pickEnvDefaultRunId(runs: ResolvedArtifactRun[]): string | null {
+  private pickBootstrapRunId(
+    mode: "preload" | "remote",
+    runs: ResolvedArtifactRun[],
+  ): string | null {
+    if (mode === "remote") return runs[0]?.runId ?? null;
     if (runs.length === 1) return runs[0]!.runId;
     return null;
   }
@@ -396,32 +413,151 @@ export class ArtifactSourceService {
     };
   }
 
+  private previewToUiRows(
+    discovery: DiscoveredArtifactSource,
+  ): RemoteArtifactRun[] {
+    return discovery.runs.map((run) =>
+      runToUiRow(discovery.mode, discovery.remoteProvider, run),
+    );
+  }
+
+  private discoveryNeedsSelection(
+    discovery: DiscoveredArtifactSource,
+    selectedRunId: string | null,
+  ): boolean {
+    const discoveryError =
+      discovery.discoveryResult.ok === true
+        ? null
+        : discovery.discoveryResult.failure.message;
+    return (
+      discovery.runs.length > 0 &&
+      selectedRunId == null &&
+      discoveryError == null
+    );
+  }
+
+  private resolveConfiguredRunId(
+    discovery: DiscoveredArtifactSource,
+    runId?: string,
+  ): string {
+    if (!discovery.discoveryResult.ok) {
+      throw new Error(discovery.discoveryResult.failure.message);
+    }
+    const trimmedRunId = runId?.trim();
+    if (trimmedRunId != null && trimmedRunId !== "") {
+      const found = discovery.runs.some((run) => run.runId === trimmedRunId);
+      if (!found) {
+        throw new Error(
+          `Unknown run id "${trimmedRunId}". Candidates: ${discovery.runs
+            .map((run) => run.runId)
+            .join(", ")}`,
+        );
+      }
+      return trimmedRunId;
+    }
+    if (discovery.runs.length === 1) {
+      return discovery.runs[0]!.runId;
+    }
+    if (discovery.runs.length === 0) {
+      throw new Error("No complete dbt artifact pair found at this location.");
+    }
+    throw new Error(
+      `Multiple artifact sets found (${discovery.runs.length}). Select a candidate run before loading.`,
+    );
+  }
+
+  private applyDiscoveredArtifactSource(
+    discovery: DiscoveredArtifactSource,
+    selectedRunId: string | null,
+  ): void {
+    this.mode = discovery.mode;
+    this.localDir = discovery.localDir;
+    this.locationDisplay = discovery.locationDisplay;
+    this.sourceKind = discovery.sourceKind;
+    this.remoteConfig = discovery.remoteConfig;
+    this.remoteClient = discovery.remoteClient;
+    this.remoteProvider = discovery.remoteProvider;
+    this.discoveryResult = discovery.discoveryResult;
+    this.runs = discovery.runs;
+    this.selectedRunId = selectedRunId;
+  }
+
+  private async discoverLocalDirectory(
+    resolvedDir: string,
+  ): Promise<DiscoveredArtifactSource> {
+    const { runs, discovery } =
+      await discoverLocalResolvedArtifactRuns(resolvedDir);
+    if (!discovery.ok) {
+      debugLog("Local discovery failed", discovery.failure.message);
+    }
+    return {
+      mode: "preload",
+      sourceKind: "local",
+      locationDisplay: resolvedDir,
+      remoteProvider: null,
+      localDir: resolvedDir,
+      remoteConfig: null,
+      remoteClient: null,
+      runs,
+      discoveryResult: discovery,
+    };
+  }
+
+  private async discoverRemoteConfiguration(
+    config: DbtToolsRemoteSourceConfig,
+    client: RemoteObjectStoreClient,
+  ): Promise<DiscoveredArtifactSource> {
+    const prefixNorm = normalizeArtifactPrefix(config.prefix);
+    const objects = await client.listObjects(config.bucket, prefixNorm);
+    const discovery = discoverRemoteArtifactDiscovery(objects, config.prefix);
+    const runs = discovery.ok
+      ? discoverLatestArtifactRuns(objects, config.prefix)
+      : [];
+    if (!discovery.ok) {
+      debugLog("Remote discovery failed", discovery.failure.message);
+    }
+    return {
+      mode: "remote",
+      sourceKind: config.provider,
+      locationDisplay: toRemoteLocationLabel(
+        config.provider,
+        config.bucket,
+        config.prefix,
+      ),
+      remoteProvider: config.provider,
+      localDir: null,
+      remoteConfig: config,
+      remoteClient: client,
+      runs,
+      discoveryResult: discovery,
+    };
+  }
+
+  private async discoverArtifactSourceInternal(
+    kind: ArtifactSourceKind,
+    location: string,
+  ): Promise<DiscoveredArtifactSource> {
+    const parsed = parseArtifactSourceLocation(kind, location, this.cwd);
+    if (parsed.kind === "local") {
+      return this.discoverLocalDirectory(parsed.resolvedPath);
+    }
+
+    const env = getDbtToolsRemoteSourceConfigFromEnv();
+    const merged = mergeRemoteSourceConfigWithParsedLocation(env, parsed);
+    const client = createRemoteObjectStoreClient(merged);
+    return this.discoverRemoteConfiguration(merged, client);
+  }
+
   private async applyLocalDirectory(
     resolvedDir: string,
     fromEnvBootstrap: boolean,
   ): Promise<void> {
-    this.mode = "preload";
-    this.localDir = resolvedDir;
-    this.remoteConfig = null;
-    this.remoteClient = null;
-    this.remoteProvider = null;
-    this.sourceKind = "local";
-    this.locationDisplay = resolvedDir;
-
-    const { runs, discovery } =
-      await discoverLocalResolvedArtifactRuns(resolvedDir);
-    this.discoveryResult = discovery;
-    this.runs = runs;
-
-    if (!discovery.ok) {
-      this.selectedRunId = null;
-      debugLog("Local discovery failed", discovery.failure.message);
-      return;
-    }
-
-    this.selectedRunId = fromEnvBootstrap
-      ? this.pickEnvDefaultRunId(runs)
-      : null;
+    const discovery = await this.discoverLocalDirectory(resolvedDir);
+    const selectedRunId =
+      discovery.discoveryResult.ok && fromEnvBootstrap
+        ? this.pickBootstrapRunId("preload", discovery.runs)
+        : null;
+    this.applyDiscoveredArtifactSource(discovery, selectedRunId);
   }
 
   private async applyRemoteConfiguration(
@@ -429,57 +565,47 @@ export class ArtifactSourceService {
     client: RemoteObjectStoreClient,
     fromEnvBootstrap: boolean,
   ): Promise<void> {
-    this.mode = "remote";
-    this.localDir = null;
-    this.remoteConfig = config;
-    this.remoteClient = client;
-    this.remoteProvider = config.provider;
-    this.sourceKind = config.provider;
-    this.locationDisplay = toRemoteLocationLabel(
-      config.provider,
-      config.bucket,
-      config.prefix,
-    );
+    const discovery = await this.discoverRemoteConfiguration(config, client);
+    const selectedRunId =
+      discovery.discoveryResult.ok && fromEnvBootstrap
+        ? this.pickBootstrapRunId("remote", discovery.runs)
+        : null;
+    this.applyDiscoveredArtifactSource(discovery, selectedRunId);
+  }
 
-    const prefixNorm = normalizeArtifactPrefix(config.prefix);
-    const objects = await client.listObjects(config.bucket, prefixNorm);
-    const discovery = discoverRemoteArtifactDiscovery(objects, config.prefix);
-    this.discoveryResult = discovery;
-
-    if (!discovery.ok) {
-      this.runs = [];
-      this.selectedRunId = null;
-      debugLog("Remote discovery failed", discovery.failure.message);
-      return;
-    }
-
-    const runs = discoverLatestArtifactRuns(objects, config.prefix);
-    this.runs = runs;
-
-    this.selectedRunId = fromEnvBootstrap
-      ? this.pickEnvDefaultRunId(runs)
-      : null;
+  async discoverArtifactSource(
+    kind: ArtifactSourceKind,
+    location: string,
+  ): Promise<ArtifactSourceDiscoveryResult> {
+    await this.ensureReady();
+    const discovery = await this.discoverArtifactSourceInternal(kind, location);
+    const candidates = this.previewToUiRows(discovery);
+    const needsSelection = this.discoveryNeedsSelection(discovery, null);
+    return {
+      sourceKind: discovery.sourceKind,
+      locationDisplay: discovery.locationDisplay,
+      candidates: candidates.length > 0 ? candidates : undefined,
+      needsSelection,
+      discoveryError:
+        discovery.discoveryResult.ok === true
+          ? null
+          : discovery.discoveryResult.failure.message,
+    };
   }
 
   /**
-   * User-driven configuration (UI or API). Always requires explicit run
-   * selection when more than one candidate exists.
+   * User-driven configuration (UI or API). Commits the location only when the
+   * selected run is explicit or uniquely determined.
    */
   async configureArtifactSource(
     kind: ArtifactSourceKind,
     location: string,
+    runId?: string,
   ): Promise<ArtifactSourceStatus> {
     await this.ensureReady();
-
-    const parsed = parseArtifactSourceLocation(kind, location, this.cwd);
-    if (parsed.kind === "local") {
-      await this.applyLocalDirectory(parsed.resolvedPath, false);
-    } else {
-      const env = getDbtToolsRemoteSourceConfigFromEnv();
-      const merged = mergeRemoteSourceConfigWithParsedLocation(env, parsed);
-      const client = createRemoteObjectStoreClient(merged);
-      await this.applyRemoteConfiguration(merged, client, false);
-    }
+    const discovery = await this.discoverArtifactSourceInternal(kind, location);
+    const selectedRunId = this.resolveConfiguredRunId(discovery, runId);
+    this.applyDiscoveredArtifactSource(discovery, selectedRunId);
 
     return this.getStatus();
   }

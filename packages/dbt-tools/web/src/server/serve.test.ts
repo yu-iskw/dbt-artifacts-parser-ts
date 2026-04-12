@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ArtifactSourceStatus } from "../services/artifactSourceApi";
+import type {
+  ArtifactSourceDiscoveryResult,
+  ArtifactSourceStatus,
+} from "../services/artifactSourceApi";
 
 // Hoist the mock so it applies before module imports.
 vi.mock("../artifact-source/sourceService", () => {
@@ -33,6 +36,18 @@ vi.mock("../artifact-source/sourceService", () => {
       };
     }
     async switchToRun() {
+      return this.getStatus();
+    }
+    async discoverArtifactSource(): Promise<ArtifactSourceDiscoveryResult> {
+      return {
+        sourceKind: "local",
+        locationDisplay: "/tmp/mock",
+        candidates: undefined,
+        needsSelection: false,
+        discoveryError: null,
+      };
+    }
+    async configureArtifactSource() {
       return this.getStatus();
     }
   }

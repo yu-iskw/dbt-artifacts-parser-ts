@@ -85,6 +85,13 @@ function isArtifactConfigureRequest(
   return req.method === "POST" && pathname === "/api/artifact-source/configure";
 }
 
+function isArtifactDiscoverRequest(
+  req: IncomingMessage,
+  pathname: string,
+): boolean {
+  return req.method === "POST" && pathname === "/api/artifact-source/discover";
+}
+
 function isCurrentArtifactRequest(
   req: IncomingMessage,
   pathname: string,
@@ -120,7 +127,9 @@ async function respondArtifactConfigure(
   const body = await readJsonBody(req);
   const typeRaw = body.type;
   const locationRaw = body.location;
+  const runIdRaw = body.runId;
   const location = typeof locationRaw === "string" ? locationRaw.trim() : "";
+  const runId = typeof runIdRaw === "string" ? runIdRaw.trim() : undefined;
   if (typeRaw !== "local" && typeRaw !== "s3" && typeRaw !== "gcs") {
     sendJson(res, 400, {
       error: "Invalid or missing type (expected local, s3, or gcs).",
@@ -131,8 +140,37 @@ async function respondArtifactConfigure(
     const status = await service.configureArtifactSource(
       typeRaw as ArtifactSourceKind,
       location,
+      runId,
     );
     sendJson(res, 200, status);
+  } catch (error) {
+    sendJson(res, 400, {
+      error: error instanceof Error ? error.message : "Invalid configuration.",
+    });
+  }
+}
+
+async function respondArtifactDiscover(
+  req: IncomingMessage,
+  res: ServerResponse,
+  service: ArtifactSourceService,
+): Promise<void> {
+  const body = await readJsonBody(req);
+  const typeRaw = body.type;
+  const locationRaw = body.location;
+  const location = typeof locationRaw === "string" ? locationRaw.trim() : "";
+  if (typeRaw !== "local" && typeRaw !== "s3" && typeRaw !== "gcs") {
+    sendJson(res, 400, {
+      error: "Invalid or missing type (expected local, s3, or gcs).",
+    });
+    return;
+  }
+  try {
+    const discovery = await service.discoverArtifactSource(
+      typeRaw as ArtifactSourceKind,
+      location,
+    );
+    sendJson(res, 200, discovery);
   } catch (error) {
     sendJson(res, 400, {
       error: error instanceof Error ? error.message : "Invalid configuration.",
@@ -182,6 +220,11 @@ export async function tryHandleArtifactSourceViteRequest(
 
   if (isArtifactConfigureRequest(req, pathname)) {
     await respondArtifactConfigure(req, res, service);
+    return true;
+  }
+
+  if (isArtifactDiscoverRequest(req, pathname)) {
+    await respondArtifactDiscover(req, res, service);
     return true;
   }
 

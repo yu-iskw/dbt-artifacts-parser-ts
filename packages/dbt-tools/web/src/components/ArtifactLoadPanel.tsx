@@ -1,16 +1,9 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useToast } from "./ui/Toast";
 import {
   configureArtifactSourceFromApi,
+  discoverArtifactSourceFromApi,
   refetchFromApi,
-  switchToArtifactRun,
   type MissingOptionalArtifactsState,
   type UserArtifactSourceKind,
 } from "../services/artifactSourceApi";
@@ -95,7 +88,11 @@ export function ArtifactLoadPanel({
       setLoadLoading(true);
       onError(null);
       try {
-        const status = await switchToArtifactRun(runId);
+        const status = await configureArtifactSourceFromApi(
+          sourceKindRef.current,
+          locationRef.current.trim(),
+          runId,
+        );
         const source = status.currentSource;
         if (source !== "preload" && source !== "remote") {
           onError("Artifacts are not ready to load.");
@@ -152,17 +149,17 @@ export function ArtifactLoadPanel({
       setCandidateRunIds([]);
       setSelectedRunId(null);
       try {
-        const status = await configureArtifactSourceFromApi(kind, loc);
+        const discovery = await discoverArtifactSourceFromApi(kind, loc);
         if (seq !== discoverySeqRef.current) {
           return;
         }
-        if (status.discoveryError != null) {
-          setDiscoveryError(status.discoveryError);
-          onError(status.discoveryError);
+        if (discovery.discoveryError != null) {
+          setDiscoveryError(discovery.discoveryError);
+          onError(discovery.discoveryError);
           return;
         }
-        const ids = status.candidates?.map((c) => c.runId) ?? [];
-        const needsSel = status.needsSelection === true;
+        const ids = discovery.candidates?.map((c) => c.runId) ?? [];
+        const needsSel = discovery.needsSelection === true;
         setCandidateRunIds(ids);
         if (ids.length === 1) {
           setSelectedRunId(ids[0]!);
@@ -190,13 +187,6 @@ export function ArtifactLoadPanel({
     [loadWorkspaceForRunId, onError],
   );
 
-  useEffect(() => {
-    if (locationRef.current.trim() !== "") {
-      lastScanKeyRef.current = "";
-      void runDiscovery(true);
-    }
-  }, [sourceKind, runDiscovery]);
-
   async function handleLoad() {
     if (selectedRunId == null || selectedRunId.trim() === "") {
       onError("Select a candidate artifact set.");
@@ -212,7 +202,14 @@ export function ArtifactLoadPanel({
         readinessRegionId={readinessRegionId}
         readinessLabel={readinessLabel}
         sourceKind={sourceKind}
-        onSourceKindChange={setSourceKind}
+        onSourceKindChange={(nextKind) => {
+          setSourceKind(nextKind);
+          setCandidateRunIds([]);
+          setSelectedRunId(null);
+          setDiscoveryError(null);
+          lastScanKeyRef.current = "";
+          onError(null);
+        }}
         location={location}
         onLocationChange={setLocation}
         onLocationBlur={() => {
