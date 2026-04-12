@@ -52,3 +52,5 @@ Details, optional HTTP smoke, **`ETARGET` / missing peers**, and the **absolute-
 ## Verifier agent
 
 When invoked as part of **verification**, run this smoke **after `pnpm build` succeeds** so TypeScript/Vite issues are caught first. Prefer **`bash scripts/smoke-npx-with-verdaccio.sh`** (CI parity). Report whether the script (or pack + `npx … --help`) passed.
+
+Full **gate order**, **parallelism** (including why this step must complete before **`pnpm codeql`** on the same checkout), and **reporting** live in [`.claude/agents/verifier.md`](../../agents/verifier.md).
