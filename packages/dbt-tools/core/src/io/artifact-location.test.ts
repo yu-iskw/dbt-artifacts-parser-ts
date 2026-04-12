@@ -2,8 +2,39 @@ import { describe, expect, it } from "vitest";
 import {
   joinObjectStorageKey,
   mergeRemoteSourceConfigWithParsedLocation,
+  normalizeArtifactPrefix,
   parseArtifactSourceLocation,
 } from "./artifact-location";
+
+describe("normalizeArtifactPrefix", () => {
+  it("trims leading and trailing slashes", () => {
+    expect(normalizeArtifactPrefix("/a/b/")).toBe("a/b");
+    expect(normalizeArtifactPrefix("///x///")).toBe("x");
+  });
+
+  it("returns empty when only slashes", () => {
+    expect(normalizeArtifactPrefix("///")).toBe("");
+  });
+
+  it("leaves middle segments unchanged when no outer slashes", () => {
+    expect(normalizeArtifactPrefix("a/b")).toBe("a/b");
+  });
+
+  it("preserves internal slash runs", () => {
+    expect(normalizeArtifactPrefix("//a//b//")).toBe("a//b");
+  });
+
+  it("returns empty for empty input", () => {
+    expect(normalizeArtifactPrefix("")).toBe("");
+  });
+
+  it("handles long leading and trailing slash runs in linear time", () => {
+    const n = 10_000;
+    const inner = "path/segment";
+    const prefix = `${"/".repeat(n)}${inner}${"/".repeat(n)}`;
+    expect(normalizeArtifactPrefix(prefix)).toBe(inner);
+  });
+});
 
 describe("parseArtifactSourceLocation", () => {
   it("parses s3:// URL", () => {

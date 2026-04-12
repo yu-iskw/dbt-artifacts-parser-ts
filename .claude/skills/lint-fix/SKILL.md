@@ -114,14 +114,27 @@ If violations remain:
 
 ## Verifier integration
 
-The **verifier** subagent owns **step ordering**, **parallelism**, the **step 7 stability loop** (**`stability_iterations`**, cap **3**, and **which gates rerun** after `pnpm format` / `pnpm lint` leaves a dirty tree)—see [`.claude/agents/verifier.md`](../../../.claude/agents/verifier.md) **Step 7 — normalization stability loop**.
+The **verifier** subagent owns **step ordering**, **parallelism**, the **step 7 stability loop** (**`stability_iterations`**, cap **3**, and **which gates rerun** after normalization)—see [`.claude/agents/verifier.md`](../../../.claude/agents/verifier.md) **Step 7 — normalization stability loop (cap: 3)**.
 
-When used by the verifier agent, confirm at minimum:
+### Full normalization (verifier step 7, loop item 1)
 
-- `pnpm lint:report` exits **0** (ESLint-only; see **Commands** table — it does **not** run markdownlint or other Trunk linters).
-- `pnpm knip` exits **0**
+Use the **Order rule** above in this skill:
 
-A **full** verifier run reaches **step 7** (`pnpm format` then **`pnpm lint`**, which includes **`pnpm lint:trunk`**). If you only run “minimum” checks (`lint:report` + `knip`) and the change set touches **Markdown**, **`.claude/`**, **workflows**, or **`.trunk/`**, also run **`pnpm lint:trunk`** (or **`pnpm lint`**) before claiming merge-ready so pre-push Trunk parity holds.
+- **Path A — Launcher present:** **`pnpm format`** then **`pnpm lint`** (equivalent high-level sequence; see **Commands for this repo** and **Typical fix sequence — launcher present** for the decomposed chain).
+- **Path B — Escape hatch:** **`pnpm format:without-trunk`** then **`pnpm lint:without-trunk`** when Trunk/launcher cannot run—see **Path B** under **Order rule**; do **not** use `pnpm format` / `pnpm lint` on Path B.
+
+### After normalization leaves a dirty tree
+
+When **`pnpm format` / `pnpm lint`** (Path A) or the Path B equivalents still leave **non-empty** `git status --porcelain`, the verifier **only** re-runs **steps 1–3** (lint report gate, unit test gate, coverage report gate)—not build, pack smoke, or CodeQL. See the verifier’s **Normalization: what reruns automatically vs what does not**.
+
+### Minimum vs merge-ready (when acting for the verifier)
+
+Confirm at minimum:
+
+- **`pnpm lint:report`** exits **0** (ESLint-only; see **Commands** table — it does **not** run markdownlint or other Trunk linters).
+- **`pnpm knip`** exits **0**
+
+A **full** verifier run completes **step 7**, which includes **full lint** (Path A: **`pnpm lint`** includes **`pnpm lint:trunk`** and **Knip**). If you only run the minimum above and the change set touches **Markdown**, **`.claude/`**, **workflows**, or **`.trunk/`**, also run **`pnpm lint:trunk`** (or full **`pnpm lint`**) before claiming merge-ready so Trunk-owned checks match pre-push parity.
 
 When using the **escape hatch** (`*:without-trunk`), also run **`pnpm lint:eslint`** and **`pnpm lint:stylelint`** (or a single **`pnpm lint:without-trunk`**) so non-ESLint issues (especially CSS) are not missed. Trunk-only checks (markdownlint, actionlint, etc.) still require **`pnpm lint:trunk`** / **`pnpm lint`** when the launcher is available.
 

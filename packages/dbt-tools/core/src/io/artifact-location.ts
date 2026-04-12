@@ -9,7 +9,16 @@ export type ArtifactSourceKind = "local" | "s3" | "gcs";
 
 /** Trim leading/trailing slashes for object-store key prefix handling. */
 export function normalizeArtifactPrefix(prefix: string): string {
-  return prefix.replace(/^\/+|\/+$/g, "");
+  const slash = 47; // U+002F
+  let start = 0;
+  let end = prefix.length;
+  while (start < end && prefix.charCodeAt(start) === slash) {
+    start += 1;
+  }
+  while (end > start && prefix.charCodeAt(end - 1) === slash) {
+    end -= 1;
+  }
+  return prefix.slice(start, end);
 }
 
 export interface ParsedLocalArtifactLocation {
