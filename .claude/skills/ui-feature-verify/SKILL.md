@@ -30,6 +30,8 @@ Do **not** use this skill when changes touch published packages (`dbt-artifacts-
 
 6. **Playwright browser check.** Run `pnpm --filter @dbt-tools/web exec playwright install chromium --with-deps`. Idempotent when browsers are present; fast. Do not skip.
 
+   > **Network-blocked environment:** If the install command fails with a download error for `cdn.playwright.dev`, the sandbox blocks CDN traffic. Check `~/.cache/ms-playwright/` or `/opt/pw-browsers/` for a pre-cached Chromium binary. If absent, E2E tests cannot run — document as a known limitation, skip step 7, and report the gap to the user rather than retrying.
+
 7. **E2E.** Run `pnpm --filter @dbt-tools/web test:e2e`. If E2E fails, apply `dbt-tools-web-e2e-fix` and rerun until green.
 
 8. **Coverage gap report.** Review the diff for this session (`git diff --name-only HEAD~1..HEAD` or the user's stated scope). List every new interactive UI element (button, tab, pivot, navigation link) added. For each, confirm a `toBeVisible` or equivalent assertion exists in the corresponding spec under `packages/dbt-tools/web/e2e/`. Report any element without a spec assertion as a gap. Do not claim the feature is shipped until each gap is covered or explicitly accepted by the user with a reason.

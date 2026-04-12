@@ -54,6 +54,15 @@ Before running any quality gate or invoking the verifier, confirm:
 
 The session-start hook in `.claude/settings.json` covers the `node_modules` case automatically; browser binaries require the one-time manual step above.
 
+## File-move discipline
+
+When moving or renaming a TypeScript file that is imported in tests:
+
+1. **Update `vi.mock()` paths in every test that mocks the moved module.** Vitest resolves mock specifiers by exact string match — the path in `vi.mock()` must match the import specifier used by the component under test (typically an `@web/…` alias path).
+2. **Search for stale mocks before committing:** `grep -r 'vi.mock.*<old-path>' packages/dbt-tools/web/src/`
+3. **Run `pnpm coverage:report`** after every file move before pushing — test failures from stale mocks surface here.
+4. **Workers use relative imports** (not the `@web/` alias); update depth-relative paths (e.g. `../workers/` → `../../workers/`) when moving the importing file.
+
 ## Agent coordination
 
 When more than one agent runs concurrently, file-write conflicts waste tokens and produce incorrect commits. Follow these rules:

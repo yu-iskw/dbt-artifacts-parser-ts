@@ -10,7 +10,7 @@ const { useResourceCode } = vi.hoisted(() => ({
   useResourceCode: vi.fn(),
 }));
 
-vi.mock("@web/hooks/useResourceCode", () => ({
+vi.mock("@web/hooks/analysis/useResourceCode", () => ({
   useResourceCode,
 }));
 

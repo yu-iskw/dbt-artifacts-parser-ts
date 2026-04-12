@@ -14,7 +14,7 @@ vi.mock("@tanstack/react-virtual", () => ({
   }),
 }));
 
-vi.mock("@web/hooks/useTheme", () => ({
+vi.mock("@web/hooks/workspace/useTheme", () => ({
   useSyncedDocumentTheme: () => "light",
 }));
 

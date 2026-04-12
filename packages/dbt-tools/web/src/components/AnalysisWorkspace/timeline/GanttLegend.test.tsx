@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GanttLegend } from "./GanttLegend";
 
-vi.mock("@web/hooks/useTheme", () => ({
+vi.mock("@web/hooks/workspace/useTheme", () => ({
   useSyncedDocumentTheme: () => "light",
 }));
 
