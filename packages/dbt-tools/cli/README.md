@@ -2,7 +2,7 @@
 
 **Structured interface** for dbt artifact analysis: machine-readable JSON by default in non-interactive environments, runtime **`schema`** introspection, **`--fields`** to shrink payloads, and validated inputs with stable error codes—suited to **operators**, **CI**, **scripts**, and **coding agents** (skills, multi-step automation) without treating AI as the only consumer.
 
-**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary` from a directory that contains `./target/manifest.json`. Extended topics (errors, validation, `schema` introspection, agent-oriented patterns) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md). Positioning: [ADR-0035](../../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary --dbt-target ./target` (or set **`DBT_TOOLS_DBT_TARGET`** so you can omit the flag). Extended topics (errors, validation, `schema` introspection, agent-oriented patterns) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md). Positioning: [ADR-0035](../../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 ## Commands
 
@@ -42,8 +42,8 @@ pnpm add -g @dbt-tools/cli
 
 ## Features
 
-- **Default `./target` directory**: Commands default to dbt's standard artifact location
-- **JSON-by-default**: Machine-readable JSON output in non-interactive environments (stable contract for pipes, CI, agents)
+- **Single artifact root (`--dbt-target`)**: Every artifact command reads **`manifest.json`** and **`run_results.json`** from one directory or object prefix; **`catalog.json`** and **`sources.json`** are optional enrichments when present
+- **JSON stdout / structured errors**: With **`--json`**, stdout is JSON and stderr errors are structured JSON; without **`--json`**, errors are human-readable text
 - **Input validation**: Hardened against common mistakes (path traversals, control chars, ambiguous resource IDs)
 - **Field filtering**: Bound output size with `--fields` (also useful when piping into LLM context)
 - **Schema introspection**: Runtime command and option discovery via `schema` command
@@ -53,28 +53,28 @@ pnpm add -g @dbt-tools/cli
 - **Search**: Discover resources by name, tag, type, or free-text query
 - **Status / Freshness**: Check if artifacts are present and how recent they are
 - **Subgraph focus**: Export a focused subgraph for any node via `graph --focus`
-- **Directory / object-prefix mode**: Optional **`--source`** (`local` \| `s3` \| `gcs`) + **`--location`** + optional **`--run-id`** on every artifact command, aligned with the web app’s discovery rules (see below)
+- **Remote prefixes**: Use **`s3://bucket/prefix`** or **`gs://bucket/prefix`** (scheme required). Objects are downloaded to a temp directory for the duration of the command. **Credentials** use the normal AWS / GCP client chains; optional JSON in **`DBT_TOOLS_REMOTE_SOURCE`** supplies region, endpoint, GCS project id, etc. (see [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)).
 
 ---
 
-## Artifact root (`--source` / `--location` / `--run-id`)
+## Artifact root (`--dbt-target` / `DBT_TOOLS_DBT_TARGET`)
 
-Instead of **`--target-dir`** and per-command path overrides, you can point all commands at a **single location**:
+Pass **`--dbt-target`** on every artifact command, or set **`DBT_TOOLS_DBT_TARGET`** to the same value when you want to omit the flag (for example in CI).
 
-- **`local`**: absolute or cwd-relative directory containing `manifest.json` and `run_results.json` (each either at the **root** of that directory or in an **immediate subdirectory**—deeper nesting is ignored for grouping).
-- **`s3`** / **`gcs`**: `s3://bucket/prefix` or `gs://bucket/prefix` (or `bucket/prefix` with `--source` disambiguating). Objects are downloaded to a temp directory for the duration of the command. **Credentials** use the normal AWS / GCP client chains; optional JSON in **`DBT_TOOLS_REMOTE_SOURCE`** still supplies region, endpoint, GCS project id, etc. (see [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)).
-
-When **more than one** complete pair exists, pass **`--run-id`** (for example `current` for root-level files, or the subdirectory name). Do **not** combine `--source`/`--location` with `--manifest-path`, explicit positional manifest paths, **`--catalog-path`**, or other per-file overrides for the same command.
+- **Local**: absolute or cwd-relative directory containing **`manifest.json`** and **`run_results.json`** at the directory root. Optional **`catalog.json`** / **`sources.json`** are picked up when present.
+- **S3 / GCS**: **`s3://bucket/prefix`** or **`gs://bucket/prefix`** only (unschemed `bucket/prefix` is treated as a **local** path). Required object keys are **`manifest.json`** and **`run_results.json`** under the normalized prefix.
 
 ```bash
-# Local directory that holds manifest.json + run_results.json
-dbt-tools summary --source local --location ./target
+export DBT_TOOLS_DBT_TARGET=./target
 
-# Same discovery against a prefix (requires cloud credentials in the environment)
-dbt-tools status --source s3 --location s3://my-bucket/dbt/artifacts/prod
+dbt-tools summary
 
-# Multiple runs under the prefix: pick one explicitly
-dbt-tools run-report --source gcs --location gs://my-bucket/runs --run-id 2025-04-01T120000Z
+# Equivalent explicit flag
+dbt-tools summary --dbt-target ./target
+
+dbt-tools status --dbt-target s3://my-bucket/dbt/artifacts/prod
+
+dbt-tools run-report --dbt-target gs://my-bucket/runs/prod --json
 ```
 
 ---
@@ -86,28 +86,20 @@ dbt-tools run-report --source gcs --location gs://my-bucket/runs --run-id 2025-0
 Provide summary statistics for dbt manifest.
 
 ```bash
-# Uses ./target/manifest.json by default
-dbt-tools summary
-
-# Custom target directory
-dbt-tools summary --target-dir ./custom-target
-
-# Explicit path
-dbt-tools summary path/to/manifest.json
+dbt-tools summary --dbt-target ./target
 
 # Field filtering to reduce context window usage
-dbt-tools summary --fields "total_nodes,total_edges"
+dbt-tools summary --dbt-target ./target --fields "total_nodes,total_edges"
 
-# JSON output
-dbt-tools summary --json
+# JSON output (structured errors on stderr when this flag is set)
+dbt-tools summary --dbt-target ./target --json
 ```
 
 **Options:**
 
-- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
-- `--target-dir <dir>` - Custom target directory
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--fields <fields>` - Comma-separated list of fields to include
-- `--json` - Force JSON output
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 ---
@@ -119,45 +111,39 @@ Export dependency graph in various formats.
 Supports optional subgraph focus via `--focus` to export a node-centred slice of the graph.
 
 ```bash
-# Full graph (uses ./target/manifest.json by default)
-dbt-tools graph
+dbt-tools graph --dbt-target ./target
 
 # Export as DOT format
-dbt-tools graph --format dot --output graph.dot
+dbt-tools graph --dbt-target ./target --format dot --output graph.dot
 
 # Export as GEXF format
-dbt-tools graph --format gexf --output graph.gexf
+dbt-tools graph --dbt-target ./target --format gexf --output graph.gexf
 
 # With field filtering (only affects JSON format)
-dbt-tools graph --format json --fields "name,resource_type"
+dbt-tools graph --dbt-target ./target --format json --fields "name,resource_type"
 
 # Subgraph: focus on one node, 2 hops in both directions
-dbt-tools graph --focus model.my_project.orders --focus-depth 2
+dbt-tools graph --dbt-target ./target --focus model.my_project.orders --focus-depth 2
 
 # Upstream subgraph only
-dbt-tools graph --focus model.my_project.orders --focus-direction upstream
+dbt-tools graph --dbt-target ./target --focus model.my_project.orders --focus-direction upstream
 
 # Downstream subgraph filtered to models and tests
-dbt-tools graph --focus model.my_project.orders \
+dbt-tools graph --dbt-target ./target --focus model.my_project.orders \
   --focus-direction downstream --resource-types model,test
-
-# Custom target directory
-dbt-tools graph --target-dir ./custom-target
 ```
 
 **Options:**
 
-- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--format <format>` - Export format: `json`, `dot`, or `gexf` (default: `json`)
 - `--output <path>` - Output file path (default: stdout)
-- `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include (affects JSON nodes)
 - `--focus <resource-id>` - Focus the export on a single node; produces a subgraph only
 - `--focus-depth <n>` - Max traversal hops when `--focus` is set (default: unlimited)
 - `--focus-direction <direction>` - Traversal direction: `upstream`, `downstream`, or `both` (default: `both`)
 - `--resource-types <types>` - Comma-separated resource types to keep (e.g. `model,test`)
-- `--field-level` - Include field-level (column-level) lineage
-- `--catalog-path <path>` - Path to catalog.json (used with `--field-level`)
+- `--field-level` - Include field-level (column-level) lineage when `catalog.json` exists in the artifact root
 
 ---
 
@@ -167,38 +153,32 @@ Generate **aggregated** execution report from run_results.json (totals, critical
 For **row-level** per-node timings, use [`timeline`](#timeline) instead.
 
 ```bash
-# Uses ./target/run_results.json and ./target/manifest.json by default
-dbt-tools run-report
+dbt-tools run-report --dbt-target ./target
 
 # Include bottleneck section (top 10 slowest nodes by default)
-dbt-tools run-report --bottlenecks
+dbt-tools run-report --dbt-target ./target --bottlenecks
 
 # Top 5 slowest nodes
-dbt-tools run-report --bottlenecks --bottlenecks-top 5
+dbt-tools run-report --dbt-target ./target --bottlenecks --bottlenecks-top 5
 
 # Nodes exceeding 10 seconds
-dbt-tools run-report --bottlenecks --bottlenecks-threshold 10
+dbt-tools run-report --dbt-target ./target --bottlenecks --bottlenecks-threshold 10
 
 # Field filtering
-dbt-tools run-report --fields "total_execution_time,critical_path"
-
-# Custom paths
-dbt-tools run-report ./custom/run_results.json ./custom/manifest.json
+dbt-tools run-report --dbt-target ./target --fields "total_execution_time,critical_path"
 
 # JSON output
-dbt-tools run-report --json
+dbt-tools run-report --dbt-target ./target --json
 ```
 
 **Options:**
 
-- `[run-results-path]` - Path to run_results.json (defaults to `./target/run_results.json`)
-- `[manifest-path]` - Path to manifest.json (optional, for critical path analysis)
-- `--target-dir <dir>` - Custom target directory
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--fields <fields>` - Comma-separated list of fields to include
 - `--bottlenecks` - Include bottleneck section in report
 - `--bottlenecks-top <n>` - Top N slowest nodes (default: 10 when `--bottlenecks`)
 - `--bottlenecks-threshold <s>` - Nodes exceeding s seconds (cannot combine with `--bottlenecks-top`)
-- `--json` - Force JSON output
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 ---
@@ -209,38 +189,34 @@ Get upstream or downstream dependencies for a dbt resource.
 
 ```bash
 # Get downstream dependencies (default)
-dbt-tools deps model.my_project.customers
+dbt-tools deps model.my_project.customers --dbt-target ./target
 
 # Get upstream dependencies
-dbt-tools deps model.my_project.customers --direction upstream
+dbt-tools deps model.my_project.customers --dbt-target ./target --direction upstream
 
 # Get immediate neighbors only
-dbt-tools deps model.my_project.customers --depth 1
+dbt-tools deps model.my_project.customers --dbt-target ./target --depth 1
 
 # Output as a flat list
-dbt-tools deps model.my_project.customers --format flat
+dbt-tools deps model.my_project.customers --dbt-target ./target --format flat
 
 # Get upstream dependencies in build order
-dbt-tools deps model.my_project.customers --direction upstream --build-order
+dbt-tools deps model.my_project.customers --dbt-target ./target --direction upstream --build-order
 
 # With field filtering to reduce output size
-dbt-tools deps model.my_project.customers --fields "unique_id,name"
-
-# Custom manifest path
-dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
+dbt-tools deps model.my_project.customers --dbt-target ./target --fields "unique_id,name"
 ```
 
 **Options:**
 
 - `<resource-id>` - Unique ID of the dbt resource (required)
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--direction <direction>` - `upstream` or `downstream` (default: `downstream`)
-- `--manifest-path <path>` - Path to manifest.json (defaults to `./target/manifest.json`)
-- `--target-dir <dir>` - Custom target directory
 - `--fields <fields>` - Comma-separated list of fields to include (e.g., `unique_id,name`)
 - `--depth <number>` - Max traversal depth; 1 = immediate neighbors, omit for all levels
 - `--format <format>` - Output structure: `flat` or `tree` (default: `tree`)
 - `--build-order` - Output upstream dependencies in topological build order
-- `--json` - Force JSON output
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 ---
@@ -249,47 +225,46 @@ dbt-tools deps model.my_project.customers --manifest-path ./custom/manifest.json
 
 List and filter all dbt resources from the manifest. Useful for browsing what's in the project, or feeding results into downstream commands.
 
-Requires: `manifest.json`
+Requires: `manifest.json` (and `run_results.json` in the same `--dbt-target` directory or prefix)
 
 ```bash
 # All resources
-dbt-tools inventory
+dbt-tools inventory --dbt-target ./target
 
 # Filter by type
-dbt-tools inventory --type model
+dbt-tools inventory --dbt-target ./target --type model
 
 # Multiple types
-dbt-tools inventory --type model,test
+dbt-tools inventory --dbt-target ./target --type model,test
 
 # Filter by package
-dbt-tools inventory --package my_project
+dbt-tools inventory --dbt-target ./target --package my_project
 
 # Filter by tag
-dbt-tools inventory --tag finance
+dbt-tools inventory --dbt-target ./target --tag finance
 
 # Filter by file path substring
-dbt-tools inventory --path models/staging
+dbt-tools inventory --dbt-target ./target --path models/staging
 
 # Combine filters
-dbt-tools inventory --type model --tag finance --package my_project
+dbt-tools inventory --dbt-target ./target --type model --tag finance --package my_project
 
 # Only return specific fields
-dbt-tools inventory --type model --fields "entries"
+dbt-tools inventory --dbt-target ./target --type model --fields "entries"
 
 # Force JSON (default in non-TTY)
-dbt-tools inventory --json
+dbt-tools inventory --dbt-target ./target --json
 ```
 
 **Options:**
 
-- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--type <type>` - Filter by resource type(s), comma-separated (e.g. `model`, `model,test`)
 - `--package <package>` - Filter by exact package name
 - `--tag <tag>` - Filter by tag(s), comma-separated (any match)
 - `--path <path>` - Filter by file path substring
 - `--fields <fields>` - Comma-separated fields to include
-- `--target-dir <dir>` - Custom target directory
-- `--json` - Force JSON output
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 **Example JSON output:**
@@ -326,45 +301,40 @@ Show **per-node execution entries** from run_results.json, sorted by duration. T
 | CSV output          | No                                                    | Yes                                  |
 | Filtering by status | No                                                    | Yes (`--failed-only`, `--status`)    |
 
-Requires: `run_results.json`. Optionally enriched by `manifest.json` (adds `name` and `resource_type`).
+Requires: `manifest.json` and `run_results.json` under **`--dbt-target`**. Rows are enriched with **`name`** and **`resource_type`** from the manifest when available.
 
 ```bash
 # All nodes sorted by duration (slowest first)
-dbt-tools timeline
-
-# With manifest enrichment (adds name and type to each row)
-dbt-tools timeline /path/to/run_results.json /path/to/manifest.json
+dbt-tools timeline --dbt-target ./target
 
 # Top 20 slowest
-dbt-tools timeline --top 20
+dbt-tools timeline --dbt-target ./target --top 20
 
 # Only failures
-dbt-tools timeline --failed-only
+dbt-tools timeline --dbt-target ./target --failed-only
 
 # Filter by specific status
-dbt-tools timeline --status error,warn
+dbt-tools timeline --dbt-target ./target --status error,warn
 
 # Sort by start time
-dbt-tools timeline --sort start
+dbt-tools timeline --dbt-target ./target --sort start
 
 # CSV output
-dbt-tools timeline --format csv > timeline.csv
+dbt-tools timeline --dbt-target ./target --format csv > timeline.csv
 
 # JSON output
-dbt-tools timeline --json
+dbt-tools timeline --dbt-target ./target --json
 ```
 
 **Options:**
 
-- `[run-results-path]` - Path to run_results.json (defaults to `./target/run_results.json`)
-- `[manifest-path]` - Path to manifest.json (optional, enriches rows with name and resource_type)
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--sort <key>` - Sort order: `duration` (default, slowest first) or `start` (chronological)
 - `--top <n>` - Show top N entries only
 - `--failed-only` - Show only non-successful entries (excludes `success` and `pass`)
 - `--status <status>` - Filter by status, comma-separated (e.g. `error,warn`)
 - `--format <format>` - Output format: `json`, `table`, or `csv` (default: `json` non-TTY, `table` TTY)
-- `--target-dir <dir>` - Custom target directory
-- `--json` - Force JSON output
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 **Example JSON output:**
@@ -392,30 +362,30 @@ dbt-tools timeline --json
 
 Discover dbt resources by name, tag, type, or free-text query. Acts as a starting point before running `deps`, `inventory`, or other commands.
 
-Requires: `manifest.json`
+Requires: `manifest.json` and `run_results.json` under **`--dbt-target`** (same as other artifact commands).
 
 ```bash
 # Free-text search (substring matches on name, unique_id, tags, path)
-dbt-tools search orders
+dbt-tools search --dbt-target ./target orders
 
 # Inline key:value tokens in query
-dbt-tools search "type:model orders"
-dbt-tools search "tag:finance"
-dbt-tools search "package:core source:stripe"
+dbt-tools search --dbt-target ./target "type:model orders"
+dbt-tools search --dbt-target ./target "tag:finance"
+dbt-tools search --dbt-target ./target "package:core source:stripe"
 
 # Flag-based filters
-dbt-tools search --type model
-dbt-tools search --tag finance
-dbt-tools search --package my_project
+dbt-tools search --dbt-target ./target --type model
+dbt-tools search --dbt-target ./target --tag finance
+dbt-tools search --dbt-target ./target --package my_project
 
 # Combine query with flags (flags take precedence over inline tokens)
-dbt-tools search orders --type model
+dbt-tools search --dbt-target ./target orders --type model
 
 # Human-readable output (TTY default)
-dbt-tools search orders --no-json
+dbt-tools search --dbt-target ./target orders --no-json
 
 # Force JSON
-dbt-tools search orders --json
+dbt-tools search --dbt-target ./target orders --json
 ```
 
 **Supported inline tokens in query:**
@@ -428,14 +398,13 @@ dbt-tools search orders --json
 **Options:**
 
 - `[query]` - Free-text search query with optional `key:value` tokens
-- `[manifest-path]` - Path to manifest.json (defaults to `./target/manifest.json`)
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
 - `--type <type>` - Filter by resource type(s), comma-separated
 - `--package <package>` - Filter by package name
 - `--tag <tag>` - Filter by tag(s), comma-separated
 - `--path <path>` - Filter by file path substring
 - `--fields <fields>` - Comma-separated fields to include
-- `--target-dir <dir>` - Custom target directory
-- `--json` - Force JSON output
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 **Example JSON output:**
@@ -462,21 +431,16 @@ dbt-tools search orders --json
 
 Report dbt artifact presence, file modification times, and analysis readiness. `freshness` is an alias for `status`.
 
-This command does **not** parse artifact content — it only checks the filesystem. It is safe to run even when artifacts are missing or invalid.
+For **local** `--dbt-target`, this command does **not** download or parse artifact JSON — it only checks the filesystem. For **remote** targets, it resolves the same fixed filenames as other commands (downloading to a temp directory) and then reports file stats on the downloaded copies.
 
 ```bash
-# Check default ./target directory
-dbt-tools status
-
-# Custom target directory
-dbt-tools status --target-dir ./custom-target
+dbt-tools status --dbt-target ./target
 
 # JSON output (machine-readable)
-dbt-tools status --json
+dbt-tools status --dbt-target ./target --json
 
 # Freshness alias
-dbt-tools freshness
-dbt-tools freshness --target-dir ./custom-target
+dbt-tools freshness --dbt-target ./target
 ```
 
 **Readiness values:**
@@ -489,8 +453,8 @@ dbt-tools freshness --target-dir ./custom-target
 
 **Options:**
 
-- `--target-dir <dir>` - Custom target directory (defaults to `./target`)
-- `--json` - Force JSON output
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (default: `DBT_TOOLS_DBT_TARGET` when set)
+- `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 **Example JSON output:**
@@ -519,7 +483,7 @@ dbt-tools freshness --target-dir ./custom-target
 
 **Caveats:**
 
-- Remote artifact sources (S3, GCS) are not checked; only local filesystem paths are inspected.
+- **Local** targets are inspected in-place (no JSON parsing). **Remote** targets are fetched first, then stats reflect the temp download paths.
 - Age values are computed at the time of the command, not relative to any dbt run.
 
 ---
@@ -549,28 +513,22 @@ dbt-tools schema
 
 ---
 
-## Default Directory Behavior
+## Artifact root (fixed filenames)
 
-All commands default to the `./target` directory where dbt stores artifacts:
+Every artifact command reads **`manifest.json`** and **`run_results.json`** from the same root (local directory or object-storage prefix). **`catalog.json`** and **`sources.json`** are optional when present.
 
-- `manifest.json` → `./target/manifest.json`
-- `run_results.json` → `./target/run_results.json`
-
-Override with:
-
-- `--target-dir <directory>` flag
-- `DBT_TOOLS_TARGET_DIR` environment variable (legacy: `DBT_TARGET_DIR`, `DBT_TARGET`)
+Set the root with **`--dbt-target`**, or export **`DBT_TOOLS_DBT_TARGET`** so you can omit the flag. If neither is set, the CLI exits with an error that tells you to pass **`--dbt-target`**.
 
 ---
 
-## JSON Output
+## JSON output
 
-The CLI automatically outputs JSON when stdout is not a TTY (non-interactive environments):
+The CLI automatically outputs **JSON on stdout** when stdout is not a TTY (non-interactive environments):
 
-- **Non-TTY (agents/pipes)**: JSON output by default
-- **TTY (interactive)**: Human-readable output by default
-- Use `--json` to force JSON
-- Use `--no-json` to force human-readable
+- **Non-TTY (agents/pipes)**: JSON stdout by default
+- **TTY (interactive)**: Human-readable stdout by default
+- **`--json`**: force JSON stdout **and** structured JSON errors on stderr (when the failure is modeled with a stable `code`)
+- **`--no-json`**: force human-readable stdout (stderr stays human-readable unless you use `--json`)
 
 ---
 
@@ -580,10 +538,10 @@ Use `--fields` to limit response size and reduce context window usage. Supported
 
 ```bash
 # Only return specific fields
-dbt-tools deps model.my_project.customers --fields "unique_id,name"
+dbt-tools deps --dbt-target ./target model.my_project.customers --fields "unique_id,name"
 
 # Supports nested fields
-dbt-tools deps model.my_project.customers --fields "unique_id,name,attributes.resource_type"
+dbt-tools deps --dbt-target ./target model.my_project.customers --fields "unique_id,name,attributes.resource_type"
 ```
 
 ---
@@ -606,28 +564,33 @@ The CLI validates all inputs to prevent common mistakes:
 
 ---
 
-## Error Handling
+## Error handling
 
-Errors are formatted as JSON in non-TTY environments:
+- **Human stderr** is the default for failures (checklist-style hints for missing artifact files, validation messages, and similar).
+- **Structured JSON on stderr** is emitted **only when you pass `--json`** on that command (independent of TTY). Scripts that parse errors should pass **`--json`**.
 
 ```json
 {
-  "error": "ValidationError",
-  "code": "VALIDATION_ERROR",
-  "message": "Resource ID contains invalid characters",
+  "error": "ArtifactBundleResolutionError",
+  "code": "ARTIFACT_BUNDLE_INCOMPLETE",
+  "message": "Required dbt artifacts are missing at the given target.",
   "details": {
-    "field": "resource_id"
+    "target": "./target",
+    "provider": "local",
+    "missing": ["manifest.json"],
+    "found": ["run_results.json"]
   }
 }
 ```
 
-**Common Error Codes:**
+**Common error codes** (non-exhaustive):
 
-- `VALIDATION_ERROR`: Input validation failed
-- `FILE_NOT_FOUND`: Artifact file not found
-- `PARSE_ERROR`: Failed to parse JSON
-- `UNSUPPORTED_VERSION`: Unsupported dbt version
-- `UNKNOWN_ERROR`: Other errors
+- `VALIDATION_ERROR`: input validation failed
+- `ARTIFACT_BUNDLE_INCOMPLETE`: required fixed filenames missing at `--dbt-target`
+- `FILE_NOT_FOUND`: artifact file not found (other paths)
+- `PARSE_ERROR`: invalid JSON
+- `UNSUPPORTED_VERSION`: unsupported dbt artifact version
+- `UNKNOWN_ERROR`: other failures
 
 ---
 
@@ -635,12 +598,12 @@ Errors are formatted as JSON in non-TTY environments:
 
 The same patterns help **scripts and CI** and **coding agents** (e.g. discover resources, then query deps with minimal fields).
 
-1. **Run `status` first** to check which artifacts are available before running analysis commands.
+1. **Run `status` first** (with the same **`--dbt-target`** you will use for analysis) to confirm required files exist.
 2. **Use `search` to discover resources** before running `deps` or `inventory`.
 3. **Use field filtering** on large outputs to keep JSON payloads small.
-4. **Use default `./target` directory** unless you have a specific reason not to.
+4. **Set `DBT_TOOLS_DBT_TARGET` in CI** so commands stay short and consistent.
 5. **Validate resource IDs** before querying (use schema introspection if unsure).
-6. **Handle errors programmatically** using error codes in non-interactive environments.
+6. **Pass `--json`** when scripts need **structured stderr** (do not rely on non-TTY heuristics for error JSON).
 7. **Use schema introspection** to discover command capabilities at runtime.
 
 Compose with other tooling as needed (e.g. warehouse job metadata, CI environment variables, or separate analysis of warehouse query logs)—`dbt-tools` stays artifact-grounded and does not execute warehouse queries.
@@ -651,34 +614,34 @@ Compose with other tooling as needed (e.g. warehouse job metadata, CI environmen
 
 ```bash
 # Check artifact readiness before doing any analysis
-dbt-tools status
+dbt-tools status --dbt-target ./target
 
 # Find a resource before querying its deps
-dbt-tools search orders --json | jq '.results[0].unique_id'
+dbt-tools search --dbt-target ./target orders --json | jq '.results[0].unique_id'
 
 # List all models with the finance tag
-dbt-tools inventory --type model --tag finance
+dbt-tools inventory --dbt-target ./target --type model --tag finance
 
 # Find downstream dependencies
-dbt-tools deps model.my_project.customers
+dbt-tools deps --dbt-target ./target model.my_project.customers
 
 # Find upstream dependencies with minimal output
-dbt-tools deps model.my_project.customers --direction upstream --fields "unique_id"
+dbt-tools deps --dbt-target ./target model.my_project.customers --direction upstream --fields "unique_id"
 
 # Execution timeline (slowest 10 nodes)
-dbt-tools timeline --top 10
+dbt-tools timeline --dbt-target ./target --top 10
 
 # Failed executions only
-dbt-tools timeline --failed-only
+dbt-tools timeline --dbt-target ./target --failed-only
 
 # Export full graph for visualization
-dbt-tools graph --format dot --output graph.dot
+dbt-tools graph --dbt-target ./target --format dot --output graph.dot
 
 # Export focused subgraph around one node
-dbt-tools graph --focus model.my_project.orders --focus-depth 2 --format dot --output orders_subgraph.dot
+dbt-tools graph --dbt-target ./target --focus model.my_project.orders --focus-depth 2 --format dot --output orders_subgraph.dot
 
 # Aggregated execution report with critical path
-dbt-tools run-report
+dbt-tools run-report --dbt-target ./target
 
 # Get command schema
 dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
@@ -686,9 +649,10 @@ dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 
 ---
 
-## Environment Variables
+## Environment variables
 
-- `DBT_TOOLS_TARGET_DIR` - Override default target directory (defaults to `./target`; legacy: `DBT_TARGET_DIR`, `DBT_TARGET`)
+- **`DBT_TOOLS_DBT_TARGET`**: default artifact root for the CLI when **`--dbt-target`** is omitted (local path, or `s3://…` / `gs://…` with a strict scheme).
+- **Remote credentials / endpoint style** for `s3://` and `gs://` still follow **`DBT_TOOLS_REMOTE_SOURCE`** (see the artifact root section above).
 
 ---
 

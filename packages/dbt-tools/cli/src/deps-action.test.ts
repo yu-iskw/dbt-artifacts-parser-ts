@@ -1,42 +1,35 @@
+import * as fs from "node:fs/promises";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { getTestResourcePath } from "dbt-artifacts-parser/test-utils";
+import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
 import { depsAction } from "./deps-action";
 
 describe("depsAction", () => {
-  const manifestPath = getTestResourcePath(
-    "manifest",
-    "v12",
-    "resources",
-    "jaffle_shop",
-    "manifest_1.10.json",
-  );
-
   const handleError = (error: unknown) => {
     throw error;
   };
-  const isTTY = () => false;
 
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let dbtTargetDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    dbtTargetDir = await createJaffleArtifactBundleDir();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     consoleLogSpy.mockRestore();
+    await fs.rm(dbtTargetDir, { recursive: true, force: true });
   });
 
   it("outputs upstream deps for a model with tree format", async () => {
     await depsAction(
       "model.jaffle_shop.stg_products",
       {
-        manifestPath,
+        dbtTarget: dbtTargetDir,
         direction: "upstream",
         format: "tree",
       },
       handleError,
-      isTTY,
     );
 
     expect(consoleLogSpy).toHaveBeenCalled();
@@ -51,12 +44,11 @@ describe("depsAction", () => {
     await depsAction(
       "model.jaffle_shop.stg_products",
       {
-        manifestPath,
+        dbtTarget: dbtTargetDir,
         direction: "upstream",
         format: "flat",
       },
       handleError,
-      isTTY,
     );
 
     expect(consoleLogSpy).toHaveBeenCalled();
@@ -68,12 +60,11 @@ describe("depsAction", () => {
     await depsAction(
       "model.jaffle_shop.stg_products",
       {
-        manifestPath,
+        dbtTarget: dbtTargetDir,
         direction: "downstream",
         format: "tree",
       },
       handleError,
-      isTTY,
     );
 
     expect(consoleLogSpy).toHaveBeenCalled();
@@ -85,13 +76,12 @@ describe("depsAction", () => {
     await depsAction(
       "model.jaffle_shop.stg_products",
       {
-        manifestPath,
+        dbtTarget: dbtTargetDir,
         direction: "upstream",
         format: "tree",
         json: true,
       },
       handleError,
-      isTTY,
     );
 
     expect(consoleLogSpy).toHaveBeenCalled();
@@ -108,13 +98,12 @@ describe("depsAction", () => {
     await depsAction(
       "model.jaffle_shop.customers",
       {
-        manifestPath,
+        dbtTarget: dbtTargetDir,
         direction: "upstream",
         format: "tree",
         depth: 1,
       },
       handleError,
-      isTTY,
     );
 
     expect(consoleLogSpy).toHaveBeenCalled();
@@ -125,12 +114,11 @@ describe("depsAction", () => {
       depsAction(
         "model.jaffle_shop.stg_products",
         {
-          manifestPath,
+          dbtTarget: dbtTargetDir,
           direction: "invalid",
           format: "tree",
         },
         handleError,
-        isTTY,
       ),
     ).rejects.toThrow(/Invalid direction/);
   });
@@ -140,12 +128,11 @@ describe("depsAction", () => {
       depsAction(
         "",
         {
-          manifestPath,
+          dbtTarget: dbtTargetDir,
           direction: "upstream",
           format: "tree",
         },
         handleError,
-        isTTY,
       ),
     ).rejects.toThrow();
   });

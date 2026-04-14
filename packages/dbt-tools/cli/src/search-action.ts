@@ -22,7 +22,6 @@ export type SearchOptions = {
   tag?: string;
   path?: string;
   fields?: string;
-  targetDir?: string;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -183,24 +182,17 @@ export function formatSearch(output: SearchOutput): string {
  */
 export async function searchAction(
   query: string | undefined,
-  manifestPath: string | undefined,
   options: SearchOptions,
-  handleError: (error: unknown, isTTY: boolean) => void,
-  isTTY: () => boolean,
+  handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
     if (query) {
       validateNoControlChars(query);
     }
 
-    const paths = await resolveCliArtifactPaths(
-      { manifestPath, targetDir: options.targetDir },
-      {
-        source: options.source,
-        location: options.location,
-        runId: options.runId,
-      },
-    );
+    const paths = await resolveCliArtifactPaths({
+      dbtTarget: options.dbtTarget,
+    });
     validateSafePath(paths.manifest);
 
     const manifest = loadManifest(paths.manifest);
@@ -273,6 +265,6 @@ export async function searchAction(
       console.log(formatSearch(output));
     }
   } catch (error) {
-    handleError(error, isTTY());
+    handleError(error, shouldOutputJSON(options.json, options.noJson));
   }
 }

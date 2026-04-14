@@ -11,6 +11,7 @@ export * from "./analysis/analysis-snapshot";
 // Config exports (Node; not re-exported from browser entry)
 export {
   getDbtToolsTargetDirFromEnv,
+  getDbtToolsDbtTargetFromEnv,
   getDbtToolsReloadDebounceMs,
   getDbtToolsRemoteSourceConfigFromEnv,
   parseDbtToolsRemoteSourceConfigJson,
@@ -27,6 +28,7 @@ export * from "./io/artifact-filenames";
 export * from "./io/artifact-loader";
 export * from "./io/artifact-discovery";
 export * from "./io/artifact-location";
+export * from "./io/dbt-artifact-bundle";
 
 // Validation exports
 export * from "./validation/input-validator";
@@ -37,6 +39,7 @@ export * from "./formatting/field-filter";
 export * from "./formatting/graph-export";
 
 // Error handling exports
+export * from "./errors/artifact-bundle-resolution-error";
 export * from "./errors/error-handler";
 
 // Introspection exports

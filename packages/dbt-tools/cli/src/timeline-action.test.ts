@@ -1,6 +1,8 @@
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { getTestResourcePath } from "dbt-artifacts-parser/test-utils";
+import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
 import {
   timelineAction,
   formatTimeline,
@@ -8,44 +10,25 @@ import {
 } from "./timeline-action";
 
 describe("timelineAction", () => {
-  const runResultsPath = getTestResourcePath(
-    "run_results",
-    "v6",
-    "resources",
-    "jaffle_shop",
-    "run_results.json",
-  );
-  const manifestPath = getTestResourcePath(
-    "manifest",
-    "v12",
-    "resources",
-    "jaffle_shop",
-    "manifest_1.10.json",
-  );
-
   const handleError = (error: unknown) => {
     throw error;
   };
-  const isTTY = () => false;
 
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let dbtTargetDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    dbtTargetDir = await createJaffleArtifactBundleDir();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     consoleLogSpy.mockRestore();
+    await fs.rm(dbtTargetDir, { recursive: true, force: true });
   });
 
   it("outputs JSON timeline with required fields", async () => {
-    await timelineAction(
-      runResultsPath,
-      undefined,
-      { json: true },
-      handleError,
-      isTTY,
-    );
+    await timelineAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -68,13 +51,7 @@ describe("timelineAction", () => {
   });
 
   it("is sorted by duration descending by default", async () => {
-    await timelineAction(
-      runResultsPath,
-      undefined,
-      { json: true },
-      handleError,
-      isTTY,
-    );
+    await timelineAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -88,11 +65,8 @@ describe("timelineAction", () => {
 
   it("respects --top option", async () => {
     await timelineAction(
-      runResultsPath,
-      undefined,
-      { top: 3, json: true },
+      { dbtTarget: dbtTargetDir, top: 3, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -100,14 +74,8 @@ describe("timelineAction", () => {
     expect(parsed.entries.length).toBeLessThanOrEqual(3);
   });
 
-  it("enriches entries with name and type when manifest is provided", async () => {
-    await timelineAction(
-      runResultsPath,
-      manifestPath,
-      { json: true },
-      handleError,
-      isTTY,
-    );
+  it("enriches entries with name and type from manifest", async () => {
+    await timelineAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -119,11 +87,8 @@ describe("timelineAction", () => {
 
   it("filters by --failed-only", async () => {
     await timelineAction(
-      runResultsPath,
-      undefined,
-      { failedOnly: true, json: true },
+      { dbtTarget: dbtTargetDir, failedOnly: true, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -139,11 +104,8 @@ describe("timelineAction", () => {
 
   it("outputs human-readable table in TTY mode", async () => {
     await timelineAction(
-      runResultsPath,
-      undefined,
-      { noJson: true },
+      { dbtTarget: dbtTargetDir, noJson: true },
       handleError,
-      () => true,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -153,11 +115,8 @@ describe("timelineAction", () => {
 
   it("outputs CSV when --format csv", async () => {
     await timelineAction(
-      runResultsPath,
-      undefined,
-      { format: "csv" },
+      { dbtTarget: dbtTargetDir, format: "csv" },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -169,13 +128,7 @@ describe("timelineAction", () => {
   });
 
   it("includes normalized adapter metrics in JSON entries when available", async () => {
-    await timelineAction(
-      runResultsPath,
-      manifestPath,
-      { json: true },
-      handleError,
-      isTTY,
-    );
+    await timelineAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as {
@@ -189,25 +142,21 @@ describe("timelineAction", () => {
   it("throws for invalid sort option", async () => {
     await expect(
       timelineAction(
-        runResultsPath,
-        undefined,
-        { sort: "invalid_sort" },
+        { dbtTarget: dbtTargetDir, sort: "invalid_sort" },
         handleError,
-        isTTY,
       ),
     ).rejects.toThrow(/--sort must be one of/);
   });
 
-  it("throws when run_results not found", async () => {
-    await expect(
-      timelineAction(
-        "/nonexistent/run_results.json",
-        undefined,
-        {},
-        handleError,
-        isTTY,
-      ),
-    ).rejects.toThrow(/not found/);
+  it("throws when required artifacts are missing", async () => {
+    const empty = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-tl-empty-"));
+    try {
+      await expect(
+        timelineAction({ dbtTarget: empty }, handleError),
+      ).rejects.toThrow(/Missing required dbt artifact/);
+    } finally {
+      await fs.rm(empty, { recursive: true, force: true });
+    }
   });
 });
 

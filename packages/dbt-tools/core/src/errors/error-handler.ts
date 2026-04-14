@@ -1,3 +1,5 @@
+import { ArtifactBundleResolutionError } from "./artifact-bundle-resolution-error";
+
 /**
  * Structured error format for JSON output
  */
@@ -13,9 +15,15 @@ export interface StructuredError {
  */
 export class ErrorHandler {
   /**
-   * Format an error for output (JSON when not TTY, human-readable when TTY)
+   * Format an error for CLI output.
+   * @param preferHumanReadable - When true, return a single-line human string.
+   *   When false, return a {@link StructuredError} object for JSON serialization
+   *   (e.g. when the CLI was invoked with `--json`).
    */
-  static formatError(error: Error, isTTY: boolean): string | StructuredError {
+  static formatError(
+    error: Error,
+    preferHumanReadable: boolean,
+  ): string | StructuredError {
     const structured: StructuredError = {
       error: error.name || "Error",
       code: this.getErrorCode(error),
@@ -27,12 +35,20 @@ export class ErrorHandler {
       structured.details = { field: (error as { field?: string }).field };
     }
 
-    if (isTTY) {
-      // Human-readable format
+    if (error instanceof ArtifactBundleResolutionError) {
+      structured.details = {
+        target: error.target,
+        provider: error.provider,
+        missing: error.missing,
+        found: error.found,
+        ...(error.keysTried != null ? { keysTried: error.keysTried } : {}),
+      };
+    }
+
+    if (preferHumanReadable) {
       return `Error [${structured.code}]: ${structured.message}`;
     }
 
-    // JSON format for agents
     return structured;
   }
 
@@ -52,6 +68,9 @@ export class ErrorHandler {
    * Get error code from error type
    */
   private static getErrorCode(error: Error): string {
+    if (error.name === "ArtifactBundleResolutionError") {
+      return "ARTIFACT_BUNDLE_INCOMPLETE";
+    }
     if (error.name === "ValidationError") {
       return "VALIDATION_ERROR";
     }

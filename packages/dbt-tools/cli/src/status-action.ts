@@ -5,17 +5,22 @@
 import * as fs from "fs";
 import * as path from "path";
 import {
-  validateSafePath,
+  DBT_CATALOG_JSON,
+  DBT_MANIFEST_JSON,
+  DBT_RUN_RESULTS_JSON,
+  DBT_SOURCES_JSON,
   formatOutput,
+  parseDbtToolsArtifactTarget,
   shouldOutputJSON,
+  validateSafePath,
 } from "@dbt-tools/core";
 import {
   resolveCliArtifactPaths,
+  resolveEffectiveDbtTarget,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
 
 export type StatusOptions = {
-  targetDir?: string;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -87,7 +92,7 @@ export function formatStatus(result: StatusResult): string {
   const lines: string[] = [];
   lines.push("dbt Artifact Status");
   lines.push("===================");
-  lines.push(`Target dir:   ${result.target_dir}`);
+  lines.push(`Target:       ${result.target_dir}`);
   lines.push(`Readiness:    ${result.readiness}`);
   lines.push("");
 
@@ -121,32 +126,40 @@ export function formatStatus(result: StatusResult): string {
  */
 export async function statusAction(
   options: StatusOptions,
-  handleError: (error: unknown, isTTY: boolean) => void,
-  isTTY: () => boolean,
+  handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
-    const paths = await resolveCliArtifactPaths(
-      { targetDir: options.targetDir },
-      {
-        source: options.source,
-        location: options.location,
-        runId: options.runId,
-      },
-    );
+    const raw = resolveEffectiveDbtTarget(options.dbtTarget);
+    const parsed = parseDbtToolsArtifactTarget(raw, process.cwd());
 
-    // Validate paths before accessing filesystem
-    validateSafePath(paths.manifest);
-    validateSafePath(paths.runResults);
-    if (paths.catalog) validateSafePath(paths.catalog);
-    if (paths.sources) validateSafePath(paths.sources);
+    let manifestStatus: ArtifactFileStatus;
+    let runResultsStatus: ArtifactFileStatus;
+    let catalogStatus: ArtifactFileStatus;
+    let sourcesStatus: ArtifactFileStatus;
+    let targetDir: string;
 
-    const manifestStatus = getFileStatus(paths.manifest);
-    const runResultsStatus = getFileStatus(paths.runResults);
-    const catalogStatus = getFileStatus(paths.catalog ?? "");
-    const sourcesStatus = getFileStatus(paths.sources ?? "");
-
-    // Determine target dir from the manifest path using path.dirname for portability
-    const targetDir = path.dirname(paths.manifest) || ".";
+    if (parsed.kind === "local") {
+      const dir = parsed.resolvedPath;
+      validateSafePath(dir);
+      targetDir = dir;
+      manifestStatus = getFileStatus(path.join(dir, DBT_MANIFEST_JSON));
+      runResultsStatus = getFileStatus(path.join(dir, DBT_RUN_RESULTS_JSON));
+      catalogStatus = getFileStatus(path.join(dir, DBT_CATALOG_JSON));
+      sourcesStatus = getFileStatus(path.join(dir, DBT_SOURCES_JSON));
+    } else {
+      const paths = await resolveCliArtifactPaths({
+        dbtTarget: options.dbtTarget,
+      });
+      validateSafePath(paths.manifest);
+      validateSafePath(paths.runResults);
+      if (paths.catalog) validateSafePath(paths.catalog);
+      if (paths.sources) validateSafePath(paths.sources);
+      manifestStatus = getFileStatus(paths.manifest);
+      runResultsStatus = getFileStatus(paths.runResults);
+      catalogStatus = getFileStatus(paths.catalog ?? "");
+      sourcesStatus = getFileStatus(paths.sources ?? "");
+      targetDir = path.dirname(paths.manifest) || ".";
+    }
 
     let readiness: StatusResult["readiness"];
     if (!manifestStatus.exists) {
@@ -206,6 +219,6 @@ export async function statusAction(
       console.log(formatStatus(result));
     }
   } catch (error) {
-    handleError(error, isTTY());
+    handleError(error, shouldOutputJSON(options.json, options.noJson));
   }
 }

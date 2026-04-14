@@ -21,7 +21,6 @@ export type InventoryOptions = {
   tag?: string;
   path?: string;
   fields?: string;
-  targetDir?: string;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -118,20 +117,13 @@ export function formatInventory(result: InventoryResult): string {
  * Inventory action handler
  */
 export async function inventoryAction(
-  manifestPath: string | undefined,
   options: InventoryOptions,
-  handleError: (error: unknown, isTTY: boolean) => void,
-  isTTY: () => boolean,
+  handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
-    const paths = await resolveCliArtifactPaths(
-      { manifestPath, targetDir: options.targetDir },
-      {
-        source: options.source,
-        location: options.location,
-        runId: options.runId,
-      },
-    );
+    const paths = await resolveCliArtifactPaths({
+      dbtTarget: options.dbtTarget,
+    });
     validateSafePath(paths.manifest);
 
     const manifest = loadManifest(paths.manifest);
@@ -173,6 +165,6 @@ export async function inventoryAction(
       console.log(formatInventory(result));
     }
   } catch (error) {
-    handleError(error, isTTY());
+    handleError(error, shouldOutputJSON(options.json, options.noJson));
   }
 }

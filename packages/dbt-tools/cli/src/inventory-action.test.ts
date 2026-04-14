@@ -1,34 +1,30 @@
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { getTestResourcePath } from "dbt-artifacts-parser/test-utils";
+import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
 import { inventoryAction, formatInventory } from "./inventory-action";
 
 describe("inventoryAction", () => {
-  const manifestPath = getTestResourcePath(
-    "manifest",
-    "v12",
-    "resources",
-    "jaffle_shop",
-    "manifest_1.10.json",
-  );
-
   const handleError = (error: unknown) => {
     throw error;
   };
-  const isTTY = () => false;
 
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let dbtTargetDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    dbtTargetDir = await createJaffleArtifactBundleDir();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     consoleLogSpy.mockRestore();
+    await fs.rm(dbtTargetDir, { recursive: true, force: true });
   });
 
   it("outputs JSON inventory of all resources", async () => {
-    await inventoryAction(manifestPath, { json: true }, handleError, isTTY);
+    await inventoryAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -42,10 +38,8 @@ describe("inventoryAction", () => {
 
   it("filters by resource type", async () => {
     await inventoryAction(
-      manifestPath,
-      { type: "model", json: true },
+      { dbtTarget: dbtTargetDir, type: "model", json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -58,10 +52,8 @@ describe("inventoryAction", () => {
 
   it("filters by multiple types comma-separated", async () => {
     await inventoryAction(
-      manifestPath,
-      { type: "model,source", json: true },
+      { dbtTarget: dbtTargetDir, type: "model,source", json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -79,10 +71,8 @@ describe("inventoryAction", () => {
 
   it("filters by package name", async () => {
     await inventoryAction(
-      manifestPath,
-      { package: "jaffle_shop", json: true },
+      { dbtTarget: dbtTargetDir, package: "jaffle_shop", json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -97,10 +87,8 @@ describe("inventoryAction", () => {
 
   it("filters by tag (no match returns empty)", async () => {
     await inventoryAction(
-      manifestPath,
-      { tag: "nonexistent_tag_xyz", json: true },
+      { dbtTarget: dbtTargetDir, tag: "nonexistent_tag_xyz", json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -110,25 +98,25 @@ describe("inventoryAction", () => {
 
   it("supports --fields to project output fields", async () => {
     await inventoryAction(
-      manifestPath,
-      { type: "model", fields: "entries", json: true },
+      {
+        dbtTarget: dbtTargetDir,
+        type: "model",
+        fields: "entries",
+        json: true,
+      },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as Record<string, unknown>;
-    // When filtering to just "entries", the result should only have that key
     expect(parsed).toHaveProperty("entries");
     expect(parsed).not.toHaveProperty("total");
   });
 
   it("outputs human-readable format when noJson is set", async () => {
     await inventoryAction(
-      manifestPath,
-      { noJson: true },
+      { dbtTarget: dbtTargetDir, noJson: true },
       handleError,
-      () => true,
     );
 
     expect(consoleLogSpy).toHaveBeenCalled();
@@ -137,15 +125,15 @@ describe("inventoryAction", () => {
     expect(output).toContain("Total resources:");
   });
 
-  it("throws when manifest is not found", async () => {
-    await expect(
-      inventoryAction(
-        "/nonexistent/path/manifest.json",
-        { json: true },
-        handleError,
-        isTTY,
-      ),
-    ).rejects.toThrow(/not found/);
+  it("throws when required artifacts are missing", async () => {
+    const empty = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-inv-empty-"));
+    try {
+      await expect(
+        inventoryAction({ dbtTarget: empty, json: true }, handleError),
+      ).rejects.toThrow(/Missing required dbt artifact/);
+    } finally {
+      await fs.rm(empty, { recursive: true, force: true });
+    }
   });
 });
 

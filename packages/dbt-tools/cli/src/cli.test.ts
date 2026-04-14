@@ -77,13 +77,9 @@ describe("CLI Integration", () => {
       const schema = getCommandSchema("status");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("status");
-      const targetDirOpt = schema?.options?.find(
-        (o) => o.name === "--target-dir",
+      expect(schema?.options?.some((o) => o.name === "--dbt-target")).toBe(
+        true,
       );
-      expect(targetDirOpt).toBeDefined();
-      expect(schema?.options?.some((o) => o.name === "--source")).toBe(true);
-      expect(schema?.options?.some((o) => o.name === "--location")).toBe(true);
-      expect(schema?.options?.some((o) => o.name === "--run-id")).toBe(true);
     });
 
     it("freshness schema should have command = freshness", () => {
@@ -126,11 +122,9 @@ describe("CLI Integration", () => {
       expect(fieldLevelOpt).toBeDefined();
       expect(fieldLevelOpt?.type).toBe("boolean");
 
-      const catalogOpt = schema?.options?.find(
-        (o) => o.name === "--catalog-path",
+      expect(schema?.options?.some((o) => o.name === "--dbt-target")).toBe(
+        true,
       );
-      expect(catalogOpt).toBeDefined();
-      expect(catalogOpt?.type).toBe("string");
     });
 
     it("should have run-report schema with bottleneck options", () => {

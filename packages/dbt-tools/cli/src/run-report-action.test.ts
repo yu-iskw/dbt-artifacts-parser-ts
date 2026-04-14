@@ -1,71 +1,31 @@
 /**
  * Tests for run-report-action.
  */
+import * as fs from "node:fs/promises";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getTestResourcePath } from "dbt-artifacts-parser/test-utils";
+import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
 import { runReportAction } from "./run-report-action";
 
 describe("runReportAction", () => {
   const handleError = (error: unknown) => {
     throw error;
   };
-  const isTTY = () => false;
 
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let dbtTargetDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    dbtTargetDir = await createJaffleArtifactBundleDir();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     consoleLogSpy.mockRestore();
-  });
-
-  it("outputs minimal execution summary without manifest when only run_results provided", async () => {
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
-    await runReportAction(
-      runResultsPath,
-      undefined,
-      { json: true },
-      handleError,
-      isTTY,
-    );
-
-    expect(consoleLogSpy).toHaveBeenCalled();
-    const output = consoleLogSpy.mock.calls[0][0] as string;
-    const parsed = JSON.parse(output) as Record<string, unknown>;
-    expect(parsed).toHaveProperty("total_execution_time");
-    expect(parsed).toHaveProperty("total_nodes");
-    expect(parsed).toHaveProperty("nodes_by_status");
-    expect(parsed).toHaveProperty("node_executions");
-    expect(Array.isArray(parsed.node_executions)).toBe(true);
-    expect((parsed.node_executions as unknown[]).length).toBeGreaterThan(0);
+    await fs.rm(dbtTargetDir, { recursive: true, force: true });
   });
 
   it("outputs execution summary with manifest and run_results fixtures", async () => {
-    const manifestPath = getTestResourcePath(
-      "manifest",
-      "v12",
-      "resources",
-      "jaffle_shop",
-      "manifest_1.10.json",
-    );
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
-    await runReportAction(runResultsPath, manifestPath, {}, handleError, isTTY);
+    await runReportAction({ dbtTarget: dbtTargetDir }, handleError);
 
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -75,28 +35,7 @@ describe("runReportAction", () => {
   });
 
   it("outputs JSON when json option is set", async () => {
-    const manifestPath = getTestResourcePath(
-      "manifest",
-      "v12",
-      "resources",
-      "jaffle_shop",
-      "manifest_1.10.json",
-    );
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
-    await runReportAction(
-      runResultsPath,
-      manifestPath,
-      { json: true },
-      handleError,
-      isTTY,
-    );
+    await runReportAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as Record<string, unknown>;
@@ -107,27 +46,9 @@ describe("runReportAction", () => {
   });
 
   it("includes bottlenecks when --bottlenecks option is set", async () => {
-    const manifestPath = getTestResourcePath(
-      "manifest",
-      "v12",
-      "resources",
-      "jaffle_shop",
-      "manifest_1.10.json",
-    );
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
     await runReportAction(
-      runResultsPath,
-      manifestPath,
-      { bottlenecks: true, json: true },
+      { dbtTarget: dbtTargetDir, bottlenecks: true, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -142,27 +63,9 @@ describe("runReportAction", () => {
   });
 
   it("includes adapter_totals in JSON when --adapter-summary", async () => {
-    const manifestPath = getTestResourcePath(
-      "manifest",
-      "v12",
-      "resources",
-      "jaffle_shop",
-      "manifest_1.10.json",
-    );
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
     await runReportAction(
-      runResultsPath,
-      manifestPath,
-      { adapterSummary: true, json: true },
+      { dbtTarget: dbtTargetDir, adapterSummary: true, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -173,31 +76,14 @@ describe("runReportAction", () => {
   });
 
   it("includes adapter_top in JSON when --adapter-top-by", async () => {
-    const manifestPath = getTestResourcePath(
-      "manifest",
-      "v12",
-      "resources",
-      "jaffle_shop",
-      "manifest_1.10.json",
-    );
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
     await runReportAction(
-      runResultsPath,
-      manifestPath,
       {
+        dbtTarget: dbtTargetDir,
         adapterTopBy: "rows_affected",
         adapterTopN: 3,
         json: true,
       },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -210,27 +96,9 @@ describe("runReportAction", () => {
   });
 
   it("renders human adapter sections when adapter summary is enabled", async () => {
-    const manifestPath = getTestResourcePath(
-      "manifest",
-      "v12",
-      "resources",
-      "jaffle_shop",
-      "manifest_1.10.json",
-    );
-    const runResultsPath = getTestResourcePath(
-      "run_results",
-      "v6",
-      "resources",
-      "jaffle_shop",
-      "run_results.json",
-    );
-
     await runReportAction(
-      runResultsPath,
-      manifestPath,
-      { adapterSummary: true, noJson: true },
+      { dbtTarget: dbtTargetDir, adapterSummary: true, noJson: true },
       handleError,
-      () => true,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
