@@ -29,14 +29,15 @@ export class ArtifactBundleResolutionError extends Error {
     missing: string[];
     found: string[];
     keysTried?: string[];
+    required?: string[];
   }): ArtifactBundleResolutionError {
     const { target, provider, missing, found, keysTried } = args;
+    const required = args.required ?? ["manifest.json", "run_results.json"];
     const lines: string[] = [
       `Missing required dbt artifact files under this target (${provider}): ${target}`,
       "",
       "Status:",
     ];
-    const required = ["manifest.json", "run_results.json"] as const;
     for (const f of required) {
       const ok = found.includes(f);
       lines.push(`  ${ok ? "[ok]" : "[missing]"} ${f}`);

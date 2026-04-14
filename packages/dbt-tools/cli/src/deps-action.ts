@@ -109,9 +109,12 @@ export async function depsAction(
       throw new Error(`--build-order is only valid with --direction upstream`);
     }
 
-    const paths = await resolveCliArtifactPaths({
-      dbtTarget: options.dbtTarget,
-    });
+    const paths = await resolveCliArtifactPaths(
+      {
+        dbtTarget: options.dbtTarget,
+      },
+      { manifest: true, runResults: false },
+    );
 
     validateSafePath(paths.manifest);
 

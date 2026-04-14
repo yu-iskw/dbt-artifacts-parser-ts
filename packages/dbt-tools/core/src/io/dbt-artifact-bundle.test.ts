@@ -59,6 +59,32 @@ describe("resolveDbtToolsArtifactBundlePaths (local)", () => {
     expect(paths.runResults).toBe(path.join(dir, DBT_RUN_RESULTS_JSON));
   });
 
+  it("supports manifest-only requirements", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-art-"));
+    await fs.writeFile(path.join(dir, DBT_MANIFEST_JSON), "{}", "utf8");
+
+    const paths = await resolveDbtToolsArtifactBundlePaths({
+      dbtTargetRaw: dir,
+      cwd: "/tmp",
+      requirements: { manifest: true, runResults: false },
+    });
+    expect(paths.manifest).toBe(path.join(dir, DBT_MANIFEST_JSON));
+    expect(paths.runResults).toBe(path.join(dir, DBT_RUN_RESULTS_JSON));
+  });
+
+  it("supports run-results-only requirements", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-art-"));
+    await fs.writeFile(path.join(dir, DBT_RUN_RESULTS_JSON), "{}", "utf8");
+
+    const paths = await resolveDbtToolsArtifactBundlePaths({
+      dbtTargetRaw: dir,
+      cwd: "/tmp",
+      requirements: { manifest: false, runResults: true },
+    });
+    expect(paths.manifest).toBe(path.join(dir, DBT_MANIFEST_JSON));
+    expect(paths.runResults).toBe(path.join(dir, DBT_RUN_RESULTS_JSON));
+  });
+
   it("throws ArtifactBundleResolutionError when manifest missing", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-art-"));
     await fs.writeFile(path.join(dir, DBT_RUN_RESULTS_JSON), "{}", "utf8");
@@ -66,5 +92,18 @@ describe("resolveDbtToolsArtifactBundlePaths (local)", () => {
     await expect(
       resolveDbtToolsArtifactBundlePaths({ dbtTargetRaw: dir, cwd: "/tmp" }),
     ).rejects.toThrow(ArtifactBundleResolutionError);
+  });
+
+  it("throws only for required files", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-art-"));
+    await fs.writeFile(path.join(dir, DBT_MANIFEST_JSON), "{}", "utf8");
+
+    await expect(
+      resolveDbtToolsArtifactBundlePaths({
+        dbtTargetRaw: dir,
+        cwd: "/tmp",
+        requirements: { manifest: false, runResults: true },
+      }),
+    ).rejects.toThrow(/run_results\.json/);
   });
 });

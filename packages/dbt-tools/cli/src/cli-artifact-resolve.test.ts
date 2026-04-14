@@ -44,6 +44,28 @@ describe("cli-artifact-resolve", () => {
     expect(paths.runResults).toBe(path.join(dir, "run_results.json"));
   });
 
+  it("resolveCliArtifactPaths supports manifest-only requirements", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-cli-artifact-"));
+    await fs.writeFile(path.join(dir, "manifest.json"), "{}");
+
+    const paths = await resolveCliArtifactPaths(
+      { dbtTarget: dir },
+      { manifest: true, runResults: false },
+    );
+    expect(paths.manifest).toBe(path.join(dir, "manifest.json"));
+  });
+
+  it("resolveCliArtifactPaths supports run-results-only requirements", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-cli-artifact-"));
+    await fs.writeFile(path.join(dir, "run_results.json"), "{}");
+
+    const paths = await resolveCliArtifactPaths(
+      { dbtTarget: dir },
+      { manifest: false, runResults: true },
+    );
+    expect(paths.runResults).toBe(path.join(dir, "run_results.json"));
+  });
+
   it("resolveCliArtifactPaths uses DBT_TOOLS_DBT_TARGET when flag omitted", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-cli-artifact-"));
     await fs.writeFile(path.join(dir, "manifest.json"), "{}");

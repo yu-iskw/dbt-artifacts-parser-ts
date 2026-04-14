@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { Command } from "commander";
 import {
   ManifestGraph,
@@ -132,9 +131,12 @@ program
       } & ArtifactRootFlags,
     ) => {
       try {
-        const paths = await resolveCliArtifactPaths({
-          dbtTarget: options.dbtTarget,
-        });
+        const paths = await resolveCliArtifactPaths(
+          {
+            dbtTarget: options.dbtTarget,
+          },
+          { manifest: true, runResults: false },
+        );
 
         // Validate path
         validateSafePath(paths.manifest);
@@ -161,7 +163,7 @@ program
           console.log(formatSummary(summary));
         }
       } catch (error) {
-        handleCliError(error, shouldOutputJSON(options.json, options.noJson));
+        handleCliError(error, shouldOutputJSON(undefined, undefined));
       }
     },
   );
@@ -212,9 +214,12 @@ program
     ) => {
       try {
         // Resolve artifact paths
-        const paths = await resolveCliArtifactPaths({
-          dbtTarget: options.dbtTarget,
-        });
+        const paths = await resolveCliArtifactPaths(
+          {
+            dbtTarget: options.dbtTarget,
+          },
+          { manifest: true, runResults: false },
+        );
 
         // Validate path
         validateSafePath(paths.manifest);
@@ -270,7 +275,7 @@ program
         });
         writeGraphOutput(output, options.output);
       } catch (error) {
-        handleCliError(error, false);
+        handleCliError(error, shouldOutputJSON(undefined, undefined));
       }
     },
   );
@@ -636,5 +641,9 @@ program
     }
   });
 
-// Parse command line arguments
-program.parse();
+export { program };
+
+// Parse command line arguments when executed as the CLI entrypoint.
+if (require.main === module) {
+  program.parse();
+}

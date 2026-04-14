@@ -1,9 +1,11 @@
 /**
  * Run-report CLI action handler and helpers.
  */
+import * as fs from "node:fs/promises";
 import {
   ManifestGraph,
   ExecutionAnalyzer,
+  buildNodeExecutionsFromRunResults,
   loadManifest,
   loadRunResults,
   validateSafePath,
@@ -41,6 +43,25 @@ type RunReportOptions = {
   adapterMinSlotMs?: number;
   adapterMinRowsAffected?: number;
 } & ArtifactRootCliOptions;
+
+/** Create a reduced summary when manifest.json is unavailable. */
+function createMinimalSummary(
+  runResults: ReturnType<typeof loadRunResults>,
+): ExecutionSummary {
+  const nodesByStatus: Record<string, number> = {};
+  if (runResults.results) {
+    for (const result of runResults.results) {
+      const status = result.status || "unknown";
+      nodesByStatus[status] = (nodesByStatus[status] || 0) + 1;
+    }
+  }
+  return {
+    total_execution_time: runResults.elapsed_time || 0,
+    total_nodes: runResults.results?.length || 0,
+    nodes_by_status: nodesByStatus,
+    node_executions: [],
+  };
+}
 
 /** Compute bottlenecks from summary and options */
 function computeBottlenecksSection(
@@ -190,21 +211,42 @@ export async function runReportAction(
   handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
-    const paths = await resolveCliArtifactPaths({
-      dbtTarget: options.dbtTarget,
-    });
+    const paths = await resolveCliArtifactPaths(
+      {
+        dbtTarget: options.dbtTarget,
+      },
+      { manifest: false, runResults: true },
+    );
 
     validateSafePath(paths.runResults);
-    validateSafePath(paths.manifest);
+    const hasManifest = await fs
+      .access(paths.manifest)
+      .then(() => true)
+      .catch(() => false);
+    if (hasManifest) {
+      validateSafePath(paths.manifest);
+    }
 
     const runResults = loadRunResults(paths.runResults);
 
-    const manifest = loadManifest(paths.manifest);
-    const graph = new ManifestGraph(manifest);
-    const adapterType = manifest.metadata?.adapter_type ?? null;
-    const analyzer = new ExecutionAnalyzer(runResults, graph, adapterType);
-
-    const summary: ExecutionSummary = analyzer.getSummary();
+    let graph: ManifestGraph | undefined;
+    let adapterType: string | null | undefined;
+    let summary: ExecutionSummary;
+    if (hasManifest) {
+      const manifest = loadManifest(paths.manifest);
+      graph = new ManifestGraph(manifest);
+      adapterType = manifest.metadata?.adapter_type ?? null;
+      const analyzer = new ExecutionAnalyzer(runResults, graph, adapterType);
+      summary = analyzer.getSummary();
+    } else {
+      summary = {
+        ...createMinimalSummary(runResults),
+        node_executions: buildNodeExecutionsFromRunResults(
+          runResults,
+          adapterType,
+        ),
+      };
+    }
 
     const adapterSource = summary.node_executions as NodeExecution[];
 

@@ -1,6 +1,9 @@
 import * as fs from "node:fs/promises";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
+import {
+  createJaffleArtifactBundleDir,
+  createJaffleManifestOnlyDir,
+} from "./cli-test-bundle-dir";
 import { depsAction } from "./deps-action";
 
 describe("depsAction", () => {
@@ -38,6 +41,28 @@ describe("depsAction", () => {
     expect(output).toMatch(
       /source\.jaffle_shop\.ecom\.raw_products|stg_products/,
     );
+  });
+
+  it("works when only manifest.json is present", async () => {
+    const manifestOnlyDir = await createJaffleManifestOnlyDir();
+    try {
+      await depsAction(
+        "model.jaffle_shop.stg_products",
+        {
+          dbtTarget: manifestOnlyDir,
+          direction: "upstream",
+          format: "tree",
+          json: true,
+        },
+        handleError,
+      );
+
+      const output = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(output) as { resource_id: string };
+      expect(parsed.resource_id).toBe("model.jaffle_shop.stg_products");
+    } finally {
+      await fs.rm(manifestOnlyDir, { recursive: true, force: true });
+    }
   });
 
   it("outputs upstream deps with flat format", async () => {

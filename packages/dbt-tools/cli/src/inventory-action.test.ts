@@ -2,7 +2,10 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
+import {
+  createJaffleArtifactBundleDir,
+  createJaffleManifestOnlyDir,
+} from "./cli-test-bundle-dir";
 import { inventoryAction, formatInventory } from "./inventory-action";
 
 describe("inventoryAction", () => {
@@ -34,6 +37,22 @@ describe("inventoryAction", () => {
     expect(Array.isArray(parsed.entries)).toBe(true);
     expect(parsed.total).toBeGreaterThan(0);
     expect(parsed.entries.length).toBe(parsed.total);
+  });
+
+  it("works when only manifest.json is present", async () => {
+    const manifestOnlyDir = await createJaffleManifestOnlyDir();
+    try {
+      await inventoryAction(
+        { dbtTarget: manifestOnlyDir, json: true },
+        handleError,
+      );
+
+      const output = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(output) as { total: number };
+      expect(parsed.total).toBeGreaterThan(0);
+    } finally {
+      await fs.rm(manifestOnlyDir, { recursive: true, force: true });
+    }
   });
 
   it("filters by resource type", async () => {

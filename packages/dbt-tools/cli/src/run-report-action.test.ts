@@ -3,7 +3,10 @@
  */
 import * as fs from "node:fs/promises";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
+import {
+  createJaffleArtifactBundleDir,
+  createJaffleRunResultsOnlyDir,
+} from "./cli-test-bundle-dir";
 import { runReportAction } from "./run-report-action";
 
 describe("runReportAction", () => {
@@ -32,6 +35,26 @@ describe("runReportAction", () => {
     expect(output).toContain("total_execution_time");
     expect(output).toContain("nodes_by_status");
     expect(output).toContain("node_executions");
+  });
+
+  it("works when only run_results.json is present", async () => {
+    const runResultsOnlyDir = await createJaffleRunResultsOnlyDir();
+    try {
+      await runReportAction(
+        { dbtTarget: runResultsOnlyDir, json: true },
+        handleError,
+      );
+
+      const output = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(output) as {
+        total_execution_time: number;
+        node_executions: unknown[];
+      };
+      expect(parsed.total_execution_time).toBeGreaterThan(0);
+      expect(parsed.node_executions.length).toBeGreaterThan(0);
+    } finally {
+      await fs.rm(runResultsOnlyDir, { recursive: true, force: true });
+    }
   });
 
   it("outputs JSON when json option is set", async () => {

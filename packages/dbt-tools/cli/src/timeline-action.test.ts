@@ -2,7 +2,10 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
+import {
+  createJaffleArtifactBundleDir,
+  createJaffleRunResultsOnlyDir,
+} from "./cli-test-bundle-dir";
 import {
   timelineAction,
   formatTimeline,
@@ -48,6 +51,26 @@ describe("timelineAction", () => {
     expect(first).toHaveProperty("unique_id");
     expect(first).toHaveProperty("status");
     expect(first).toHaveProperty("execution_time");
+  });
+
+  it("works when only run_results.json is present", async () => {
+    const runResultsOnlyDir = await createJaffleRunResultsOnlyDir();
+    try {
+      await timelineAction(
+        { dbtTarget: runResultsOnlyDir, json: true },
+        handleError,
+      );
+
+      const output = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(output) as {
+        total: number;
+        entries: Array<{ name?: string }>;
+      };
+      expect(parsed.total).toBeGreaterThan(0);
+      expect(parsed.entries.some((entry) => entry.name == null)).toBe(true);
+    } finally {
+      await fs.rm(runResultsOnlyDir, { recursive: true, force: true });
+    }
   });
 
   it("is sorted by duration descending by default", async () => {

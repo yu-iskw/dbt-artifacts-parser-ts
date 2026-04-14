@@ -22,6 +22,11 @@ import {
 } from "./artifact-location";
 import { createRemoteObjectStoreClient } from "./remote-object-store";
 
+export type DbtArtifactBundleRequirements = {
+  manifest?: boolean;
+  runResults?: boolean;
+};
+
 function parseStrictS3Uri(raw: string): { bucket: string; prefix: string } {
   const lower = raw.toLowerCase();
   if (!lower.startsWith("s3://")) {
@@ -118,6 +123,7 @@ async function pathExists(filePath: string): Promise<boolean> {
 async function resolveLocalBundle(
   dir: string,
   displayTarget: string,
+  requirements: Required<DbtArtifactBundleRequirements>,
 ): Promise<ArtifactPaths> {
   const manifest = path.join(dir, DBT_MANIFEST_JSON);
   const runResults = path.join(dir, DBT_RUN_RESULTS_JSON);
@@ -128,10 +134,10 @@ async function resolveLocalBundle(
   const missing: string[] = [];
 
   if (await pathExists(manifest)) found.push(DBT_MANIFEST_JSON);
-  else missing.push(DBT_MANIFEST_JSON);
+  else if (requirements.manifest) missing.push(DBT_MANIFEST_JSON);
 
   if (await pathExists(runResults)) found.push(DBT_RUN_RESULTS_JSON);
-  else missing.push(DBT_RUN_RESULTS_JSON);
+  else if (requirements.runResults) missing.push(DBT_RUN_RESULTS_JSON);
 
   if (await pathExists(catalog)) found.push(DBT_CATALOG_JSON);
   if (await pathExists(sources)) found.push(DBT_SOURCES_JSON);
@@ -142,6 +148,10 @@ async function resolveLocalBundle(
       provider: "local",
       missing,
       found,
+      required: [
+        ...(requirements.manifest ? [DBT_MANIFEST_JSON] : []),
+        ...(requirements.runResults ? [DBT_RUN_RESULTS_JSON] : []),
+      ],
     });
   }
 
@@ -159,8 +169,10 @@ async function writeRemoteBytesToTemp(args: {
   prefixNorm: string;
   displayTarget: string;
   provider: "s3" | "gcs";
+  requirements: Required<DbtArtifactBundleRequirements>;
 }): Promise<ArtifactPaths> {
-  const { bucket, client, prefixNorm, displayTarget, provider } = args;
+  const { bucket, client, prefixNorm, displayTarget, provider, requirements } =
+    args;
 
   const relNames = [
     DBT_MANIFEST_JSON,
@@ -192,8 +204,14 @@ async function writeRemoteBytesToTemp(args: {
     }
   };
 
-  await writeIfPresent(DBT_MANIFEST_JSON, true);
-  await writeIfPresent(DBT_RUN_RESULTS_JSON, true);
+  const manifest = await writeIfPresent(
+    DBT_MANIFEST_JSON,
+    requirements.manifest,
+  );
+  const runResults = await writeIfPresent(
+    DBT_RUN_RESULTS_JSON,
+    requirements.runResults,
+  );
   const catalog = await writeIfPresent(DBT_CATALOG_JSON, false);
   const sources = await writeIfPresent(DBT_SOURCES_JSON, false);
 
@@ -204,15 +222,16 @@ async function writeRemoteBytesToTemp(args: {
       missing,
       found,
       keysTried,
+      required: [
+        ...(requirements.manifest ? [DBT_MANIFEST_JSON] : []),
+        ...(requirements.runResults ? [DBT_RUN_RESULTS_JSON] : []),
+      ],
     });
   }
 
-  const manifestPath = path.join(dir, DBT_MANIFEST_JSON);
-  const runResultsPath = path.join(dir, DBT_RUN_RESULTS_JSON);
-
   return {
-    manifest: manifestPath,
-    runResults: runResultsPath,
+    manifest: manifest ?? path.join(dir, DBT_MANIFEST_JSON),
+    runResults: runResults ?? path.join(dir, DBT_RUN_RESULTS_JSON),
     ...(catalog != null ? { catalog } : {}),
     ...(sources != null ? { sources } : {}),
   };
@@ -225,13 +244,18 @@ export async function resolveDbtToolsArtifactBundlePaths(options: {
   /** Trimmed effective target (flag or env). */
   dbtTargetRaw: string;
   cwd?: string;
+  requirements?: DbtArtifactBundleRequirements;
 }): Promise<ArtifactPaths> {
   const cwd = options.cwd ?? process.cwd();
   const displayTarget = options.dbtTargetRaw.trim();
   const parsed = parseDbtToolsArtifactTarget(displayTarget, cwd);
+  const requirements = {
+    manifest: options.requirements?.manifest ?? true,
+    runResults: options.requirements?.runResults ?? true,
+  };
 
   if (parsed.kind === "local") {
-    return resolveLocalBundle(parsed.resolvedPath, displayTarget);
+    return resolveLocalBundle(parsed.resolvedPath, displayTarget, requirements);
   }
 
   const env = getDbtToolsRemoteSourceConfigFromEnv();
@@ -245,5 +269,6 @@ export async function resolveDbtToolsArtifactBundlePaths(options: {
     prefixNorm,
     displayTarget,
     provider: parsed.provider,
+    requirements,
   });
 }

@@ -190,9 +190,12 @@ export async function searchAction(
       validateNoControlChars(query);
     }
 
-    const paths = await resolveCliArtifactPaths({
-      dbtTarget: options.dbtTarget,
-    });
+    const paths = await resolveCliArtifactPaths(
+      {
+        dbtTarget: options.dbtTarget,
+      },
+      { manifest: true, runResults: false },
+    );
     validateSafePath(paths.manifest);
 
     const manifest = loadManifest(paths.manifest);

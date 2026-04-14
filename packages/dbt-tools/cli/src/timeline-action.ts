@@ -344,9 +344,12 @@ export async function timelineAction(
     const sortKey = normalizeTimelineSortKey(options.sort);
     validateTimelineSortKey(sortKey);
 
-    const paths = await resolveCliArtifactPaths({
-      dbtTarget: options.dbtTarget,
-    });
+    const paths = await resolveCliArtifactPaths(
+      {
+        dbtTarget: options.dbtTarget,
+      },
+      { manifest: false, runResults: true },
+    );
     validateSafePath(paths.runResults);
 
     const context = loadTimelineContext(paths, true);

@@ -2,7 +2,10 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
+import {
+  createJaffleArtifactBundleDir,
+  createJaffleManifestOnlyDir,
+} from "./cli-test-bundle-dir";
 import { searchAction, formatSearch } from "./search-action";
 
 describe("searchAction", () => {
@@ -34,6 +37,23 @@ describe("searchAction", () => {
     const parsed = JSON.parse(output) as { total: number; results: unknown[] };
     expect(parsed.total).toBeGreaterThan(0);
     expect(parsed.results.length).toBe(parsed.total);
+  });
+
+  it("works when only manifest.json is present", async () => {
+    const manifestOnlyDir = await createJaffleManifestOnlyDir();
+    try {
+      await searchAction(
+        "customers",
+        { dbtTarget: manifestOnlyDir, json: true },
+        handleError,
+      );
+
+      const output = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(output) as { total: number };
+      expect(parsed.total).toBeGreaterThan(0);
+    } finally {
+      await fs.rm(manifestOnlyDir, { recursive: true, force: true });
+    }
   });
 
   it("returns structured result shape", async () => {

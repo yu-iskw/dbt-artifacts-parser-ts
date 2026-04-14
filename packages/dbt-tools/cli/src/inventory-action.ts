@@ -121,9 +121,12 @@ export async function inventoryAction(
   handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
-    const paths = await resolveCliArtifactPaths({
-      dbtTarget: options.dbtTarget,
-    });
+    const paths = await resolveCliArtifactPaths(
+      {
+        dbtTarget: options.dbtTarget,
+      },
+      { manifest: true, runResults: false },
+    );
     validateSafePath(paths.manifest);
 
     const manifest = loadManifest(paths.manifest);

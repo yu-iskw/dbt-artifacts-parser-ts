@@ -1,5 +1,6 @@
 import {
   getDbtToolsDbtTargetFromEnv,
+  type DbtArtifactBundleRequirements,
   resolveDbtToolsArtifactBundlePaths,
   type ArtifactPaths,
 } from "@dbt-tools/core";
@@ -31,7 +32,11 @@ export function resolveEffectiveDbtTarget(flag?: string): string {
  */
 export async function resolveCliArtifactPaths(
   roots: ArtifactRootCliOptions,
+  requirements?: DbtArtifactBundleRequirements,
 ): Promise<ArtifactPaths> {
   const raw = resolveEffectiveDbtTarget(roots.dbtTarget);
-  return resolveDbtToolsArtifactBundlePaths({ dbtTargetRaw: raw });
+  return resolveDbtToolsArtifactBundlePaths({
+    dbtTargetRaw: raw,
+    requirements,
+  });
 }
