@@ -31,7 +31,6 @@ export type TimelineOptions = {
   status?: string;
   adapterText?: string;
   format?: string;
-  targetDir?: string;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -338,11 +337,8 @@ function formatTimelineOutput(
  * Timeline action handler
  */
 export async function timelineAction(
-  runResultsPath: string | undefined,
-  manifestPath: string | undefined,
   options: TimelineOptions,
-  handleError: (error: unknown, isTTY: boolean) => void,
-  isTTY: () => boolean,
+  handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
     const sortKey = normalizeTimelineSortKey(options.sort);
@@ -350,26 +346,13 @@ export async function timelineAction(
 
     const paths = await resolveCliArtifactPaths(
       {
-        manifestPath,
-        runResultsPath,
-        targetDir: options.targetDir,
+        dbtTarget: options.dbtTarget,
       },
-      {
-        source: options.source,
-        location: options.location,
-        runId: options.runId,
-      },
+      { manifest: false, runResults: true },
     );
     validateSafePath(paths.runResults);
 
-    const hasSourceMode =
-      options.source === "local" ||
-      options.source === "s3" ||
-      options.source === "gcs";
-    const enrichWithManifest =
-      (manifestPath != null && manifestPath !== "") || hasSourceMode;
-
-    const context = loadTimelineContext(paths, enrichWithManifest);
+    const context = loadTimelineContext(paths, true);
     let executions = applyTimelineFilters(context.executions, options);
     executions = sortTimelineExecutions(executions, sortKey);
 
@@ -382,6 +365,6 @@ export async function timelineAction(
     const result: TimelineResult = { total: entries.length, entries };
     console.log(formatTimelineOutput(result, options));
   } catch (error) {
-    handleError(error, isTTY());
+    handleError(error, shouldOutputJSON(options.json, options.noJson));
   }
 }

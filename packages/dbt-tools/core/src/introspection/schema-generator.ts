@@ -28,48 +28,26 @@ type SchemaOption = {
   description: string;
 };
 
-const ARG_MANIFEST_PATH = "manifest-path";
-const OPT_TARGET_DIR = "--target-dir";
+const OPT_DBT_TARGET = "--dbt-target";
 const OPT_JSON = "--json";
 const OPT_NO_JSON = "--no-json";
 const TYPE_STRING = "string";
 const TYPE_BOOLEAN = "boolean";
 const OUTPUT_JSON_OR_HUMAN = "json or human-readable";
-const DESC_MANIFEST_PATH =
-  "Path to manifest.json file (defaults to ./target/manifest.json)";
-const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
-const DESC_FORCE_JSON = "Force JSON output";
+const DESC_DBT_TARGET =
+  "Directory containing manifest.json + run_results.json, or s3://bucket/prefix / gs://bucket/prefix. When omitted, uses DBT_TOOLS_DBT_TARGET if set.";
+const DESC_FORCE_JSON =
+  "Force JSON stdout; with --json, errors on stderr use structured JSON";
 const DESC_FORCE_HUMAN = "Force human-readable output";
 const DESC_FIELDS =
   "Comma-separated list of fields to include in response (e.g., unique_id,name)";
-const DESC_RUN_RESULTS_PATH =
-  "Path to run_results.json file (defaults to ./target/run_results.json)";
-const DESC_MANIFEST_OPTIONAL =
-  "Path to manifest.json file (optional, for critical path analysis)";
-const DESC_ARTIFACT_SOURCE =
-  "Directory/prefix mode: local | s3 | gcs (requires --location)";
-const DESC_ARTIFACT_LOCATION =
-  "Local directory, or s3://bucket/prefix / gs://bucket/prefix (remote credentials use default AWS/GCP chains plus DBT_TOOLS_REMOTE_SOURCE JSON when set)";
-const DESC_ARTIFACT_RUN_ID =
-  "When multiple candidate runs exist under the location, select one (e.g. current or a subdirectory name)";
 
 function getArtifactRootCliSchemaOptions(): SchemaOption[] {
   return [
     {
-      name: "--source",
-      type: "enum",
-      values: ["local", "s3", "gcs"],
-      description: DESC_ARTIFACT_SOURCE,
-    },
-    {
-      name: "--location",
+      name: OPT_DBT_TARGET,
       type: TYPE_STRING,
-      description: DESC_ARTIFACT_LOCATION,
-    },
-    {
-      name: "--run-id",
-      type: TYPE_STRING,
-      description: DESC_ARTIFACT_RUN_ID,
+      description: DESC_DBT_TARGET,
     },
   ];
 }
@@ -78,19 +56,8 @@ function getSummarySchema(): CommandSchema {
   return {
     command: "summary",
     description: "Provide summary statistics for dbt manifest",
-    arguments: [
-      {
-        name: ARG_MANIFEST_PATH,
-        required: false,
-        description: DESC_MANIFEST_PATH,
-      },
-    ],
+    arguments: [],
     options: [
-      {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
       {
         name: "--fields",
         type: TYPE_STRING,
@@ -109,7 +76,7 @@ function getSummarySchema(): CommandSchema {
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools summary",
+    example: "dbt-tools summary --dbt-target ./target",
   };
 }
 
@@ -117,13 +84,7 @@ function getGraphSchema(): CommandSchema {
   return {
     command: "graph",
     description: "Export dependency graph in various formats",
-    arguments: [
-      {
-        name: ARG_MANIFEST_PATH,
-        required: false,
-        description: DESC_MANIFEST_PATH,
-      },
-    ],
+    arguments: [],
     options: [
       {
         name: "--format",
@@ -138,11 +99,6 @@ function getGraphSchema(): CommandSchema {
         description: "Output file path (default: stdout)",
       },
       {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
-      {
         name: "--fields",
         type: TYPE_STRING,
         description: DESC_FIELDS,
@@ -151,11 +107,6 @@ function getGraphSchema(): CommandSchema {
         name: "--field-level",
         type: TYPE_BOOLEAN,
         description: "Include field-level (column-level) lineage",
-      },
-      {
-        name: "--catalog-path",
-        type: TYPE_STRING,
-        description: "Path to catalog.json file",
       },
       {
         name: "--focus",
@@ -192,24 +143,8 @@ function getRunReportSchema(): CommandSchema {
   return {
     command: "run-report",
     description: "Generate execution report from run_results.json",
-    arguments: [
-      {
-        name: "run-results-path",
-        required: false,
-        description: DESC_RUN_RESULTS_PATH,
-      },
-      {
-        name: ARG_MANIFEST_PATH,
-        required: false,
-        description: DESC_MANIFEST_OPTIONAL,
-      },
-    ],
+    arguments: [],
     options: [
-      {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
       {
         name: "--fields",
         type: TYPE_STRING,
@@ -272,7 +207,7 @@ function getRunReportSchema(): CommandSchema {
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools run-report --bottlenecks",
+    example: "dbt-tools run-report --dbt-target ./target --bottlenecks",
   };
 }
 
@@ -286,17 +221,6 @@ function getDepsSchemaOptions(): SchemaOption[] {
       description: "Direction of dependency traversal",
     },
     {
-      name: "--manifest-path",
-      type: TYPE_STRING,
-      default: "./target/manifest.json",
-      description: "Path to manifest.json file",
-    },
-    {
-      name: OPT_TARGET_DIR,
-      type: TYPE_STRING,
-      description: DESC_TARGET_DIR,
-    },
-    {
       name: "--fields",
       type: TYPE_STRING,
       description: DESC_FIELDS,
@@ -305,11 +229,6 @@ function getDepsSchemaOptions(): SchemaOption[] {
       name: "--field",
       type: TYPE_STRING,
       description: "Specific field (column) to trace dependencies for",
-    },
-    {
-      name: "--catalog-path",
-      type: TYPE_STRING,
-      description: "Path to catalog.json file",
     },
     {
       name: "--depth",
@@ -389,13 +308,7 @@ function getInventorySchema(): CommandSchema {
   return {
     command: "inventory",
     description: "List and filter dbt resources from manifest",
-    arguments: [
-      {
-        name: ARG_MANIFEST_PATH,
-        required: false,
-        description: DESC_MANIFEST_PATH,
-      },
-    ],
+    arguments: [],
     options: [
       {
         name: "--type",
@@ -423,17 +336,13 @@ function getInventorySchema(): CommandSchema {
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
-      {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools inventory --type model --tag finance",
+    example:
+      "dbt-tools inventory --dbt-target ./target --type model --tag finance",
   };
 }
 
@@ -442,18 +351,7 @@ function getTimelineSchema(): CommandSchema {
     command: "timeline",
     description:
       "Show per-node execution timeline from run_results.json (row-level entries, unlike run-report)",
-    arguments: [
-      {
-        name: "run-results-path",
-        required: false,
-        description: DESC_RUN_RESULTS_PATH,
-      },
-      {
-        name: ARG_MANIFEST_PATH,
-        required: false,
-        description: DESC_MANIFEST_OPTIONAL,
-      },
-    ],
+    arguments: [],
     options: [
       {
         name: "--sort",
@@ -483,17 +381,13 @@ function getTimelineSchema(): CommandSchema {
         values: ["json", "table", "csv"],
         description: "Output format (default: json in non-TTY, table in TTY)",
       },
-      {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: "json, table, or csv",
-    example: "dbt-tools timeline --sort duration --top 20 --failed-only",
+    example:
+      "dbt-tools timeline --dbt-target ./target --sort duration --top 20 --failed-only",
   };
 }
 
@@ -507,11 +401,6 @@ function getSearchSchema(): CommandSchema {
         required: false,
         description:
           "Search query; supports key:value tokens like type:model tag:finance",
-      },
-      {
-        name: ARG_MANIFEST_PATH,
-        required: false,
-        description: DESC_MANIFEST_PATH,
       },
     ],
     options: [
@@ -540,17 +429,12 @@ function getSearchSchema(): CommandSchema {
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
-      {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools search orders",
+    example: "dbt-tools search --dbt-target ./target orders",
   };
 }
 
@@ -561,17 +445,12 @@ function getStatusSchema(): CommandSchema {
       "Report dbt artifact presence, modification times, and analysis readiness",
     arguments: [],
     options: [
-      {
-        name: OPT_TARGET_DIR,
-        type: TYPE_STRING,
-        description: DESC_TARGET_DIR,
-      },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example: "dbt-tools status --target-dir ./target",
+    example: "dbt-tools status --dbt-target ./target",
   };
 }
 
@@ -592,7 +471,7 @@ export function getAllSchemas(): Record<string, CommandSchema> {
       ...getStatusSchema(),
       command: "freshness",
       description: "Alias for status – shows artifact recency and readiness",
-      example: "dbt-tools freshness --target-dir ./target",
+      example: "dbt-tools freshness --dbt-target ./target",
     },
     schema: getSchemaCommandSchema(),
   };

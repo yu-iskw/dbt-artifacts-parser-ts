@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { Command } from "commander";
 import {
   ManifestGraph,
@@ -8,7 +7,6 @@ import {
   validateSafePath,
   validateDepth,
   validateResourceId,
-  isTTY,
   shouldOutputJSON,
   formatOutput,
   formatSummary,
@@ -35,19 +33,15 @@ import { CLI_PACKAGE_VERSION } from "./version";
 const program = new Command();
 
 type ArtifactRootFlags = {
-  source?: string;
-  location?: string;
-  runId?: string;
+  dbtTarget?: string;
 };
 
 /** CLI option/argument description constants (avoid no-duplicate-string) */
-const ARG_MANIFEST_PATH = "[manifest-path]";
-const DESC_MANIFEST =
-  "Path to manifest.json file (defaults to ./target/manifest.json)";
-const OPT_TARGET_DIR = "--target-dir <dir>";
-const DESC_TARGET_DIR = "Custom target directory (defaults to ./target)";
+const OPT_DBT_TARGET = "--dbt-target <string>";
+const DESC_DBT_TARGET =
+  "Directory with manifest.json + run_results.json, or s3://bucket/prefix / gs://bucket/prefix. Default: DBT_TOOLS_DBT_TARGET env when set.";
 const OPT_JSON = "--json";
-const DESC_JSON = "Force JSON output";
+const DESC_JSON = "Force JSON output (stdout and structured errors on stderr)";
 const OPT_NO_JSON = "--no-json";
 const DESC_NO_JSON = "Force human-readable output";
 const DESC_GRAPH_FORMAT = "Export format: json, dot, gexf";
@@ -55,15 +49,6 @@ const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
-const OPT_ARTIFACT_SOURCE = "--source <kind>";
-const DESC_ARTIFACT_SOURCE =
-  "Directory/prefix mode: local | s3 | gcs (requires --location)";
-const OPT_ARTIFACT_LOCATION = "--location <string>";
-const DESC_ARTIFACT_LOCATION =
-  "Directory, or s3://bucket/prefix / gs://bucket/prefix";
-const OPT_ARTIFACT_RUN_ID = "--run-id <id>";
-const DESC_ARTIFACT_RUN_ID =
-  "When multiple candidate runs exist, pass the run id (e.g. current)";
 
 program
   .name("dbt-tools")
@@ -71,12 +56,13 @@ program
   .version(CLI_PACKAGE_VERSION);
 
 /**
- * Handle errors with proper formatting
+ * Handle errors: structured JSON on stderr only when `preferStructuredErrors`
+ * (typically `shouldOutputJSON(--json, --no-json)`).
  */
-function handleError(error: unknown, isTTY: boolean): void {
+function handleCliError(error: unknown, preferStructuredErrors: boolean): void {
   const formatted = ErrorHandler.formatError(
     error instanceof Error ? error : new Error(String(error)),
-    isTTY,
+    !preferStructuredErrors,
   );
 
   if (typeof formatted === "string") {
@@ -133,32 +119,23 @@ function tryApplyFieldLevelLineageToGraph(
 program
   .command("summary")
   .description("Provide summary statistics for dbt manifest")
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
-      manifestPath: string | undefined,
       options: {
-        targetDir?: string;
         fields?: string;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
       try {
-        // Resolve artifact paths
         const paths = await resolveCliArtifactPaths(
-          { manifestPath, targetDir: options.targetDir },
           {
-            source: options.source,
-            location: options.location,
-            runId: options.runId,
+            dbtTarget: options.dbtTarget,
           },
+          { manifest: true, runResults: false },
         );
 
         // Validate path
@@ -186,7 +163,7 @@ program
           console.log(formatSummary(summary));
         }
       } catch (error) {
-        handleError(error, isTTY());
+        handleCliError(error, shouldOutputJSON(undefined, undefined));
       }
     },
   );
@@ -199,13 +176,11 @@ program
 program
   .command("graph")
   .description("Export dependency graph")
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
   .option(OPT_FORMAT, DESC_GRAPH_FORMAT, DEFAULT_GRAPH_FORMAT)
   .option("--output <path>", "Output file path (default: stdout)")
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_FIELDS, DESC_FIELDS)
   .option("--field-level", "Include field-level (column-level) lineage")
-  .option("--catalog-path <path>", "Path to catalog.json file")
   .option(
     "--focus <resource-id>",
     "Focus on a single node; exports its subgraph only",
@@ -224,19 +199,13 @@ program
     "--resource-types <types>",
     "Comma-separated resource types to include (filters nodes when --focus is set)",
   )
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
-      manifestPath: string | undefined,
       options: {
         format?: string;
         output?: string;
-        targetDir?: string;
         fields?: string;
         fieldLevel?: boolean;
-        catalogPath?: string;
         focus?: string;
         focusDepth?: number;
         focusDirection?: string;
@@ -247,15 +216,9 @@ program
         // Resolve artifact paths
         const paths = await resolveCliArtifactPaths(
           {
-            manifestPath,
-            targetDir: options.targetDir,
-            catalogPath: options.catalogPath,
+            dbtTarget: options.dbtTarget,
           },
-          {
-            source: options.source,
-            location: options.location,
-            runId: options.runId,
-          },
+          { manifest: true, runResults: false },
         );
 
         // Validate path
@@ -312,7 +275,7 @@ program
         });
         writeGraphOutput(output, options.output);
       } catch (error) {
-        handleError(error, isTTY());
+        handleCliError(error, shouldOutputJSON(undefined, undefined));
       }
     },
   );
@@ -323,15 +286,7 @@ program
 program
   .command("run-report")
   .description("Generate execution report from run_results.json")
-  .argument(
-    "[run-results-path]",
-    "Path to run_results.json file (defaults to ./target/run_results.json)",
-  )
-  .argument(
-    ARG_MANIFEST_PATH,
-    "Path to manifest.json file (optional, for critical path)",
-  )
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_FIELDS, DESC_FIELDS)
   .option("--bottlenecks", "Include bottleneck section in report")
   .option(
@@ -374,15 +329,9 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
-      runResultsPath: string | undefined,
-      manifestPath: string | undefined,
       options: {
-        targetDir?: string;
         fields?: string;
         bottlenecks?: boolean;
         bottlenecksTop?: number;
@@ -419,11 +368,11 @@ program
         | undefined;
       if (options.adapterTopBy != null && options.adapterTopBy !== "") {
         if (!allowed.has(options.adapterTopBy)) {
-          handleError(
+          handleCliError(
             new Error(
               `--adapter-top-by must be one of: ${[...allowed].join(", ")}`,
             ),
-            isTTY(),
+            shouldOutputJSON(options.json, options.noJson),
           );
           return;
         }
@@ -438,10 +387,7 @@ program
           | "rows_duplicated";
       }
       await runReportAction(
-        runResultsPath,
-        manifestPath,
         {
-          targetDir: options.targetDir,
           fields: options.fields,
           bottlenecks: options.bottlenecks,
           bottlenecksTop: options.bottlenecksTop,
@@ -454,12 +400,9 @@ program
           adapterMinRowsAffected: options.adapterMinRowsAffected,
           json: options.json,
           noJson: options.noJson,
-          source: options.source,
-          location: options.location,
-          runId: options.runId,
+          dbtTarget: options.dbtTarget,
         },
-        handleError,
-        isTTY,
+        handleCliError,
       );
     },
   );
@@ -479,11 +422,9 @@ program
     "Direction: upstream or downstream",
     "downstream",
   )
-  .option("--manifest-path <path>", "Path to manifest.json file")
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_FIELDS, DESC_FIELDS)
   .option("--field <name>", "Specific field (column) to trace dependencies for")
-  .option("--catalog-path <path>", "Path to catalog.json file")
   .option(
     "--depth <number>",
     "Max traversal depth; 1 = immediate neighbors, omit for all levels",
@@ -496,19 +437,13 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
       resourceId: string,
       options: {
         direction?: string;
-        manifestPath?: string;
-        targetDir?: string;
         fields?: string;
         field?: string;
-        catalogPath?: string;
         depth?: number;
         format?: string;
         buildOrder?: boolean;
@@ -516,7 +451,7 @@ program
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await depsAction(resourceId, options, handleError, isTTY);
+      await depsAction(resourceId, options, handleCliError);
     },
   );
 
@@ -526,33 +461,27 @@ program
 program
   .command("inventory")
   .description("List and filter dbt resources from manifest")
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
   .option("--type <type>", "Filter by resource type(s), comma-separated")
   .option("--package <package>", "Filter by package name")
   .option("--tag <tag>", "Filter by tag(s), comma-separated")
   .option("--path <path>", "Filter by file path substring")
   .option(OPT_FIELDS, DESC_FIELDS)
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
-      manifestPath: string | undefined,
       options: {
         type?: string;
         package?: string;
         tag?: string;
         path?: string;
         fields?: string;
-        targetDir?: string;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await inventoryAction(manifestPath, options, handleError, isTTY);
+      await inventoryAction(options, handleCliError);
     },
   );
 
@@ -564,14 +493,7 @@ program
   .description(
     "Show per-node execution timeline from run_results.json (row-level, unlike run-report)",
   )
-  .argument(
-    "[run-results-path]",
-    "Path to run_results.json (defaults to ./target/run_results.json)",
-  )
-  .argument(
-    "[manifest-path]",
-    "Path to manifest.json (optional, enriches entries with name and type)",
-  )
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(
     "--sort <key>",
     "Sort key: duration | start | query_id | adapter_code | adapter_message | bytes_processed | bytes_billed | slot_ms | rows_affected | rows_inserted | rows_updated | rows_deleted | rows_duplicated",
@@ -591,16 +513,10 @@ program
     OPT_FORMAT,
     "Output format: json (default non-TTY), table (default TTY), csv",
   )
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
-      runResultsPath: string | undefined,
-      manifestPath: string | undefined,
       options: {
         sort?: string;
         top?: number;
@@ -608,18 +524,11 @@ program
         status?: string;
         adapterText?: string;
         format?: string;
-        targetDir?: string;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await timelineAction(
-        runResultsPath,
-        manifestPath,
-        options,
-        handleError,
-        isTTY,
-      );
+      await timelineAction(options, handleCliError);
     },
   );
 
@@ -633,34 +542,28 @@ program
     "[query]",
     "Search query; supports key:value tokens like type:model tag:finance",
   )
-  .argument(ARG_MANIFEST_PATH, DESC_MANIFEST)
   .option("--type <type>", "Filter by resource type(s), comma-separated")
   .option("--package <package>", "Filter by package name")
   .option("--tag <tag>", "Filter by tag(s), comma-separated")
   .option("--path <path>", "Filter by file path substring")
   .option(OPT_FIELDS, DESC_FIELDS)
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
       query: string | undefined,
-      manifestPath: string | undefined,
       options: {
         type?: string;
         package?: string;
         tag?: string;
         path?: string;
         fields?: string;
-        targetDir?: string;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await searchAction(query, manifestPath, options, handleError, isTTY);
+      await searchAction(query, options, handleCliError);
     },
   );
 
@@ -672,21 +575,17 @@ program
   .description(
     "Report dbt artifact presence, modification times, and analysis readiness",
   )
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
       options: {
-        targetDir?: string;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await statusAction(options, handleError, isTTY);
+      await statusAction(options, handleCliError);
     },
   );
 
@@ -696,21 +595,17 @@ program
 program
   .command("freshness")
   .description("Alias for status – shows artifact recency and readiness")
-  .option(OPT_TARGET_DIR, DESC_TARGET_DIR)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
-  .option(OPT_ARTIFACT_SOURCE, DESC_ARTIFACT_SOURCE)
-  .option(OPT_ARTIFACT_LOCATION, DESC_ARTIFACT_LOCATION)
-  .option(OPT_ARTIFACT_RUN_ID, DESC_ARTIFACT_RUN_ID)
   .action(
     async (
       options: {
-        targetDir?: string;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await statusAction(options, handleError, isTTY);
+      await statusAction(options, handleCliError);
     },
   );
 
@@ -742,9 +637,13 @@ program
       // Schema command always outputs JSON
       console.log(formatOutput(result, true));
     } catch (error) {
-      handleError(error, isTTY());
+      handleCliError(error, false);
     }
   });
 
-// Parse command line arguments
-program.parse();
+export { program };
+
+// Parse command line arguments when executed as the CLI entrypoint.
+if (require.main === module) {
+  program.parse();
+}

@@ -7,10 +7,10 @@ Extended notes for operators and automation using **`dbt-tools`**. The CLI is th
 ## Quick orientation
 
 - **Binary:** `dbt-tools` (from `@dbt-tools/cli`)
-- **Defaults:** artifact paths under **`./target`** (`manifest.json`, `run_results.json`)
-- **Output:** JSON when stdout is **not** a TTY; human text in an interactive terminal — override with `--json` / `--no-json`
+- **Artifact root:** pass **`--dbt-target`** on every command that reads artifacts (local directory, or **`s3://bucket/prefix`** / **`gs://bucket/prefix`** with a strict scheme). If the flag is omitted, the CLI reads **`DBT_TOOLS_DBT_TARGET`**; if that is unset or empty, the command fails with a clear message.
+- **Fixed keys:** the CLI loads **`manifest.json`** and **`run_results.json`** from that root (required). **`catalog.json`** and **`sources.json`** are included when present. There is **no** multi-run listing or `--run-id` selection in the CLI.
+- **Output:** JSON on stdout when stdout is **not** a TTY; human text in an interactive terminal — override with **`--json`** / **`--no-json`**
 - **Discovery:** `dbt-tools schema` and `dbt-tools schema <command>` for machine-readable option metadata
-- **Directory / prefix mode:** every artifact command accepts **`--source`** (`local` \| `s3` \| `gcs`), **`--location`**, and optional **`--run-id`** when discovery finds multiple complete `manifest.json` + `run_results.json` sets—same grouping rules as `@dbt-tools/web`. Do not mix with per-file path flags for the same invocation.
 
 Install:
 
@@ -44,8 +44,8 @@ dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 Use **`--fields`** on `summary`, `deps`, `graph` (JSON), and `run-report` to shrink payloads:
 
 ```bash
-dbt-tools deps model.my_project.customers --fields "unique_id,name"
-dbt-tools deps model.my_project.customers --fields "unique_id,name,attributes.resource_type"
+dbt-tools deps --dbt-target ./target model.my_project.customers --fields "unique_id,name"
+dbt-tools deps --dbt-target ./target model.my_project.customers --fields "unique_id,name,attributes.resource_type"
 ```
 
 ---
@@ -63,47 +63,52 @@ The CLI rejects unsafe or ambiguous inputs:
 
 ---
 
-## Error handling (non-TTY / agents)
+## Error handling (humans vs `--json`)
 
-Errors are JSON with a stable **`code`** field:
+- **Default:** failures print **human-readable** messages on stderr (including checklist-style hints when required artifact files are missing).
+- **Structured JSON on stderr** is emitted **only when you pass `--json`** for that invocation. Do not assume non-TTY mode implies JSON errors.
 
 ```json
 {
-  "error": "ValidationError",
-  "code": "VALIDATION_ERROR",
-  "message": "Resource ID contains invalid characters",
+  "error": "ArtifactBundleResolutionError",
+  "code": "ARTIFACT_BUNDLE_INCOMPLETE",
+  "message": "Required dbt artifacts are missing at the given target.",
   "details": {
-    "field": "resource_id"
+    "target": "./target",
+    "provider": "local",
+    "missing": ["manifest.json"],
+    "found": ["run_results.json"]
   }
 }
 ```
 
-| Code                  | Meaning                        |
-| --------------------- | ------------------------------ |
-| `VALIDATION_ERROR`    | Input validation failed        |
-| `FILE_NOT_FOUND`      | Artifact file missing          |
-| `PARSE_ERROR`         | Invalid JSON                   |
-| `UNSUPPORTED_VERSION` | Artifact version not supported |
-| `UNKNOWN_ERROR`       | Other failure                  |
+| Code                         | Meaning                                    |
+| ---------------------------- | ------------------------------------------ |
+| `VALIDATION_ERROR`           | Input validation failed                    |
+| `ARTIFACT_BUNDLE_INCOMPLETE` | Required fixed filenames missing at target |
+| `FILE_NOT_FOUND`             | Artifact file missing (other cases)        |
+| `PARSE_ERROR`                | Invalid JSON                               |
+| `UNSUPPORTED_VERSION`        | Artifact version not supported             |
+| `UNKNOWN_ERROR`              | Other failure                              |
 
 ---
 
 ## Best practices for AI agents
 
 1. Prefer **`--fields`** on large outputs.
-2. Use default **`./target`** unless paths must differ.
+2. Set **`DBT_TOOLS_DBT_TARGET`** in the environment (or pass **`--dbt-target`**) so every artifact command resolves the same root.
 3. Use **`dbt-tools schema`** when argument shapes are unclear.
-4. Branch on **`code`** in JSON error bodies in scripts.
+4. Pass **`--json`** when scripts need **machine-readable stderr**; branch on **`code`** in those bodies.
 5. Keep resource IDs literal dbt **`unique_id`** strings — never URL-encode or append query parameters.
 
 ---
 
 ## Environment variables
 
-| Variable               | Purpose                                                 |
-| ---------------------- | ------------------------------------------------------- |
-| `DBT_TOOLS_TARGET_DIR` | Default target directory (replaces `./target`)          |
-| Legacy                 | `DBT_TARGET_DIR`, `DBT_TARGET` (deprecated; still read) |
+| Variable                  | Purpose                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| `DBT_TOOLS_DBT_TARGET`    | Default **`--dbt-target`** when the flag is omitted (local or `s3`/`gs` URI)      |
+| `DBT_TOOLS_REMOTE_SOURCE` | JSON config merged for **`s3://`** / **`gs://`** targets (credentials, endpoints) |
 
 ---
 

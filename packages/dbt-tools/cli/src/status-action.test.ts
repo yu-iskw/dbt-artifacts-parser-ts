@@ -9,7 +9,6 @@ describe("statusAction", () => {
   const handleError = (error: unknown) => {
     throw error;
   };
-  const isTTY = () => false;
 
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
   let tmpDir: string;
@@ -25,10 +24,9 @@ describe("statusAction", () => {
   });
 
   it("reports manifest-only readiness when only manifest exists", async () => {
-    // Create a manifest.json but no run_results.json in tmpDir
     fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
 
-    await statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
+    await statusAction({ dbtTarget: tmpDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -43,7 +41,7 @@ describe("statusAction", () => {
     fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
     fs.writeFileSync(path.join(tmpDir, "run_results.json"), "{}");
 
-    await statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
+    await statusAction({ dbtTarget: tmpDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -55,7 +53,10 @@ describe("statusAction", () => {
   });
 
   it("outputs required JSON fields", async () => {
-    await statusAction({ json: true }, handleError, isTTY);
+    fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
+    fs.writeFileSync(path.join(tmpDir, "run_results.json"), "{}");
+
+    await statusAction({ dbtTarget: tmpDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -78,15 +79,7 @@ describe("statusAction", () => {
   });
 
   it("reports unavailable when target dir has no artifacts", async () => {
-    const nonexistentTarget = path.join(
-      os.tmpdir(),
-      `dbt-tools-status-missing-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-    );
-    await statusAction(
-      { targetDir: nonexistentTarget, json: true },
-      handleError,
-      isTTY,
-    );
+    await statusAction({ dbtTarget: tmpDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;
@@ -98,11 +91,7 @@ describe("statusAction", () => {
   });
 
   it("outputs human-readable format", async () => {
-    await statusAction(
-      { targetDir: tmpDir, noJson: true },
-      handleError,
-      () => true,
-    );
+    await statusAction({ dbtTarget: tmpDir, noJson: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     expect(output).toContain("dbt Artifact Status");
@@ -113,16 +102,16 @@ describe("statusAction", () => {
     expect(output).toContain("Readiness:");
   });
 
-  it("rejects path traversal in targetDir", async () => {
+  it("rejects path traversal in dbtTarget", async () => {
     await expect(
-      statusAction({ targetDir: "../../etc" }, handleError, isTTY),
+      statusAction({ dbtTarget: "../../etc" }, handleError),
     ).rejects.toThrow();
   });
 
   it("includes modification time when artifact exists", async () => {
     fs.writeFileSync(path.join(tmpDir, "manifest.json"), "{}");
 
-    await statusAction({ targetDir: tmpDir, json: true }, handleError, isTTY);
+    await statusAction({ dbtTarget: tmpDir, json: true }, handleError);
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
     const parsed = JSON.parse(output) as StatusResult;

@@ -1,16 +1,17 @@
 /**
  * Run-report CLI action handler and helpers.
  */
+import * as fs from "node:fs/promises";
 import {
   ManifestGraph,
   ExecutionAnalyzer,
+  buildNodeExecutionsFromRunResults,
   loadManifest,
   loadRunResults,
   validateSafePath,
   FieldFilter,
   detectBottlenecks,
   buildAdapterTotals,
-  buildNodeExecutionsFromRunResults,
   detectAdapterHeavyNodes,
   searchRunResults,
   formatOutput,
@@ -29,7 +30,6 @@ import {
 } from "./cli-artifact-resolve";
 
 type RunReportOptions = {
-  targetDir?: string;
   fields?: string;
   bottlenecks?: boolean;
   bottlenecksTop?: number;
@@ -44,7 +44,7 @@ type RunReportOptions = {
   adapterMinRowsAffected?: number;
 } & ArtifactRootCliOptions;
 
-/** Create a minimal summary when no analyzer is available */
+/** Create a reduced summary when manifest.json is unavailable. */
 function createMinimalSummary(
   runResults: ReturnType<typeof loadRunResults>,
 ): ExecutionSummary {
@@ -207,58 +207,46 @@ function buildAdapterSections(
  * Run report action handler
  */
 export async function runReportAction(
-  runResultsPath: string | undefined,
-  manifestPath: string | undefined,
   options: RunReportOptions,
-  handleError: (error: unknown, isTTY: boolean) => void,
-  isTTY: () => boolean,
+  handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
     const paths = await resolveCliArtifactPaths(
       {
-        manifestPath,
-        runResultsPath,
-        targetDir: options.targetDir,
+        dbtTarget: options.dbtTarget,
       },
-      {
-        source: options.source,
-        location: options.location,
-        runId: options.runId,
-      },
+      { manifest: false, runResults: true },
     );
 
-    const useManifestGraph =
-      Boolean(manifestPath) ||
-      options.source === "local" ||
-      options.source === "s3" ||
-      options.source === "gcs";
-
     validateSafePath(paths.runResults);
-    if (useManifestGraph) {
+    const hasManifest = await fs
+      .access(paths.manifest)
+      .then(() => true)
+      .catch(() => false);
+    if (hasManifest) {
       validateSafePath(paths.manifest);
     }
 
     const runResults = loadRunResults(paths.runResults);
 
-    let analyzer: ExecutionAnalyzer | undefined;
     let graph: ManifestGraph | undefined;
     let adapterType: string | null | undefined;
-    if (useManifestGraph) {
+    let summary: ExecutionSummary;
+    if (hasManifest) {
       const manifest = loadManifest(paths.manifest);
       graph = new ManifestGraph(manifest);
       adapterType = manifest.metadata?.adapter_type ?? null;
-      analyzer = new ExecutionAnalyzer(runResults, graph, adapterType);
+      const analyzer = new ExecutionAnalyzer(runResults, graph, adapterType);
+      summary = analyzer.getSummary();
+    } else {
+      summary = {
+        ...createMinimalSummary(runResults),
+        node_executions: buildNodeExecutionsFromRunResults(
+          runResults,
+          adapterType,
+        ),
+      };
     }
-
-    const summary: ExecutionSummary = analyzer
-      ? analyzer.getSummary()
-      : {
-          ...createMinimalSummary(runResults),
-          node_executions: buildNodeExecutionsFromRunResults(
-            runResults,
-            adapterType,
-          ),
-        };
 
     const adapterSource = summary.node_executions as NodeExecution[];
 
@@ -303,6 +291,6 @@ export async function runReportAction(
       );
     }
   } catch (error) {
-    handleError(error, isTTY());
+    handleError(error, shouldOutputJSON(options.json, options.noJson));
   }
 }

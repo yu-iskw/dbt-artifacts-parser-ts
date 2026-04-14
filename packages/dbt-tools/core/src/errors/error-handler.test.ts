@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { ArtifactBundleResolutionError } from "./artifact-bundle-resolution-error";
 import { ErrorHandler } from "./error-handler";
 
 describe("ErrorHandler", () => {
   describe("formatError", () => {
-    it("should format error as JSON when not TTY", () => {
+    it("should format error as structured object when preferHumanReadable is false", () => {
       const error = new Error("Test error");
       const result = ErrorHandler.formatError(error, false);
       expect(typeof result).toBe("object");
@@ -13,7 +14,7 @@ describe("ErrorHandler", () => {
       expect((result as { message: string }).message).toBe("Test error");
     });
 
-    it("should format error as string when TTY", () => {
+    it("should format error as string when preferHumanReadable is true", () => {
       const error = new Error("Test error");
       const result = ErrorHandler.formatError(error, true);
       expect(typeof result).toBe("string");
@@ -50,6 +51,26 @@ describe("ErrorHandler", () => {
       const result = ErrorHandler.formatError(error, false);
       expect((result as { details?: { field?: string } }).details).toEqual({
         field: "resource_id",
+      });
+    });
+
+    it("should include bundle details for ArtifactBundleResolutionError", () => {
+      const error = ArtifactBundleResolutionError.incomplete({
+        target: "./target",
+        provider: "local",
+        missing: ["manifest.json"],
+        found: ["run_results.json"],
+      });
+      const result = ErrorHandler.formatError(error, false) as {
+        code: string;
+        details?: Record<string, unknown>;
+      };
+      expect(result.code).toBe("ARTIFACT_BUNDLE_INCOMPLETE");
+      expect(result.details).toMatchObject({
+        target: "./target",
+        provider: "local",
+        missing: ["manifest.json"],
+        found: ["run_results.json"],
       });
     });
   });

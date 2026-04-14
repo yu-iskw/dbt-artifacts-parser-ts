@@ -64,6 +64,14 @@ export function getDbtToolsTargetDirFromEnv(): string | undefined {
   return undefined;
 }
 
+/**
+ * Default `--dbt-target` when the CLI flag is omitted: local directory or
+ * `s3://bucket/prefix` / `gs://bucket/prefix` (trimmed; empty treated as unset).
+ */
+export function getDbtToolsDbtTargetFromEnv(): string | undefined {
+  return trimEnv(process.env.DBT_TOOLS_DBT_TARGET);
+}
+
 /** Server-side debug logging when value is exactly `"1"`. */
 export function isDbtToolsDebugEnabled(): boolean {
   const canon = process.env.DBT_TOOLS_DEBUG;

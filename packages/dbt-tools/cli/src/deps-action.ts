@@ -23,11 +23,8 @@ import {
 
 type DepsOptions = {
   direction?: string;
-  manifestPath?: string;
-  targetDir?: string;
   fields?: string;
   field?: string;
-  catalogPath?: string;
   depth?: number;
   format?: string;
   buildOrder?: boolean;
@@ -87,8 +84,7 @@ function addFieldLevelLineage(
 export async function depsAction(
   resourceId: string,
   options: DepsOptions,
-  handleError: (error: unknown, isTTY: boolean) => void,
-  isTTY: () => boolean,
+  handleError: (error: unknown, preferStructuredErrors: boolean) => void,
 ): Promise<void> {
   try {
     validateResourceId(resourceId);
@@ -115,15 +111,9 @@ export async function depsAction(
 
     const paths = await resolveCliArtifactPaths(
       {
-        manifestPath: options.manifestPath,
-        targetDir: options.targetDir,
-        catalogPath: options.catalogPath,
+        dbtTarget: options.dbtTarget,
       },
-      {
-        source: options.source,
-        location: options.location,
-        runId: options.runId,
-      },
+      { manifest: true, runResults: false },
     );
 
     validateSafePath(paths.manifest);
@@ -160,6 +150,6 @@ export async function depsAction(
       console.log(formatDeps(result, format));
     }
   } catch (error) {
-    handleError(error, isTTY());
+    handleError(error, shouldOutputJSON(options.json, options.noJson));
   }
 }

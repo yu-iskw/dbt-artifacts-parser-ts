@@ -1,39 +1,36 @@
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-// @ts-expect-error - workspace package, TypeScript resolves via package.json
-import { getTestResourcePath } from "dbt-artifacts-parser/test-utils";
+import {
+  createJaffleArtifactBundleDir,
+  createJaffleManifestOnlyDir,
+} from "./cli-test-bundle-dir";
 import { searchAction, formatSearch } from "./search-action";
 
 describe("searchAction", () => {
-  const manifestPath = getTestResourcePath(
-    "manifest",
-    "v12",
-    "resources",
-    "jaffle_shop",
-    "manifest_1.10.json",
-  );
-
   const handleError = (error: unknown) => {
     throw error;
   };
-  const isTTY = () => false;
 
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let dbtTargetDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    dbtTargetDir = await createJaffleArtifactBundleDir();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     consoleLogSpy.mockRestore();
+    await fs.rm(dbtTargetDir, { recursive: true, force: true });
   });
 
   it("returns all resources when no query or filters", async () => {
     await searchAction(
       undefined,
-      manifestPath,
-      { json: true },
+      { dbtTarget: dbtTargetDir, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -42,13 +39,28 @@ describe("searchAction", () => {
     expect(parsed.results.length).toBe(parsed.total);
   });
 
+  it("works when only manifest.json is present", async () => {
+    const manifestOnlyDir = await createJaffleManifestOnlyDir();
+    try {
+      await searchAction(
+        "customers",
+        { dbtTarget: manifestOnlyDir, json: true },
+        handleError,
+      );
+
+      const output = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(output) as { total: number };
+      expect(parsed.total).toBeGreaterThan(0);
+    } finally {
+      await fs.rm(manifestOnlyDir, { recursive: true, force: true });
+    }
+  });
+
   it("returns structured result shape", async () => {
     await searchAction(
       "orders",
-      manifestPath,
-      { json: true },
+      { dbtTarget: dbtTargetDir, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -77,10 +89,8 @@ describe("searchAction", () => {
   it("returns results matching a name substring", async () => {
     await searchAction(
       "customers",
-      manifestPath,
-      { json: true },
+      { dbtTarget: dbtTargetDir, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -93,7 +103,6 @@ describe("searchAction", () => {
       }>;
     };
     expect(parsed.results.length).toBeGreaterThan(0);
-    // All results should have 'customers' in one of the indexed fields
     expect(
       parsed.results.every(
         (r) =>
@@ -108,10 +117,8 @@ describe("searchAction", () => {
   it("supports inline type: filter in query", async () => {
     await searchAction(
       "type:model",
-      manifestPath,
-      { json: true },
+      { dbtTarget: dbtTargetDir, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -125,10 +132,8 @@ describe("searchAction", () => {
   it("supports --type flag", async () => {
     await searchAction(
       undefined,
-      manifestPath,
-      { type: "source", json: true },
+      { dbtTarget: dbtTargetDir, type: "source", json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -144,10 +149,8 @@ describe("searchAction", () => {
   it("supports --package flag", async () => {
     await searchAction(
       undefined,
-      manifestPath,
-      { package: "jaffle_shop", json: true },
+      { dbtTarget: dbtTargetDir, package: "jaffle_shop", json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -163,10 +166,8 @@ describe("searchAction", () => {
   it("returns empty results for unmatched query", async () => {
     await searchAction(
       "zzz_no_such_model_xyz",
-      manifestPath,
-      { json: true },
+      { dbtTarget: dbtTargetDir, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -177,10 +178,8 @@ describe("searchAction", () => {
   it("outputs human-readable format in TTY mode", async () => {
     await searchAction(
       "customers",
-      manifestPath,
-      { noJson: true },
+      { dbtTarget: dbtTargetDir, noJson: true },
       handleError,
-      () => true,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -190,10 +189,8 @@ describe("searchAction", () => {
   it("excludes field-type nodes", async () => {
     await searchAction(
       undefined,
-      manifestPath,
-      { json: true },
+      { dbtTarget: dbtTargetDir, json: true },
       handleError,
-      isTTY,
     );
 
     const output = consoleLogSpy.mock.calls[0][0] as string;
@@ -205,20 +202,19 @@ describe("searchAction", () => {
 
   it("throws for control characters in query", async () => {
     await expect(
-      searchAction("\x00bad", manifestPath, {}, handleError, isTTY),
+      searchAction("\x00bad", { dbtTarget: dbtTargetDir }, handleError),
     ).rejects.toThrow();
   });
 
-  it("throws when manifest is not found", async () => {
-    await expect(
-      searchAction(
-        "orders",
-        "/nonexistent/manifest.json",
-        {},
-        handleError,
-        isTTY,
-      ),
-    ).rejects.toThrow(/not found/);
+  it("throws when required artifacts are missing", async () => {
+    const empty = await fs.mkdtemp(path.join(os.tmpdir(), "dbt-search-empty-"));
+    try {
+      await expect(
+        searchAction("orders", { dbtTarget: empty }, handleError),
+      ).rejects.toThrow(/Missing required dbt artifact/);
+    } finally {
+      await fs.rm(empty, { recursive: true, force: true });
+    }
   });
 });
 
