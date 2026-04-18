@@ -74,7 +74,7 @@ npx @dbt-tools/web --target /path/to/dbt/target
 # npx @dbt-tools/core is not meaningful for end users
 ```
 
-Longer operator notes: [Web user guide](../../docs/user-guide-dbt-tools-web.md) · [CLI user guide](../../docs/user-guide-dbt-tools-cli.md).
+**Documentation:** use each package README ([`@dbt-tools/web`](./web/README.md), [`@dbt-tools/cli`](./cli/README.md), [`@dbt-tools/core`](./core/README.md)) and [CONTRIBUTING.md](../../CONTRIBUTING.md); positioning and boundaries in [ADR-0035](../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 To run the web app from **source** (Vite dev server, HMR):
 

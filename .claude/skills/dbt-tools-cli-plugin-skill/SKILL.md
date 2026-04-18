@@ -39,7 +39,7 @@ They ship with the **dbt-tools-cli** agent plugin ([`plugins/dbt-tools-cli/`](..
    - **Artifact readiness** — if the workflow needs `manifest.json` / `run_results.json`, point to or compose with [`dbt-artifacts-status`](../../../plugins/dbt-tools-cli/skills/dbt-artifacts-status/SKILL.md) instead of duplicating readiness rules.
    - **Progressive disclosure** — long tables in `references/` under the same skill directory (see exemplar [`references/readiness.md`](../../../plugins/dbt-tools-cli/skills/dbt-artifacts-status/references/readiness.md)).
 
-4. **Link depth** — From `plugins/dbt-tools-cli/skills/<id>/SKILL.md`, the repo root is **four** levels up (`../../../../`). Example: `../../../../packages/dbt-tools/cli/README.md`, `../../../../docs/user-guide-dbt-tools-cli.md`.
+4. **Link depth** — From `plugins/dbt-tools-cli/skills/<id>/SKILL.md`, the repo root is **four** levels up (`../../../../`). Example: `../../../../packages/dbt-tools/cli/README.md` for flags and extended topics.
 
 5. **Index** — Add a row to [`plugins/dbt-tools-cli/README.md`](../../../plugins/dbt-tools-cli/README.md) skills table with a link to `skills/<id>/SKILL.md` and a short purpose.
 
@@ -74,7 +74,7 @@ Link to [packages/dbt-tools/cli/README.md](../../../../packages/dbt-tools/cli/RE
 
 ## Related
 
-- [docs/user-guide-dbt-tools-cli.md](../../../../docs/user-guide-dbt-tools-cli.md)
+- [packages/dbt-tools/cli/README.md](../../../../packages/dbt-tools/cli/README.md) — Field Filtering, Input Validation, Error handling, Automation
 ```
 
 **README table row** example:

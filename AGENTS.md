@@ -143,7 +143,7 @@ Optionally install OpenAI’s `frontend-skill` in the Codex app for composition 
 ## Learned User Preferences
 
 - Architecture Decision Records should center on **decisions** (options, trade-offs, invariants, boundaries), not exhaustive file paths, line-level wiring, or duplicated configuration and token tables; use at most a thin pointer when disambiguation is needed. Drift workflows such as **mend-adr** should target **intent-level** claims, not volatile path churn. Granular detail belongs in code, tests, and this file.
-- Documentation for **published** `@dbt-tools/web` should be **npm-first** (`npx`, `dbt-tools-web` binary): lead with end-user install/run, push monorepo and contributor detail to later README sections, [`CONTRIBUTING.md`](CONTRIBUTING.md), and the long-form guide [`docs/user-guide-dbt-tools-web.md`](docs/user-guide-dbt-tools-web.md).
+- Documentation for **published** `@dbt-tools/web` should be **npm-first** (`npx`, `dbt-tools-web` binary): lead with end-user install/run, push monorepo and contributor detail to later README sections of [`packages/dbt-tools/web/README.md`](packages/dbt-tools/web/README.md), plus [`CONTRIBUTING.md`](CONTRIBUTING.md) (no separate long-form web user guide at repo root).
 - For substantial UI or cross-surface workflow work, the user often asks for a **detailed plan with diagrams** (flow or architecture) before implementation.
 
 ## Learned Workspace Facts
