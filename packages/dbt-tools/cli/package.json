@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/cli",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "description": "Structured CLI for dbt artifact analysis — JSON, schema introspection, field filtering; for operators, CI, and agents",
   "keywords": [
     "dbt",
@@ -10,6 +10,14 @@
   ],
   "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts/issues"
+  },
+  "homepage": "https://github.com/yu-iskw/dbt-artifacts-parser-ts#readme",
   "engines": {
     "node": ">=20"
   },

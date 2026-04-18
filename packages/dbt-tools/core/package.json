@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/core",
-  "version": "0.6.0",
+  "version": "0.5.4",
   "description": "Composable analysis engine for dbt artifacts (graphs, execution analysis) — substrate for @dbt-tools/cli and @dbt-tools/web",
   "keywords": [
     "dbt",
@@ -10,6 +10,14 @@
   ],
   "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts/issues"
+  },
+  "homepage": "https://github.com/yu-iskw/dbt-artifacts-parser-ts#readme",
   "engines": {
     "node": ">=20"
   },

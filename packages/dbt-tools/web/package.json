@@ -1,6 +1,6 @@
 {
   "name": "@dbt-tools/web",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "description": "Browser UI for deterministic dbt artifact investigation — dependencies, execution timelines, inventory (no LLM required)",
   "keywords": [
     "dbt",
@@ -10,6 +10,14 @@
   ],
   "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts/issues"
+  },
+  "homepage": "https://github.com/yu-iskw/dbt-artifacts-parser-ts#readme",
   "engines": {
     "node": ">=20"
   },
