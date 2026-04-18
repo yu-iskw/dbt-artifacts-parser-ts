@@ -57,9 +57,22 @@ jobs:
         run: |
           pnpm --filter @dbt-tools/core test
           pnpm --filter @dbt-tools/cli test
+      - name: Require npm CLI for OIDC trusted publishing
+        run: |
+          set -euo pipefail
+          v=$(npm --version)
+          echo "npm version: ${v}"
+          IFS='.-' read -r major minor patch _ <<<"${v}"
+          major=${major:-0}
+          minor=${minor:-0}
+          patch=${patch:-0}
+          if [ "${major}" -lt 11 ] \
+            || { [ "${major}" -eq 11 ] && [ "${minor}" -lt 5 ]; } \
+            || { [ "${major}" -eq 11 ] && [ "${minor}" -eq 5 ] && [ "${patch}" -lt 1 ]; }; then
+            echo "::error::npm must be >= 11.5.1 for trusted publishing (https://docs.npmjs.com/trusted-publishers)"
+            exit 1
+          fi
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           pnpm publish --filter @dbt-tools/core --no-git-checks --access public
           pnpm publish --filter @dbt-tools/cli --no-git-checks --access public

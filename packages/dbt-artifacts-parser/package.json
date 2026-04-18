@@ -5,6 +5,14 @@
   "keywords": [],
   "license": "Apache-2.0",
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yu-iskw/dbt-artifacts-parser-ts/issues"
+  },
+  "homepage": "https://github.com/yu-iskw/dbt-artifacts-parser-ts#readme",
   "engines": {
     "node": ">=20"
   },
