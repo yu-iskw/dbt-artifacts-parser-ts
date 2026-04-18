@@ -1,6 +1,6 @@
 # @dbt-tools
 
-**dbt operational intelligence layer:** TypeScript packages that turn `manifest.json`, `run_results.json`, and related dbt artifacts into **structured, deterministic analysis** for operators and for automation (CI, scripts, coding agents). Built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md). Architecture framing: **composable analysis substrate** — see [ADR-0035](../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+**dbt operational intelligence layer:** TypeScript packages that turn `manifest.json`, `run_results.json`, and related dbt artifacts into **structured, deterministic analysis** for operators and for automation (CI, scripts, coding agents). Built on [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md). Architecture framing: **composable analysis substrate** — see [ADR-0008](../../docs/adr/0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 ---
 
@@ -36,7 +36,7 @@ graph TD
 | Parse dbt JSON artifacts in TypeScript with type safety                                                                                         | [`dbt-artifacts-parser`](../dbt-artifacts-parser/README.md)                                                                     |
 | Build a dependency graph or run execution analysis programmatically                                                                             | [`@dbt-tools/core`](./core/README.md)                                                                                           |
 | Run structured analysis from the terminal (operators, CI, scripts, agent skills)                                                                | [`@dbt-tools/cli`](./cli/README.md)                                                                                             |
-| Visually explore dependencies and execution timelines in a browser (local target, upload, or optional **S3/GCS** via `DBT_TOOLS_REMOTE_SOURCE`) | [`@dbt-tools/web`](./web/README.md) · [ADR-0029](../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md) |
+| Visually explore dependencies and execution timelines in a browser (local target, upload, or optional **S3/GCS** via `DBT_TOOLS_REMOTE_SOURCE`) | [`@dbt-tools/web`](./web/README.md) · [ADR-0004](../../docs/adr/0004-remote-object-storage-artifact-sources-and-auto-reload.md) |
 
 ---
 
@@ -74,7 +74,7 @@ npx @dbt-tools/web --target /path/to/dbt/target
 # npx @dbt-tools/core is not meaningful for end users
 ```
 
-**Documentation:** use each package README ([`@dbt-tools/web`](./web/README.md), [`@dbt-tools/cli`](./cli/README.md), [`@dbt-tools/core`](./core/README.md)) and [CONTRIBUTING.md](../../CONTRIBUTING.md); positioning and boundaries in [ADR-0035](../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+**Documentation:** use each package README ([`@dbt-tools/web`](./web/README.md), [`@dbt-tools/cli`](./cli/README.md), [`@dbt-tools/core`](./core/README.md)) and [CONTRIBUTING.md](../../CONTRIBUTING.md); positioning and boundaries in [ADR-0008](../../docs/adr/0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 To run the web app from **source** (Vite dev server, HMR):
 

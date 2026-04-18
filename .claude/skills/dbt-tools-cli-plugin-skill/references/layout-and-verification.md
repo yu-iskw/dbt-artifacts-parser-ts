@@ -2,7 +2,7 @@
 
 ## Decision record
 
-[ADR-0034: First-party coding agent plugins and repository verification](../../../../docs/adr/0034-first-party-coding-agent-plugins-and-repository-verification.md) — one plugin tree under `plugins/<plugin-id>/`, parallel manifests (`.claude-plugin`, `.codex-plugin`, `.cursor-plugin`), and `skills/` at the plugin root.
+[ADR-0007: First-party coding agent plugins and repository verification](../../../../docs/adr/0007-first-party-coding-agent-plugins-and-repository-verification.md) — one plugin tree under `plugins/<plugin-id>/`, parallel manifests (`.claude-plugin`, `.codex-plugin`, `.cursor-plugin`), and `skills/` at the plugin root.
 
 ## Structural checks (Codex)
 

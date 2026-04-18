@@ -12,7 +12,7 @@ Use this skill when the user asks or implies:
 
 - Add, scaffold, or document a **new skill** for **`@dbt-tools/cli`** / `dbt-tools`
 - Extend **`plugins/dbt-tools-cli/skills/`** with another workflow
-- Make plugin skills **pass** repo verification or align with **ADR-0034** layout
+- Make plugin skills **pass** repo verification or align with **ADR-0007** layout
 
 This is a **meta-skill** (how to add plugin skills). It does not replace the CLI reference in [`packages/dbt-tools/cli/README.md`](../../../packages/dbt-tools/cli/README.md).
 

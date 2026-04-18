@@ -1,6 +1,6 @@
 # @dbt-tools/core
 
-**Composable analysis substrate** for dbt artifacts: the reusable **analysis engine** behind [`@dbt-tools/cli`](../cli/README.md) and [`@dbt-tools/web`](../web/README.md). Use it directly when you need programmatic dependency graphs, execution analysis (critical path, timelines, bottlenecks), graph exports, readiness-oriented snapshots, or building custom workflows on top of the same logic as the shipped tools. Product positioning: [ADR-0035](../../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+**Composable analysis substrate** for dbt artifacts: the reusable **analysis engine** behind [`@dbt-tools/cli`](../cli/README.md) and [`@dbt-tools/web`](../web/README.md). Use it directly when you need programmatic dependency graphs, execution analysis (critical path, timelines, bottlenecks), graph exports, readiness-oriented snapshots, or building custom workflows on top of the same logic as the shipped tools. Product positioning: [ADR-0008](../../../docs/adr/0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 ---
 
@@ -105,7 +105,7 @@ import {
 
 The Node entry re-exports configuration readers from [`src/config/dbt-tools-env.ts`](./src/config/dbt-tools-env.ts), including `getDbtToolsTargetDirFromEnv`, `getDbtToolsReloadDebounceMs`, `isDbtToolsWatchEnabled`, and **`getDbtToolsRemoteSourceConfigFromEnv`** with types **`DbtToolsRemoteSourceConfig`** / **`DbtToolsRemoteSourceProvider`**.
 
-`DBT_TOOLS_REMOTE_SOURCE` is consumed by the **`@dbt-tools/web`** Vite middleware (not the browser). For operators, see [`packages/dbt-tools/web/README.md`](../web/README.md) and [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md).
+`DBT_TOOLS_REMOTE_SOURCE` is consumed by the **`@dbt-tools/web`** Vite middleware (not the browser). For operators, see [`packages/dbt-tools/web/README.md`](../web/README.md) and [ADR-0004](../../../docs/adr/0004-remote-object-storage-artifact-sources-and-auto-reload.md).
 
 ---
 
