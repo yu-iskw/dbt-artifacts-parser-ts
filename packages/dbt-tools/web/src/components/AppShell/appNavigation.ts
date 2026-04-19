@@ -19,6 +19,7 @@ export interface NavigationSelectionTarget {
 }
 
 export const navigationItems: SidebarNavigationTarget[] = [
+  { id: "discover", view: "discover", label: "Discover" },
   { id: "health", view: "health", label: "Health" },
   { id: "timeline", view: "timeline", label: "Timeline" },
   { id: "inventory", view: "inventory", label: "Inventory" },
@@ -26,6 +27,7 @@ export const navigationItems: SidebarNavigationTarget[] = [
 ];
 
 const VALID_VIEWS = new Set<WorkspaceView>([
+  "discover",
   "health",
   "inventory",
   "runs",
@@ -59,6 +61,7 @@ export function resolveView(raw: string): WorkspaceView {
       return "inventory";
     case "search":
       return "inventory";
+    case "discover":
     case "runs":
     case "timeline":
     case "inventory":
@@ -88,6 +91,11 @@ export function getInitialView(): WorkspaceView {
 
 export function parseSelectedResourceId(search: string): string | null {
   return new URLSearchParams(search).get("resource");
+}
+
+/** Discover workspace search box (`view=discover&q=…`). */
+export function parseDiscoverWorkspaceQuery(search: string): string {
+  return new URLSearchParams(search).get("q")?.trim() ?? "";
 }
 
 /** `selected` query param: execution id on Runs/Timeline; graph node id when Inventory lineage tab. */

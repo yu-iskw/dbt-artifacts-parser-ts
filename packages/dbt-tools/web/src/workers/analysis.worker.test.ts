@@ -163,6 +163,47 @@ describe("analysis worker contract", () => {
     expect(searchResponse.resources.length).toBeLessThanOrEqual(8);
   });
 
+  it("returns discover output after a successful load", async () => {
+    const manifestJson = loadTestManifest(
+      "v12",
+      "manifest_1.10.json",
+    ) as Record<string, unknown>;
+    const runResultsJson = loadTestRunResults(
+      "v6",
+      "run_results.json",
+    ) as Record<string, unknown>;
+
+    await handleAnalysisWorkerRequest({
+      type: "load-analysis",
+      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+      requestId: 40,
+      artifactBuffers: {
+        manifestBytes: encodeJson(manifestJson),
+        runResultsBytes: encodeJson(runResultsJson),
+      },
+      source: "upload",
+    });
+
+    const discoverResponse = await handleAnalysisWorkerRequest({
+      type: "discover-resources",
+      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+      requestId: 41,
+      query: "orders",
+      limit: 10,
+    });
+
+    expect(discoverResponse.type).toBe("discover-resources-ready");
+    if (discoverResponse.type !== "discover-resources-ready") return;
+    expect(discoverResponse.output.discover_schema_version).toBe(1);
+    expect(discoverResponse.output.query).toBe("orders");
+    expect(discoverResponse.output.matches.length).toBeGreaterThan(0);
+    expect(discoverResponse.output.matches[0]).toMatchObject({
+      unique_id: expect.any(String),
+      score: expect.any(Number),
+      reasons: expect.any(Array),
+    });
+  });
+
   it("loads optional catalog and sources buffers without requiring them", async () => {
     const manifestJson = loadTestManifest(
       "v12",

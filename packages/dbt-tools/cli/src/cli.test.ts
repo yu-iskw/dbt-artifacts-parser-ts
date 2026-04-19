@@ -44,6 +44,12 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("inventory");
       expect(schemas).toHaveProperty("timeline");
       expect(schemas).toHaveProperty("search");
+      expect(schemas).toHaveProperty("discover");
+      expect(schemas).toHaveProperty("explain");
+      expect(schemas).toHaveProperty("impact");
+      expect(schemas).toHaveProperty("diagnose run");
+      expect(schemas).toHaveProperty("diagnose node");
+      expect(schemas).toHaveProperty("export");
       expect(schemas).toHaveProperty("status");
       expect(schemas).toHaveProperty("freshness");
     });
@@ -74,6 +80,17 @@ describe("CLI Integration", () => {
       expect(schema?.command).toBe("search");
       expect(schema?.arguments[0]?.name).toBe("query");
       expect(schema?.arguments[0]?.required).toBe(false);
+    });
+
+    it("should have correct discover schema", () => {
+      const schema = getCommandSchema("discover");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("discover");
+      expect(schema?.arguments[0]?.name).toBe("query");
+      expect(schema?.arguments[0]?.required).toBe(false);
+      const limitOpt = schema?.options?.find((o) => o.name === "--limit");
+      expect(limitOpt?.type).toBe("number");
+      expect(schema?.options?.some((o) => o.name === "--trace")).toBe(true);
     });
 
     it("should have correct status schema", () => {

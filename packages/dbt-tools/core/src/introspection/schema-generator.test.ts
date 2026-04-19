@@ -53,6 +53,9 @@ describe("SchemaGenerator", () => {
       expect(schemas).toHaveProperty("graph");
       expect(schemas).toHaveProperty("run-report");
       expect(schemas).toHaveProperty("schema");
+      expect(schemas).toHaveProperty("discover");
+      expect(schemas).toHaveProperty("explain");
+      expect(schemas).toHaveProperty("export");
     });
 
     it("should have complete schema structure for all commands", () => {
@@ -64,6 +67,7 @@ describe("SchemaGenerator", () => {
         expect(schema.options).toBeInstanceOf(Array);
         expect(schema.output_format).toBeTruthy();
         expect(schema.example).toBeTruthy();
+        expect(schema.stability).toMatch(/^(core|evolving|experimental)$/);
       }
     });
 

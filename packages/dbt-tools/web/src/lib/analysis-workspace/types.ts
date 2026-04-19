@@ -12,6 +12,7 @@ import type { WorkspaceArtifactSource } from "@web/services/artifactSourceApi";
  * redirects and will be removed after all references are migrated.
  */
 export type WorkspaceView =
+  | "discover"
   | "health"
   | "inventory"
   | "runs"
@@ -195,4 +196,6 @@ export interface AnalysisWorkspaceProps {
       rootResourceId?: string;
     },
   ) => void;
+  discoverWorkspaceQuery: string;
+  onDiscoverWorkspaceQueryChange: Dispatch<SetStateAction<string>>;
 }

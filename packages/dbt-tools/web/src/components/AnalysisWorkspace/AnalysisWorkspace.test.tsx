@@ -174,6 +174,8 @@ describe("AnalysisWorkspace explorer expansion", () => {
           onLineageViewStateChange={vi.fn()}
           onInvestigationSelectionChange={vi.fn()}
           onNavigateTo={vi.fn()}
+          discoverWorkspaceQuery=""
+          onDiscoverWorkspaceQueryChange={vi.fn()}
         />
       );
     }
@@ -233,6 +235,8 @@ describe("AnalysisWorkspace explorer expansion", () => {
           onLineageViewStateChange={vi.fn()}
           onInvestigationSelectionChange={vi.fn()}
           onNavigateTo={vi.fn()}
+          discoverWorkspaceQuery=""
+          onDiscoverWorkspaceQueryChange={vi.fn()}
         />
       );
     }
@@ -316,6 +320,8 @@ describe("AnalysisWorkspace explorer expansion", () => {
           onLineageViewStateChange={vi.fn()}
           onInvestigationSelectionChange={vi.fn()}
           onNavigateTo={vi.fn()}
+          discoverWorkspaceQuery=""
+          onDiscoverWorkspaceQueryChange={vi.fn()}
         />
       );
     }

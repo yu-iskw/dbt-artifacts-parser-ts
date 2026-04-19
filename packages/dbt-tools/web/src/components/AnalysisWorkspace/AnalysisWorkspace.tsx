@@ -1,5 +1,6 @@
 import type { AnalysisWorkspaceProps } from "@web/lib/analysis-workspace/types";
 import { deriveProjectName } from "@web/lib/analysis-workspace/utils";
+import { DiscoverWorkspaceView } from "./views/discover/DiscoverWorkspaceView";
 import { HealthView } from "./views/health/HealthView";
 import { InventoryView } from "./views/inventory/InventoryView";
 import { TimelineView } from "./timeline/TimelineView";
@@ -22,6 +23,8 @@ export function AnalysisWorkspace({
   onLineageViewStateChange,
   onInvestigationSelectionChange,
   onNavigateTo,
+  discoverWorkspaceQuery,
+  onDiscoverWorkspaceQueryChange,
   workspaceSignals,
 }: AnalysisWorkspaceProps) {
   const projectName =
@@ -48,6 +51,14 @@ export function AnalysisWorkspace({
     >
       {explorerPane}
       <div className="workspace-main-panel">
+        {activeView === "discover" && (
+          <DiscoverWorkspaceView
+            analysis={analysis}
+            query={discoverWorkspaceQuery}
+            onQueryChange={(next) => onDiscoverWorkspaceQueryChange(next)}
+            onNavigateTo={onNavigateTo}
+          />
+        )}
         {activeView === "health" && (
           <HealthView
             analysis={analysis}

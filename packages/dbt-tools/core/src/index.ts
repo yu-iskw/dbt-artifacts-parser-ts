@@ -14,6 +14,7 @@ export {
   getDbtToolsDbtTargetFromEnv,
   getDbtToolsReloadDebounceMs,
   getDbtToolsRemoteSourceConfigFromEnv,
+  getDbtToolsWebBaseUrlFromEnv,
   parseDbtToolsRemoteSourceConfigJson,
   isDbtToolsDebugEnabled,
   isDbtToolsWatchEnabled,
@@ -44,6 +45,12 @@ export * from "./errors/error-handler";
 
 // Introspection exports
 export * from "./introspection/schema-generator";
+
+// Discovery (artifact-grounded ranking; browser-safe)
+export * from "./discovery";
+
+// Intent helpers (target resolution; Node-safe)
+export * from "./intent";
 
 // Shared types and utilities
 export * from "./types";

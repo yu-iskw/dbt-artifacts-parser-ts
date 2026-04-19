@@ -90,6 +90,8 @@ function makeWorkspace() {
     setLineageViewState: vi.fn(),
     searchState: { query: "", recentResourceIds: [], isOpen: false },
     setSearchState: vi.fn(),
+    discoverWorkspaceQuery: "",
+    setDiscoverWorkspaceQuery: vi.fn(),
     investigationSelection: {
       selectedResourceId: null,
       selectedExecutionId: null,

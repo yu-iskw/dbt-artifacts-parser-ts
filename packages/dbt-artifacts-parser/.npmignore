@@ -1,0 +1,2 @@
+# Fixtures and codegen inputs — not for npm consumers (see package.json "files").
+resources/

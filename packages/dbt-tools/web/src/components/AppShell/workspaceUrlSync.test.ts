@@ -57,6 +57,13 @@ describe("createInitialNavigationState", () => {
   it("defaults to health when view is missing", () => {
     const s = createInitialNavigationState("");
     expect(s.activeView).toBe("health");
+    expect(s.discoverWorkspaceQuery).toBe("");
+  });
+
+  it("parses discover view and q", () => {
+    const s = createInitialNavigationState("?view=discover&q=orders");
+    expect(s.activeView).toBe("discover");
+    expect(s.discoverWorkspaceQuery).toBe("orders");
   });
 
   it("maps runs+tab=timeline to timeline and reads selected for timeline", () => {
@@ -111,6 +118,13 @@ describe("applySearchToWorkspaceState", () => {
   it("does not return activeView when parse fails", () => {
     const r = applySearchToWorkspaceState("?view=invalid");
     expect(r.activeView).toBeUndefined();
+    expect(r.discoverWorkspaceQuery).toBe("");
+  });
+
+  it("returns discoverWorkspaceQuery for discover view", () => {
+    const r = applySearchToWorkspaceState("?view=discover&q=stg_orders");
+    expect(r.activeView).toBe("discover");
+    expect(r.discoverWorkspaceQuery).toBe("stg_orders");
   });
 
   it("merges asset and investigation like popstate", () => {
@@ -278,6 +292,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/analyze",
       hash: "",
       activeView: "health",
+      discoverWorkspaceQuery: "",
       assetViewState: inv({ selectedResourceId: "x", activeTab: "lineage" }),
       runsViewState: baseRuns(),
       timelineSelectedExecutionId: null,
@@ -291,6 +306,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/",
       hash: "",
       activeView: "inventory",
+      discoverWorkspaceQuery: "",
       assetViewState: inv({
         selectedResourceId: "m.project.model.foo",
         activeTab: "summary",
@@ -310,6 +326,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/",
       hash: "#h",
       activeView: "inventory",
+      discoverWorkspaceQuery: "",
       assetViewState: inv({ activeTab: "lineage" }),
       runsViewState: baseRuns(),
       timelineSelectedExecutionId: null,
@@ -336,6 +353,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/x",
       hash: "",
       activeView: "runs",
+      discoverWorkspaceQuery: "",
       assetViewState: inv(),
       runsViewState: {
         ...baseRuns(),
@@ -355,6 +373,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/x",
       hash: "",
       activeView: "runs",
+      discoverWorkspaceQuery: "",
       assetViewState: inv(),
       runsViewState: {
         ...baseRuns(),
@@ -372,6 +391,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/x",
       hash: "",
       activeView: "runs",
+      discoverWorkspaceQuery: "",
       assetViewState: inv(),
       runsViewState: {
         ...baseRuns(),
@@ -388,6 +408,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/",
       hash: "",
       activeView: "timeline",
+      discoverWorkspaceQuery: "",
       assetViewState: inv(),
       runsViewState: baseRuns(),
       timelineSelectedExecutionId: "t-1",
@@ -403,6 +424,7 @@ describe("buildNextUrlFromWorkspaceState", () => {
       pathname: "/",
       hash: "",
       activeView: "settings",
+      discoverWorkspaceQuery: "",
       assetViewState: inv({ selectedResourceId: "x", activeTab: "lineage" }),
       runsViewState: {
         ...baseRuns(),
@@ -413,5 +435,21 @@ describe("buildNextUrlFromWorkspaceState", () => {
       lineageViewState: baseLineage(),
     });
     expect(url).toBe("/?view=settings");
+  });
+
+  it("serializes discover view with q", () => {
+    const url = buildNextUrlFromWorkspaceState({
+      pathname: "/",
+      hash: "",
+      activeView: "discover",
+      discoverWorkspaceQuery: "orders",
+      assetViewState: inv({ selectedResourceId: "x", activeTab: "lineage" }),
+      runsViewState: baseRuns(),
+      timelineSelectedExecutionId: null,
+      lineageViewState: baseLineage(),
+    });
+    expect(url).toContain("view=discover");
+    expect(url).toContain("q=orders");
+    expect(url).not.toContain("resource=");
   });
 });

@@ -427,6 +427,31 @@ dbt-tools search --dbt-target ./target orders --json
 
 ---
 
+### discover
+
+Ranked, **explainable** discovery over `manifest.json`: each match includes `score`, `confidence`, machine-stable `reasons`, optional `disambiguation` peers, `related` graph neighbors, `next_actions`, and `primitive_commands` for follow-up CLIs. Uses the same query token syntax as **`search`**, but scoring is richer (fuzzy name match, description, dependency fanout hints, relation-name resolution when present).
+
+Requires **`manifest.json`** only under **`--dbt-target`** (same resolution as `search`).
+
+**Exit codes:** `0` when the command completes (including zero matches). `1` on invalid input or I/O errors. Ambiguity is expressed in JSON (`disambiguation`, `confidence`), not via a separate exit code.
+
+**`--fields`:** Supports dotted paths on the top-level object (for example `query`, `discover_schema_version`, `matches.0.unique_id`). Nested arrays are filtered per element when paths include `matches.*` style keys; prefer full JSON without `--fields` for agents when unsure.
+
+You may omit the query (or pass an empty string) when at least one of `--type`, `--package`, `--tag`, or `--path` is set, for example filter-only discovery over all models.
+
+When **`DBT_TOOLS_WEB_BASE_URL`** is set (for example `http://127.0.0.1:5173`), JSON output includes **`web_url`** and **`review_url`** (for `discover`, both point at `view=discover` with the same `q=`). Human output appends an “Open in web” line. The same env var adds **`web_url`** / **`review_url`** to **`explain`** and **`impact`** JSON, opening the inventory resource view (summary vs lineage tab respectively).
+
+**`--trace`** (on `discover`, `explain`, `impact`): adds **`investigation_transcript`** to JSON with a small step list for debugging and agents.
+
+```bash
+dbt-tools discover --dbt-target ./target "orders" --json
+dbt-tools discover --dbt-target ./target "type:model" --limit 30
+dbt-tools discover --dbt-target ./target "ordrs" --json
+dbt-tools discover --dbt-target ./target --type model "" --json
+```
+
+---
+
 ### status / freshness
 
 Report dbt artifact presence, file modification times, and analysis readiness. `freshness` is an alias for `status`.
@@ -534,7 +559,7 @@ The CLI automatically outputs **JSON on stdout** when stdout is not a TTY (non-i
 
 ## Field Filtering
 
-Use `--fields` to limit response size and reduce context window usage. Supported in `summary`, `deps`, `graph` (JSON), `run-report`, `inventory`, and `search`.
+Use `--fields` to limit response size and reduce context window usage. Supported in `summary`, `deps`, `graph` (JSON), `run-report`, `inventory`, `search`, and `discover` (top-level / dotted paths).
 
 ```bash
 # Only return specific fields
@@ -599,7 +624,7 @@ The CLI validates all inputs to prevent common mistakes:
 The same patterns help **scripts and CI** and **coding agents** (e.g. discover resources, then query deps with minimal fields).
 
 1. **Run `status` first** (with the same **`--dbt-target`** you will use for analysis) to confirm required files exist.
-2. **Use `search` to discover resources** before running `deps` or `inventory`.
+2. **Use `discover` (or `search`) to resolve resources** before running `deps` or `inventory`. Prefer **`discover`** when you need scores, reasons, and suggested next steps in JSON.
 3. **Use field filtering** on large outputs to keep JSON payloads small.
 4. **Set `DBT_TOOLS_DBT_TARGET` in CI** so commands stay short and consistent.
 5. **Validate resource IDs** before querying (use schema introspection if unsure).

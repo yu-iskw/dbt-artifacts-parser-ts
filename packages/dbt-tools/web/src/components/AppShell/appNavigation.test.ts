@@ -47,6 +47,7 @@ describe("resolveView", () => {
   });
 
   it("passes through primary views", () => {
+    expect(resolveView("discover")).toBe("discover");
     expect(resolveView("health")).toBe("health");
     expect(resolveView("inventory")).toBe("inventory");
     expect(resolveView("runs")).toBe("runs");
@@ -199,8 +200,9 @@ describe("sidebar navigation helpers", () => {
     expect(navigationItems.map((i) => i.id)).not.toContain("lineage");
   });
 
-  it("orders timeline directly after health", () => {
+  it("places discover first, then health and the rest", () => {
     expect(navigationItems.map((i) => i.id)).toEqual([
+      "discover",
       "health",
       "timeline",
       "inventory",

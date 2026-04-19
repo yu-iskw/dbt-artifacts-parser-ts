@@ -7,6 +7,7 @@ import { parseSources } from "dbt-artifacts-parser/sources";
 import { matchesResource } from "../lib/analysis-workspace/utils";
 import {
   buildAnalysisSnapshotFromParsedArtifactBundle,
+  discoverResources,
   type AnalysisSnapshot,
   type ManifestGraph,
 } from "@dbt-tools/core/browser";
@@ -16,6 +17,7 @@ import {
   type AnalysisWorkerResponse,
   type AnalysisWorkerTimings,
   type GetResourceCodeMessage,
+  type DiscoverResourcesMessage,
   type LoadAnalysisMessage,
   type SearchResourcesMessage,
 } from "./analysisProtocol";
@@ -28,6 +30,7 @@ let cachedGraph: ManifestGraph | null = null;
 let cachedResources: AnalysisSnapshot["resources"] | null = null;
 
 const OMNIBOX_LIMIT = 8;
+const MSG_NO_ANALYSIS_LOADED = "No analysis loaded";
 
 function buildLoadErrorResponse(
   requestId: number,
@@ -65,6 +68,18 @@ function buildSearchResourcesErrorResponse(
   };
 }
 
+function buildDiscoverResourcesErrorResponse(
+  requestId: number,
+  message: string,
+): AnalysisWorkerResponse {
+  return {
+    type: "discover-resources-error",
+    protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+    requestId,
+    message,
+  };
+}
+
 function decodeJsonBytes(bytes: ArrayBuffer): Record<string, unknown> {
   const text = new TextDecoder().decode(bytes);
   return JSON.parse(text) as Record<string, unknown>;
@@ -96,6 +111,32 @@ function readCodeFromGraph(
   return { compiledCode, rawCode };
 }
 
+export function handleDiscoverResourcesMessage(
+  payload: DiscoverResourcesMessage,
+): AnalysisWorkerResponse {
+  if (payload.protocolVersion !== ANALYSIS_WORKER_PROTOCOL_VERSION) {
+    return buildDiscoverResourcesErrorResponse(
+      payload.requestId,
+      `Unsupported protocol version: ${payload.protocolVersion}`,
+    );
+  }
+  if (!cachedGraph) {
+    return buildDiscoverResourcesErrorResponse(
+      payload.requestId,
+      MSG_NO_ANALYSIS_LOADED,
+    );
+  }
+  const output = discoverResources(cachedGraph, payload.query, {
+    limit: payload.limit,
+  });
+  return {
+    type: "discover-resources-ready",
+    protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
+    requestId: payload.requestId,
+    output,
+  };
+}
+
 export function handleSearchResourcesMessage(
   payload: SearchResourcesMessage,
 ): AnalysisWorkerResponse {
@@ -108,7 +149,7 @@ export function handleSearchResourcesMessage(
   if (!cachedResources) {
     return buildSearchResourcesErrorResponse(
       payload.requestId,
-      "No analysis loaded",
+      MSG_NO_ANALYSIS_LOADED,
     );
   }
   const matches = cachedResources
@@ -134,7 +175,7 @@ export function handleGetResourceCodeMessage(
   if (!cachedGraph) {
     return buildResourceCodeErrorResponse(
       payload.requestId,
-      "No analysis loaded",
+      MSG_NO_ANALYSIS_LOADED,
     );
   }
   const { compiledCode, rawCode } = readCodeFromGraph(
@@ -239,6 +280,9 @@ export function handleAnalysisWorkerRequest(
   }
   if (payload.type === "search-resources") {
     return Promise.resolve(handleSearchResourcesMessage(payload));
+  }
+  if (payload.type === "discover-resources") {
+    return Promise.resolve(handleDiscoverResourcesMessage(payload));
   }
   return handleLoadAnalysisMessage(payload);
 }

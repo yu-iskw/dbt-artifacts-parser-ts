@@ -82,6 +82,8 @@ export function AppWorkspaceChrome({
     searchState,
     setSearchState,
     setInvestigationSelection,
+    discoverWorkspaceQuery,
+    setDiscoverWorkspaceQuery,
     setNavigationTarget,
     handleNavigateTo,
     frameClass,
@@ -169,6 +171,8 @@ export function AppWorkspaceChrome({
           setLineageViewState={setLineageViewState}
           setInvestigationSelection={setInvestigationSelection}
           handleNavigateTo={handleNavigateTo}
+          discoverWorkspaceQuery={discoverWorkspaceQuery}
+          setDiscoverWorkspaceQuery={setDiscoverWorkspaceQuery}
         />
       </main>
     </div>

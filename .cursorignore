@@ -62,3 +62,6 @@ playwright/.cache/
 # Vite timestamp sidecars
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Temporary files
+tmp/**/*
