@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createJaffleArtifactBundleDir,
   createJaffleRunResultsOnlyDir,
-} from "./cli-test-bundle-dir";
+} from "../../internal/cli-test-bundle-dir";
 import {
   timelineAction,
   formatTimeline,

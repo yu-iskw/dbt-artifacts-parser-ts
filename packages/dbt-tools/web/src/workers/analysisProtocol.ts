@@ -1,7 +1,7 @@
 import type { AnalysisSnapshot } from "@dbt-tools/core/browser";
 import type { WorkspaceArtifactSource } from "../lib/artifactSourceKind";
 
-export const ANALYSIS_WORKER_PROTOCOL_VERSION = 3;
+export const ANALYSIS_WORKER_PROTOCOL_VERSION = 4;
 
 export type AnalysisLoadSource = WorkspaceArtifactSource;
 

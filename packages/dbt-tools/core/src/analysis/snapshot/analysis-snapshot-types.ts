@@ -112,6 +112,7 @@ export interface ResourceNode {
   name: string;
   resourceType: string;
   packageName: string;
+  tags?: string[];
   path: string | null;
   originalFilePath: string | null;
   patchPath?: string | null;

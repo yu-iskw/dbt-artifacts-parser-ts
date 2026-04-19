@@ -118,6 +118,37 @@ const defaultTimelineFilters = (
   };
 };
 
+function getInventoryQueryFromSearch(search: string): string | null {
+  const params = new URLSearchParams(search);
+  const resolvedView = parseViewFromSearch(search);
+  if (resolvedView !== "inventory") return null;
+
+  const terms: string[] = [];
+  const q = params.get("q")?.trim() ?? "";
+  if (q !== "") {
+    terms.push(q);
+  }
+
+  for (const key of ["type", "package", "tag", "path"] as const) {
+    const value = params.get(key)?.trim() ?? "";
+    if (value !== "") {
+      terms.push(`${key}:${value}`);
+    }
+  }
+
+  return terms.join(" ").trim();
+}
+
+/** Inventory/discover URLs seed the Inventory list filter (`resourceQuery`). */
+function mergeInventoryQueryIntoAsset(
+  search: string,
+  asset: AssetViewState,
+): AssetViewState {
+  const q = getInventoryQueryFromSearch(search);
+  if (q === null) return asset;
+  return { ...asset, resourceQuery: q };
+}
+
 const defaultInvestigationSelection = (
   search: string,
 ): InvestigationSelectionState => {
@@ -132,7 +163,7 @@ const defaultInvestigationSelection = (
   };
 };
 
-/** Full URL-derived slices for first paint (matches previous App.tsx initializers). */
+/** Full URL-derived slices for first paint from `location.search`. */
 export function createInitialNavigationState(
   search: string,
   preferences?: WorkspacePreferences,
@@ -140,7 +171,10 @@ export function createInitialNavigationState(
   const activeView = parseViewFromSearch(search) ?? "health";
   return {
     activeView,
-    assetViewState: defaultAssetViewState(search, preferences),
+    assetViewState: mergeInventoryQueryIntoAsset(
+      search,
+      defaultAssetViewState(search, preferences),
+    ),
     runsViewState: defaultRunsViewState(search),
     timelineFilters: defaultTimelineFilters(search, preferences),
     lineageViewState: {
@@ -186,11 +220,12 @@ export function applySearchToWorkspaceState(search: string): {
 
   return {
     activeView: view ?? undefined,
-    assetViewState: (current) => ({
-      ...current,
-      selectedResourceId: resourceId,
-      activeTab: getInitialAssetTab(search),
-    }),
+    assetViewState: (current) =>
+      mergeInventoryQueryIntoAsset(search, {
+        ...current,
+        selectedResourceId: resourceId,
+        activeTab: getInitialAssetTab(search),
+      }),
     runsViewState: (current) => ({
       ...current,
       kind: parseRunsKind(search) ?? current.kind,
@@ -236,6 +271,7 @@ const NAV_SEARCH_KEYS = [
   "down",
   "allDeps",
   "lens",
+  "q",
 ] as const;
 
 function deleteNavSearchKeys(url: URL, except?: ReadonlySet<string>) {
@@ -256,6 +292,12 @@ function applyInventoryUrl(
     url.searchParams.delete("resource");
   }
   url.searchParams.set("assetTab", assetViewState.activeTab);
+  const resourceQuery = assetViewState.resourceQuery.trim();
+  if (resourceQuery !== "") {
+    url.searchParams.set("q", resourceQuery);
+  } else {
+    url.searchParams.delete("q");
+  }
   url.searchParams.delete("kind");
   if (assetViewState.activeTab === "lineage") {
     if (lineageViewState.selectedResourceId) {
@@ -268,7 +310,7 @@ function applyInventoryUrl(
     url.searchParams.set("allDeps", lineageViewState.allDepsMode ? "1" : "0");
     url.searchParams.set("lens", lineageViewState.lensMode);
   } else {
-    deleteNavSearchKeys(url, new Set(["resource", "assetTab"]));
+    deleteNavSearchKeys(url, new Set(["resource", "assetTab", "q"]));
   }
 }
 
@@ -299,7 +341,7 @@ function applyTimelineUrl(
   deleteNavSearchKeys(url, new Set(["selected"]));
 }
 
-/** Builds `pathname + search + hash` from workspace slices (matches App.tsx pushState effect). */
+/** Builds `pathname + search + hash` from workspace slices (same shape as history `pushState`). */
 export function buildNextUrlFromWorkspaceState(input: BuildUrlInput): string {
   const {
     pathname,

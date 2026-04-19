@@ -13,7 +13,8 @@ import {
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
-} from "./cli-artifact-resolve";
+} from "../../internal/cli-artifact-resolve";
+import { applyListPaging } from "../../internal/cli-pagination";
 
 export type InventoryOptions = {
   type?: string;
@@ -21,6 +22,8 @@ export type InventoryOptions = {
   tag?: string;
   path?: string;
   fields?: string;
+  limit?: number;
+  offset?: number;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -36,8 +39,12 @@ export type InventoryEntry = {
 };
 
 export type InventoryResult = {
+  /** Count of resources matching filters (before paging). */
   total: number;
   entries: InventoryEntry[];
+  limit?: number;
+  offset?: number;
+  has_more?: boolean;
 };
 
 function matchesFilters(
@@ -86,6 +93,11 @@ export function formatInventory(result: InventoryResult): string {
   lines.push("dbt Inventory");
   lines.push("=============");
   lines.push(`Total resources: ${result.total}`);
+  if (result.limit !== undefined) {
+    lines.push(
+      `Page: limit=${result.limit} offset=${result.offset ?? 0} has_more=${String(result.has_more ?? false)}`,
+    );
+  }
 
   if (result.entries.length === 0) {
     lines.push("(no matching resources)");
@@ -154,7 +166,17 @@ export async function inventoryAction(
       return a.name.localeCompare(b.name);
     });
 
-    const result: InventoryResult = { total: entries.length, entries };
+    const { page, matchedTotal, offset, limit, hasMore } = applyListPaging(
+      entries,
+      options.limit,
+      options.offset,
+    );
+
+    const result: InventoryResult = {
+      total: matchedTotal,
+      entries: page,
+      ...(limit !== undefined ? { limit, offset, has_more: hasMore } : {}),
+    };
 
     const useJson = shouldOutputJSON(options.json, options.noJson);
 

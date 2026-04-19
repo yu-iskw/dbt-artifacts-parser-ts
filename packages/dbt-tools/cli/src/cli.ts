@@ -25,10 +25,17 @@ import {
   inventoryAction,
   timelineAction,
   searchAction,
+  discoverAction,
+  explainAction,
+  impactAction,
+  diagnoseRunAction,
+  diagnoseNodeAction,
+  exportAction,
   statusAction,
+  failuresAction,
 } from "./cli-actions";
-import { resolveCliArtifactPaths } from "./cli-artifact-resolve";
-import { CLI_PACKAGE_VERSION } from "./version";
+import { resolveCliArtifactPaths } from "./internal/cli-artifact-resolve";
+import { CLI_PACKAGE_VERSION } from "./internal/version";
 
 const program = new Command();
 
@@ -44,11 +51,34 @@ const OPT_JSON = "--json";
 const DESC_JSON = "Force JSON output (stdout and structured errors on stderr)";
 const OPT_NO_JSON = "--no-json";
 const DESC_NO_JSON = "Force human-readable output";
+const OPT_TRACE = "--trace";
+const DESC_TRACE =
+  "Include investigation_transcript in JSON output (discover / intent commands)";
+const OPT_FILTER_TYPE = "--type <type>";
+const DESC_FILTER_TYPE = "Filter by resource type(s), comma-separated";
+const OPT_FILTER_PACKAGE = "--package <package>";
+const DESC_FILTER_PACKAGE = "Filter by package name";
+const OPT_FILTER_TAG = "--tag <tag>";
+const DESC_FILTER_TAG = "Filter by tag(s), comma-separated";
+const OPT_FILTER_PATH = "--path <path>";
+const DESC_FILTER_PATH = "Filter by file path substring";
+const DESC_ARG_RESOURCE_OR_DISCOVER = "unique_id or discover query";
+const ARG_RESOURCE = "<resource>";
 const DESC_GRAPH_FORMAT = "Export format: json, dot, gexf";
 const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
+const OPT_LIMIT_N = "--limit <n>";
+const OPT_OFFSET_N = "--offset <n>";
+const DESC_INVENTORY_LIMIT =
+  "Return at most N entries after filters (max 200); omit for full list";
+const DESC_SEARCH_LIMIT =
+  "Return at most N matches after scoring (max 200); omit for full list";
+const DESC_OFFSET_REQUIRES_LIMIT = "Skip N rows after sort (requires --limit)";
+const DESC_FAILURES_LIMIT = "Max rows returned (default 50, max 200)";
+const DESC_FAILURES_OFFSET =
+  "Skip N rows after stable sort (uses explicit or default --limit)";
 
 program
   .name("dbt-tools")
@@ -163,7 +193,7 @@ program
           console.log(formatSummary(summary));
         }
       } catch (error) {
-        handleCliError(error, shouldOutputJSON(undefined, undefined));
+        handleCliError(error, shouldOutputJSON(options.json, options.noJson));
       }
     },
   );
@@ -327,6 +357,16 @@ program
     "When using --adapter-top-by, require rows_affected >= n",
     parseFloat,
   )
+  .option(
+    "--node-executions-limit <n>",
+    "Cap node_executions length in JSON output (stable sort by started_at then unique_id); summary metrics still use the full run",
+    parseInt,
+  )
+  .option(
+    "--node-executions-offset <n>",
+    "Skip N node_executions rows before applying --node-executions-limit (requires --node-executions-limit)",
+    parseInt,
+  )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
   .action(
@@ -342,6 +382,8 @@ program
         adapterMinBytes?: number;
         adapterMinSlotMs?: number;
         adapterMinRowsAffected?: number;
+        nodeExecutionsLimit?: number;
+        nodeExecutionsOffset?: number;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
@@ -398,6 +440,8 @@ program
           adapterMinBytes: options.adapterMinBytes,
           adapterMinSlotMs: options.adapterMinSlotMs,
           adapterMinRowsAffected: options.adapterMinRowsAffected,
+          nodeExecutionsLimit: options.nodeExecutionsLimit,
+          nodeExecutionsOffset: options.nodeExecutionsOffset,
           json: options.json,
           noJson: options.noJson,
           dbtTarget: options.dbtTarget,
@@ -461,11 +505,13 @@ program
 program
   .command("inventory")
   .description("List and filter dbt resources from manifest")
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
-  .option("--package <package>", "Filter by package name")
-  .option("--tag <tag>", "Filter by tag(s), comma-separated")
-  .option("--path <path>", "Filter by file path substring")
+  .option(OPT_FILTER_TYPE, DESC_FILTER_TYPE)
+  .option(OPT_FILTER_PACKAGE, DESC_FILTER_PACKAGE)
+  .option(OPT_FILTER_TAG, DESC_FILTER_TAG)
+  .option(OPT_FILTER_PATH, DESC_FILTER_PATH)
   .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_LIMIT_N, DESC_INVENTORY_LIMIT, parseInt)
+  .option(OPT_OFFSET_N, DESC_OFFSET_REQUIRES_LIMIT, parseInt)
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
@@ -477,11 +523,68 @@ program
         tag?: string;
         path?: string;
         fields?: string;
+        limit?: number;
+        offset?: number;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
       await inventoryAction(options, handleCliError);
+    },
+  );
+
+/**
+ * Failures command: non-success run_results rows with bounded JSON for triage
+ */
+program
+  .command("failures")
+  .description(
+    "List non-successful nodes from run_results.json with optional manifest enrichment and suggested follow-up commands",
+  )
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(
+    "--status <status>",
+    "Override default filter: comma-separated statuses (default: all except success and pass)",
+  )
+  .option(OPT_LIMIT_N, DESC_FAILURES_LIMIT, parseInt)
+  .option(OPT_OFFSET_N, DESC_FAILURES_OFFSET, parseInt)
+  .option(
+    "--message-max-chars <n>",
+    "Truncate message field beyond N characters",
+    parseInt,
+  )
+  .option(
+    "--include-path",
+    "Add path, original_file_path, and resource_type from manifest when available",
+  )
+  .option(
+    "--include-compiled",
+    "Include compiled_code and raw_code snippets from manifest (capped; use with --compiled-max-chars)",
+  )
+  .option(
+    "--compiled-max-chars <n>",
+    "Max characters per compiled/raw snippet when --include-compiled is set",
+    parseInt,
+  )
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      options: {
+        status?: string;
+        limit?: number;
+        offset?: number;
+        messageMaxChars?: number;
+        includePath?: boolean;
+        includeCompiled?: boolean;
+        compiledMaxChars?: number;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await failuresAction(options, handleCliError);
     },
   );
 
@@ -542,11 +645,13 @@ program
     "[query]",
     "Search query; supports key:value tokens like type:model tag:finance",
   )
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
-  .option("--package <package>", "Filter by package name")
-  .option("--tag <tag>", "Filter by tag(s), comma-separated")
-  .option("--path <path>", "Filter by file path substring")
+  .option(OPT_FILTER_TYPE, DESC_FILTER_TYPE)
+  .option(OPT_FILTER_PACKAGE, DESC_FILTER_PACKAGE)
+  .option(OPT_FILTER_TAG, DESC_FILTER_TAG)
+  .option(OPT_FILTER_PATH, DESC_FILTER_PATH)
   .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_LIMIT_N, DESC_SEARCH_LIMIT, parseInt)
+  .option(OPT_OFFSET_N, DESC_OFFSET_REQUIRES_LIMIT, parseInt)
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
@@ -559,11 +664,192 @@ program
         tag?: string;
         path?: string;
         fields?: string;
+        limit?: number;
+        offset?: number;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
       await searchAction(query, options, handleCliError);
+    },
+  );
+
+/**
+ * Discover command: Ranked resource discovery with reasons, related nodes, and next actions
+ */
+program
+  .command("discover")
+  .description(
+    "Artifact-grounded discovery with scores, reasons, disambiguation, and suggested follow-ups",
+  )
+  .argument(
+    "[query]",
+    'Search query (same token syntax as search: type:, tag:, …); omit or pass "" when using filters only',
+  )
+  .option(OPT_FILTER_TYPE, DESC_FILTER_TYPE)
+  .option(OPT_FILTER_PACKAGE, DESC_FILTER_PACKAGE)
+  .option(OPT_FILTER_TAG, DESC_FILTER_TAG)
+  .option(OPT_FILTER_PATH, DESC_FILTER_PATH)
+  .option(OPT_LIMIT_N, "Max matches (default 50, max 200)", parseInt)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_TRACE, DESC_TRACE)
+  .action(
+    async (
+      query: string | undefined,
+      options: {
+        type?: string;
+        package?: string;
+        tag?: string;
+        path?: string;
+        limit?: number;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+        trace?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await discoverAction(query, options, handleCliError);
+    },
+  );
+
+/**
+ * Explain intent: resolved resource summary (compiles to discover + manifest fields)
+ */
+program
+  .command("explain")
+  .description(
+    "Summarize a resource (intent; resolves short names via discover)",
+  )
+  .argument(ARG_RESOURCE, DESC_ARG_RESOURCE_OR_DISCOVER)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_TRACE, DESC_TRACE)
+  .action(
+    async (
+      resource: string,
+      options: {
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+        trace?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await explainAction(resource, options, handleCliError);
+    },
+  );
+
+/**
+ * Impact intent: upstream/downstream counts and notable dependents
+ */
+program
+  .command("impact")
+  .description(
+    "Dependency impact snapshot (intent; resolves short names via discover)",
+  )
+  .argument(ARG_RESOURCE, DESC_ARG_RESOURCE_OR_DISCOVER)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_TRACE, DESC_TRACE)
+  .action(
+    async (
+      resource: string,
+      options: {
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+        trace?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await impactAction(resource, options, handleCliError);
+    },
+  );
+
+const diagnoseCmd = program
+  .command("diagnose")
+  .description(
+    "Operational diagnosis facade (points to run-report, timeline, deps primitives)",
+  );
+
+diagnoseCmd
+  .command("run")
+  .description("Diagnose the current run (execution-focused primitives)")
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      options: {
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await diagnoseRunAction(options, handleCliError);
+    },
+  );
+
+diagnoseCmd
+  .command("node")
+  .description("Diagnose a specific resource (deps + run-report primitives)")
+  .argument(ARG_RESOURCE, DESC_ARG_RESOURCE_OR_DISCOVER)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      resource: string,
+      options: {
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await diagnoseNodeAction(resource, options, handleCliError);
+    },
+  );
+
+/**
+ * Export intent: graph export with a normalized JSON envelope
+ */
+program
+  .command("export")
+  .description("Export dependency graph (intent wrapper over graph export)")
+  .option(OPT_FORMAT, DESC_GRAPH_FORMAT, DEFAULT_GRAPH_FORMAT)
+  .option("--output <path>", "Output file path (when omitted, stdout)")
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option("--focus <resource-id>", "Export subgraph centered on this node")
+  .option("--focus-depth <number>", "Max depth for --focus", parseInt)
+  .option(
+    "--focus-direction <direction>",
+    "upstream | downstream | both (default: both)",
+    "both",
+  )
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      options: {
+        format?: string;
+        output?: string;
+        fields?: string;
+        focus?: string;
+        focusDepth?: number;
+        focusDirection?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await exportAction(options, handleCliError);
     },
   );
 

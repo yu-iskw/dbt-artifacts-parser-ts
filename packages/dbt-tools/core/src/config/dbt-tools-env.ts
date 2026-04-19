@@ -202,3 +202,12 @@ export function getDbtToolsRemoteSourceConfigFromEnv():
   if (raw === undefined) return undefined;
   return parseDbtToolsRemoteSourceConfigJson(raw);
 }
+
+/**
+ * Base URL for the dbt-tools web app (deep links from CLI). No trailing slash required.
+ * Example: `http://127.0.0.1:5173` or `https://dbt-tools.example.com/app`
+ */
+export function getDbtToolsWebBaseUrlFromEnv(): string | undefined {
+  const u = trimEnv(process.env.DBT_TOOLS_WEB_BASE_URL);
+  return u === undefined ? undefined : u.replace(/\/$/, "");
+}

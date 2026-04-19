@@ -19,7 +19,7 @@ import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
-} from "./cli-artifact-resolve";
+} from "../../internal/cli-artifact-resolve";
 
 type DepsOptions = {
   direction?: string;

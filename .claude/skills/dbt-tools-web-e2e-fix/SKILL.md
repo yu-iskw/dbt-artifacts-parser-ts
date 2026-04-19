@@ -47,6 +47,8 @@ If **Playwright reports missing browsers**, install from the repo root (example)
 - **Timeout / flake:** Reduce unnecessary fixed sleeps; use Playwright auto-waiting and targeted `expect` retries; check for race conditions in the app.
 - **Fixture or path errors:** Correct paths under `packages/dbt-tools/web/e2e/`; see [fixtures and paths](../dbt-tools-web-e2e/references/fixtures-and-paths.md).
 - **Preview vs dev:** Tests use **Vite preview**, not `pnpm dev`. Do **not** remove `test.skip` or weaken assertions without fixing the **preview/bundle** root cause. See [Preview build constraint](../dbt-tools-web-e2e/SKILL.md#preview-build-constraint) in **`dbt-tools-web-e2e`**.
+- **Global `getByRole` collisions:** The same **accessible name** can appear in the **sidebar** and in a **panel** (for example a new primary nav item vs copy inside `section.upload-hero`). Assertions like “no button named X on this screen” must be **scoped** (`page.locator("#app-sidebar")`, `page.locator("section.upload-hero")`, `main`, etc.); never rely on a page-wide `getByRole` when multiple regions can expose the same label.
+- **When to run E2E early:** After changes to **primary sidebar order/labels**, **workspace chrome**, **artifact load**, or **any file under** `packages/dbt-tools/web/e2e/`, run **`pnpm test:e2e`** before claiming complete — nav-only changes can pass unit tests but fail navigation specs.
 
 ## Related skills
 

@@ -769,6 +769,14 @@ export class ManifestGraph {
     return fieldId;
   }
 
+  /**
+   * Resolve a relation / table identifier from manifest `relation_name` metadata
+   * to a node `unique_id` (models, seeds, snapshots, sources when registered).
+   */
+  tryResolveRelationName(relationName: string): string | undefined {
+    return this.resolveRelationToUniqueId(relationName);
+  }
+
   private resolveRelationToUniqueId(relationName: string): string | undefined {
     // Try exact match
     const normalized = relationName.toLowerCase();

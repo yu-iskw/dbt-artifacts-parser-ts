@@ -28,6 +28,7 @@ let cachedGraph: ManifestGraph | null = null;
 let cachedResources: AnalysisSnapshot["resources"] | null = null;
 
 const OMNIBOX_LIMIT = 8;
+const MSG_NO_ANALYSIS_LOADED = "No analysis loaded";
 
 function buildLoadErrorResponse(
   requestId: number,
@@ -108,7 +109,7 @@ export function handleSearchResourcesMessage(
   if (!cachedResources) {
     return buildSearchResourcesErrorResponse(
       payload.requestId,
-      "No analysis loaded",
+      MSG_NO_ANALYSIS_LOADED,
     );
   }
   const matches = cachedResources
@@ -134,7 +135,7 @@ export function handleGetResourceCodeMessage(
   if (!cachedGraph) {
     return buildResourceCodeErrorResponse(
       payload.requestId,
-      "No analysis loaded",
+      MSG_NO_ANALYSIS_LOADED,
     );
   }
   const { compiledCode, rawCode } = readCodeFromGraph(

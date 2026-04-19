@@ -89,3 +89,24 @@ export {
   normalizeDbtResourceTypeKey,
   normalizeMaterializationKind,
 } from "./analysis/analysis-snapshot";
+
+export {
+  discoverResources,
+  levenshteinDistance,
+  parseDiscoveryQueryTokens,
+  applyDiscoveryNodeFilters,
+  legacySearchScore,
+} from "./discovery";
+export type {
+  DiscoverConfidence,
+  DiscoverDisambiguationEntry,
+  DiscoverMatch,
+  DiscoverNextAction,
+  DiscoverOptions,
+  DiscoverOutput,
+  DiscoverReason,
+  DiscoverRelatedEntry,
+  DiscoverRelatedRelation,
+  InvestigationTranscript,
+} from "./discovery/types";
+export { DISCOVER_SCHEMA_VERSION } from "./discovery";

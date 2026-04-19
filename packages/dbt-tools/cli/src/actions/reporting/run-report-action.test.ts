@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createJaffleArtifactBundleDir,
   createJaffleRunResultsOnlyDir,
-} from "./cli-test-bundle-dir";
+} from "../../internal/cli-test-bundle-dir";
 import { runReportAction } from "./run-report-action";
 
 describe("runReportAction", () => {
@@ -129,5 +129,43 @@ describe("runReportAction", () => {
       "Adapter metrics (from run_results adapter_response):",
     );
     expect(output).toContain("Adapter-aware nodes:");
+  });
+
+  it("caps node_executions in JSON when --node-executions-limit is set", async () => {
+    await runReportAction({ dbtTarget: dbtTargetDir, json: true }, handleError);
+    const fullOut = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+    const fullParsed = JSON.parse(fullOut) as {
+      node_executions: unknown[];
+      total_nodes: number;
+    };
+    const fullLen = fullParsed.node_executions.length;
+    expect(fullLen).toBeGreaterThan(3);
+
+    consoleLogSpy.mockClear();
+    await runReportAction(
+      {
+        dbtTarget: dbtTargetDir,
+        json: true,
+        nodeExecutionsLimit: 3,
+        nodeExecutionsOffset: 0,
+      },
+      handleError,
+    );
+    const capped = JSON.parse(
+      consoleLogSpy.mock.calls[0][0] as string,
+    ) as Record<string, unknown>;
+    expect((capped.node_executions as unknown[]).length).toBe(3);
+    expect(capped.total_nodes).toBe(fullParsed.total_nodes);
+    expect(capped.node_executions_truncated).toBe(true);
+    expect(capped.node_executions_has_more).toBe(fullLen > 3);
+  });
+
+  it("rejects --node-executions-offset without --node-executions-limit", async () => {
+    await expect(
+      runReportAction(
+        { dbtTarget: dbtTargetDir, json: true, nodeExecutionsOffset: 2 },
+        handleError,
+      ),
+    ).rejects.toThrow(/offset requires --limit/i);
   });
 });

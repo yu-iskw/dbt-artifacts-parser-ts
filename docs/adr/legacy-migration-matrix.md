@@ -1,49 +1,10 @@
-# Legacy ADR Migration Matrix
+# Legacy ADR migration matrix
 
-This matrix records the disposition of every legacy ADR from `tmp/adr.legacy/`.
+Historical ADR material under `tmp/adr.legacy/` was consolidated into the canonical
+set under [`docs/adr/`](./README.md). This file records that disposition for traceability.
 
-Disposition values:
+| Legacy area                             | Canonical disposition                                     |
+| --------------------------------------- | --------------------------------------------------------- |
+| Pre-canonical ADRs in `tmp/adr.legacy/` | Migrated or superseded by numbered ADRs in this directory |
 
-- `retain-as-core`
-- `merge-into-core`
-- `move-to-architecture-doc`
-- `retire-as-obsolete`
-
-| Legacy ADR | Title                                                                         | Disposition              | Destination                                                                                                                                             |
-| :--------- | :---------------------------------------------------------------------------- | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0001       | Record architecture decisions                                                 | retain-as-core           | [0001](./0001-record-architecture-decisions.md)                                                                                                         |
-| 0002       | Use Graphology for graph management                                           | merge-into-core          | [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)                                                                          |
-| 0003       | Use `@dbt-tools` scope for npm packages                                       | merge-into-core          | [0008](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md)                                                                         |
-| 0004       | Use topological sort for upstream build order                                 | merge-into-core          | [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)                                                                          |
-| 0005       | Field-level lineage inference via AST parsing                                 | retain-as-core           | [0002](./0002-field-level-lineage-inference-via-ast-parsing.md)                                                                                         |
-| 0006       | Artifact-first agent-first positioning of dbt-tools                           | merge-into-core          | [0008](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md)                                                                         |
-| 0007       | Bottleneck detection via run-results search                                   | merge-into-core          | [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)                                                                          |
-| 0008       | Stricter ESLint complexity rules for AI agent feedback                        | merge-into-core          | [0005](./0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md)                                                                               |
-| 0009       | Replace eslint-for-ai with popular ESLint plugins                             | merge-into-core          | [0005](./0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md)                                                                               |
-| 0010       | Per-package coverage breakdown and fixture-based CLI tests for agent feedback | merge-into-core          | [0005](./0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md)                                                                               |
-| 0011       | Web workspace MVP for visual dbt analysis                                     | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0012       | Optional default dbt target directory for web dev server                      | merge-into-core          | [0004](./0004-remote-object-storage-artifact-sources-and-auto-reload.md)                                                                                |
-| 0013       | DBT_TARGET as primary dev source hide upload when preload succeeds            | merge-into-core          | [0004](./0004-remote-object-storage-artifact-sources-and-auto-reload.md)                                                                                |
-| 0014       | Auto-reload dbt artifacts when DBT_TARGET files change                        | merge-into-core          | [0004](./0004-remote-object-storage-artifact-sources-and-auto-reload.md)                                                                                |
-| 0015       | MVC-style layering for web app                                                | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0016       | Responsive design for multi-device support                                    | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0017       | Workflow-first investigation workspace for dbt-tools web                      | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0018       | Hybrid dbt-first catalog and runs workspace for dbt-tools web                 | merge-into-core          | [0008](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md), [0006](./0006-timeline-includes-dbt-sources-via-snapshot-synthesis.md) |
-| 0019       | Standardize color schema and resource-type tokens                             | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0020       | Neutral Slate color rebrand                                                   | retire-as-obsolete       | styling-history detail, not a durable architectural decision                                                                                            |
-| 0021       | Strangler-style decomposition for oversized AnalysisWorkspace views           | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0022       | Modular CSS layers and token file split                                       | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0023       | Symmetric capped focus dependency edges on the execution timeline             | merge-into-core          | [0006](./0006-timeline-includes-dbt-sources-via-snapshot-synthesis.md)                                                                                  |
-| 0024       | Union `parent_map` and `depends_on` for ManifestGraph edges                   | merge-into-core          | [0006](./0006-timeline-includes-dbt-sources-via-snapshot-synthesis.md), [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)  |
-| 0025       | Optional multi-hop capped focus edges on the execution timeline               | merge-into-core          | [0006](./0006-timeline-includes-dbt-sources-via-snapshot-synthesis.md)                                                                                  |
-| 0026       | Default-hidden tests and time-range brush for scalable timeline performance   | move-to-architecture-doc | [web-investigation-workspace-evolution.md](../architecture/web-investigation-workspace-evolution.md)                                                    |
-| 0027       | Large-manifest web performance: direct dependency index and lazy SQL          | retain-as-core           | [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)                                                                          |
-| 0028       | `DBT_TOOLS_` prefix for dbt-tools environment variables                       | merge-into-core          | [0004](./0004-remote-object-storage-artifact-sources-and-auto-reload.md)                                                                                |
-| 0029       | Remote object storage artifact sources and auto-reload                        | retain-as-core           | [0004](./0004-remote-object-storage-artifact-sources-and-auto-reload.md)                                                                                |
-| 0030       | Adapter response metrics in analysis snapshot and run-report                  | merge-into-core          | [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)                                                                          |
-| 0031       | Knip and ESLint layers for monorepo dead-code detection                       | retain-as-core           | [0005](./0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md)                                                                               |
-| 0032       | Timeline includes dbt sources via snapshot synthesis                          | retain-as-core           | [0006](./0006-timeline-includes-dbt-sources-via-snapshot-synthesis.md)                                                                                  |
-| 0033       | Materialization semantics as a first-class analysis field                     | merge-into-core          | [0003](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)                                                                          |
-| 0034       | First-party coding agent plugins and repository verification                  | retain-as-core           | [0007](./0007-first-party-coding-agent-plugins-and-repository-verification.md)                                                                          |
-| 0035       | dbt-tools operational intelligence positioning and category boundaries        | retain-as-core           | [0008](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md)                                                                         |
-| 0036       | npm releases authenticate via GitHub Actions OIDC trusted publishing          | retain-as-core           | [0009](./0009-npm-releases-authenticate-via-github-actions-oidc-trusted-publishing.md)                                                                  |
+For the authoritative index and authoring rules, see [README.md](./README.md).

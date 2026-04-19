@@ -59,6 +59,8 @@ export function resolveView(raw: string): WorkspaceView {
       return "inventory";
     case "search":
       return "inventory";
+    case "discover":
+      return "inventory";
     case "runs":
     case "timeline":
     case "inventory":
@@ -74,6 +76,8 @@ export function parseViewFromSearch(search: string): WorkspaceView | null {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
   if (!raw) return null;
+  /** Legacy: Discover workspace removed; open Inventory instead. */
+  if (raw === "discover") return "inventory";
   if (raw === "runs" && params.get("tab") === "timeline") return "timeline";
   if (raw === "lineage" || raw === "dependencies") return "inventory";
   if (VALID_VIEWS.has(raw as WorkspaceView)) {

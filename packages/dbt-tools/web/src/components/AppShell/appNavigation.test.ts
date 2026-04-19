@@ -47,6 +47,7 @@ describe("resolveView", () => {
   });
 
   it("passes through primary views", () => {
+    expect(resolveView("discover")).toBe("inventory");
     expect(resolveView("health")).toBe("health");
     expect(resolveView("inventory")).toBe("inventory");
     expect(resolveView("runs")).toBe("runs");
@@ -79,6 +80,11 @@ describe("parseViewFromSearch", () => {
 
   it("accepts settings as a first-class destination", () => {
     expect(parseViewFromSearch("?view=settings")).toBe("settings");
+  });
+
+  it("maps legacy discover view to inventory", () => {
+    expect(parseViewFromSearch("?view=discover")).toBe("inventory");
+    expect(parseViewFromSearch("?view=discover&q=orders")).toBe("inventory");
   });
 });
 
@@ -199,7 +205,7 @@ describe("sidebar navigation helpers", () => {
     expect(navigationItems.map((i) => i.id)).not.toContain("lineage");
   });
 
-  it("orders timeline directly after health", () => {
+  it("places health first, then timeline, inventory, and runs", () => {
     expect(navigationItems.map((i) => i.id)).toEqual([
       "health",
       "timeline",

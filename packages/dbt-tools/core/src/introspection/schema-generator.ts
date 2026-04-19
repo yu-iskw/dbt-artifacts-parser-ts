@@ -1,3 +1,5 @@
+import { COMMAND_STABILITY, type StabilityLevel } from "./command-stability";
+
 /**
  * Command schema definition for runtime introspection
  */
@@ -18,6 +20,7 @@ export interface CommandSchema {
   }>;
   output_format: string;
   example: string;
+  stability?: StabilityLevel;
 }
 
 type SchemaOption = {
@@ -31,14 +34,22 @@ type SchemaOption = {
 const OPT_DBT_TARGET = "--dbt-target";
 const OPT_JSON = "--json";
 const OPT_NO_JSON = "--no-json";
+const OPT_TRACE = "--trace";
 const TYPE_STRING = "string";
 const TYPE_BOOLEAN = "boolean";
+const TYPE_NUMBER = "number";
 const OUTPUT_JSON_OR_HUMAN = "json or human-readable";
 const DESC_DBT_TARGET =
   "Directory containing manifest.json + run_results.json, or s3://bucket/prefix / gs://bucket/prefix. When omitted, uses DBT_TOOLS_DBT_TARGET if set.";
 const DESC_FORCE_JSON =
   "Force JSON stdout; with --json, errors on stderr use structured JSON";
 const DESC_FORCE_HUMAN = "Force human-readable output";
+const DESC_TRACE =
+  "Include investigation_transcript in JSON output (intent / discover)";
+const DESC_SCHEMA_FILTER_PACKAGE = "Filter by package name";
+const DESC_SCHEMA_FILTER_TAG = "Filter by tag(s), comma-separated";
+const DESC_SCHEMA_FILTER_PATH = "Filter by file path substring";
+const DESC_SCHEMA_ARG_UNIQUE_DISCOVER = "unique_id or discover query string";
 const DESC_FIELDS =
   "Comma-separated list of fields to include in response (e.g., unique_id,name)";
 
@@ -195,6 +206,18 @@ function getRunReportSchema(): CommandSchema {
         description: "With --adapter-top-by, require slot_ms >= n",
       },
       {
+        name: "--node-executions-limit",
+        type: TYPE_NUMBER,
+        description:
+          "When set, cap node_executions in JSON (stable sort); summary metrics still use full run",
+      },
+      {
+        name: "--node-executions-offset",
+        type: TYPE_NUMBER,
+        description:
+          "Skip N node_executions rows before --node-executions-limit (requires --node-executions-limit)",
+      },
+      {
         name: OPT_JSON,
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,
@@ -319,17 +342,89 @@ function getInventorySchema(): CommandSchema {
       {
         name: "--package",
         type: TYPE_STRING,
-        description: "Filter by package name",
+        description: DESC_SCHEMA_FILTER_PACKAGE,
       },
       {
         name: "--tag",
         type: TYPE_STRING,
-        description: "Filter by tag(s), comma-separated",
+        description: DESC_SCHEMA_FILTER_TAG,
       },
       {
         name: "--path",
         type: TYPE_STRING,
-        description: "Filter by file path substring",
+        description: DESC_SCHEMA_FILTER_PATH,
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Return at most N entries after filters (max 200)",
+      },
+      {
+        name: "--offset",
+        type: TYPE_NUMBER,
+        description: "Skip N entries after sort (requires --limit)",
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example:
+      "dbt-tools inventory --dbt-target ./target --type model --tag finance",
+  };
+}
+
+function getFailuresSchema(): CommandSchema {
+  return {
+    command: "failures",
+    description:
+      "List non-successful nodes from run_results.json with optional manifest enrichment and suggested follow-up commands",
+    arguments: [],
+    options: [
+      {
+        name: "--status",
+        type: TYPE_STRING,
+        description:
+          "Comma-separated statuses to include (default: all except success and pass)",
+      },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Max rows returned (default 50, max 200)",
+      },
+      {
+        name: "--offset",
+        type: TYPE_NUMBER,
+        description:
+          "Skip N rows after sort (paging; default limit still applies)",
+      },
+      {
+        name: "--message-max-chars",
+        type: TYPE_NUMBER,
+        description: "Truncate message field beyond N characters",
+      },
+      {
+        name: "--include-path",
+        type: TYPE_BOOLEAN,
+        description:
+          "Add path, original_file_path, and resource_type from manifest when available",
+      },
+      {
+        name: "--include-compiled",
+        type: TYPE_BOOLEAN,
+        description:
+          "Include compiled_code and raw_code snippets from manifest (capped)",
+      },
+      {
+        name: "--compiled-max-chars",
+        type: TYPE_NUMBER,
+        description:
+          "Max characters per compiled/raw snippet when --include-compiled is set",
       },
       {
         name: "--fields",
@@ -341,8 +436,7 @@ function getInventorySchema(): CommandSchema {
       ...getArtifactRootCliSchemaOptions(),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
-    example:
-      "dbt-tools inventory --dbt-target ./target --type model --tag finance",
+    example: "dbt-tools failures --dbt-target ./target --json --limit 20",
   };
 }
 
@@ -391,6 +485,211 @@ function getTimelineSchema(): CommandSchema {
   };
 }
 
+function getDiscoverSchema(): CommandSchema {
+  return {
+    command: "discover",
+    description:
+      "Ranked, explainable discovery over manifest resources (scores, reasons, related, next actions)",
+    arguments: [
+      {
+        name: "query",
+        required: false,
+        description:
+          "Search query; supports key:value tokens like type:model tag:finance. May be empty when --type/--package/--tag/--path is set.",
+      },
+    ],
+    options: [
+      {
+        name: "--type",
+        type: TYPE_STRING,
+        description: "Filter by resource type(s), comma-separated",
+      },
+      {
+        name: "--package",
+        type: TYPE_STRING,
+        description: DESC_SCHEMA_FILTER_PACKAGE,
+      },
+      {
+        name: "--tag",
+        type: TYPE_STRING,
+        description: DESC_SCHEMA_FILTER_TAG,
+      },
+      {
+        name: "--path",
+        type: TYPE_STRING,
+        description: DESC_SCHEMA_FILTER_PATH,
+      },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Max matches (default 50, max 200)",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      { name: OPT_TRACE, type: TYPE_BOOLEAN, description: DESC_TRACE },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: 'dbt-tools discover --dbt-target ./target "orders"',
+  };
+}
+
+function getExplainSchema(): CommandSchema {
+  return {
+    command: "explain",
+    description:
+      "Intent: summarize a resource (resolves short names via discover, then reads manifest graph fields)",
+    arguments: [
+      {
+        name: "resource",
+        required: true,
+        description: DESC_SCHEMA_ARG_UNIQUE_DISCOVER,
+      },
+    ],
+    options: [
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      { name: OPT_TRACE, type: TYPE_BOOLEAN, description: DESC_TRACE },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example:
+      "dbt-tools explain --dbt-target ./target model.my_pkg.orders --json",
+  };
+}
+
+function getImpactSchema(): CommandSchema {
+  return {
+    command: "impact",
+    description:
+      "Intent: upstream/downstream counts and notable downstream models (deps-based)",
+    arguments: [
+      {
+        name: "resource",
+        required: true,
+        description: DESC_SCHEMA_ARG_UNIQUE_DISCOVER,
+      },
+    ],
+    options: [
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      { name: OPT_TRACE, type: TYPE_BOOLEAN, description: DESC_TRACE },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example:
+      "dbt-tools impact --dbt-target ./target model.my_pkg.orders --json",
+  };
+}
+
+function getDiagnoseRunSchema(): CommandSchema {
+  return {
+    command: "diagnose run",
+    description:
+      "Intent: run-level diagnosis facade (primitive commands: run-report, timeline)",
+    arguments: [],
+    options: [
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools diagnose run --dbt-target ./target --json",
+  };
+}
+
+function getDiagnoseNodeSchema(): CommandSchema {
+  return {
+    command: "diagnose node",
+    description:
+      "Intent: resource-level diagnosis facade (primitive commands: run-report, deps, explain)",
+    arguments: [
+      {
+        name: "resource",
+        required: true,
+        description: DESC_SCHEMA_ARG_UNIQUE_DISCOVER,
+      },
+    ],
+    options: [
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example:
+      "dbt-tools diagnose node --dbt-target ./target model.my_pkg.orders --json",
+  };
+}
+
+function getExportIntentSchema(): CommandSchema {
+  return {
+    command: "export",
+    description:
+      "Intent: export dependency graph with a normalized JSON envelope (wraps graph export)",
+    arguments: [],
+    options: [
+      {
+        name: "--format",
+        type: "enum",
+        values: ["json", "dot", "gexf"],
+        description: "Export format",
+      },
+      { name: "--output", type: TYPE_STRING, description: "Output file path" },
+      {
+        name: "--focus",
+        type: TYPE_STRING,
+        description: "Center subgraph on this unique_id",
+      },
+      {
+        name: "--focus-depth",
+        type: TYPE_NUMBER,
+        description: "Max traversal depth for --focus",
+      },
+      {
+        name: "--focus-direction",
+        type: TYPE_STRING,
+        description: "upstream | downstream | both",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example:
+      "dbt-tools export --dbt-target ./target --format json --focus model.p.m --json",
+  };
+}
+
 function getSearchSchema(): CommandSchema {
   return {
     command: "search",
@@ -412,22 +711,32 @@ function getSearchSchema(): CommandSchema {
       {
         name: "--package",
         type: TYPE_STRING,
-        description: "Filter by package name",
+        description: DESC_SCHEMA_FILTER_PACKAGE,
       },
       {
         name: "--tag",
         type: TYPE_STRING,
-        description: "Filter by tag(s), comma-separated",
+        description: DESC_SCHEMA_FILTER_TAG,
       },
       {
         name: "--path",
         type: TYPE_STRING,
-        description: "Filter by file path substring",
+        description: DESC_SCHEMA_FILTER_PATH,
       },
       {
         name: "--fields",
         type: TYPE_STRING,
         description: DESC_FIELDS,
+      },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Return at most N matches after scoring (max 200)",
+      },
+      {
+        name: "--offset",
+        type: TYPE_NUMBER,
+        description: "Skip N matches after sort (requires --limit)",
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
@@ -458,14 +767,21 @@ function getStatusSchema(): CommandSchema {
  * Get all command schemas
  */
 export function getAllSchemas(): Record<string, CommandSchema> {
-  return {
+  const raw = {
     summary: getSummarySchema(),
     graph: getGraphSchema(),
     "run-report": getRunReportSchema(),
     deps: getDepsSchema(),
     inventory: getInventorySchema(),
+    failures: getFailuresSchema(),
     timeline: getTimelineSchema(),
     search: getSearchSchema(),
+    discover: getDiscoverSchema(),
+    explain: getExplainSchema(),
+    impact: getImpactSchema(),
+    "diagnose run": getDiagnoseRunSchema(),
+    "diagnose node": getDiagnoseNodeSchema(),
+    export: getExportIntentSchema(),
     status: getStatusSchema(),
     freshness: {
       ...getStatusSchema(),
@@ -474,5 +790,15 @@ export function getAllSchemas(): Record<string, CommandSchema> {
       example: "dbt-tools freshness --dbt-target ./target",
     },
     schema: getSchemaCommandSchema(),
-  };
+  } satisfies Record<string, CommandSchema>;
+
+  return Object.fromEntries(
+    Object.entries(raw).map(([key, schema]) => [
+      key,
+      {
+        ...schema,
+        stability: COMMAND_STABILITY[key] ?? "core",
+      } satisfies CommandSchema,
+    ]),
+  ) as Record<string, CommandSchema>;
 }

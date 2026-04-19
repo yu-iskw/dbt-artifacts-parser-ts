@@ -39,6 +39,18 @@
 
 ## Quality gates (before claiming work complete)
 
+### Before you call a task done (ordered)
+
+From the repository root, follow this order unless the user explicitly narrows scope (default remains the **full trio** in **Documentation-only and agent-skills edits** below). Fix loops: [`.claude/skills/lint-fix/SKILL.md`](.claude/skills/lint-fix/SKILL.md), [`.claude/skills/test-fix/SKILL.md`](.claude/skills/test-fix/SKILL.md), [`.claude/skills/build-fix/SKILL.md`](.claude/skills/build-fix/SKILL.md), [`.claude/skills/dbt-tools-web-e2e-fix/SKILL.md`](.claude/skills/dbt-tools-web-e2e-fix/SKILL.md).
+
+1. **`pnpm test`** — all Vitest green ([test-fix](.claude/skills/test-fix/SKILL.md) if failing).
+2. **`pnpm lint:report`** and **`pnpm knip`** — both exit **0** ([lint-fix](.claude/skills/lint-fix/SKILL.md) if failing).
+3. **`pnpm coverage:report`** — exit **0** (add or tighten unit tests per [test-fix](.claude/skills/test-fix/SKILL.md) if below threshold).
+4. **Full `pnpm lint` or scoped Trunk** — when you touched **Markdown**, **YAML**, **GitHub workflows**, **`.trunk/`**, or **substantive** [`packages/dbt-tools/web/src/**/*.css`](packages/dbt-tools/web/src), run **`pnpm lint`** or **`pnpm exec trunk check <paths…>`**; **`pnpm lint:report`** does not run markdownlint or Stylelint ([lint-fix](.claude/skills/lint-fix/SKILL.md) — **Common gotchas**).
+5. **`pnpm build`** — when the change spans **`@dbt-tools/core`**, **`@dbt-tools/cli`**, shared TS utilities, **worker protocol**, or widely exported types ([build-fix](.claude/skills/build-fix/SKILL.md)).
+6. **`pnpm test:e2e`** — when you changed [`packages/dbt-tools/web/e2e/`](packages/dbt-tools/web/e2e/) or **material web UX** (sidebar / workspace chrome, artifact load, navigation); verifier does **not** run Playwright by default ([dbt-tools-web-e2e-fix](.claude/skills/dbt-tools-web-e2e-fix/SKILL.md)).
+7. **`pnpm codeql`** — optional unless the task is security-focused or you are explicitly closing CodeQL findings ([`.claude/skills/codeql-fix/SKILL.md`](.claude/skills/codeql-fix/SKILL.md)).
+
 From the repository root:
 
 - `pnpm lint:report` — writes `lint-report.json`; must exit 0. **ESLint only** (via [`scripts/eslint-score.mjs`](scripts/eslint-score.mjs)); it does **not** run Trunk linters such as markdownlint. **Trunk** (markdownlint, actionlint, yamllint, etc.) runs via **`pnpm lint:trunk`** / **`pnpm lint`** — see **Commands** — **Trunk (lint/format orchestration)** below.
@@ -46,7 +58,7 @@ From the repository root:
 - **Vitest + v8 coverage stability:** `pnpm coverage:report` runs Vitest via [`scripts/coverage-score.mjs`](scripts/coverage-score.mjs) with [`vitest.coverage.mjs`](vitest.coverage.mjs), which sets **`maxWorkers: 1`** (Vitest 4 top-level pool control) so the coverage harness avoids multi-worker parallelism that can trigger intermittent **SIGSEGV** with `@vitest/coverage-v8`. Regular **`pnpm test`** still uses the default settings in [`vitest.config.mjs`](vitest.config.mjs). If coverage still crashes after a retry, capture **Node version** (see [`.node-version`](.node-version)), **OS**, and any **native stack** from the crash; try adding **`fileParallelism: false`** next to `maxWorkers` in [`vitest.coverage.mjs`](vitest.coverage.mjs), or temporarily switch the coverage-only config to **`pool: "forks"`** with **`maxWorkers: 1`** (keep the same coverage `include` / `exclude` / thresholds), and report upstream (Vitest / Node issue).
 - `pnpm knip` — unused exports/files/deps (monorepo); must exit 0. Configuration: [`knip.json`](knip.json). `ignoreExportsUsedInFile` is enabled; parser package ignores noisy `types` issues; `scripts/preprocess-refs.js` and the `@apidevtools/json-schema-ref-parser` devDependency are scoped to generation scripts (see `ignoreFiles` / `ignoreDependencies`).
 - **`pnpm coverage:report` does not run Playwright** — it runs **Vitest** with coverage via [`vitest.coverage.mjs`](vitest.coverage.mjs) (see **Vitest + v8 coverage stability** below). Browser journeys are a separate gate.
-- **Playwright when web journeys or E2E specs change:** if the change touches [`packages/dbt-tools/web/e2e/`](packages/dbt-tools/web/e2e/) or **material `@dbt-tools/web` user flows** (settings, artifact load, workspace navigation, and similar), also run **`pnpm test:e2e`** from the repository root before claiming the work complete (same script as **Commands** — **E2E tests** below).
+- **Playwright when web journeys or E2E specs change:** same rule as **Before you call a task done** step **6** above; run **`pnpm test:e2e`** from the repository root (same script as **Commands** — **E2E tests** below).
 
 ### Documentation-only and agent-skills edits
 
@@ -96,7 +108,7 @@ If the org uses Cursor business features, use the **admin dashboard** for org-wi
 - **Verify what is active:** Run `/status` in Claude Code to see managed / user / project / local sources and catch JSON errors ([verify active settings](https://docs.anthropic.com/en/docs/claude-code/settings#verify-active-settings)).
 - **Cursor vs Claude Code:** [`.cursor/sandbox.json`](.cursor/sandbox.json) applies to Cursor’s agent sandbox only; it does not change Claude Code. Keep egress allowlists aligned when you change registry or GitHub access in either file (see [Cursor (IDE)](#cursor-ide) for the allowlist table).
 - **Diagrams (draw.io):** Native `.drawio` (mxGraphModel) and optional draw.io Desktop CLI export — [`.claude/skills/drawio-cli/SKILL.md`](.claude/skills/drawio-cli/SKILL.md).
-- **Architecture Decision Records:** Records live in [`docs/adr/`](docs/adr/). Authoring and granularity rules: [`.claude/skills/manage-adr/SKILL.md`](.claude/skills/manage-adr/SKILL.md) (canonical copy in-repo). Drift checks: [`.claude/commands/mend-adr.md`](.claude/commands/mend-adr.md) (intent-first; avoid duplicating config paths into ADRs). New ADR skeleton: [`docs/adr/template.md`](docs/adr/template.md).
+- **Architecture Decision Records:** Records live in [`docs/adr/`](docs/adr/). Authoring and granularity rules: [`.claude/skills/manage-adr/SKILL.md`](.claude/skills/manage-adr/SKILL.md) (canonical copy in-repo). Drift checks: [`.claude/commands/mend-adr.md`](.claude/commands/mend-adr.md) (intent-first; avoid duplicating config paths into ADRs). New ADR skeleton: [`.claude/skills/manage-adr/assets/template.md`](.claude/skills/manage-adr/assets/template.md).
 - **Session postmortem (optional):** End-of-session structured retro; output stays in chat unless the user asks for follow-up edits — [`.claude/skills/postmortem/SKILL.md`](.claude/skills/postmortem/SKILL.md).
 
 ### Plugins (this repo)

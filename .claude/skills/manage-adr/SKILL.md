@@ -192,4 +192,4 @@ Common diagram types for ADRs:
 - Refer to `references/adr-granularity.md` for guidance on ADR granularity.
 - Refer to `references/mermaid-diagrams.md` for diagram examples and patterns.
 - Refer to `references/adr-concepts.md` for ADR philosophy and external links.
-- Use [`docs/adr/template.md`](../../../docs/adr/template.md) as a structural guide for new records.
+- Use [`assets/template.md`](./assets/template.md) as a structural guide for new records.
