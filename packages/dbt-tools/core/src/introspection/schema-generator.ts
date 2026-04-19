@@ -4,6 +4,8 @@
 export interface CommandSchema {
   command: string;
   description: string;
+  stability: "core" | "evolving" | "experimental";
+  schema_version: string;
   arguments: Array<{
     name: string;
     required: boolean;
@@ -56,6 +58,8 @@ function getSummarySchema(): CommandSchema {
   return {
     command: "summary",
     description: "Provide summary statistics for dbt manifest",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [],
     options: [
       {
@@ -84,6 +88,8 @@ function getGraphSchema(): CommandSchema {
   return {
     command: "graph",
     description: "Export dependency graph in various formats",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [],
     options: [
       {
@@ -143,6 +149,8 @@ function getRunReportSchema(): CommandSchema {
   return {
     command: "run-report",
     description: "Generate execution report from run_results.json",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [],
     options: [
       {
@@ -259,6 +267,8 @@ function getDepsSchema(): CommandSchema {
   return {
     command: "deps",
     description: "Get upstream or downstream dependencies for a dbt resource",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [
       {
         name: "resource-id",
@@ -277,6 +287,8 @@ function getSchemaCommandSchema(): CommandSchema {
   return {
     command: "schema",
     description: "Get machine-readable schema for a command",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [
       {
         name: "command",
@@ -308,6 +320,8 @@ function getInventorySchema(): CommandSchema {
   return {
     command: "inventory",
     description: "List and filter dbt resources from manifest",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [],
     options: [
       {
@@ -351,6 +365,8 @@ function getTimelineSchema(): CommandSchema {
     command: "timeline",
     description:
       "Show per-node execution timeline from run_results.json (row-level entries, unlike run-report)",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [],
     options: [
       {
@@ -395,6 +411,8 @@ function getSearchSchema(): CommandSchema {
   return {
     command: "search",
     description: "Search for dbt resources by name, tag, type, or free text",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [
       {
         name: "query",
@@ -443,6 +461,8 @@ function getStatusSchema(): CommandSchema {
     command: "status",
     description:
       "Report dbt artifact presence, modification times, and analysis readiness",
+    stability: "core",
+    schema_version: "1.0",
     arguments: [],
     options: [
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
@@ -451,6 +471,88 @@ function getStatusSchema(): CommandSchema {
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools status --dbt-target ./target",
+  };
+}
+
+function getDiscoverSchema(): CommandSchema {
+  return {
+    command: "discover",
+    description: "Intent-oriented discovery across dbt resources",
+    stability: "core",
+    schema_version: "1.0",
+    arguments: [
+      {
+        name: "query",
+        required: true,
+        description: "Ambiguous query or resource reference",
+      },
+    ],
+    options: [
+      {
+        name: "--type",
+        type: TYPE_STRING,
+        description: "Filter by resource type(s), comma-separated",
+      },
+      { name: "--limit", type: "number", description: "Max discovery matches" },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools discover orders --json",
+  };
+}
+
+function getExplainSchema(): CommandSchema {
+  return {
+    command: "explain",
+    description: "Intent-oriented explanation for a dbt resource",
+    stability: "evolving",
+    schema_version: "1.0",
+    arguments: [
+      {
+        name: "resource",
+        required: true,
+        description: "Resource query or unique_id",
+      },
+    ],
+    options: [
+      { name: "--fields", type: TYPE_STRING, description: DESC_FIELDS },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools explain orders --json",
+  };
+}
+
+function getImpactSchema(): CommandSchema {
+  return {
+    command: "impact",
+    description: "Intent-oriented upstream/downstream impact analysis",
+    stability: "evolving",
+    schema_version: "1.0",
+    arguments: [
+      {
+        name: "resource",
+        required: true,
+        description: "Resource query or unique_id",
+      },
+    ],
+    options: [
+      { name: "--fields", type: TYPE_STRING, description: DESC_FIELDS },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools impact orders --json",
   };
 }
 
@@ -467,6 +569,9 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     timeline: getTimelineSchema(),
     search: getSearchSchema(),
     status: getStatusSchema(),
+    discover: getDiscoverSchema(),
+    explain: getExplainSchema(),
+    impact: getImpactSchema(),
     freshness: {
       ...getStatusSchema(),
       command: "freshness",

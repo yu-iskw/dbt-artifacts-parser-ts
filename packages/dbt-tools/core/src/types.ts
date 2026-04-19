@@ -24,6 +24,7 @@ export interface GraphNodeAttributes {
   resource_type: DbtResourceType;
   name: string;
   package_name: string;
+  alias?: string;
   path?: string;
   original_file_path?: string;
   tags?: string[];
