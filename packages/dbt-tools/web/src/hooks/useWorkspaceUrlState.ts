@@ -51,8 +51,6 @@ export interface UseWorkspaceUrlStateResult {
   setInvestigationSelection: Dispatch<
     SetStateAction<InvestigationSelectionState>
   >;
-  discoverWorkspaceQuery: string;
-  setDiscoverWorkspaceQuery: Dispatch<SetStateAction<string>>;
   setNavigationTarget: (target: NavigationSelectionTarget) => void;
   handleNavigateTo: (
     view: WorkspaceView,
@@ -103,9 +101,6 @@ export function useWorkspaceUrlState(
     recentResourceIds: [],
     isOpen: false,
   });
-  const [discoverWorkspaceQuery, setDiscoverWorkspaceQuery] = useState(
-    () => initialNavigationState.discoverWorkspaceQuery,
-  );
   const [investigationSelection, setInvestigationSelection] =
     useState<InvestigationSelectionState>(
       () => initialNavigationState.investigationSelection,
@@ -196,7 +191,6 @@ export function useWorkspaceUrlState(
       pathname: window.location.pathname,
       hash: window.location.hash,
       activeView,
-      discoverWorkspaceQuery,
       assetViewState,
       runsViewState,
       timelineSelectedExecutionId: timelineFilters.selectedExecutionId,
@@ -208,7 +202,6 @@ export function useWorkspaceUrlState(
     }
   }, [
     activeView,
-    discoverWorkspaceQuery,
     assetViewState,
     runsViewState,
     timelineFilters.selectedExecutionId,
@@ -226,7 +219,6 @@ export function useWorkspaceUrlState(
       setTimelineFilters((c) => r.timelineFilters(c));
       setLineageViewState(r.lineageViewState);
       setInvestigationSelection((c) => r.investigationSelection(c));
-      setDiscoverWorkspaceQuery(r.discoverWorkspaceQuery);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -307,8 +299,6 @@ export function useWorkspaceUrlState(
     setLineageViewState,
     searchState,
     setSearchState,
-    discoverWorkspaceQuery,
-    setDiscoverWorkspaceQuery,
     investigationSelection,
     setInvestigationSelection,
     setNavigationTarget,

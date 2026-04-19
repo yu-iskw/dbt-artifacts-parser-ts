@@ -22,7 +22,7 @@ function mergeUrlWithSearchParams(
 
 export function buildDiscoverWebUrl(baseUrl: string, query: string): string {
   const params = new URLSearchParams();
-  params.set("view", "discover");
+  params.set("view", "inventory");
   if (query.trim() !== "") {
     params.set("q", query.trim());
   }

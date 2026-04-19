@@ -1,5 +1,4 @@
 /** Posts to the analysis Web Worker and normalizes load / search / code responses. */
-import type { DiscoverOutput } from "@dbt-tools/core/browser";
 import type { AnalysisState } from "@web/types";
 import {
   ANALYSIS_WORKER_PROTOCOL_VERSION,
@@ -16,12 +15,9 @@ const ERR_UNEXPECTED_RESOURCE_CODE_RESPONSE =
   "Unexpected resource-code worker response";
 const ERR_UNEXPECTED_SEARCH_RESPONSE =
   "Unexpected search-resources worker response";
-const ERR_UNEXPECTED_DISCOVER_RESPONSE =
-  "Unexpected discover-resources worker response";
 
 /** Matches {@link AnalysisWorkerRequest} `search-resources` and pending map kind. */
 const WORKER_MSG_SEARCH_RESOURCES = "search-resources" as const;
-const WORKER_MSG_DISCOVER_RESOURCES = "discover-resources" as const;
 
 export interface AnalysisLoadMetrics {
   requestId: number;
@@ -61,17 +57,10 @@ type PendingSearchResources = {
   reject: (reason?: unknown) => void;
 };
 
-type PendingDiscoverResources = {
-  kind: typeof WORKER_MSG_DISCOVER_RESOURCES;
-  resolve: (value: DiscoverOutput) => void;
-  reject: (reason?: unknown) => void;
-};
-
 type PendingRequest =
   | PendingLoad
   | PendingResourceCode
-  | PendingSearchResources
-  | PendingDiscoverResources;
+  | PendingSearchResources;
 
 class AnalysisWorkerClient {
   private worker: Worker;
@@ -236,33 +225,6 @@ class AnalysisWorkerClient {
     return promise;
   }
 
-  async discoverResources(
-    query: string,
-    limit?: number,
-  ): Promise<DiscoverOutput> {
-    const requestId = this.requestId + 1;
-    this.requestId = requestId;
-
-    const request: AnalysisWorkerRequest = {
-      type: WORKER_MSG_DISCOVER_RESOURCES,
-      protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,
-      requestId,
-      query,
-      ...(limit != null ? { limit } : {}),
-    };
-
-    const promise = new Promise<DiscoverOutput>((resolve, reject) => {
-      this.pending.set(requestId, {
-        kind: WORKER_MSG_DISCOVER_RESOURCES,
-        resolve,
-        reject,
-      });
-    });
-
-    this.worker.postMessage(request);
-    return promise;
-  }
-
   terminate() {
     this.worker.terminate();
     for (const pending of this.pending.values()) {
@@ -329,21 +291,6 @@ class AnalysisWorkerClient {
     return false;
   }
 
-  private resolveDiscoverResourcesResponse(
-    pending: PendingDiscoverResources,
-    payload: AnalysisWorkerResponse,
-  ): boolean {
-    if (payload.type === "discover-resources-error") {
-      pending.reject(new Error(payload.message));
-      return true;
-    }
-    if (payload.type === "discover-resources-ready") {
-      pending.resolve(payload.output);
-      return true;
-    }
-    return false;
-  }
-
   private handleMessage(payload: AnalysisWorkerResponse) {
     const pending = this.pending.get(payload.requestId);
     if (!pending) return;
@@ -364,12 +311,6 @@ class AnalysisWorkerClient {
     if (pending.kind === WORKER_MSG_SEARCH_RESOURCES) {
       if (this.resolveSearchResourcesResponse(pending, payload)) return;
       pending.reject(new Error(ERR_UNEXPECTED_SEARCH_RESPONSE));
-      return;
-    }
-
-    if (pending.kind === WORKER_MSG_DISCOVER_RESOURCES) {
-      if (this.resolveDiscoverResourcesResponse(pending, payload)) return;
-      pending.reject(new Error(ERR_UNEXPECTED_DISCOVER_RESPONSE));
     }
   }
 }
@@ -398,13 +339,6 @@ export async function searchResourcesFromWorker(
   query: string,
 ): Promise<AnalysisState["resources"]> {
   return getWorkerClient().searchResources(query);
-}
-
-export async function discoverResourcesFromWorker(
-  query: string,
-  limit?: number,
-): Promise<DiscoverOutput> {
-  return getWorkerClient().discoverResources(query, limit);
 }
 
 export function resetAnalysisWorkerClientForTests() {

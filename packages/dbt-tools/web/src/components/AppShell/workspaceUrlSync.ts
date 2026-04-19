@@ -10,7 +10,6 @@ import type { WorkspacePreferences } from "@web/hooks/useWorkspacePreferences";
 import {
   buildInitialLineageViewState,
   getInitialAssetTab,
-  parseDiscoverWorkspaceQuery,
   parseLineageAllDepsMode,
   parseLineageDownstreamDepth,
   parseLineageLensMode,
@@ -37,7 +36,6 @@ export function mergeTimelineSelection(
 
 export interface UrlDerivedNavigationState {
   activeView: WorkspaceView;
-  discoverWorkspaceQuery: string;
   assetViewState: AssetViewState;
   runsViewState: RunsViewState;
   timelineFilters: TimelineFilterState;
@@ -120,6 +118,18 @@ const defaultTimelineFilters = (
   };
 };
 
+/** Legacy `?view=discover&q=…` seeds Inventory list filter (`resourceQuery`). */
+function mergeLegacyDiscoverQueryIntoAsset(
+  search: string,
+  asset: AssetViewState,
+): AssetViewState {
+  const params = new URLSearchParams(search);
+  if (params.get("view") !== "discover") return asset;
+  const q = params.get("q")?.trim() ?? "";
+  if (q === "") return asset;
+  return { ...asset, resourceQuery: q };
+}
+
 const defaultInvestigationSelection = (
   search: string,
 ): InvestigationSelectionState => {
@@ -140,12 +150,12 @@ export function createInitialNavigationState(
   preferences?: WorkspacePreferences,
 ): UrlDerivedNavigationState {
   const activeView = parseViewFromSearch(search) ?? "health";
-  const discoverWorkspaceQuery =
-    activeView === "discover" ? parseDiscoverWorkspaceQuery(search) : "";
   return {
     activeView,
-    discoverWorkspaceQuery,
-    assetViewState: defaultAssetViewState(search, preferences),
+    assetViewState: mergeLegacyDiscoverQueryIntoAsset(
+      search,
+      defaultAssetViewState(search, preferences),
+    ),
     runsViewState: defaultRunsViewState(search),
     timelineFilters: defaultTimelineFilters(search, preferences),
     lineageViewState: {
@@ -177,7 +187,6 @@ export function createInitialNavigationState(
  */
 export function applySearchToWorkspaceState(search: string): {
   activeView: WorkspaceView | undefined;
-  discoverWorkspaceQuery: string;
   assetViewState: (current: AssetViewState) => AssetViewState;
   runsViewState: (current: RunsViewState) => RunsViewState;
   timelineFilters: (current: TimelineFilterState) => TimelineFilterState;
@@ -189,17 +198,15 @@ export function applySearchToWorkspaceState(search: string): {
   const view = parseViewFromSearch(search);
   const resourceId = parseSelectedResourceId(search);
   const selectedParam = parseSelectedExecutionId(search);
-  const discoverWorkspaceQuery =
-    view === "discover" ? parseDiscoverWorkspaceQuery(search) : "";
 
   return {
     activeView: view ?? undefined,
-    discoverWorkspaceQuery,
-    assetViewState: (current) => ({
-      ...current,
-      selectedResourceId: resourceId,
-      activeTab: getInitialAssetTab(search),
-    }),
+    assetViewState: (current) =>
+      mergeLegacyDiscoverQueryIntoAsset(search, {
+        ...current,
+        selectedResourceId: resourceId,
+        activeTab: getInitialAssetTab(search),
+      }),
     runsViewState: (current) => ({
       ...current,
       kind: parseRunsKind(search) ?? current.kind,
@@ -229,7 +236,6 @@ export interface BuildUrlInput {
   pathname: string;
   hash: string;
   activeView: WorkspaceView;
-  discoverWorkspaceQuery: string;
   assetViewState: AssetViewState;
   runsViewState: RunsViewState;
   timelineSelectedExecutionId: string | null;
@@ -310,22 +316,12 @@ function applyTimelineUrl(
   deleteNavSearchKeys(url, new Set(["selected"]));
 }
 
-function applyDiscoverUrl(url: URL, discoverWorkspaceQuery: string) {
-  deleteNavSearchKeys(url);
-  if (discoverWorkspaceQuery.trim() !== "") {
-    url.searchParams.set("q", discoverWorkspaceQuery.trim());
-  } else {
-    url.searchParams.delete("q");
-  }
-}
-
 /** Builds `pathname + search + hash` from workspace slices (matches App.tsx pushState effect). */
 export function buildNextUrlFromWorkspaceState(input: BuildUrlInput): string {
   const {
     pathname,
     hash,
     activeView,
-    discoverWorkspaceQuery,
     assetViewState,
     runsViewState,
     timelineSelectedExecutionId,
@@ -341,8 +337,6 @@ export function buildNextUrlFromWorkspaceState(input: BuildUrlInput): string {
     applyRunsUrl(url, runsViewState);
   } else if (activeView === "timeline") {
     applyTimelineUrl(url, timelineSelectedExecutionId);
-  } else if (activeView === "discover") {
-    applyDiscoverUrl(url, discoverWorkspaceQuery);
   } else {
     deleteNavSearchKeys(url);
   }

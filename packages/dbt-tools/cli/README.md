@@ -439,7 +439,7 @@ Requires **`manifest.json`** only under **`--dbt-target`** (same resolution as `
 
 You may omit the query (or pass an empty string) when at least one of `--type`, `--package`, `--tag`, or `--path` is set, for example filter-only discovery over all models.
 
-When **`DBT_TOOLS_WEB_BASE_URL`** is set (for example `http://127.0.0.1:5173`), JSON output includes **`web_url`** and **`review_url`** (for `discover`, both point at `view=discover` with the same `q=`). Human output appends an “Open in web” line. The same env var adds **`web_url`** / **`review_url`** to **`explain`** and **`impact`** JSON, opening the inventory resource view (summary vs lineage tab respectively).
+When **`DBT_TOOLS_WEB_BASE_URL`** is set (for example `http://127.0.0.1:5173`), JSON output includes **`web_url`** and **`review_url`** (for `discover`, both point at **`view=inventory`** with the same **`q=`** deep link). Human output appends an “Open in web” line. The same env var adds **`web_url`** / **`review_url`** to **`explain`** and **`impact`** JSON, opening the inventory resource view (summary vs lineage tab respectively).
 
 **`--trace`** (on `discover`, `explain`, `impact`): adds **`investigation_transcript`** to JSON with a small step list for debugging and agents.
 

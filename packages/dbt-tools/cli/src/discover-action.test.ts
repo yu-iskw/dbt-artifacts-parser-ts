@@ -81,7 +81,7 @@ describe("discoverAction", () => {
         investigation_transcript?: { steps: unknown[] };
       };
       expect(parsed.web_url).toMatch(/^http:\/\/127\.0\.0\.1:5173\/\?/);
-      expect(parsed.web_url).toContain("view=discover");
+      expect(parsed.web_url).toContain("view=inventory");
       expect(parsed.investigation_transcript?.steps?.length).toBeGreaterThan(0);
     } finally {
       vi.unstubAllEnvs();

@@ -12,17 +12,17 @@ describe("discover-handoff", () => {
     );
   });
 
-  it("buildDiscoverPageUrl sets view and q", () => {
+  it("buildDiscoverPageUrl sets inventory view and q", () => {
     const u = new URL(
       buildDiscoverPageUrl("http://localhost:5173/app", "orders"),
     );
-    expect(u.searchParams.get("view")).toBe("discover");
+    expect(u.searchParams.get("view")).toBe("inventory");
     expect(u.searchParams.get("q")).toBe("orders");
   });
 
   it("buildDiscoverPageUrl drops q when query blank", () => {
     const u = new URL(buildDiscoverPageUrl("http://localhost:5173/?x=1", "  "));
-    expect(u.searchParams.get("view")).toBe("discover");
+    expect(u.searchParams.get("view")).toBe("inventory");
     expect(u.searchParams.has("q")).toBe(false);
     expect(u.searchParams.get("x")).toBe("1");
   });

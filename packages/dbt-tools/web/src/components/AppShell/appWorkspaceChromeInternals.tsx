@@ -316,8 +316,6 @@ export function WorkspaceContent({
   setLineageViewState,
   setInvestigationSelection,
   handleNavigateTo,
-  discoverWorkspaceQuery,
-  setDiscoverWorkspaceQuery,
 }: {
   activeView: UseWorkspaceUrlStateResult["activeView"];
   analysis: AnalysisState | null;
@@ -350,8 +348,6 @@ export function WorkspaceContent({
   setLineageViewState: UseWorkspaceUrlStateResult["setLineageViewState"];
   setInvestigationSelection: UseWorkspaceUrlStateResult["setInvestigationSelection"];
   handleNavigateTo: UseWorkspaceUrlStateResult["handleNavigateTo"];
-  discoverWorkspaceQuery: UseWorkspaceUrlStateResult["discoverWorkspaceQuery"];
-  setDiscoverWorkspaceQuery: UseWorkspaceUrlStateResult["setDiscoverWorkspaceQuery"];
 }) {
   if (activeView === "settings") {
     return (
@@ -390,8 +386,6 @@ export function WorkspaceContent({
         onLineageViewStateChange={setLineageViewState}
         onInvestigationSelectionChange={setInvestigationSelection}
         onNavigateTo={handleNavigateTo}
-        discoverWorkspaceQuery={discoverWorkspaceQuery}
-        onDiscoverWorkspaceQueryChange={setDiscoverWorkspaceQuery}
         workspaceSignals={workspaceSignals}
       />
     );

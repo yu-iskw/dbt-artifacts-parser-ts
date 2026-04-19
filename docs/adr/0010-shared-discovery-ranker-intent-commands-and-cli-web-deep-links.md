@@ -85,6 +85,10 @@ core substrate, structured CLI, deterministic web.
 - **Test and worker surface area** grows (URL sync, worker protocol, intent JSON); CI
   must keep covering these paths.
 
+## Amendment — Web discover workspace removed
+
+The dedicated browser **Discover** workspace (`view=discover`) and the analysis worker **`discover-resources`** message were **removed** from `@dbt-tools/web`. **Shared ranking in `@dbt-tools/core`**, **`dbt-tools discover`**, and **CLI JSON `web_url` / `review_url`** remain; deep links from `discover` now target **`view=inventory`** with optional **`q=`**. Legacy bookmarks **`?view=discover`** are mapped to **Inventory**, and **`q`** seeds the inventory list filter when present.
+
 ## References
 
 - [0008 — dbt-tools operational intelligence and positioning boundaries](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md)

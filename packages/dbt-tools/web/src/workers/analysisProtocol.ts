@@ -1,7 +1,7 @@
-import type { AnalysisSnapshot, DiscoverOutput } from "@dbt-tools/core/browser";
+import type { AnalysisSnapshot } from "@dbt-tools/core/browser";
 import type { WorkspaceArtifactSource } from "../lib/artifactSourceKind";
 
-export const ANALYSIS_WORKER_PROTOCOL_VERSION = 3;
+export const ANALYSIS_WORKER_PROTOCOL_VERSION = 4;
 
 export type AnalysisLoadSource = WorkspaceArtifactSource;
 
@@ -40,14 +40,6 @@ export interface SearchResourcesMessage {
   protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
   requestId: number;
   query: string;
-}
-
-export interface DiscoverResourcesMessage {
-  type: "discover-resources";
-  protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
-  requestId: number;
-  query: string;
-  limit?: number;
 }
 
 export interface AnalysisReadyMessage {
@@ -94,32 +86,15 @@ export interface SearchResourcesErrorMessage {
   message: string;
 }
 
-export interface DiscoverResourcesReadyMessage {
-  type: "discover-resources-ready";
-  protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
-  requestId: number;
-  output: DiscoverOutput;
-}
-
-export interface DiscoverResourcesErrorMessage {
-  type: "discover-resources-error";
-  protocolVersion: typeof ANALYSIS_WORKER_PROTOCOL_VERSION;
-  requestId: number;
-  message: string;
-}
-
 export type AnalysisWorkerRequest =
   | LoadAnalysisMessage
   | GetResourceCodeMessage
-  | SearchResourcesMessage
-  | DiscoverResourcesMessage;
+  | SearchResourcesMessage;
 
 export type AnalysisWorkerResponse =
   | AnalysisReadyMessage
   | ResourceCodeReadyMessage
   | SearchResourcesReadyMessage
-  | DiscoverResourcesReadyMessage
   | AnalysisErrorMessage
   | ResourceCodeErrorMessage
-  | SearchResourcesErrorMessage
-  | DiscoverResourcesErrorMessage;
+  | SearchResourcesErrorMessage;

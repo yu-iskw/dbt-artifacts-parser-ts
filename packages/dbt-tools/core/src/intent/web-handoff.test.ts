@@ -8,12 +8,12 @@ import {
 describe("web-handoff", () => {
   it("buildDiscoverWebUrl normalizes bare origin to path before query", () => {
     const u = buildDiscoverWebUrl("http://127.0.0.1:5173", "orders");
-    expect(u).toBe("http://127.0.0.1:5173/?view=discover&q=orders");
+    expect(u).toBe("http://127.0.0.1:5173/?view=inventory&q=orders");
   });
 
   it("buildDiscoverWebUrl omits q when query is empty", () => {
     const u = buildDiscoverWebUrl("http://127.0.0.1:5173", "");
-    expect(u).toBe("http://127.0.0.1:5173/?view=discover");
+    expect(u).toBe("http://127.0.0.1:5173/?view=inventory");
   });
 
   it("buildExplainWebUrl opens inventory summary for a unique_id", () => {

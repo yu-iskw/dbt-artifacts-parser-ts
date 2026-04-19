@@ -3,7 +3,6 @@ import { loadWorkspace } from "./helpers/preload";
 
 const APP_SIDEBAR = "#app-sidebar";
 const NAV_VIEWS = [
-  { label: "Discover", heading: "Discover", view: "discover" },
   { label: "Health", heading: "Health", view: "health" },
   { label: "Timeline", heading: "Timeline", view: "timeline" },
   { label: "Inventory", heading: "Inventory", view: "inventory" },
@@ -77,6 +76,13 @@ test.describe("sidebar navigation", () => {
     await expect(page).toHaveURL(/assetTab=lineage/);
     await expect(page).toHaveURL(/[?&]up=2/);
     await expect(page).toHaveURL(/[?&]lens=type/);
+  });
+
+  test("legacy discover URL opens Inventory", async ({ page }) => {
+    await loadWorkspace(page);
+    await page.goto("/?view=discover&q=orders");
+    await expect(page).toHaveURL(/view=inventory/);
+    await expect(page.locator(".inventory-view").first()).toBeVisible();
   });
 
   test("legacy dependencies URL opens Inventory with lineage tab", async ({
