@@ -137,6 +137,47 @@ describe("discoverResources", () => {
     expect(matches.every((m) => m.resource_type === "model")).toBe(true);
   });
 
+  it("supports inline path: filters in the query", () => {
+    const manifest = {
+      metadata: baseMeta(),
+      nodes: {
+        "model.p.orders": modelNode("orders", "p", {
+          path: "models/marts/orders.sql",
+        }),
+        "model.p.orders_archive": modelNode("orders_archive", "p", {
+          path: "models/archive/orders_archive.sql",
+        }),
+      },
+      sources: {},
+    } as ParsedManifest;
+    const graph = new ManifestGraph(manifest);
+    const { matches } = discoverResources(graph, "orders path:marts", {
+      limit: 20,
+    });
+    expect(matches.map((m) => m.unique_id)).toEqual(["model.p.orders"]);
+  });
+
+  it("lets explicit path options override inline path tokens", () => {
+    const manifest = {
+      metadata: baseMeta(),
+      nodes: {
+        "model.p.orders_marts": modelNode("orders", "p", {
+          path: "models/marts/orders.sql",
+        }),
+        "model.p.orders_staging": modelNode("orders", "p", {
+          path: "models/staging/orders.sql",
+        }),
+      },
+      sources: {},
+    } as ParsedManifest;
+    const graph = new ManifestGraph(manifest);
+    const { matches } = discoverResources(graph, "orders path:marts", {
+      limit: 20,
+      path: "staging",
+    });
+    expect(matches.map((m) => m.unique_id)).toEqual(["model.p.orders_staging"]);
+  });
+
   it("includes related neighbors when edges exist", () => {
     const manifest = {
       metadata: baseMeta(),

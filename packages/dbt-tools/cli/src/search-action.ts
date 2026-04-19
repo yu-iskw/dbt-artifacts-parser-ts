@@ -17,11 +17,7 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
-import {
-  parseOptionalListLimit,
-  parseListOffset,
-  assertOffsetRequiresLimit,
-} from "./cli-pagination";
+import { applyListPaging } from "./cli-pagination";
 
 export type SearchOptions = {
   type?: string;
@@ -119,6 +115,7 @@ export async function searchAction(
     const effectiveType = options.type ?? parsed.type;
     const effectivePackage = options.package ?? parsed.package;
     const effectiveTag = options.tag ?? parsed.tag;
+    const effectivePath = options.path ?? parsed.path;
 
     type ScoredResult = { score: number; result: SearchResult };
     const scored: ScoredResult[] = [];
@@ -130,7 +127,7 @@ export async function searchAction(
           effectiveType,
           effectivePackage,
           effectiveTag,
-          options.path,
+          effectivePath,
         )
       ) {
         return;
@@ -159,22 +156,16 @@ export async function searchAction(
     });
 
     const results = scored.map((s) => s.result);
-    const matchedTotal = results.length;
-    const limit = parseOptionalListLimit(options.limit);
-    const offset = parseListOffset(options.offset);
-    assertOffsetRequiresLimit(limit, offset);
-
-    let pageResults = results;
-    let hasMore: boolean | undefined;
-    if (limit !== undefined) {
-      pageResults = results.slice(offset, offset + limit);
-      hasMore = offset + pageResults.length < matchedTotal;
-    }
+    const { page, matchedTotal, offset, limit, hasMore } = applyListPaging(
+      results,
+      options.limit,
+      options.offset,
+    );
 
     const output: SearchOutput = {
       query: query || undefined,
       total: matchedTotal,
-      results: pageResults,
+      results: page,
       ...(limit !== undefined ? { limit, offset, has_more: hasMore } : {}),
     };
 

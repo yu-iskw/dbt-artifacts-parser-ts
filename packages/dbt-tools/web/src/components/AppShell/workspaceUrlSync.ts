@@ -118,10 +118,10 @@ const defaultTimelineFilters = (
   };
 };
 
-function getInventoryQueryFromSearch(search: string): string {
+function getInventoryQueryFromSearch(search: string): string | null {
   const params = new URLSearchParams(search);
   const resolvedView = parseViewFromSearch(search);
-  if (resolvedView !== "inventory") return "";
+  if (resolvedView !== "inventory") return null;
 
   const terms: string[] = [];
   const q = params.get("q")?.trim() ?? "";
@@ -145,7 +145,7 @@ function mergeInventoryQueryIntoAsset(
   asset: AssetViewState,
 ): AssetViewState {
   const q = getInventoryQueryFromSearch(search);
-  if (q === "") return asset;
+  if (q === null) return asset;
   return { ...asset, resourceQuery: q };
 }
 

@@ -129,6 +129,40 @@ describe("searchAction", () => {
     expect(parsed.results.every((r) => r.resource_type === "model")).toBe(true);
   });
 
+  it("supports inline path: filter in query", async () => {
+    await searchAction(
+      "orders path:marts",
+      { dbtTarget: dbtTargetDir, json: true },
+      handleError,
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0] as string;
+    const parsed = JSON.parse(output) as {
+      results: Array<{ path?: string }>;
+    };
+    expect(parsed.results.length).toBeGreaterThan(0);
+    expect(parsed.results.every((r) => (r.path ?? "").includes("marts"))).toBe(
+      true,
+    );
+  });
+
+  it("lets --path override inline path: tokens", async () => {
+    await searchAction(
+      "orders path:marts",
+      { dbtTarget: dbtTargetDir, path: "staging", json: true },
+      handleError,
+    );
+
+    const output = consoleLogSpy.mock.calls[0][0] as string;
+    const parsed = JSON.parse(output) as {
+      results: Array<{ path?: string }>;
+    };
+    expect(parsed.results.length).toBeGreaterThan(0);
+    expect(
+      parsed.results.every((r) => (r.path ?? "").includes("staging")),
+    ).toBe(true);
+  });
+
   it("supports --type flag", async () => {
     await searchAction(
       undefined,

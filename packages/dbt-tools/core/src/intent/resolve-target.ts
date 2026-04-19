@@ -44,7 +44,8 @@ export function resolveIntentTarget(
   if (
     second != null &&
     Math.abs(first.score - second.score) < 0.05 &&
-    first.score < 0.99
+    first.display_name === second.display_name &&
+    first.resource_type === second.resource_type
   ) {
     const ids = discover.matches
       .slice(0, 5)

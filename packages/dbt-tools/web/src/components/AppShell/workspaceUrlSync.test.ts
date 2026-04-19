@@ -153,6 +153,15 @@ describe("applySearchToWorkspaceState", () => {
     expect(next.resourceQuery).toBe("stg_orders");
   });
 
+  it("clears inventory resourceQuery when q is removed from the URL", () => {
+    const r = applySearchToWorkspaceState("?view=inventory");
+    const next = r.assetViewState({
+      ...baseAsset(),
+      resourceQuery: "stg_orders",
+    });
+    expect(next.resourceQuery).toBe("");
+  });
+
   it("merges asset and investigation like popstate", () => {
     const r = applySearchToWorkspaceState(
       "?view=inventory&resource=node-x&assetTab=sql",

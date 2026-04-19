@@ -4,12 +4,7 @@
  */
 export const CLI_LIST_MAX_LIMIT = 200;
 
-export function parseOptionalListLimit(
-  limit: number | undefined,
-): number | undefined {
-  if (limit === undefined) {
-    return undefined;
-  }
+function assertValidListLimit(limit: number): number {
   if (!Number.isFinite(limit) || !Number.isInteger(limit) || limit < 1) {
     throw new Error("--limit must be a positive integer");
   }
@@ -17,6 +12,15 @@ export function parseOptionalListLimit(
     throw new Error(`--limit cannot exceed ${CLI_LIST_MAX_LIMIT}`);
   }
   return limit;
+}
+
+export function parseOptionalListLimit(
+  limit: number | undefined,
+): number | undefined {
+  if (limit === undefined) {
+    return undefined;
+  }
+  return assertValidListLimit(limit);
 }
 
 export function parseListOffset(offset: number | undefined): number {
@@ -45,5 +49,36 @@ export function resolveFailuresLimit(limit: number | undefined): number {
   if (limit === undefined) {
     return FAILURES_DEFAULT_LIMIT;
   }
-  return parseOptionalListLimit(limit)!;
+  return assertValidListLimit(limit);
+}
+
+/**
+ * Shared slice for inventory/search style paging: stable list already built by caller.
+ */
+export function applyListPaging<T>(
+  items: T[],
+  limit: number | undefined,
+  offsetRaw: number | undefined,
+): {
+  page: T[];
+  matchedTotal: number;
+  offset: number;
+  limit?: number;
+  hasMore?: boolean;
+} {
+  const matchedTotal = items.length;
+  const offset = parseListOffset(offsetRaw);
+  assertOffsetRequiresLimit(limit, offset);
+  const lim = parseOptionalListLimit(limit);
+  if (lim === undefined) {
+    return { page: items, matchedTotal, offset };
+  }
+  const page = items.slice(offset, offset + lim);
+  return {
+    page,
+    matchedTotal,
+    offset,
+    limit: lim,
+    hasMore: offset + page.length < matchedTotal,
+  };
 }

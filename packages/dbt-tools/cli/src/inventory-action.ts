@@ -14,11 +14,7 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
-import {
-  parseOptionalListLimit,
-  parseListOffset,
-  assertOffsetRequiresLimit,
-} from "./cli-pagination";
+import { applyListPaging } from "./cli-pagination";
 
 export type InventoryOptions = {
   type?: string;
@@ -170,21 +166,15 @@ export async function inventoryAction(
       return a.name.localeCompare(b.name);
     });
 
-    const matchedTotal = entries.length;
-    const limit = parseOptionalListLimit(options.limit);
-    const offset = parseListOffset(options.offset);
-    assertOffsetRequiresLimit(limit, offset);
-
-    let pageEntries = entries;
-    let hasMore: boolean | undefined;
-    if (limit !== undefined) {
-      pageEntries = entries.slice(offset, offset + limit);
-      hasMore = offset + pageEntries.length < matchedTotal;
-    }
+    const { page, matchedTotal, offset, limit, hasMore } = applyListPaging(
+      entries,
+      options.limit,
+      options.offset,
+    );
 
     const result: InventoryResult = {
       total: matchedTotal,
-      entries: pageEntries,
+      entries: page,
       ...(limit !== undefined ? { limit, offset, has_more: hasMore } : {}),
     };
 

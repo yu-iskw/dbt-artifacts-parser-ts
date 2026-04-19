@@ -287,7 +287,7 @@ export function discoverResources(
   const effectiveType = options.type ?? parsed.type;
   const effectivePackage = options.package ?? parsed.package;
   const effectiveTag = options.tag ?? parsed.tag;
-  const pathFilter = options.path;
+  const pathFilter = options.path ?? parsed.path;
 
   const hasStructuredFilter = Boolean(
     effectiveType || effectivePackage || effectiveTag || pathFilter,

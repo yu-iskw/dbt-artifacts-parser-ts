@@ -35,6 +35,8 @@ export type FailuresOptions = {
   compiledMaxChars?: number;
 } & ArtifactRootCliOptions;
 
+type ManifestNodeGraph = ReturnType<ManifestGraph["getGraph"]>;
+
 export type FailureRow = {
   unique_id: string;
   status: string;
@@ -125,10 +127,9 @@ function countStatuses(rows: NodeExecution[]): Record<string, number> {
 
 function buildDbtHints(
   rows: FailureRow[],
-  graph: ManifestGraph | undefined,
+  g: ManifestNodeGraph | undefined,
 ): string[] {
   const hints = new Set<string>();
-  const g = graph?.getGraph();
   for (const row of rows) {
     const attrs =
       g && g.hasNode(row.unique_id)
@@ -173,15 +174,14 @@ function buildPrimitiveCommands(
 }
 
 function getNodeAttrs(
-  graph: ManifestGraph | undefined,
+  g: ManifestNodeGraph | undefined,
   uniqueId: string,
 ): GraphNodeAttributes | undefined {
-  const g = graph?.getGraph();
   if (!g?.hasNode(uniqueId)) return undefined;
   return g.getNodeAttributes(uniqueId) as GraphNodeAttributes;
 }
 
-function applyManifestPathFields(
+function applyManifestNameFromAttrs(
   row: FailureRow,
   attrs: GraphNodeAttributes | undefined,
 ): void {
@@ -227,7 +227,7 @@ function applyIncludeCompiledFields(
 
 function enrichRow(
   base: NodeExecution,
-  graph: ManifestGraph | undefined,
+  nodeGraph: ManifestNodeGraph | undefined,
   options: FailuresOptions,
   messageMax: number,
   compiledMax: number,
@@ -243,8 +243,8 @@ function enrichRow(
     ...(msg.truncated ? { message_truncated: true } : {}),
   };
 
-  const attrs = getNodeAttrs(graph, base.unique_id);
-  applyManifestPathFields(row, attrs);
+  const attrs = getNodeAttrs(nodeGraph, base.unique_id);
+  applyManifestNameFromAttrs(row, attrs);
   if (options.includePath) {
     applyIncludePathFields(row, attrs);
   }
@@ -324,6 +324,8 @@ export async function failuresAction(
     const page = sorted.slice(offset, offset + limit);
     const hasMore = offset + page.length < nonSuccessTotal;
 
+    const nodeGraph = graph?.getGraph();
+
     const messageMax =
       typeof options.messageMaxChars === "number" &&
       Number.isFinite(options.messageMaxChars) &&
@@ -338,7 +340,7 @@ export async function failuresAction(
         : DEFAULT_COMPILED_MAX;
 
     const failures: FailureRow[] = page.map((row) =>
-      enrichRow(row, graph, options, messageMax, compiledMax),
+      enrichRow(row, nodeGraph, options, messageMax, compiledMax),
     );
 
     const invocationRaw = (runResults as { metadata?: unknown }).metadata;
@@ -360,7 +362,7 @@ export async function failuresAction(
         has_more: hasMore,
       },
       failures,
-      next_commands: buildDbtHints(failures, graph),
+      next_commands: buildDbtHints(failures, nodeGraph),
       primitive_commands: buildPrimitiveCommands(
         options.dbtTarget,
         failures[0]?.unique_id,

@@ -49,4 +49,27 @@ describe("resolveIntentTarget", () => {
     expect(r.unique_id).toBe("model.p.orders");
     expect(r.discover).not.toBeNull();
   });
+
+  it("throws for ambiguous short queries with duplicate top matches", () => {
+    const manifest = {
+      metadata: meta(),
+      nodes: {
+        "model.pkg_a.orders": {
+          resource_type: "model",
+          name: "orders",
+          package_name: "pkg_a",
+          path: "models/pkg_a/orders.sql",
+        },
+        "model.pkg_b.orders": {
+          resource_type: "model",
+          name: "orders",
+          package_name: "pkg_b",
+          path: "models/pkg_b/orders.sql",
+        },
+      },
+      sources: {},
+    } as ParsedManifest;
+    const graph = new ManifestGraph(manifest);
+    expect(() => resolveIntentTarget(graph, "orders")).toThrow(/ambiguous/i);
+  });
 });

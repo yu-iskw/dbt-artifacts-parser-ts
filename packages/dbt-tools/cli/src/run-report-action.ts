@@ -28,7 +28,11 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
-import { parseListOffset, assertOffsetRequiresLimit } from "./cli-pagination";
+import {
+  parseListOffset,
+  assertOffsetRequiresLimit,
+  parseOptionalListLimit,
+} from "./cli-pagination";
 
 type RunReportOptions = {
   fields?: string;
@@ -262,7 +266,7 @@ export async function runReportAction(
       };
     }
 
-    const adapterSource = summary.node_executions as NodeExecution[];
+    const adapterSource = summary.node_executions;
 
     const { bottlenecks, bottlenecksTopLabel } = computeBottlenecksSection(
       summary,
@@ -294,11 +298,11 @@ export async function runReportAction(
       }
       Object.assign(report, adapterJson);
 
-      const lim = options.nodeExecutionsLimit;
+      const lim = parseOptionalListLimit(options.nodeExecutionsLimit);
       const off = parseListOffset(options.nodeExecutionsOffset);
       assertOffsetRequiresLimit(lim, off);
       if (lim !== undefined) {
-        const full = report.node_executions as NodeExecution[];
+        const full = filteredSummary.node_executions;
         const sorted = sortNodeExecutionsForSlice(full);
         const page = sorted.slice(off, off + lim);
         report.node_executions = page;
