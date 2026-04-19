@@ -3,4 +3,5 @@ export { depsAction } from "./deps-action";
 export { inventoryAction } from "./inventory-action";
 export { timelineAction } from "./timeline-action";
 export { searchAction } from "./search-action";
+export { discoverAction } from "./discover-action";
 export { statusAction } from "./status-action";

@@ -45,6 +45,10 @@ export * from "./errors/error-handler";
 // Introspection exports
 export * from "./introspection/schema-generator";
 
+// Discovery layer (shared by CLI and web)
+export * from "./discovery/discovery-types";
+export { DiscoveryService } from "./discovery/discovery-service";
+
 // Shared types and utilities
 export * from "./types";
 export * from "./version";

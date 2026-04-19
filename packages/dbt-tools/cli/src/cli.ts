@@ -25,6 +25,7 @@ import {
   inventoryAction,
   timelineAction,
   searchAction,
+  discoverAction,
   statusAction,
 } from "./cli-actions";
 import { resolveCliArtifactPaths } from "./cli-artifact-resolve";
@@ -49,6 +50,8 @@ const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
+const OPT_TYPE = "--type <type>";
+const DESC_TYPE_FILTER = "Filter by resource type(s), comma-separated";
 
 program
   .name("dbt-tools")
@@ -461,7 +464,7 @@ program
 program
   .command("inventory")
   .description("List and filter dbt resources from manifest")
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
+  .option(OPT_TYPE, DESC_TYPE_FILTER)
   .option("--package <package>", "Filter by package name")
   .option("--tag <tag>", "Filter by tag(s), comma-separated")
   .option("--path <path>", "Filter by file path substring")
@@ -542,7 +545,7 @@ program
     "[query]",
     "Search query; supports key:value tokens like type:model tag:finance",
   )
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
+  .option(OPT_TYPE, DESC_TYPE_FILTER)
   .option("--package <package>", "Filter by package name")
   .option("--tag <tag>", "Filter by tag(s), comma-separated")
   .option("--path <path>", "Filter by file path substring")
@@ -564,6 +567,39 @@ program
       } & ArtifactRootFlags,
     ) => {
       await searchAction(query, options, handleCliError);
+    },
+  );
+
+/**
+ * Discover command: Ranked, explainable discovery from an ambiguous query
+ */
+program
+  .command("discover")
+  .description(
+    "Resolve an ambiguous query to ranked dbt resources with scores, reasons, related nodes, and next-action suggestions",
+  )
+  .argument(
+    "<query>",
+    "Free-text query; supports inline tokens like type:model tag:finance",
+  )
+  .option(OPT_TYPE, DESC_TYPE_FILTER)
+  .option("--limit <n>", "Maximum number of matches to return (default: 10)")
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      query: string,
+      options: {
+        type?: string;
+        limit?: string;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await discoverAction(query, options, handleCliError);
     },
   );
 

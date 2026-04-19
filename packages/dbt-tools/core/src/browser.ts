@@ -89,3 +89,7 @@ export {
   normalizeDbtResourceTypeKey,
   normalizeMaterializationKind,
 } from "./analysis/analysis-snapshot";
+
+// Discovery layer (browser-safe: no Node.js fs/path imports)
+export * from "./discovery/discovery-types";
+export { DiscoveryService } from "./discovery/discovery-service";
