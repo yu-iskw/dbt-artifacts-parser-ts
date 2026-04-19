@@ -7,14 +7,14 @@ import {
   validateSafePath,
   validateNoControlChars,
   FieldFilter,
-  formatOutput,
-  shouldOutputJSON,
   resolveIntentTarget,
 } from "@dbt-tools/core";
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 export type DiagnoseCliOptions = {
   fields?: string;
@@ -67,7 +67,7 @@ export async function diagnoseRunAction(
       primitive_commands,
     };
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
     if (useJson) {
       let out: unknown = output;
       if (options.fields) {
@@ -76,7 +76,9 @@ export async function diagnoseRunAction(
           options.fields,
         );
       }
-      console.log(formatOutput(out, true));
+      console.log(
+        stringifyCliJsonForAction("diagnose run", paths, options, out),
+      );
     } else {
       console.log(
         [
@@ -87,7 +89,7 @@ export async function diagnoseRunAction(
       );
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }
 
@@ -138,7 +140,7 @@ export async function diagnoseNodeAction(
       primitive_commands,
     };
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
     if (useJson) {
       let out: unknown = output;
       if (options.fields) {
@@ -147,7 +149,9 @@ export async function diagnoseNodeAction(
           options.fields,
         );
       }
-      console.log(formatOutput(out, true));
+      console.log(
+        stringifyCliJsonForAction("diagnose node", paths, options, out),
+      );
     } else {
       console.log(
         [
@@ -158,6 +162,6 @@ export async function diagnoseNodeAction(
       );
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

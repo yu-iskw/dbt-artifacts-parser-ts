@@ -9,20 +9,23 @@ import {
   DBT_MANIFEST_JSON,
   DBT_RUN_RESULTS_JSON,
   DBT_SOURCES_JSON,
-  formatOutput,
   parseDbtToolsArtifactTarget,
-  shouldOutputJSON,
   validateSafePath,
+  type ArtifactPaths,
 } from "@dbt-tools/core";
 import {
   resolveCliArtifactPaths,
   resolveEffectiveDbtTarget,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 export type StatusOptions = {
   json?: boolean;
   noJson?: boolean;
+  /** Set by `freshness` alias for envelope `_meta.command`. */
+  invokedAs?: "status" | "freshness";
 } & ArtifactRootCliOptions;
 
 export type ArtifactFileStatus = {
@@ -211,14 +214,28 @@ export async function statusAction(
       summary: summaryMap[readiness],
     };
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const envelopePaths: ArtifactPaths = {
+      manifest: manifestStatus.path,
+      runResults: runResultsStatus.path,
+      catalog: catalogStatus.path,
+      sources: sourcesStatus.path,
+    };
+
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
 
     if (useJson) {
-      console.log(formatOutput(result, true));
+      console.log(
+        stringifyCliJsonForAction(
+          options.invokedAs ?? "status",
+          envelopePaths,
+          options,
+          result,
+        ),
+      );
     } else {
       console.log(formatStatus(result));
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

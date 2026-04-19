@@ -7,8 +7,6 @@ import {
   validateSafePath,
   validateNoControlChars,
   FieldFilter,
-  formatOutput,
-  shouldOutputJSON,
   DependencyService,
   resolveIntentTarget,
   buildImpactWebUrl,
@@ -20,6 +18,8 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 export type ImpactCliOptions = {
   fields?: string;
@@ -163,7 +163,7 @@ export async function impactAction(
       };
     }
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
     if (useJson) {
       let out: unknown = output;
       if (options.fields) {
@@ -172,7 +172,7 @@ export async function impactAction(
           options.fields,
         );
       }
-      console.log(formatOutput(out, true));
+      console.log(stringifyCliJsonForAction("impact", paths, options, out));
     } else {
       console.log(
         [
@@ -188,6 +188,6 @@ export async function impactAction(
       );
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

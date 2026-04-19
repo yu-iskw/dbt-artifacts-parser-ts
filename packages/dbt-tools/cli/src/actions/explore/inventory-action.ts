@@ -6,14 +6,14 @@ import {
   loadManifest,
   validateSafePath,
   FieldFilter,
-  formatOutput,
-  shouldOutputJSON,
   type GraphNodeAttributes,
 } from "@dbt-tools/core";
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 import { applyListPaging } from "../../internal/cli-pagination";
 
 export type InventoryOptions = {
@@ -178,18 +178,20 @@ export async function inventoryAction(
       ...(limit !== undefined ? { limit, offset, has_more: hasMore } : {}),
     };
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
 
     if (useJson) {
       let output: unknown = result;
       if (options.fields) {
         output = FieldFilter.filterFields(result, options.fields);
       }
-      console.log(formatOutput(output, true));
+      console.log(
+        stringifyCliJsonForAction("inventory", paths, options, output),
+      );
     } else {
       console.log(formatInventory(result));
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

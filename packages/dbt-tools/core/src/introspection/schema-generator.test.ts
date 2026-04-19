@@ -9,6 +9,13 @@ describe("SchemaGenerator", () => {
       expect(schema?.command).toBe("summary");
       expect(schema?.arguments).toBeInstanceOf(Array);
       expect(schema?.options).toBeInstanceOf(Array);
+      expect(schema?.stdout_json_schema?.type).toBe("object");
+      expect(schema?.stdout_json_schema?.properties).toHaveProperty(
+        "total_nodes",
+      );
+      expect(schema?.options.some((o) => o.name === "--json-envelope")).toBe(
+        true,
+      );
     });
 
     it("should return schema for deps command", () => {
@@ -19,12 +26,18 @@ describe("SchemaGenerator", () => {
       expect(schema?.options).toBeInstanceOf(Array);
       expect(schema?.arguments[0]?.name).toBe("resource-id");
       expect(schema?.arguments[0]?.required).toBe(true);
+      expect(schema?.stdout_json_schema?.properties).toHaveProperty(
+        "dependencies",
+      );
     });
 
     it("should return schema for graph command", () => {
       const schema = getCommandSchema("graph");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("graph");
+      expect(schema?.options.some((o) => o.name === "--json-envelope")).toBe(
+        true,
+      );
     });
 
     it("should return schema for run-report command", () => {
@@ -47,6 +60,26 @@ describe("SchemaGenerator", () => {
       const schema = getCommandSchema("schema");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("schema");
+      expect(schema?.options.some((o) => o.name === "--json-envelope")).toBe(
+        true,
+      );
+    });
+
+    it("should include stdout_json_schema for status command", () => {
+      const schema = getCommandSchema("status");
+      expect(schema?.stdout_json_schema?.properties).toHaveProperty(
+        "readiness",
+      );
+      expect(schema?.options.some((o) => o.name === "--json-envelope")).toBe(
+        true,
+      );
+    });
+
+    it("should expose --json-envelope for freshness alias", () => {
+      const schema = getCommandSchema("freshness");
+      expect(schema?.options.some((o) => o.name === "--json-envelope")).toBe(
+        true,
+      );
     });
 
     it("should return null for invalid command", () => {

@@ -17,6 +17,7 @@ material. It is not the architectural source of truth for humans or coding agent
 - [0008](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md) - product positioning and package boundaries
 - [0009](./0009-npm-releases-authenticate-via-github-actions-oidc-trusted-publishing.md) - npm release trust model
 - [0010](./0010-shared-discovery-ranker-intent-commands-and-cli-web-deep-links.md) - shared discovery ranker, intent CLI, web discover view, and CLI–web handoff
+- [0011](./0011-cli-stdout-json-envelope-and-introspection-schemas-for-coding-agents.md) - optional JSON stdout envelope, flat `schema` introspection, and `stdout_json_schema` on command schemas
 
 ## Supporting Docs
 

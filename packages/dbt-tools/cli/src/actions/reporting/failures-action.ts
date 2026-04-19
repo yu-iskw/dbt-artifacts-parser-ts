@@ -10,8 +10,6 @@ import {
   buildNodeExecutionsFromRunResults,
   validateSafePath,
   FieldFilter,
-  formatOutput,
-  shouldOutputJSON,
   searchRunResults,
   type NodeExecution,
 } from "@dbt-tools/core";
@@ -20,6 +18,8 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 import {
   parseListOffset,
   resolveFailuresLimit,
@@ -372,17 +372,17 @@ export async function failuresAction(
       ),
     };
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
     if (useJson) {
       let out: unknown = output;
       if (options.fields) {
         out = FieldFilter.filterFields(output, options.fields);
       }
-      console.log(formatOutput(out, true));
+      console.log(stringifyCliJsonForAction("failures", paths, options, out));
     } else {
       console.log(formatFailuresHuman(output));
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

@@ -10,6 +10,8 @@ const MISSING_TARGET_MSG =
 
 export type ArtifactRootCliOptions = {
   dbtTarget?: string;
+  /** Wrap JSON stdout in `{ _meta, data }` when paired with `--json`/TTY JSON (see README). */
+  jsonEnvelope?: boolean;
 };
 
 /**
