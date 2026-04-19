@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
+import { createJaffleArtifactBundleDir } from "../../internal/cli-test-bundle-dir";
 import { explainAction } from "./explain-action";
 
 describe("explainAction", () => {

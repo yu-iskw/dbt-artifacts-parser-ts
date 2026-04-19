@@ -19,8 +19,11 @@ import type { GraphNodeAttributes } from "@dbt-tools/core";
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
-} from "./cli-artifact-resolve";
-import { parseListOffset, resolveFailuresLimit } from "./cli-pagination";
+} from "../../internal/cli-artifact-resolve";
+import {
+  parseListOffset,
+  resolveFailuresLimit,
+} from "../../internal/cli-pagination";
 
 export type FailuresOptions = {
   fields?: string;

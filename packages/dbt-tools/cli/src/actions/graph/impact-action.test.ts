@@ -1,9 +1,9 @@
 import * as fs from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createJaffleArtifactBundleDir } from "./cli-test-bundle-dir";
-import { diagnoseNodeAction } from "./diagnose-action";
+import { createJaffleArtifactBundleDir } from "../../internal/cli-test-bundle-dir";
+import { impactAction } from "./impact-action";
 
-describe("diagnoseNodeAction", () => {
+describe("impactAction", () => {
   const handleError = (error: unknown) => {
     throw error;
   };
@@ -22,7 +22,7 @@ describe("diagnoseNodeAction", () => {
   });
 
   it("emits runnable primitive commands", async () => {
-    await diagnoseNodeAction(
+    await impactAction(
       "customers",
       { dbtTarget: dbtTargetDir, json: true },
       handleError,
@@ -31,6 +31,9 @@ describe("diagnoseNodeAction", () => {
     const parsed = JSON.parse(raw) as { primitive_commands: string[] };
     expect(parsed.primitive_commands).toContain(
       'dbt-tools deps "model.jaffle_shop.customers" --direction downstream --format flat',
+    );
+    expect(parsed.primitive_commands).toContain(
+      'dbt-tools deps "model.jaffle_shop.customers" --direction upstream --format flat',
     );
   });
 });

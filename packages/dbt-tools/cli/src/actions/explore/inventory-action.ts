@@ -13,8 +13,8 @@ import {
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
-} from "./cli-artifact-resolve";
-import { applyListPaging } from "./cli-pagination";
+} from "../../internal/cli-artifact-resolve";
+import { applyListPaging } from "../../internal/cli-pagination";
 
 export type InventoryOptions = {
   type?: string;

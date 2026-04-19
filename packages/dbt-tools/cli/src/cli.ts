@@ -34,8 +34,8 @@ import {
   statusAction,
   failuresAction,
 } from "./cli-actions";
-import { resolveCliArtifactPaths } from "./cli-artifact-resolve";
-import { CLI_PACKAGE_VERSION } from "./version";
+import { resolveCliArtifactPaths } from "./internal/cli-artifact-resolve";
+import { CLI_PACKAGE_VERSION } from "./internal/version";
 
 const program = new Command();
 

@@ -27,12 +27,12 @@ import {
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
-} from "./cli-artifact-resolve";
+} from "../../internal/cli-artifact-resolve";
 import {
   parseListOffset,
   assertOffsetRequiresLimit,
   parseOptionalListLimit,
-} from "./cli-pagination";
+} from "../../internal/cli-pagination";
 
 type RunReportOptions = {
   fields?: string;

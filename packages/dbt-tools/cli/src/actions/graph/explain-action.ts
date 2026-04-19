@@ -18,7 +18,7 @@ import {
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
-} from "./cli-artifact-resolve";
+} from "../../internal/cli-artifact-resolve";
 
 export type ExplainCliOptions = {
   fields?: string;

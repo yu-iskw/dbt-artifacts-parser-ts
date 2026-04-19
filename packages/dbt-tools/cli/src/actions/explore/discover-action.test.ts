@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createJaffleArtifactBundleDir,
   createJaffleManifestOnlyDir,
-} from "./cli-test-bundle-dir";
+} from "../../internal/cli-test-bundle-dir";
 import { discoverAction, formatDiscoverHuman } from "./discover-action";
 
 describe("discoverAction", () => {
