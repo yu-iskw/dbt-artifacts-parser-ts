@@ -292,7 +292,8 @@ function buildRelated(
       const relation =
         attrs.resource_type === "exposure"
           ? "exposure"
-          : attrs.resource_type === "test" || attrs.resource_type === "unit_test"
+          : attrs.resource_type === "test" ||
+              attrs.resource_type === "unit_test"
             ? "test"
             : "downstream";
       related.push({ unique_id: downId, relation });
@@ -342,17 +343,13 @@ export class DiscoveryService {
       // Apply type filter
       if (
         effectiveType &&
-        attrs.resource_type.toLowerCase() !==
-          effectiveType.toLowerCase()
+        attrs.resource_type.toLowerCase() !== effectiveType.toLowerCase()
       ) {
         return;
       }
 
       // Apply package filter from inline token
-      if (
-        parsed.package &&
-        (attrs.package_name || "") !== parsed.package
-      ) {
+      if (parsed.package && (attrs.package_name || "") !== parsed.package) {
         return;
       }
 

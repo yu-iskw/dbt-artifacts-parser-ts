@@ -119,11 +119,9 @@ describe("DiscoveryService", () => {
       const result = DiscoveryService.query(graph, hubAttrs.name);
       const topMatch = result.matches.find((m) => m.unique_id === hubId);
       if (topMatch) {
-        expect(
-          topMatch.reasons.some((r) =>
-            r.includes("centrality"),
-          ),
-        ).toBe(true);
+        expect(topMatch.reasons.some((r) => r.includes("centrality"))).toBe(
+          true,
+        );
       }
     }
   });
@@ -131,7 +129,9 @@ describe("DiscoveryService", () => {
   // 10. Inline token parsing — type:model qualifier narrows results
   it("parses inline type: token from query string", () => {
     const withToken = DiscoveryService.query(graph, "type:model orders");
-    const withOption = DiscoveryService.query(graph, "orders", { type: "model" });
+    const withOption = DiscoveryService.query(graph, "orders", {
+      type: "model",
+    });
     // Both approaches should produce the same top result
     expect(withToken.matches[0]?.unique_id).toBe(
       withOption.matches[0]?.unique_id,

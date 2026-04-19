@@ -33,9 +33,7 @@ function formatConfidenceBadge(confidence: string): string {
   return `[${confidence.toUpperCase()}]`;
 }
 
-function formatRelatedSummary(
-  related: DiscoveryMatch["related"],
-): string {
+function formatRelatedSummary(related: DiscoveryMatch["related"]): string {
   const upstream = related.filter((r) => r.relation === "upstream").length;
   const downstream = related.filter((r) => r.relation === "downstream").length;
   const tests = related.filter((r) => r.relation === "test").length;
@@ -62,7 +60,9 @@ function formatDiscovery(output: DiscoveryOutput): string {
     lines.push(
       `  ${m.unique_id}  ${formatConfidenceBadge(m.confidence)}  score: ${m.score}`,
     );
-    lines.push(`    type: ${m.resource_type}  package: ${m.unique_id.split(".")[1] ?? ""}`);
+    lines.push(
+      `    type: ${m.resource_type}  package: ${m.unique_id.split(".")[1] ?? ""}`,
+    );
     lines.push(`    reasons: ${m.reasons.join(", ")}`);
     lines.push(`    next: ${m.next_actions.join(", ")}`);
     lines.push(`    related: ${formatRelatedSummary(m.related)}`);

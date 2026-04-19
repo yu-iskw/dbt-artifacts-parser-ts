@@ -21,7 +21,10 @@ export interface DiscoveryMatch {
   /** Machine-readable codes explaining why this node ranked here. */
   reasons: string[];
   /** Other close candidates (score within 20 pts of top); shallow — no nested disambiguation. */
-  disambiguation: Omit<DiscoveryMatch, "disambiguation" | "related" | "next_actions">[];
+  disambiguation: Omit<
+    DiscoveryMatch,
+    "disambiguation" | "related" | "next_actions"
+  >[];
   /** Depth-1 neighbors and related tests/exposures. */
   related: DiscoveryRelated[];
   /** Suggested follow-up operations based on resource type. */
