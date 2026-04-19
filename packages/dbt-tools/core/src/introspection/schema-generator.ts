@@ -454,6 +454,45 @@ function getStatusSchema(): CommandSchema {
   };
 }
 
+function getDiscoverSchema(): CommandSchema {
+  return {
+    command: "discover",
+    description:
+      "Resolve an ambiguous query to ranked dbt resources with scores, reasons, related nodes, and next-action suggestions",
+    arguments: [
+      {
+        name: "query",
+        required: true,
+        description:
+          "Free-text query; supports inline tokens like type:model tag:finance",
+      },
+    ],
+    options: [
+      {
+        name: "--type",
+        type: TYPE_STRING,
+        description: "Filter results to a single resource type",
+      },
+      {
+        name: "--limit",
+        type: "number",
+        default: "10",
+        description: "Maximum number of matches to return",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: 'dbt-tools discover "orders" --dbt-target ./target --json',
+  };
+}
+
 /**
  * Get all command schemas
  */
@@ -466,6 +505,7 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     inventory: getInventorySchema(),
     timeline: getTimelineSchema(),
     search: getSearchSchema(),
+    discover: getDiscoverSchema(),
     status: getStatusSchema(),
     freshness: {
       ...getStatusSchema(),
