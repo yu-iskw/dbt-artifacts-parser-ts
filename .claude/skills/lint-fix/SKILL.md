@@ -44,6 +44,13 @@ Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `tr
 
 **CSS note:** `pnpm lint:report` is **ESLint-only** (writes `lint-report.json`). It does **not** run Stylelint. After substantive edits to `packages/dbt-tools/web/src/**/*.css`, run **`pnpm lint:stylelint`** or full `pnpm lint` (with Trunk) so Stylelint rules (e.g. deprecated properties) are caught.
 
+## Common gotchas (this monorepo)
+
+- **Sonar / ESLint:** Repeated string literals in CLI command definitions or schema descriptions often hit **`sonarjs/no-duplicate-string`** (threshold is typically **3** repeats). Fix by hoisting **`const`** descriptions next to existing option constants. Large functions may hit **`sonarjs/cognitive-complexity`** or **`sonarjs/cyclomatic-complexity`** — extract small pure helpers rather than disabling rules.
+- **Stylelint BEM:** Selectors after `__` must use **kebab-case** segments only (e.g. `__search-row`, not `__searchRow`). If Trunk reports **`stylelint/selector-class-pattern`**, rename the class in **both** TSX and CSS.
+- **Trunk markdown-link-check:** New or moved `*.md` files must not link to **missing** paths. Run **`pnpm exec trunk check path/to/file.md -y`** on edited docs before merge.
+- **`pnpm format` can fail on ESLint** even after Trunk fmt succeeds — the script runs **`format:eslint`** second; read the ESLint output and fix before re-running format.
+
 ## Order rule
 
 ### Path A — Launcher present (`pnpm format` / `pnpm lint`)

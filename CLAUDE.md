@@ -12,7 +12,7 @@
 
 ## Quality gates (before claiming work complete)
 
-From the repository root, run the same **three** checks as in [AGENTS.md](AGENTS.md) **Quality gates**: **`pnpm lint:report`**, **`pnpm coverage:report`**, and **`pnpm knip`** (each must exit 0). **Documentation-only** work, **Playwright when to run**, **coverage harness notes**, and **suppression policy** are all defined there—do not rely on this file for the full rules.
+From the repository root, follow [AGENTS.md](AGENTS.md) **Quality gates** — especially **Before you call a task done (ordered)** — for the full ordered checklist (tests, `lint:report`, `knip`, `coverage:report`, when to run full lint/Trunk, `pnpm build`, `pnpm test:e2e`, optional CodeQL). The minimum **three** checks **`pnpm lint:report`**, **`pnpm coverage:report`**, and **`pnpm knip`** still apply for many tasks; **documentation-only** work, **Playwright when to run**, **coverage harness notes**, and **suppression policy** are all defined there—do not rely on this file for the full rules.
 
 Thresholds (same as AGENTS): lines 60%, branches 50%, functions 60%, statements 60%.
 
