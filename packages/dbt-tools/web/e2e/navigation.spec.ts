@@ -3,6 +3,7 @@ import { loadWorkspace } from "./helpers/preload";
 
 const APP_SIDEBAR = "#app-sidebar";
 const NAV_VIEWS = [
+  { label: "Discover", heading: "Discover", view: "discover" },
   { label: "Health", heading: "Health", view: "health" },
   { label: "Timeline", heading: "Timeline", view: "timeline" },
   { label: "Inventory", heading: "Inventory", view: "inventory" },

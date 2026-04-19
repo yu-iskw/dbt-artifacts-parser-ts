@@ -38,7 +38,11 @@ test.describe("analyze flow", () => {
     await page.goto("/");
     await expect(page.getByLabel(ARTIFACT_SOURCE_TYPE_LABEL)).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Location" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Discover" })).toHaveCount(0);
+    await expect(
+      page
+        .locator("section.upload-hero")
+        .getByRole("button", { name: "Discover" }),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: LOAD_WORKSPACE }),
     ).toBeVisible();
