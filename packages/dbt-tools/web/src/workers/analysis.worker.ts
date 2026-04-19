@@ -7,6 +7,7 @@ import { parseSources } from "dbt-artifacts-parser/sources";
 import { matchesResource } from "../lib/analysis-workspace/utils";
 import {
   buildAnalysisSnapshotFromParsedArtifactBundle,
+  discoverResources,
   type AnalysisSnapshot,
   type ManifestGraph,
 } from "@dbt-tools/core/browser";
@@ -111,9 +112,19 @@ export function handleSearchResourcesMessage(
       "No analysis loaded",
     );
   }
-  const matches = cachedResources
-    .filter((resource) => matchesResource(resource, payload.query))
-    .slice(0, OMNIBOX_LIMIT);
+  const resources = cachedResources;
+  const matches =
+    cachedGraph != null
+      ? discoverResources(cachedGraph, payload.query, { limit: OMNIBOX_LIMIT })
+          .matches.map((match) =>
+            resources.find((resource) => resource.uniqueId === match.unique_id),
+          )
+          .filter((resource): resource is AnalysisSnapshot["resources"][number] =>
+            resource != null,
+          )
+      : resources
+          .filter((resource) => matchesResource(resource, payload.query))
+          .slice(0, OMNIBOX_LIMIT);
   return {
     type: "search-resources-ready",
     protocolVersion: ANALYSIS_WORKER_PROTOCOL_VERSION,

@@ -3,13 +3,13 @@
  */
 import {
   ManifestGraph,
+  discoverResources,
   loadManifest,
   validateSafePath,
   validateNoControlChars,
   FieldFilter,
   formatOutput,
   shouldOutputJSON,
-  type GraphNodeAttributes,
 } from "@dbt-tools/core";
 import {
   resolveCliArtifactPaths,
@@ -76,40 +76,9 @@ function parseQueryTokens(query: string): {
   return { terms, type, package: pkg, tag };
 }
 
-/** Score a node against plain search terms (0 = no match, higher = better) */
-function scoreNode(attrs: GraphNodeAttributes, terms: string[]): number {
-  if (terms.length === 0) return 1; // everything matches when no terms
-
-  let score = 0;
-  const lName = (attrs.name || "").toLowerCase();
-  const lId = (attrs.unique_id || "").toLowerCase();
-  const lPkg = (attrs.package_name || "").toLowerCase();
-  const lPath = ((attrs.path as string | undefined) || "").toLowerCase();
-  const lTags = ((attrs.tags as string[] | undefined) || []).map((t) =>
-    t.toLowerCase(),
-  );
-
-  for (const rawTerm of terms) {
-    const term = rawTerm.toLowerCase();
-    if (lName === term || lId === term) {
-      score += 10; // exact match
-    } else if (lName.includes(term) || lId.includes(term)) {
-      score += 5; // substring match on primary fields
-    } else if (lPkg.includes(term) || lPath.includes(term)) {
-      score += 2; // weaker match
-    } else if (lTags.some((t) => t.includes(term))) {
-      score += 3; // tag match
-    } else {
-      return 0; // term not found → no match
-    }
-  }
-
-  return score;
-}
-
 /** Apply structured flag filters on top of query-extracted filters */
 function applyFilters(
-  attrs: GraphNodeAttributes,
+  attrs: SearchResult,
   effectiveType: string | undefined,
   effectivePackage: string | undefined,
   effectiveTag: string | undefined,
@@ -200,7 +169,6 @@ export async function searchAction(
 
     const manifest = loadManifest(paths.manifest);
     const graph = new ManifestGraph(manifest);
-    const g = graph.getGraph();
 
     // Parse inline key:value tokens from query
     const parsed = query ? parseQueryTokens(query) : { terms: [] };
@@ -210,46 +178,32 @@ export async function searchAction(
     const effectivePackage = options.package ?? parsed.package;
     const effectiveTag = options.tag ?? parsed.tag;
 
-    type ScoredResult = { score: number; result: SearchResult };
-    const scored: ScoredResult[] = [];
+    const discovered = discoverResources(graph, parsed.terms.join(" "), {
+      limit: 1000,
+    });
 
-    g.forEachNode((_id, attrs) => {
-      if (
-        !applyFilters(
-          attrs,
-          effectiveType,
-          effectivePackage,
-          effectiveTag,
-          options.path,
-        )
-      ) {
-        return;
-      }
-
-      const score = scoreNode(attrs, parsed.terms);
-      if (score === 0) return;
-
-      scored.push({
-        score,
-        result: {
-          unique_id: attrs.unique_id,
-          resource_type: attrs.resource_type,
-          name: attrs.name,
+    const results = discovered.matches
+      .map((match) => {
+        const attrs = graph.getGraph().getNodeAttributes(match.unique_id);
+        return {
+          unique_id: match.unique_id,
+          resource_type: match.resource_type,
+          name: match.display_name,
           package_name: attrs.package_name,
           path: attrs.path as string | undefined,
           tags: attrs.tags as string[] | undefined,
           description: attrs.description as string | undefined,
-        },
-      });
-    });
-
-    // Sort: higher score first, then alphabetical by unique_id
-    scored.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.result.unique_id.localeCompare(b.result.unique_id);
-    });
-
-    const results = scored.map((s) => s.result);
+        } satisfies SearchResult;
+      })
+      .filter((result) =>
+        applyFilters(
+          result,
+          effectiveType,
+          effectivePackage,
+          effectiveTag,
+          options.path,
+        ),
+      );
     const output: SearchOutput = {
       query: query || undefined,
       total: results.length,

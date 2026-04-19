@@ -31,6 +31,14 @@ export {
   buildAnalysisSnapshotFromParsedArtifactBundle,
   buildAnalysisSnapshotFromParsedArtifacts,
 } from "./analysis/analysis-snapshot";
+export { discoverResources } from "./analysis/discovery";
+export type {
+  DiscoveryResult,
+  DiscoveryMatch,
+  DiscoveryReasonCode,
+  DiscoverySearchOptions,
+  DiscoveryConfidence,
+} from "./analysis/discovery";
 export type {
   NodeExecution,
   ExecutionSummary,

@@ -26,6 +26,9 @@ import {
   timelineAction,
   searchAction,
   statusAction,
+  discoverAction,
+  explainAction,
+  impactAction,
 } from "./cli-actions";
 import { resolveCliArtifactPaths } from "./cli-artifact-resolve";
 import { CLI_PACKAGE_VERSION } from "./version";
@@ -49,6 +52,8 @@ const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
+const OPT_TYPE = "--type <type>";
+const DESC_TYPE_FILTER = "Filter by resource type(s), comma-separated";
 
 program
   .name("dbt-tools")
@@ -461,7 +466,7 @@ program
 program
   .command("inventory")
   .description("List and filter dbt resources from manifest")
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
+  .option(OPT_TYPE, DESC_TYPE_FILTER)
   .option("--package <package>", "Filter by package name")
   .option("--tag <tag>", "Filter by tag(s), comma-separated")
   .option("--path <path>", "Filter by file path substring")
@@ -542,7 +547,7 @@ program
     "[query]",
     "Search query; supports key:value tokens like type:model tag:finance",
   )
-  .option("--type <type>", "Filter by resource type(s), comma-separated")
+  .option(OPT_TYPE, DESC_TYPE_FILTER)
   .option("--package <package>", "Filter by package name")
   .option("--tag <tag>", "Filter by tag(s), comma-separated")
   .option("--path <path>", "Filter by file path substring")
@@ -570,6 +575,73 @@ program
 /**
  * Status command: Report artifact presence, freshness, and readiness
  */
+program
+  .command("discover")
+  .description("Intent-oriented discovery across dbt resources")
+  .argument("<query>", "Ambiguous query or resource reference")
+  .option(OPT_TYPE, DESC_TYPE_FILTER)
+  .option("--limit <n>", "Max discovery matches", parseInt)
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      query: string,
+      options: {
+        type?: string;
+        limit?: number;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await discoverAction(query, options, handleCliError);
+    },
+  );
+
+program
+  .command("explain")
+  .description("Intent-oriented explanation for a dbt resource")
+  .argument("<resource>", "Resource query or unique_id")
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      resource: string,
+      options: {
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await explainAction(resource, options, handleCliError);
+    },
+  );
+
+program
+  .command("impact")
+  .description("Intent-oriented downstream/upstream impact analysis")
+  .argument("<resource>", "Resource query or unique_id")
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      resource: string,
+      options: {
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await impactAction(resource, options, handleCliError);
+    },
+  );
+
 program
   .command("status")
   .description(

@@ -99,6 +99,7 @@ export class ManifestGraph {
       unique_id: uniqueId,
       name: this.optionalString(entry.name) ?? uniqueId,
       package_name: this.optionalString(entry.package_name) ?? "",
+      alias: this.optionalString(entry.alias),
       path: this.optionalString(entry.path),
       original_file_path: this.optionalString(entry.original_file_path),
       tags: this.optionalStringArray(entry.tags),

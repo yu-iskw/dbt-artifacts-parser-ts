@@ -46,6 +46,9 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("search");
       expect(schemas).toHaveProperty("status");
       expect(schemas).toHaveProperty("freshness");
+      expect(schemas).toHaveProperty("discover");
+      expect(schemas).toHaveProperty("explain");
+      expect(schemas).toHaveProperty("impact");
     });
 
     it("should have correct inventory schema", () => {
