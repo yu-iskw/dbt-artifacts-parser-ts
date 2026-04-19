@@ -144,7 +144,7 @@ const defaultInvestigationSelection = (
   };
 };
 
-/** Full URL-derived slices for first paint (matches previous App.tsx initializers). */
+/** Full URL-derived slices for first paint from `location.search`. */
 export function createInitialNavigationState(
   search: string,
   preferences?: WorkspacePreferences,
@@ -316,7 +316,7 @@ function applyTimelineUrl(
   deleteNavSearchKeys(url, new Set(["selected"]));
 }
 
-/** Builds `pathname + search + hash` from workspace slices (matches App.tsx pushState effect). */
+/** Builds `pathname + search + hash` from workspace slices (same shape as history `pushState`). */
 export function buildNextUrlFromWorkspaceState(input: BuildUrlInput): string {
   const {
     pathname,
