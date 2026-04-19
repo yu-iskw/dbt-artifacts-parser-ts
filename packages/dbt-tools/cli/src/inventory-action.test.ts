@@ -39,6 +39,41 @@ describe("inventoryAction", () => {
     expect(parsed.entries.length).toBe(parsed.total);
   });
 
+  it("pages with --limit and --offset", async () => {
+    await inventoryAction(
+      { dbtTarget: dbtTargetDir, type: "model", json: true },
+      handleError,
+    );
+    const full = JSON.parse(consoleLogSpy.mock.calls[0][0] as string) as {
+      total: number;
+    };
+    expect(full.total).toBeGreaterThan(2);
+
+    consoleLogSpy.mockClear();
+    await inventoryAction(
+      {
+        dbtTarget: dbtTargetDir,
+        type: "model",
+        json: true,
+        limit: 2,
+        offset: 0,
+      },
+      handleError,
+    );
+    const paged = JSON.parse(consoleLogSpy.mock.calls[0][0] as string) as {
+      total: number;
+      entries: unknown[];
+      limit: number;
+      offset: number;
+      has_more: boolean;
+    };
+    expect(paged.entries.length).toBe(2);
+    expect(paged.total).toBe(full.total);
+    expect(paged.limit).toBe(2);
+    expect(paged.offset).toBe(0);
+    expect(paged.has_more).toBe(full.total > 2);
+  });
+
   it("works when only manifest.json is present", async () => {
     const manifestOnlyDir = await createJaffleManifestOnlyDir();
     try {
@@ -142,6 +177,15 @@ describe("inventoryAction", () => {
     const output = consoleLogSpy.mock.calls[0][0] as string;
     expect(output).toContain("dbt Inventory");
     expect(output).toContain("Total resources:");
+  });
+
+  it("rejects --offset without --limit", async () => {
+    await expect(
+      inventoryAction(
+        { dbtTarget: dbtTargetDir, json: true, offset: 1 },
+        handleError,
+      ),
+    ).rejects.toThrow(/offset requires --limit/i);
   });
 
   it("throws when required artifacts are missing", async () => {

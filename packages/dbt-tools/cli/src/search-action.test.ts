@@ -200,6 +200,44 @@ describe("searchAction", () => {
     expect(parsed.results.every((r) => r.resource_type !== "field")).toBe(true);
   });
 
+  it("pages with --limit on search results", async () => {
+    await searchAction(
+      "a",
+      { dbtTarget: dbtTargetDir, json: true },
+      handleError,
+    );
+    const full = JSON.parse(consoleLogSpy.mock.calls[0][0] as string) as {
+      total: number;
+    };
+    expect(full.total).toBeGreaterThan(2);
+
+    consoleLogSpy.mockClear();
+    await searchAction(
+      "a",
+      { dbtTarget: dbtTargetDir, json: true, limit: 2, offset: 0 },
+      handleError,
+    );
+    const paged = JSON.parse(consoleLogSpy.mock.calls[0][0] as string) as {
+      total: number;
+      results: unknown[];
+      limit: number;
+      has_more: boolean;
+    };
+    expect(paged.results.length).toBe(2);
+    expect(paged.total).toBe(full.total);
+    expect(paged.has_more).toBe(full.total > 2);
+  });
+
+  it("rejects --offset without --limit", async () => {
+    await expect(
+      searchAction(
+        "orders",
+        { dbtTarget: dbtTargetDir, json: true, offset: 1 },
+        handleError,
+      ),
+    ).rejects.toThrow(/offset requires --limit/i);
+  });
+
   it("throws for control characters in query", async () => {
     await expect(
       searchAction("\x00bad", { dbtTarget: dbtTargetDir }, handleError),

@@ -2,6 +2,7 @@ export { runReportAction } from "./run-report-action";
 export { depsAction } from "./deps-action";
 export { inventoryAction } from "./inventory-action";
 export { timelineAction } from "./timeline-action";
+export { failuresAction } from "./failures-action";
 export { searchAction } from "./search-action";
 export { discoverAction } from "./discover-action";
 export { explainAction } from "./explain-action";

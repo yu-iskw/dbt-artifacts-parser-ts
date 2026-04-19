@@ -12,6 +12,7 @@ graph TD
   CLI --> summary["summary\nmanifest statistics"]
   CLI --> graphCmd["graph\nexport dependency graph"]
   CLI --> rr["run-report\nexecution report"]
+  CLI --> failures["failures\nnon-success bundle"]
   CLI --> deps["deps\nupstream / downstream deps"]
   CLI --> inventory["inventory\nlist / filter resources"]
   CLI --> timeline["timeline\nper-node execution timeline"]
@@ -22,6 +23,7 @@ graph TD
   summary -->|manifest.json| MG[ManifestGraph]
   graphCmd -->|manifest.json| MG
   rr -->|run_results.json\n+ manifest.json| EA[ExecutionAnalyzer]
+  failures -->|run_results.json\n+ manifest optional| EA
   deps -->|manifest.json| DS[DependencyService]
   inventory -->|manifest.json| MG
   timeline -->|run_results.json\n+ manifest.json| EA
@@ -50,7 +52,9 @@ pnpm add -g @dbt-tools/cli
 - **Dependency analysis**: Find upstream/downstream dependencies with `deps` command
 - **Inventory**: Browse and filter all dbt resources in one view
 - **Timeline**: Inspect per-node execution timing (row-level, unlike `run-report`)
+- **`failures`**: Bounded JSON bundle of non-success `run_results` rows with optional manifest paths/SQL snippets and suggested `dbt`/CLI follow-ups
 - **Search**: Discover resources by name, tag, type, or free-text query
+- **Paging**: `inventory` and `search` support `--limit` / `--offset` (max 200); `run-report --json` supports `--node-executions-limit` / `--node-executions-offset` to cap the `node_executions` array while keeping summary metrics on the full run
 - **Status / Freshness**: Check if artifacts are present and how recent they are
 - **Subgraph focus**: Export a focused subgraph for any node via `graph --focus`
 - **Remote prefixes**: Use **`s3://bucket/prefix`** or **`gs://bucket/prefix`** (scheme required). Objects are downloaded to a temp directory for the duration of the command. **Credentials** use the normal AWS / GCP client chains; optional JSON in **`DBT_TOOLS_REMOTE_SOURCE`** supplies region, endpoint, GCS project id, etc. (see [ADR-0004](../../../docs/adr/0004-remote-object-storage-artifact-sources-and-auto-reload.md)).
@@ -169,6 +173,9 @@ dbt-tools run-report --dbt-target ./target --fields "total_execution_time,critic
 
 # JSON output
 dbt-tools run-report --dbt-target ./target --json
+
+# Cap node_executions in JSON (stable sort by started_at, then unique_id)
+dbt-tools run-report --dbt-target ./target --json --node-executions-limit 50
 ```
 
 **Options:**
@@ -178,8 +185,34 @@ dbt-tools run-report --dbt-target ./target --json
 - `--bottlenecks` - Include bottleneck section in report
 - `--bottlenecks-top <n>` - Top N slowest nodes (default: 10 when `--bottlenecks`)
 - `--bottlenecks-threshold <s>` - Nodes exceeding s seconds (cannot combine with `--bottlenecks-top`)
+- `--node-executions-limit <n>` - When set with `--json`, return at most N rows from `node_executions` (totals, critical path, and bottlenecks still reflect the full run)
+- `--node-executions-offset <n>` - Skip N rows before applying `--node-executions-limit` (requires `--node-executions-limit`)
 - `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
+
+---
+
+### failures
+
+Summarize **non-success** rows from `run_results.json` in one bounded JSON payload (default **50** rows, max **200**). Default filter matches **`timeline --failed-only`**: excludes `success` and `pass`; override with **`--status`**. Optional manifest enrichment adds paths or capped SQL snippets. **`next_commands`** lists heuristic `dbt` selectors (verify in your project before running); **`primitive_commands`** points back to `timeline`, `run-report`, `explain`, and `deps`.
+
+```bash
+dbt-tools failures --dbt-target ./target --json
+dbt-tools failures --dbt-target ./target --json --limit 20 --offset 0
+dbt-tools failures --dbt-target ./target --json --status error,warn --include-path
+```
+
+**Options:**
+
+- `--dbt-target <path|s3://…|gs://…>` - Artifact root (requires `run_results.json`; `manifest.json` optional for enrichment)
+- `--status <csv>` - Status filter (comma-separated). When omitted, all statuses except `success` and `pass`
+- `--limit <n>` - Page size (default 50, max 200)
+- `--offset <n>` - Skip N rows after sort (paging; default limit still applies)
+- `--message-max-chars <n>` - Truncate `message` beyond N characters
+- `--include-path` - Add `path`, `original_file_path`, `resource_type` from manifest when the node exists in the graph
+- `--include-compiled` - Include `compiled_code` / `raw_code` snippets (capped)
+- `--compiled-max-chars <n>` - Per-field cap when `--include-compiled` is set
+- `--fields`, `--json`, `--no-json` - Same semantics as other commands
 
 ---
 
@@ -254,6 +287,9 @@ dbt-tools inventory --dbt-target ./target --type model --fields "entries"
 
 # Force JSON (default in non-TTY)
 dbt-tools inventory --dbt-target ./target --json
+
+# Page through models (stable sort: resource_type, then name)
+dbt-tools inventory --dbt-target ./target --type model --limit 30 --offset 0 --json
 ```
 
 **Options:**
@@ -263,6 +299,8 @@ dbt-tools inventory --dbt-target ./target --json
 - `--package <package>` - Filter by exact package name
 - `--tag <tag>` - Filter by tag(s), comma-separated (any match)
 - `--path <path>` - Filter by file path substring
+- `--limit <n>` - Return at most N entries after filters (max 200; omit for full list)
+- `--offset <n>` - Skip N entries after sort (**requires `--limit`**)
 - `--fields <fields>` - Comma-separated fields to include
 - `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
@@ -294,12 +332,12 @@ Show **per-node execution entries** from run_results.json, sorted by duration. T
 
 **How `timeline` differs from `run-report`:**
 
-|                     | `run-report`                                          | `timeline`                           |
-| ------------------- | ----------------------------------------------------- | ------------------------------------ |
-| Output              | Aggregated stats (totals, critical path, bottlenecks) | One row per executed node            |
-| Use case            | Overall health summary                                | Inspect individual execution timings |
-| CSV output          | No                                                    | Yes                                  |
-| Filtering by status | No                                                    | Yes (`--failed-only`, `--status`)    |
+|                     | `run-report`                                              | `timeline`                           |
+| ------------------- | --------------------------------------------------------- | ------------------------------------ |
+| Output              | Aggregated stats (totals, critical path, bottlenecks)     | One row per executed node            |
+| Use case            | Overall health summary                                    | Inspect individual execution timings |
+| CSV output          | No                                                        | Yes                                  |
+| Filtering by status | No (see [`failures`](#failures) for a non-success bundle) | Yes (`--failed-only`, `--status`)    |
 
 Requires: `manifest.json` and `run_results.json` under **`--dbt-target`**. Rows are enriched with **`name`** and **`resource_type`** from the manifest when available.
 
@@ -386,6 +424,9 @@ dbt-tools search --dbt-target ./target orders --no-json
 
 # Force JSON
 dbt-tools search --dbt-target ./target orders --json
+
+# Page results (stable sort: score desc, then unique_id)
+dbt-tools search --dbt-target ./target orders --limit 10 --offset 0 --json
 ```
 
 **Supported inline tokens in query:**
@@ -403,11 +444,15 @@ dbt-tools search --dbt-target ./target orders --json
 - `--package <package>` - Filter by package name
 - `--tag <tag>` - Filter by tag(s), comma-separated
 - `--path <path>` - Filter by file path substring
+- `--limit <n>` - Return at most N matches after scoring (max 200; omit for full list)
+- `--offset <n>` - Skip N matches after sort (**requires `--limit`**)
 - `--fields <fields>` - Comma-separated fields to include
 - `--json` - Force JSON stdout and structured JSON errors on stderr
 - `--no-json` - Force human-readable output
 
 **Example JSON output:**
+
+When `--limit` is set, JSON also includes `has_more`, `limit`, and `offset`; `total` is the full match count before paging.
 
 ```json
 {

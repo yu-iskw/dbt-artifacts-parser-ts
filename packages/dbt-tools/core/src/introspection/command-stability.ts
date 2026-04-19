@@ -9,6 +9,7 @@ export const COMMAND_STABILITY: Record<string, StabilityLevel> = {
   "run-report": "core",
   deps: "core",
   inventory: "core",
+  failures: "evolving",
   timeline: "core",
   search: "core",
   discover: "evolving",

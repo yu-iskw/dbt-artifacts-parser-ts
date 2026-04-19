@@ -32,6 +32,7 @@ import {
   diagnoseNodeAction,
   exportAction,
   statusAction,
+  failuresAction,
 } from "./cli-actions";
 import { resolveCliArtifactPaths } from "./cli-artifact-resolve";
 import { CLI_PACKAGE_VERSION } from "./version";
@@ -68,6 +69,16 @@ const DEFAULT_GRAPH_FORMAT = "json";
 const OPT_FIELDS = "--fields <fields>";
 const DESC_FIELDS = "Comma-separated list of fields to include";
 const OPT_FORMAT = "--format <format>";
+const OPT_LIMIT_N = "--limit <n>";
+const OPT_OFFSET_N = "--offset <n>";
+const DESC_INVENTORY_LIMIT =
+  "Return at most N entries after filters (max 200); omit for full list";
+const DESC_SEARCH_LIMIT =
+  "Return at most N matches after scoring (max 200); omit for full list";
+const DESC_OFFSET_REQUIRES_LIMIT = "Skip N rows after sort (requires --limit)";
+const DESC_FAILURES_LIMIT = "Max rows returned (default 50, max 200)";
+const DESC_FAILURES_OFFSET =
+  "Skip N rows after stable sort (uses explicit or default --limit)";
 
 program
   .name("dbt-tools")
@@ -346,6 +357,16 @@ program
     "When using --adapter-top-by, require rows_affected >= n",
     parseFloat,
   )
+  .option(
+    "--node-executions-limit <n>",
+    "Cap node_executions length in JSON output (stable sort by started_at then unique_id); summary metrics still use the full run",
+    parseInt,
+  )
+  .option(
+    "--node-executions-offset <n>",
+    "Skip N node_executions rows before applying --node-executions-limit (requires --node-executions-limit)",
+    parseInt,
+  )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
   .action(
@@ -361,6 +382,8 @@ program
         adapterMinBytes?: number;
         adapterMinSlotMs?: number;
         adapterMinRowsAffected?: number;
+        nodeExecutionsLimit?: number;
+        nodeExecutionsOffset?: number;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
@@ -417,6 +440,8 @@ program
           adapterMinBytes: options.adapterMinBytes,
           adapterMinSlotMs: options.adapterMinSlotMs,
           adapterMinRowsAffected: options.adapterMinRowsAffected,
+          nodeExecutionsLimit: options.nodeExecutionsLimit,
+          nodeExecutionsOffset: options.nodeExecutionsOffset,
           json: options.json,
           noJson: options.noJson,
           dbtTarget: options.dbtTarget,
@@ -485,6 +510,8 @@ program
   .option(OPT_FILTER_TAG, DESC_FILTER_TAG)
   .option(OPT_FILTER_PATH, DESC_FILTER_PATH)
   .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_LIMIT_N, DESC_INVENTORY_LIMIT, parseInt)
+  .option(OPT_OFFSET_N, DESC_OFFSET_REQUIRES_LIMIT, parseInt)
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
@@ -496,11 +523,68 @@ program
         tag?: string;
         path?: string;
         fields?: string;
+        limit?: number;
+        offset?: number;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
       await inventoryAction(options, handleCliError);
+    },
+  );
+
+/**
+ * Failures command: non-success run_results rows with bounded JSON for triage
+ */
+program
+  .command("failures")
+  .description(
+    "List non-successful nodes from run_results.json with optional manifest enrichment and suggested follow-up commands",
+  )
+  .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
+  .option(
+    "--status <status>",
+    "Override default filter: comma-separated statuses (default: all except success and pass)",
+  )
+  .option(OPT_LIMIT_N, DESC_FAILURES_LIMIT, parseInt)
+  .option(OPT_OFFSET_N, DESC_FAILURES_OFFSET, parseInt)
+  .option(
+    "--message-max-chars <n>",
+    "Truncate message field beyond N characters",
+    parseInt,
+  )
+  .option(
+    "--include-path",
+    "Add path, original_file_path, and resource_type from manifest when available",
+  )
+  .option(
+    "--include-compiled",
+    "Include compiled_code and raw_code snippets from manifest (capped; use with --compiled-max-chars)",
+  )
+  .option(
+    "--compiled-max-chars <n>",
+    "Max characters per compiled/raw snippet when --include-compiled is set",
+    parseInt,
+  )
+  .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_JSON, DESC_JSON)
+  .option(OPT_NO_JSON, DESC_NO_JSON)
+  .action(
+    async (
+      options: {
+        status?: string;
+        limit?: number;
+        offset?: number;
+        messageMaxChars?: number;
+        includePath?: boolean;
+        includeCompiled?: boolean;
+        compiledMaxChars?: number;
+        fields?: string;
+        json?: boolean;
+        noJson?: boolean;
+      } & ArtifactRootFlags,
+    ) => {
+      await failuresAction(options, handleCliError);
     },
   );
 
@@ -566,6 +650,8 @@ program
   .option(OPT_FILTER_TAG, DESC_FILTER_TAG)
   .option(OPT_FILTER_PATH, DESC_FILTER_PATH)
   .option(OPT_FIELDS, DESC_FIELDS)
+  .option(OPT_LIMIT_N, DESC_SEARCH_LIMIT, parseInt)
+  .option(OPT_OFFSET_N, DESC_OFFSET_REQUIRES_LIMIT, parseInt)
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
@@ -578,6 +664,8 @@ program
         tag?: string;
         path?: string;
         fields?: string;
+        limit?: number;
+        offset?: number;
         json?: boolean;
         noJson?: boolean;
       } & ArtifactRootFlags,
@@ -602,7 +690,7 @@ program
   .option(OPT_FILTER_PACKAGE, DESC_FILTER_PACKAGE)
   .option(OPT_FILTER_TAG, DESC_FILTER_TAG)
   .option(OPT_FILTER_PATH, DESC_FILTER_PATH)
-  .option("--limit <n>", "Max matches (default 50, max 200)", parseInt)
+  .option(OPT_LIMIT_N, "Max matches (default 50, max 200)", parseInt)
   .option(OPT_FIELDS, DESC_FIELDS)
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)

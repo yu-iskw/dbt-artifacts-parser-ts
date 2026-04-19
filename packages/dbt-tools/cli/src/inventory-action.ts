@@ -14,6 +14,11 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
+import {
+  parseOptionalListLimit,
+  parseListOffset,
+  assertOffsetRequiresLimit,
+} from "./cli-pagination";
 
 export type InventoryOptions = {
   type?: string;
@@ -21,6 +26,8 @@ export type InventoryOptions = {
   tag?: string;
   path?: string;
   fields?: string;
+  limit?: number;
+  offset?: number;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -36,8 +43,12 @@ export type InventoryEntry = {
 };
 
 export type InventoryResult = {
+  /** Count of resources matching filters (before paging). */
   total: number;
   entries: InventoryEntry[];
+  limit?: number;
+  offset?: number;
+  has_more?: boolean;
 };
 
 function matchesFilters(
@@ -86,6 +97,11 @@ export function formatInventory(result: InventoryResult): string {
   lines.push("dbt Inventory");
   lines.push("=============");
   lines.push(`Total resources: ${result.total}`);
+  if (result.limit !== undefined) {
+    lines.push(
+      `Page: limit=${result.limit} offset=${result.offset ?? 0} has_more=${String(result.has_more ?? false)}`,
+    );
+  }
 
   if (result.entries.length === 0) {
     lines.push("(no matching resources)");
@@ -154,7 +170,23 @@ export async function inventoryAction(
       return a.name.localeCompare(b.name);
     });
 
-    const result: InventoryResult = { total: entries.length, entries };
+    const matchedTotal = entries.length;
+    const limit = parseOptionalListLimit(options.limit);
+    const offset = parseListOffset(options.offset);
+    assertOffsetRequiresLimit(limit, offset);
+
+    let pageEntries = entries;
+    let hasMore: boolean | undefined;
+    if (limit !== undefined) {
+      pageEntries = entries.slice(offset, offset + limit);
+      hasMore = offset + pageEntries.length < matchedTotal;
+    }
+
+    const result: InventoryResult = {
+      total: matchedTotal,
+      entries: pageEntries,
+      ...(limit !== undefined ? { limit, offset, has_more: hasMore } : {}),
+    };
 
     const useJson = shouldOutputJSON(options.json, options.noJson);
 

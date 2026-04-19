@@ -31,6 +31,16 @@ describe("SchemaGenerator", () => {
       const schema = getCommandSchema("run-report");
       expect(schema).not.toBeNull();
       expect(schema?.command).toBe("run-report");
+      expect(
+        schema?.options?.some((o) => o.name === "--node-executions-limit"),
+      ).toBe(true);
+    });
+
+    it("should return schema for failures command", () => {
+      const schema = getCommandSchema("failures");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("failures");
+      expect(schema?.stability).toBe("evolving");
     });
 
     it("should return schema for schema command", () => {
@@ -56,6 +66,7 @@ describe("SchemaGenerator", () => {
       expect(schemas).toHaveProperty("discover");
       expect(schemas).toHaveProperty("explain");
       expect(schemas).toHaveProperty("export");
+      expect(schemas).toHaveProperty("failures");
     });
 
     it("should have complete schema structure for all commands", () => {

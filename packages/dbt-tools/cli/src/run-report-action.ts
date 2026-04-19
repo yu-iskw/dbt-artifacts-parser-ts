@@ -28,6 +28,7 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
+import { parseListOffset, assertOffsetRequiresLimit } from "./cli-pagination";
 
 type RunReportOptions = {
   fields?: string;
@@ -42,7 +43,20 @@ type RunReportOptions = {
   adapterMinBytes?: number;
   adapterMinSlotMs?: number;
   adapterMinRowsAffected?: number;
+  /** When set with JSON output, slice `node_executions` after computing summaries. */
+  nodeExecutionsLimit?: number;
+  nodeExecutionsOffset?: number;
 } & ArtifactRootCliOptions;
+
+function sortNodeExecutionsForSlice(
+  executions: NodeExecution[],
+): NodeExecution[] {
+  return [...executions].sort((a, b) => {
+    const cmp = (a.started_at ?? "").localeCompare(b.started_at ?? "");
+    if (cmp !== 0) return cmp;
+    return a.unique_id.localeCompare(b.unique_id);
+  });
+}
 
 /** Create a reduced summary when manifest.json is unavailable. */
 function createMinimalSummary(
@@ -279,6 +293,23 @@ export async function runReportAction(
         report.bottlenecks = bottlenecks;
       }
       Object.assign(report, adapterJson);
+
+      const lim = options.nodeExecutionsLimit;
+      const off = parseListOffset(options.nodeExecutionsOffset);
+      assertOffsetRequiresLimit(lim, off);
+      if (lim !== undefined) {
+        const full = report.node_executions as NodeExecution[];
+        const sorted = sortNodeExecutionsForSlice(full);
+        const page = sorted.slice(off, off + lim);
+        report.node_executions = page;
+        const fullLen = sorted.length;
+        const hasMore = off + page.length < fullLen;
+        report.node_executions_has_more = hasMore;
+        report.node_executions_truncated = off > 0 || hasMore;
+        report.node_executions_limit = lim;
+        report.node_executions_offset = off;
+      }
+
       console.log(formatOutput(report, true));
     } else {
       console.log(

@@ -157,6 +157,7 @@ vite.config.ts.timestamp-*
 .cursor/hooks/state/
 
 TODO.md
+.todo_list/
 
 codeql-db/
 

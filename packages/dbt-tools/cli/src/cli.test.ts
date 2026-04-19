@@ -52,6 +52,7 @@ describe("CLI Integration", () => {
       expect(schemas).toHaveProperty("export");
       expect(schemas).toHaveProperty("status");
       expect(schemas).toHaveProperty("freshness");
+      expect(schemas).toHaveProperty("failures");
     });
 
     it("should have correct inventory schema", () => {
@@ -62,6 +63,8 @@ describe("CLI Integration", () => {
       expect(typeOpt).toBeDefined();
       const tagOpt = schema?.options?.find((o) => o.name === "--tag");
       expect(tagOpt).toBeDefined();
+      const limitOpt = schema?.options?.find((o) => o.name === "--limit");
+      expect(limitOpt?.type).toBe("number");
     });
 
     it("should have correct timeline schema", () => {
@@ -80,6 +83,14 @@ describe("CLI Integration", () => {
       expect(schema?.command).toBe("search");
       expect(schema?.arguments[0]?.name).toBe("query");
       expect(schema?.arguments[0]?.required).toBe(false);
+      expect(schema?.options?.some((o) => o.name === "--limit")).toBe(true);
+    });
+
+    it("should have correct failures schema", () => {
+      const schema = getCommandSchema("failures");
+      expect(schema).not.toBeNull();
+      expect(schema?.command).toBe("failures");
+      expect(schema?.stability).toBe("evolving");
     });
 
     it("should have correct discover schema", () => {

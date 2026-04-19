@@ -206,6 +206,18 @@ function getRunReportSchema(): CommandSchema {
         description: "With --adapter-top-by, require slot_ms >= n",
       },
       {
+        name: "--node-executions-limit",
+        type: TYPE_NUMBER,
+        description:
+          "When set, cap node_executions in JSON (stable sort); summary metrics still use full run",
+      },
+      {
+        name: "--node-executions-offset",
+        type: TYPE_NUMBER,
+        description:
+          "Skip N node_executions rows before --node-executions-limit (requires --node-executions-limit)",
+      },
+      {
         name: OPT_JSON,
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,
@@ -347,6 +359,16 @@ function getInventorySchema(): CommandSchema {
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Return at most N entries after filters (max 200)",
+      },
+      {
+        name: "--offset",
+        type: TYPE_NUMBER,
+        description: "Skip N entries after sort (requires --limit)",
+      },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       ...getArtifactRootCliSchemaOptions(),
@@ -354,6 +376,67 @@ function getInventorySchema(): CommandSchema {
     output_format: OUTPUT_JSON_OR_HUMAN,
     example:
       "dbt-tools inventory --dbt-target ./target --type model --tag finance",
+  };
+}
+
+function getFailuresSchema(): CommandSchema {
+  return {
+    command: "failures",
+    description:
+      "List non-successful nodes from run_results.json with optional manifest enrichment and suggested follow-up commands",
+    arguments: [],
+    options: [
+      {
+        name: "--status",
+        type: TYPE_STRING,
+        description:
+          "Comma-separated statuses to include (default: all except success and pass)",
+      },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Max rows returned (default 50, max 200)",
+      },
+      {
+        name: "--offset",
+        type: TYPE_NUMBER,
+        description:
+          "Skip N rows after sort (paging; default limit still applies)",
+      },
+      {
+        name: "--message-max-chars",
+        type: TYPE_NUMBER,
+        description: "Truncate message field beyond N characters",
+      },
+      {
+        name: "--include-path",
+        type: TYPE_BOOLEAN,
+        description:
+          "Add path, original_file_path, and resource_type from manifest when available",
+      },
+      {
+        name: "--include-compiled",
+        type: TYPE_BOOLEAN,
+        description:
+          "Include compiled_code and raw_code snippets from manifest (capped)",
+      },
+      {
+        name: "--compiled-max-chars",
+        type: TYPE_NUMBER,
+        description:
+          "Max characters per compiled/raw snippet when --include-compiled is set",
+      },
+      {
+        name: "--fields",
+        type: TYPE_STRING,
+        description: DESC_FIELDS,
+      },
+      { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
+      { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
+      ...getArtifactRootCliSchemaOptions(),
+    ],
+    output_format: OUTPUT_JSON_OR_HUMAN,
+    example: "dbt-tools failures --dbt-target ./target --json --limit 20",
   };
 }
 
@@ -645,6 +728,16 @@ function getSearchSchema(): CommandSchema {
         type: TYPE_STRING,
         description: DESC_FIELDS,
       },
+      {
+        name: "--limit",
+        type: TYPE_NUMBER,
+        description: "Return at most N matches after scoring (max 200)",
+      },
+      {
+        name: "--offset",
+        type: TYPE_NUMBER,
+        description: "Skip N matches after sort (requires --limit)",
+      },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       ...getArtifactRootCliSchemaOptions(),
@@ -680,6 +773,7 @@ export function getAllSchemas(): Record<string, CommandSchema> {
     "run-report": getRunReportSchema(),
     deps: getDepsSchema(),
     inventory: getInventorySchema(),
+    failures: getFailuresSchema(),
     timeline: getTimelineSchema(),
     search: getSearchSchema(),
     discover: getDiscoverSchema(),

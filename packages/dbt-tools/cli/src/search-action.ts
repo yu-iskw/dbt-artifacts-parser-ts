@@ -17,6 +17,11 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "./cli-artifact-resolve";
+import {
+  parseOptionalListLimit,
+  parseListOffset,
+  assertOffsetRequiresLimit,
+} from "./cli-pagination";
 
 export type SearchOptions = {
   type?: string;
@@ -24,6 +29,8 @@ export type SearchOptions = {
   tag?: string;
   path?: string;
   fields?: string;
+  limit?: number;
+  offset?: number;
   json?: boolean;
   noJson?: boolean;
 } & ArtifactRootCliOptions;
@@ -40,8 +47,12 @@ export type SearchResult = {
 
 export type SearchOutput = {
   query?: string;
+  /** Total matches before paging. */
   total: number;
   results: SearchResult[];
+  limit?: number;
+  offset?: number;
+  has_more?: boolean;
 };
 
 /**
@@ -55,6 +66,11 @@ export function formatSearch(output: SearchOutput): string {
   lines.push(header);
   lines.push("=".repeat(header.length));
   lines.push(`${output.total} result${output.total !== 1 ? "s" : ""} found`);
+  if (output.limit !== undefined) {
+    lines.push(
+      `Page: limit=${output.limit} offset=${output.offset ?? 0} has_more=${String(output.has_more ?? false)}`,
+    );
+  }
 
   if (output.results.length === 0) {
     return lines.join("\n");
@@ -143,10 +159,23 @@ export async function searchAction(
     });
 
     const results = scored.map((s) => s.result);
+    const matchedTotal = results.length;
+    const limit = parseOptionalListLimit(options.limit);
+    const offset = parseListOffset(options.offset);
+    assertOffsetRequiresLimit(limit, offset);
+
+    let pageResults = results;
+    let hasMore: boolean | undefined;
+    if (limit !== undefined) {
+      pageResults = results.slice(offset, offset + limit);
+      hasMore = offset + pageResults.length < matchedTotal;
+    }
+
     const output: SearchOutput = {
       query: query || undefined,
-      total: results.length,
-      results,
+      total: matchedTotal,
+      results: pageResults,
+      ...(limit !== undefined ? { limit, offset, has_more: hasMore } : {}),
     };
 
     const useJson = shouldOutputJSON(options.json, options.noJson);
