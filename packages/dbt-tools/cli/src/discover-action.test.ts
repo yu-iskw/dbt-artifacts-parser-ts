@@ -103,6 +103,70 @@ describe("discoverAction", () => {
       await fs.rm(manifestOnlyDir, { recursive: true, force: true });
     }
   });
+
+  it("emits runnable primitive commands for discover matches", async () => {
+    await discoverAction(
+      "customers",
+      { dbtTarget: dbtTargetDir, json: true },
+      handleError,
+    );
+    const raw = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+    const parsed = JSON.parse(raw) as {
+      matches: Array<{ primitive_commands?: string[] }>;
+    };
+    expect(parsed.matches[0]?.primitive_commands).toContain(
+      'dbt-tools deps "model.jaffle_shop.customers" --direction downstream',
+    );
+    expect(parsed.matches[0]?.primitive_commands).toContain(
+      'dbt-tools search "model.jaffle_shop.customers"',
+    );
+  });
+
+  it("preserves discover filters in web_url", async () => {
+    vi.stubEnv("DBT_TOOLS_WEB_BASE_URL", "http://127.0.0.1:5173");
+    try {
+      await discoverAction(
+        "customers",
+        {
+          dbtTarget: dbtTargetDir,
+          json: true,
+          type: "model",
+          package: "jaffle_shop",
+          tag: "nightly",
+          path: "models/staging",
+        },
+        handleError,
+      );
+      const raw = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(raw) as { web_url?: string };
+      expect(parsed.web_url).toContain(
+        "q=customers+type%3Amodel+package%3Ajaffle_shop+tag%3Anightly+path%3Amodels%2Fstaging",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("omits q for filter-only web_url", async () => {
+    vi.stubEnv("DBT_TOOLS_WEB_BASE_URL", "http://127.0.0.1:5173");
+    try {
+      await discoverAction(
+        "",
+        {
+          dbtTarget: dbtTargetDir,
+          json: true,
+          type: "model",
+        },
+        handleError,
+      );
+      const raw = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+      const parsed = JSON.parse(raw) as { web_url?: string };
+      expect(parsed.web_url).toContain("view=inventory");
+      expect(parsed.web_url).toContain("q=type%3Amodel");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
 
 describe("formatDiscoverHuman", () => {

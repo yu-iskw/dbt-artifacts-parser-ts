@@ -31,14 +31,35 @@ export type DiscoverCliOptions = {
   trace?: boolean;
 } & ArtifactRootCliOptions;
 
+function buildDiscoverQueryForWeb(
+  output: DiscoverOutput,
+  options: Pick<DiscoverCliOptions, "path" | "package" | "tag" | "type">,
+): string {
+  const query = output.query.trim();
+  const filters = [
+    options.type?.trim() ? `type:${options.type.trim()}` : null,
+    options.package?.trim() ? `package:${options.package.trim()}` : null,
+    options.tag?.trim() ? `tag:${options.tag.trim()}` : null,
+    options.path?.trim() ? `path:${options.path.trim()}` : null,
+  ].filter((token): token is string => token !== null);
+
+  return [query, ...filters].filter(Boolean).join(" ").trim();
+}
+
 function enrichDiscoverJson(
   output: DiscoverOutput,
-  options: Pick<DiscoverCliOptions, "trace">,
+  options: Pick<
+    DiscoverCliOptions,
+    "path" | "package" | "tag" | "trace" | "type"
+  >,
 ): DiscoverOutput {
   const base = getDbtToolsWebBaseUrlFromEnv();
   const next: DiscoverOutput = { ...output };
   if (base) {
-    next.web_url = buildDiscoverWebUrl(base, output.query);
+    next.web_url = buildDiscoverWebUrl(
+      base,
+      buildDiscoverQueryForWeb(output, options),
+    );
     next.review_url = next.web_url;
   }
   if (options.trace) {
@@ -133,7 +154,13 @@ export async function discoverAction(
     });
 
     const useJson = shouldOutputJSON(options.json, options.noJson);
-    const enriched = enrichDiscoverJson(output, { trace: options.trace });
+    const enriched = enrichDiscoverJson(output, {
+      type: options.type,
+      package: options.package,
+      tag: options.tag,
+      path: options.path,
+      trace: options.trace,
+    });
 
     if (useJson) {
       let out: unknown = enriched;

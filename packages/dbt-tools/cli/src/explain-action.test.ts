@@ -54,4 +54,20 @@ describe("explainAction", () => {
       vi.unstubAllEnvs();
     }
   });
+
+  it("emits runnable primitive commands", async () => {
+    await explainAction(
+      "customers",
+      { dbtTarget: dbtTargetDir, json: true },
+      handleError,
+    );
+    const raw = consoleLogSpy.mock.calls.at(-1)?.[0] as string;
+    const parsed = JSON.parse(raw) as { primitive_commands: string[] };
+    expect(parsed.primitive_commands).toContain(
+      'dbt-tools deps "model.jaffle_shop.customers" --direction downstream',
+    );
+    expect(parsed.primitive_commands).toContain(
+      'dbt-tools search "model.jaffle_shop.customers"',
+    );
+  });
 });

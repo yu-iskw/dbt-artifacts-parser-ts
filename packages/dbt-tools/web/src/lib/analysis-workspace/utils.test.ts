@@ -77,6 +77,22 @@ describe("matchesResource", () => {
     expect(matchesResource(makeResource(), "customers")).toBe(false));
   it("empty query always matches", () =>
     expect(matchesResource(makeResource(), "")).toBe(true));
+  it("matches structured type filters", () =>
+    expect(matchesResource(makeResource(), "type:model")).toBe(true));
+  it("matches structured package and path filters", () =>
+    expect(
+      matchesResource(
+        makeResource({ path: "models/marts/orders.sql" }),
+        "package:jaffle_shop path:marts",
+      ),
+    ).toBe(true));
+  it("matches structured tag filters", () =>
+    expect(
+      matchesResource(
+        makeResource({ tags: ["daily", "finance"] }),
+        "tag:finance",
+      ),
+    ).toBe(true));
 });
 
 describe("matchesAssetStatus", () => {

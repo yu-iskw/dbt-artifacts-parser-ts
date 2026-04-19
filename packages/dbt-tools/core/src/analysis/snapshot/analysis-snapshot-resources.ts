@@ -31,11 +31,15 @@ function readGraphResourceCore(
   uniqueId: string,
   attributes: Record<string, unknown>,
 ) {
+  const tags = Array.isArray(attributes.tags)
+    ? attributes.tags.filter((tag): tag is string => typeof tag === "string")
+    : undefined;
   return {
     uniqueId,
     name: String(attributes.name || uniqueId),
     resourceType: String(attributes.resource_type || "unknown"),
     packageName: String(attributes.package_name || ""),
+    ...(tags !== undefined ? { tags } : {}),
     path: optionalStringField(attributes, "path"),
     originalFilePath: optionalStringField(attributes, "original_file_path"),
     patchPath: optionalStringField(attributes, "patch_path"),

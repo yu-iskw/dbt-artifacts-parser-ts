@@ -9,12 +9,14 @@ export function parseDiscoveryQueryTokens(query: string): {
   type?: string;
   package?: string;
   tag?: string;
+  path?: string;
 } {
   const tokens = query.split(/\s+/).filter(Boolean);
   const terms: string[] = [];
   let type: string | undefined;
   let pkg: string | undefined;
   let tag: string | undefined;
+  let path: string | undefined;
 
   for (const token of tokens) {
     if (token.startsWith("type:")) {
@@ -23,6 +25,8 @@ export function parseDiscoveryQueryTokens(query: string): {
       pkg = token.slice(8);
     } else if (token.startsWith("tag:")) {
       tag = token.slice(4);
+    } else if (token.startsWith("path:")) {
+      path = token.slice(5);
     } else if (token.startsWith("owner:") || token.startsWith("source:")) {
       terms.push(token.slice(token.indexOf(":") + 1));
     } else {
@@ -30,7 +34,7 @@ export function parseDiscoveryQueryTokens(query: string): {
     }
   }
 
-  return { terms, type, package: pkg, tag };
+  return { terms, type, package: pkg, tag, path };
 }
 
 /** Apply structured filters (shared with CLI search). */

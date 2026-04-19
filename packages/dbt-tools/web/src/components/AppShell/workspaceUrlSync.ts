@@ -118,14 +118,33 @@ const defaultTimelineFilters = (
   };
 };
 
-/** Legacy `?view=discover&q=…` seeds Inventory list filter (`resourceQuery`). */
-function mergeLegacyDiscoverQueryIntoAsset(
+function getInventoryQueryFromSearch(search: string): string {
+  const params = new URLSearchParams(search);
+  const resolvedView = parseViewFromSearch(search);
+  if (resolvedView !== "inventory") return "";
+
+  const terms: string[] = [];
+  const q = params.get("q")?.trim() ?? "";
+  if (q !== "") {
+    terms.push(q);
+  }
+
+  for (const key of ["type", "package", "tag", "path"] as const) {
+    const value = params.get(key)?.trim() ?? "";
+    if (value !== "") {
+      terms.push(`${key}:${value}`);
+    }
+  }
+
+  return terms.join(" ").trim();
+}
+
+/** Inventory/discover URLs seed the Inventory list filter (`resourceQuery`). */
+function mergeInventoryQueryIntoAsset(
   search: string,
   asset: AssetViewState,
 ): AssetViewState {
-  const params = new URLSearchParams(search);
-  if (params.get("view") !== "discover") return asset;
-  const q = params.get("q")?.trim() ?? "";
+  const q = getInventoryQueryFromSearch(search);
   if (q === "") return asset;
   return { ...asset, resourceQuery: q };
 }
@@ -152,7 +171,7 @@ export function createInitialNavigationState(
   const activeView = parseViewFromSearch(search) ?? "health";
   return {
     activeView,
-    assetViewState: mergeLegacyDiscoverQueryIntoAsset(
+    assetViewState: mergeInventoryQueryIntoAsset(
       search,
       defaultAssetViewState(search, preferences),
     ),
@@ -202,7 +221,7 @@ export function applySearchToWorkspaceState(search: string): {
   return {
     activeView: view ?? undefined,
     assetViewState: (current) =>
-      mergeLegacyDiscoverQueryIntoAsset(search, {
+      mergeInventoryQueryIntoAsset(search, {
         ...current,
         selectedResourceId: resourceId,
         activeTab: getInitialAssetTab(search),
@@ -273,6 +292,12 @@ function applyInventoryUrl(
     url.searchParams.delete("resource");
   }
   url.searchParams.set("assetTab", assetViewState.activeTab);
+  const resourceQuery = assetViewState.resourceQuery.trim();
+  if (resourceQuery !== "") {
+    url.searchParams.set("q", resourceQuery);
+  } else {
+    url.searchParams.delete("q");
+  }
   url.searchParams.delete("kind");
   if (assetViewState.activeTab === "lineage") {
     if (lineageViewState.selectedResourceId) {
@@ -285,7 +310,7 @@ function applyInventoryUrl(
     url.searchParams.set("allDeps", lineageViewState.allDepsMode ? "1" : "0");
     url.searchParams.set("lens", lineageViewState.lensMode);
   } else {
-    deleteNavSearchKeys(url, new Set(["resource", "assetTab"]));
+    deleteNavSearchKeys(url, new Set(["resource", "assetTab", "q"]));
   }
 }
 

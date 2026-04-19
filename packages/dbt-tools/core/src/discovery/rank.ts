@@ -191,8 +191,8 @@ function buildPrimitiveCommands(uniqueId: string): string[] {
   return [
     `dbt-tools explain ${q}`,
     `dbt-tools impact ${q}`,
-    `dbt-tools deps --resource ${q} --direction downstream`,
-    `dbt-tools inventory --resource ${q}`,
+    `dbt-tools deps ${q} --direction downstream`,
+    `dbt-tools search ${q}`,
   ];
 }
 

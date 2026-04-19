@@ -127,8 +127,8 @@ export async function impactAction(
 
     const uidJson = JSON.stringify(resolved.unique_id);
     const primitive_commands = [
-      `dbt-tools deps --resource ${uidJson} --direction downstream --format flat`,
-      `dbt-tools deps --resource ${uidJson} --direction upstream --format flat`,
+      `dbt-tools deps ${uidJson} --direction downstream --format flat`,
+      `dbt-tools deps ${uidJson} --direction upstream --format flat`,
       `dbt-tools graph --focus ${uidJson} --focus-direction downstream`,
     ];
 

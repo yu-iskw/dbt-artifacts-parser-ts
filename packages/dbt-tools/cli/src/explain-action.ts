@@ -65,8 +65,8 @@ function buildPrimitiveCommands(uniqueId: string): string[] {
   const q = JSON.stringify(uniqueId);
   return [
     `dbt-tools discover ${JSON.stringify(uniqueId.split(".").pop() ?? uniqueId)}`,
-    `dbt-tools deps --resource ${q} --direction downstream`,
-    `dbt-tools inventory --resource ${q}`,
+    `dbt-tools deps ${q} --direction downstream`,
+    `dbt-tools search ${q}`,
   ];
 }
 

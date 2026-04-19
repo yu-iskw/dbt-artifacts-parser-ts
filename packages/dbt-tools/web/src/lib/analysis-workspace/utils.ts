@@ -6,6 +6,10 @@ import type {
   ResourceNode,
   StatusTone,
 } from "@web/types";
+import {
+  applyDiscoveryNodeFilters,
+  parseDiscoveryQueryTokens,
+} from "@dbt-tools/core/browser";
 import type { DashboardStatusFilter } from "./types";
 import {
   rollupCountsHaveAttention,
@@ -129,15 +133,41 @@ export function matchesResource(
   if (!query) return true;
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
-  return [
+  const parsed = parseDiscoveryQueryTokens(normalized);
+  if (
+    !applyDiscoveryNodeFilters(
+      {
+        unique_id: resource.uniqueId,
+        resource_type: resource.resourceType as Parameters<
+          typeof applyDiscoveryNodeFilters
+        >[0]["resource_type"],
+        name: resource.name,
+        package_name: resource.packageName,
+        tags: resource.tags,
+        path: resource.path ?? "",
+      },
+      parsed.type,
+      parsed.package,
+      parsed.tag,
+      parsed.path,
+    )
+  ) {
+    return false;
+  }
+  const haystack = [
     resource.name,
     resource.resourceType,
     resource.packageName,
+    ...(resource.tags ?? []),
     resource.path ?? "",
     resource.originalFilePath ?? "",
     resource.patchPath ?? "",
     resource.uniqueId,
-  ].some((value) => value.toLowerCase().includes(normalized));
+  ].map((value) => value.toLowerCase());
+
+  return parsed.terms.every((term) =>
+    haystack.some((value) => value.includes(term.toLowerCase())),
+  );
 }
 
 export function matchesAssetStatus(

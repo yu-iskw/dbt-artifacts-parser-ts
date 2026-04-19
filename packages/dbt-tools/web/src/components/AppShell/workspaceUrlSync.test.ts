@@ -65,6 +65,21 @@ describe("createInitialNavigationState", () => {
     expect(s.assetViewState.resourceQuery).toBe("orders");
   });
 
+  it("maps inventory q into inventory resourceQuery", () => {
+    const s = createInitialNavigationState("?view=inventory&q=orders");
+    expect(s.activeView).toBe("inventory");
+    expect(s.assetViewState.resourceQuery).toBe("orders");
+  });
+
+  it("maps structured inventory filters into resourceQuery tokens", () => {
+    const s = createInitialNavigationState(
+      "?view=inventory&q=orders&type=model&package=jaffle_shop&path=models%2Fmarts",
+    );
+    expect(s.assetViewState.resourceQuery).toBe(
+      "orders type:model package:jaffle_shop path:models/marts",
+    );
+  });
+
   it("maps runs+tab=timeline to timeline and reads selected for timeline", () => {
     const s = createInitialNavigationState(
       "?view=runs&tab=timeline&selected=exec-1",
@@ -122,6 +137,15 @@ describe("applySearchToWorkspaceState", () => {
   it("maps legacy discover URL to inventory and merges q into asset resourceQuery", () => {
     const r = applySearchToWorkspaceState("?view=discover&q=stg_orders");
     expect(r.activeView).toBe("inventory");
+    const next = r.assetViewState({
+      ...baseAsset(),
+      resourceQuery: "",
+    });
+    expect(next.resourceQuery).toBe("stg_orders");
+  });
+
+  it("maps inventory q into asset resourceQuery on popstate", () => {
+    const r = applySearchToWorkspaceState("?view=inventory&q=stg_orders");
     const next = r.assetViewState({
       ...baseAsset(),
       resourceQuery: "",
@@ -319,6 +343,38 @@ describe("buildNextUrlFromWorkspaceState", () => {
     expect(url).toContain("resource=m.project.model.foo");
     expect(url).toContain("assetTab=summary");
     expect(url).not.toContain("selected=");
+  });
+
+  it("serializes inventory q from resourceQuery", () => {
+    const url = buildNextUrlFromWorkspaceState({
+      pathname: "/",
+      hash: "",
+      activeView: "inventory",
+      assetViewState: inv({
+        activeTab: "summary",
+        resourceQuery: "orders type:model",
+      }),
+      runsViewState: baseRuns(),
+      timelineSelectedExecutionId: null,
+      lineageViewState: baseLineage(),
+    });
+    expect(url).toContain("view=inventory");
+    expect(url).toContain("q=orders+type%3Amodel");
+  });
+
+  it("round-trips legacy discover q to inventory q", () => {
+    const initial = createInitialNavigationState("?view=discover&q=orders");
+    const url = buildNextUrlFromWorkspaceState({
+      pathname: "/",
+      hash: "",
+      activeView: initial.activeView,
+      assetViewState: initial.assetViewState,
+      runsViewState: initial.runsViewState,
+      timelineSelectedExecutionId: initial.timelineFilters.selectedExecutionId,
+      lineageViewState: initial.lineageViewState,
+    });
+    expect(url).toContain("view=inventory");
+    expect(url).toContain("q=orders");
   });
 
   it("serializes lineage tab params", () => {

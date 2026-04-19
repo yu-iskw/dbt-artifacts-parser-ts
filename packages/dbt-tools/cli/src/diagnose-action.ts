@@ -116,7 +116,7 @@ export async function diagnoseNodeAction(
     const uid = JSON.stringify(resolved.unique_id);
     const primitive_commands = [
       `dbt-tools run-report --dbt-target ${JSON.stringify(targetDir)} --json`,
-      `dbt-tools deps --resource ${uid} --direction downstream --format flat`,
+      `dbt-tools deps ${uid} --direction downstream --format flat`,
       `dbt-tools explain ${uid}`,
     ];
 
