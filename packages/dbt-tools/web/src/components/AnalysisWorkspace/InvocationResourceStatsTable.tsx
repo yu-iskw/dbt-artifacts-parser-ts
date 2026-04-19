@@ -60,9 +60,9 @@ export function InvocationResourceStatsTable({
       <p className="invocation-resource-stats__note">
         When a project package is in scope, manifest graph counts match that
         package (same scope as this run and timeline). Synthetic source rows are
-        described in ADR-0032 (
+        described in ADR-0006 (
         <code>
-          docs/adr/0032-timeline-includes-dbt-sources-via-snapshot-synthesis.md
+          docs/adr/0006-timeline-includes-dbt-sources-via-snapshot-synthesis.md
         </code>
         ).
       </p>

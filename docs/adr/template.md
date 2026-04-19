@@ -1,4 +1,4 @@
-# N. Title (replace N and title after `adr new`)
+# N. Title
 
 Date: YYYY-MM-DD
 
@@ -8,24 +8,29 @@ Proposed | Accepted | Deprecated | Superseded
 
 ## Context
 
-What problem or forces led to this decision? What constraints apply?
+What forces, constraints, or architectural pressures led to this decision?
 
 ## Decision
 
-What we chose, in **architectural** terms—trade-offs and invariants, not file lists or
-copied config values. Link to living sources (config, code, README) in **References**
-if readers need exact numbers or paths.
+Describe the choice in **architectural** terms:
+
+- what was chosen
+- the important trade-offs
+- the stable invariants that should survive refactors
+
+Keep implementation detail, path inventories, config tables, and exact thresholds in
+living sources such as code, config, package READMEs, and `AGENTS.md`.
 
 ## Consequences
 
-**Positive:** …
+**Positive:** ...
 
-**Negative / risks:** …
+**Negative / risks:** ...
 
 ## Alternatives considered
 
-What else was on the table and why it was rejected.
+What meaningful alternatives were considered, and why were they not chosen?
 
 ## References
 
-- Related ADRs, design notes, or coarse pointers (e.g. package name, single config file).
+- Related ADRs, design notes, or one coarse pointer per relevant subsystem

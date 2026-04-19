@@ -1,13 +1,6 @@
 # dbt-artifacts-parser-ts
 
-A TypeScript monorepo for parsing and analyzing [dbt](https://www.getdbt.com/) artifacts.
-
-This repo contains two distinct but related ecosystems:
-
-| Ecosystem                                                  | Description                                                                                                                                                                |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`dbt-artifacts-parser`](./packages/dbt-artifacts-parser/) | Standalone parsing library — type definitions and auto-version-detection for dbt JSON artifacts                                                                            |
-| [`@dbt-tools/*`](./packages/dbt-tools/)                    | **dbt operational intelligence layer** — CLI, core library, and web app for deterministic analysis of dbt artifacts (see [suite overview](./packages/dbt-tools/README.md)) |
+A TypeScript monorepo for **`dbt-artifacts-parser`**: typed parsing of [dbt](https://www.getdbt.com/) JSON artifacts with automatic version detection.
 
 ## Packages
 
@@ -30,39 +23,13 @@ Supported artifacts:
 
 ---
 
-### @dbt-tools
-
-> `packages/dbt-tools/` · npm scope: `@dbt-tools`
-
-**dbt-tools** turns dbt artifacts into **deterministic operational intelligence** for humans and agents—a **composable analysis substrate** built on `dbt-artifacts-parser`. See [ADR-0035](docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md) for positioning and non-goals.
-
-| Package                                                  | Description                                                                          |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [`@dbt-tools/core`](./packages/dbt-tools/core/README.md) | Analysis engine — dependency graphs, execution analysis, shared snapshot logic       |
-| [`@dbt-tools/cli`](./packages/dbt-tools/cli/README.md)   | CLI (`dbt-tools`) — structured JSON, schema introspection, automation and agents     |
-| [`@dbt-tools/web`](./packages/dbt-tools/web/README.md)   | Browser UI for artifact-driven investigation (local target, upload, optional S3/GCS) |
-
-[Suite overview →](./packages/dbt-tools/README.md)
-
----
-
 ## Quick Start
 
 ```bash
-# Parse dbt artifacts in your own TypeScript project
 npm install dbt-artifacts-parser
-
-# Use the CLI to analyze artifacts
-npm install -g @dbt-tools/cli
-dbt-tools summary          # requires ./target/manifest.json
-dbt-tools run-report       # requires ./target/run_results.json
-
-# Visual analyzer in the browser (published server binary)
-npm install -g @dbt-tools/web
-dbt-tools-web --target ./target   # or: npx @dbt-tools/web --target ./target
 ```
 
-See [`packages/dbt-tools/web/README.md`](./packages/dbt-tools/web/README.md) for configuration (`DBT_TOOLS_REMOTE_SOURCE`, debugging, Docker pointers).
+For API details and examples, see [packages/dbt-artifacts-parser/README.md](./packages/dbt-artifacts-parser/README.md).
 
 ---
 
@@ -76,11 +43,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to build, test, and contribute 
 
 This monorepo uses **two different licenses** for different parts of the tree. The **authoritative path map** is **[`LICENSES/README.md`](./LICENSES/README.md)**. The file at the repository root named [`LICENSE`](./LICENSE) is a **short manifest** only (not the Apache legal text). GitHub and other tools may not show multiple licenses correctly; use the manifest and the links below.
 
-| Area                                                                                                   | License                                              | Full text                                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/dbt-artifacts-parser/`](./packages/dbt-artifacts-parser/) (npm: `dbt-artifacts-parser`)     | **Apache-2.0**                                       | [`LICENSES/Apache-2.0.txt`](./LICENSES/Apache-2.0.txt) (canonical); also [`packages/dbt-artifacts-parser/LICENSE`](./packages/dbt-artifacts-parser/LICENSE) (npm tarball) |
-| [`packages/dbt-tools/`](./packages/dbt-tools/) (`@dbt-tools/core`, `@dbt-tools/cli`, `@dbt-tools/web`) | **Source-available** (custom; not OSI “open source”) | [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE)                                                                                                              |
+| Area                                                                                               | License                                              | Full text                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/dbt-artifacts-parser/`](./packages/dbt-artifacts-parser/) (npm: `dbt-artifacts-parser`) | **Apache-2.0**                                       | [`LICENSES/Apache-2.0.txt`](./LICENSES/Apache-2.0.txt) (canonical); also [`packages/dbt-artifacts-parser/LICENSE`](./packages/dbt-artifacts-parser/LICENSE) (npm tarball) |
+| [`packages/dbt-tools/`](./packages/dbt-tools/)                                                     | **Source-available** (custom; not OSI “open source”) | [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE)                                                                                                              |
 
-Published npm tarballs ship a `LICENSE` file and `package.json` metadata appropriate to each package. For permissions beyond what the dbt-tools license grants, contact the maintainer via the repository.
+Published npm tarballs ship a `LICENSE` file and `package.json` metadata appropriate to each package. For permissions beyond what the **source-available** license in [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE) grants, contact the maintainer via the repository.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for how contributions are licensed per package.

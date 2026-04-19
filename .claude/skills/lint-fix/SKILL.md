@@ -64,7 +64,7 @@ Do **not** treat `knip --fix` as a formatter. Prefer manual or reviewed edits fo
 ## Config pointers (this repo)
 
 - **ESLint:** [`eslint.config.mjs`](../../../eslint.config.mjs) — TypeScript recommended + `@typescript-eslint/no-unused-vars`, **`@typescript-eslint/no-unused-private-class-members`** on production `packages/**/*.ts(x)` (excludes `*.test.*` and e2e specs). React / a11y / hooks for web TSX. Fix via `pnpm format:eslint` and `pnpm lint:eslint`.
-- **Knip:** [`knip.json`](../../../knip.json) — per-workspace entries (Vitest, parser, core, CLI, web + Vite/Playwright), **`ignoreExportsUsedInFile`**, targeted **`ignoreIssues`** / **`ignoreFiles`** / **`ignoreDependencies`** / **`ignoreBinaries`**. Decision record: [`docs/adr/0031-knip-and-eslint-layers-for-monorepo-dead-code-detection.md`](../../../docs/adr/0031-knip-and-eslint-layers-for-monorepo-dead-code-detection.md).
+- **Knip:** [`knip.json`](../../../knip.json) — per-workspace entries (Vitest, parser, core, CLI, web + Vite/Playwright), **`ignoreExportsUsedInFile`**, targeted **`ignoreIssues`** / **`ignoreFiles`** / **`ignoreDependencies`** / **`ignoreBinaries`**. Decision record: [`docs/adr/0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md`](../../../docs/adr/0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md).
 
 ## Commands for this repo
 

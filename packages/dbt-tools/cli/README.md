@@ -2,7 +2,7 @@
 
 **Structured interface** for dbt artifact analysis: machine-readable JSON by default in non-interactive environments, runtime **`schema`** introspection, **`--fields`** to shrink payloads, and validated inputs with stable error codes—suited to **operators**, **CI**, **scripts**, and **coding agents** (skills, multi-step automation) without treating AI as the only consumer.
 
-**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary --dbt-target ./target` (or set **`DBT_TOOLS_DBT_TARGET`** so you can omit the flag). Extended topics (errors, validation, `schema` introspection, agent-oriented patterns) are in the [user guide](../../../docs/user-guide-dbt-tools-cli.md). Positioning: [ADR-0035](../../../docs/adr/0035-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
+**Quick start:** install Node.js **20+** (see the repo [`.node-version`](https://github.com/yu-iskw/dbt-artifacts-parser-ts/blob/main/.node-version) for the version used in development; Node 18 is EOL — [releases](https://nodejs.org/en/about/previous-releases)), then `npm install -g @dbt-tools/cli` and run `dbt-tools summary --dbt-target ./target` (or set **`DBT_TOOLS_DBT_TARGET`** so you can omit the flag). Extended topics (errors, validation, `schema` introspection, agent-oriented patterns) are in this README: [Field Filtering](#field-filtering), [Input Validation](#input-validation), [Error handling](#error-handling), [Automation and agent workflows](#automation-and-agent-workflows), and [Environment variables](#environment-variables). Positioning: [ADR-0008](../../../docs/adr/0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md).
 
 ## Commands
 
@@ -53,7 +53,7 @@ pnpm add -g @dbt-tools/cli
 - **Search**: Discover resources by name, tag, type, or free-text query
 - **Status / Freshness**: Check if artifacts are present and how recent they are
 - **Subgraph focus**: Export a focused subgraph for any node via `graph --focus`
-- **Remote prefixes**: Use **`s3://bucket/prefix`** or **`gs://bucket/prefix`** (scheme required). Objects are downloaded to a temp directory for the duration of the command. **Credentials** use the normal AWS / GCP client chains; optional JSON in **`DBT_TOOLS_REMOTE_SOURCE`** supplies region, endpoint, GCS project id, etc. (see [ADR-0029](../../../docs/adr/0029-remote-object-storage-artifact-sources-and-auto-reload.md)).
+- **Remote prefixes**: Use **`s3://bucket/prefix`** or **`gs://bucket/prefix`** (scheme required). Objects are downloaded to a temp directory for the duration of the command. **Credentials** use the normal AWS / GCP client chains; optional JSON in **`DBT_TOOLS_REMOTE_SOURCE`** supplies region, endpoint, GCS project id, etc. (see [ADR-0004](../../../docs/adr/0004-remote-object-storage-artifact-sources-and-auto-reload.md)).
 
 ---
 
