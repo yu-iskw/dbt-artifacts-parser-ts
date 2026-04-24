@@ -9,6 +9,7 @@
 - **Package manager:** `pnpm` (monorepo).
 - **Node.js:** version in [`.node-version`](.node-version) (authoritative for local/tooling).
 - **Trunk:** After `pnpm install`, `@trunkio/launcher` provides the `trunk` CLI ([documented pnpm install](https://docs.trunk.io/code-quality/overview/cli/getting-started/install): `pnpm add -D @trunkio/launcher`). Full **`pnpm format`** / **`pnpm lint`** (and `pnpm verify:normalize`) run Trunk first—see [AGENTS.md](AGENTS.md) **Commands** (Trunk) and [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Cloud-agent bootstrap:** In ephemeral coding-agent environments, run `pnpm exec trunk git-hooks install` once per checkout so pre-commit and pre-push Trunk actions align with CI (canonical details in [AGENTS.md](AGENTS.md)).
 
 ## Quality gates (before claiming work complete)
 
