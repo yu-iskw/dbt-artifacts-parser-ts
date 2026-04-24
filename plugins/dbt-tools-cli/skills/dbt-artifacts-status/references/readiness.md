@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # Readiness and command availability
 
 `dbt-tools status` sets **`readiness`** from **`manifest.json`** and **`run_results.json`** (and optional **`catalog.json`** / **`sources.json`**) under the resolved **`--dbt-target`**. For **local** roots it **stats** those paths in place. For **`s3://`** / **`gs://`** roots it **resolves the bundle** (download) first, then stats the resulting temp paths—use the same **`DBT_TOOLS_REMOTE_SOURCE`** / credentials as other CLI commands.
