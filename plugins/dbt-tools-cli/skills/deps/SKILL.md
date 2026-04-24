@@ -4,6 +4,7 @@ description: >-
   Investigate upstream and downstream dependencies for a dbt resource with `dbt-tools deps` and a known or resolvable `unique_id`. Cover direction, depth, flat vs tree, and build-order style questions at a stable-pattern level.
 compatibility: dbt-tools CLI on PATH. Requires the manifest (and the same `--dbt-target` / `DBT_TOOLS_DBT_TARGET` contract) as other graph commands. Suitable for any coding agent with shell access; pair with `discover`/`search` when the id is not yet known.
 ---
+<!-- markdownlint-disable MD013 MD060 -->
 
 # Resource dependencies (`deps`)
 

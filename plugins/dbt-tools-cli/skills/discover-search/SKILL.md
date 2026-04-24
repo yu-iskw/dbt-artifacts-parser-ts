@@ -4,6 +4,7 @@ description: >-
   Find dbt resources by name, type, tag, package, path, or loose wording using `dbt-tools discover` and `dbt-tools search`. Resolve `unique_id` (and disambiguation) for follow-on CLI steps while remaining useful standalone.
 compatibility: dbt-tools CLI on PATH. `discover` is **manifest-only** at `--dbt-target`. `search` follows the same artifact **root** as other standard commands, which in typical setups expects **`manifest.json` and `run_results.json` there**—use `dbt-tools schema` if your CLI version allows exceptions. Cross-editor agent workflows (Cursor, Windsurf, Claude, Codex) can follow the same patterns.
 ---
+<!-- markdownlint-disable MD013 MD060 -->
 
 # Discover and search dbt resources
 
@@ -16,7 +17,7 @@ compatibility: dbt-tools CLI on PATH. `discover` is **manifest-only** at `--dbt-
 ## Purpose
 
 - **`search`**: text and filter-oriented discovery, fast to reason about, **optional** `key:value` inline tokens in the query string.
-- **`discover`**: **richer scoring**, reasons, disambiguation, and follow-up hooks in JSON when you need *explainable* resolution over the manifest.
+- **`discover`**: **richer scoring**, reasons, disambiguation, and follow-up hooks in JSON when you need _explainable_ resolution over the manifest.
 
 Use **`--json`** when you must **parse** matches. Use **`--limit` / `--offset`** (where supported) to keep context small; prefer tighter queries first instead of huge pages.
 
@@ -24,7 +25,7 @@ Use **`--json`** when you must **parse** matches. Use **`--limit` / `--offset`**
 
 - **Artifact root**: `--dbt-target` or `DBT_TOOLS_DBT_TARGET` (the user’s path or remote prefix is trusted—do not override without cause).
 - **Query**: free text, or filter-only (for `discover`, you may use filters with an empty query when the CLI allows—see `--help` / `schema` if unsure).
-- **Intent**: *explore* (broad list) vs *resolve one id* (tighten filters, read disambiguation).
+- **Intent**: _explore_ (broad list) vs _resolve one id_ (tighten filters, read disambiguation).
 - **Field budget**: for large projects, add **`--fields`** to shrink JSON once you know which fields you need (exact paths: `dbt-tools schema`).
 
 ## Recommended command pattern

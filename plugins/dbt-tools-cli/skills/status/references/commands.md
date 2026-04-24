@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # status — command cheat sheet
 
 ## Stable invocation
@@ -17,11 +18,11 @@ dbt-tools status --json
 
 ## Readiness (stdout JSON)
 
-| `readiness`   | Typically means |
-| ------------- | --------------- |
-| `full`        | `manifest.json` and `run_results.json` present. |
+| `readiness`     | Typically means                                                                          |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `full`          | `manifest.json` and `run_results.json` present.                                          |
 | `manifest-only` | `manifest.json` only—graph/manifest analysis possible; run-result-only commands are not. |
-| `unavailable` | `manifest.json` missing—most artifact commands will fail. |
+| `unavailable`   | `manifest.json` missing—most artifact commands will fail.                                |
 
 ## Bounding output
 
@@ -37,13 +38,13 @@ dbt-tools status --json
 
 ## Common failure modes (plain language)
 
-| Symptom | Likely cause | What to do |
-| ------- | ------------ | ---------- |
-| No `--dbt-target` and no `DBT_TOOLS_DBT_TARGET` | Artifact root not specified | Set env or pass `--dbt-target`. |
-| `readiness: "unavailable"` | No `manifest.json` | Generate/copy dbt artifacts into the target. |
-| Run-scoped command fails; `readiness: "manifest-only"` | `run_results.json` missing | Run a dbt command that produces `run_results`, or use manifest-only tools. |
-| Error about **remote** / credentials | S3 or GCS access | Check AWS/GCP config and prefix (see main CLI README). |
-| `VALIDATION_ERROR` in structured stderr | Bad path or invalid characters in flags | Fix input; do not pass URL query fragments in resource or path args. |
+| Symptom                                                | Likely cause                            | What to do                                                                 |
+| ------------------------------------------------------ | --------------------------------------- | -------------------------------------------------------------------------- |
+| No `--dbt-target` and no `DBT_TOOLS_DBT_TARGET`        | Artifact root not specified             | Set env or pass `--dbt-target`.                                            |
+| `readiness: "unavailable"`                             | No `manifest.json`                      | Generate/copy dbt artifacts into the target.                               |
+| Run-scoped command fails; `readiness: "manifest-only"` | `run_results.json` missing              | Run a dbt command that produces `run_results`, or use manifest-only tools. |
+| Error about **remote** / credentials                   | S3 or GCS access                        | Check AWS/GCP config and prefix (see main CLI README).                     |
+| `VALIDATION_ERROR` in structured stderr                | Bad path or invalid characters in flags | Fix input; do not pass URL query fragments in resource or path args.       |
 
 ## If behavior or flags differ
 

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # discover & search — command cheat sheet
 
 ## Contract (high level)
@@ -33,27 +34,27 @@ dbt-tools discover --dbt-target ./target "ordrs" --json
 dbt-tools discover --dbt-target ./target --type model --limit 30 --json
 ```
 
-**Typical use**: fuzzy / typo-tolerant name resolution, **disambiguation** peers, richer follow-up context in JSON. Prefer **`discover`** when the user’s wording is vague or you need *why* something ranked.
+**Typical use**: fuzzy / typo-tolerant name resolution, **disambiguation** peers, richer follow-up context in JSON. Prefer **`discover`** when the user’s wording is vague or you need _why_ something ranked.
 
 **Optional** (if available): **`--trace`** adds a small **investigation transcript** in JSON for debugging—use sparingly; check `dbt-tools schema discover`.
 
 ## Choosing `search` vs `discover`
 
-| Situation | Lean toward |
-| -------- | ------------ |
-| Known substring in name/path | `search` |
-| Typo, nickname, or “most relevant” | `discover` |
-| Need minimal JSON | `search` with tight filters |
-| Need disambiguation story | `discover` |
+| Situation                          | Lean toward                 |
+| ---------------------------------- | --------------------------- |
+| Known substring in name/path       | `search`                    |
+| Typo, nickname, or “most relevant” | `discover`                  |
+| Need minimal JSON                  | `search` with tight filters |
+| Need disambiguation story          | `discover`                  |
 
 ## Common failure modes
 
-| Symptom | Likely cause | What to do |
-| ------- | ------------ | ---------- |
-| `ARTIFACT_BUNDLE_INCOMPLETE` / missing manifest | Bad `--dbt-target` or missing `manifest.json` | Fix path; run `dbt` to emit artifacts. |
-| Empty `results` / empty `matches` | Query too strict or wrong project | Loosen text or filters. |
-| Too many rows | Over-broad query | Add `type:`, `package:`, or path filters; use `--limit`. |
-| Unknown option in script | CLI changed | `dbt-tools schema search` / `dbt-tools schema discover` and `--help`. |
+| Symptom                                         | Likely cause                                  | What to do                                                            |
+| ----------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------- |
+| `ARTIFACT_BUNDLE_INCOMPLETE` / missing manifest | Bad `--dbt-target` or missing `manifest.json` | Fix path; run `dbt` to emit artifacts.                                |
+| Empty `results` / empty `matches`               | Query too strict or wrong project             | Loosen text or filters.                                               |
+| Too many rows                                   | Over-broad query                              | Add `type:`, `package:`, or path filters; use `--limit`.              |
+| Unknown option in script                        | CLI changed                                   | `dbt-tools schema search` / `dbt-tools schema discover` and `--help`. |
 
 ## Confirmed discovery against schema
 

@@ -2,6 +2,7 @@
 name: dbt-artifacts-status
 description: Check local dbt artifact readiness with dbt-tools status before running manifest- or run_results-based analysis; interpret readiness and branch.
 ---
+<!-- markdownlint-disable MD013 MD060 -->
 
 # dbt artifacts status (readiness gate)
 

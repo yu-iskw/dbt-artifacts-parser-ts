@@ -4,20 +4,21 @@ description: >-
   Check dbt artifact presence, recency, and analysis readiness with `dbt-tools status` (or `freshness`); interpret `readiness` and file stats when the user asks if artifacts exist, are stale, or are ready. Optional—not a required preflight for other investigation flows.
 compatibility: dbt-tools CLI (global `dbt-tools` on PATH). Reads `--dbt-target` or `DBT_TOOLS_DBT_TARGET`; `status` is filesystem- or download-scoped, not a substitute for dbt build orchestration. Works with any terminal agent or SKILL.md consumer.
 ---
+<!-- markdownlint-disable MD013 MD060 -->
 
 # dbt artifact status and freshness
 
 ## Trigger scenarios
 
 - The user asks whether **artifacts exist**, are **stale**, or are **ready** for dbt artifact analysis.
-- You need a **ground-truth snapshot** of what is under a dbt target (paths, `exists`, ages) before *choosing* whether to run heavier commands.
+- You need a **ground-truth snapshot** of what is under a dbt target (paths, `exists`, ages) before _choosing_ whether to run heavier commands.
 - A prior command failed with **missing file** or **incomplete bundle**—use `status` to align on what is actually on disk (or in a remote prefix).
 
 ## Purpose
 
 Use **`dbt-tools status`** (or the **`freshness`** alias) to report whether **`manifest.json`** and **`run_results.json`** are present, their paths, modification times, and a **readiness** label. This is the primary CLI surface for **artifact readiness** and **rough freshness** (file mtimes), without parsing full artifact JSON (local case).
 
-**Do not** treat this skill as a **mandatory gate** before every `deps`, `search`, or `explain` run. If the user already provided a valid **`--dbt-target`**, use it and proceed; call **`status`** when readiness or staleness is the *question*.
+**Do not** treat this skill as a **mandatory gate** before every `deps`, `search`, or `explain` run. If the user already provided a valid **`--dbt-target`**, use it and proceed; call **`status`** when readiness or staleness is the _question_.
 
 ## Inputs the agent should identify
 

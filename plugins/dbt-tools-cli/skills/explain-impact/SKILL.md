@@ -4,6 +4,7 @@ description: >-
   Summarize a dbt resource and reason about dependency impact with `dbt-tools explain` and `dbt-tools impact`. Use when the user wants a narrative or JSON snapshot of “what is this node?” and “what does it affect?”; defer exact flags to `schema` or `--help` when the CLI changes.
 compatibility: dbt-tools CLI on PATH. Both intents read the same artifact root as other manifest commands; they **resolve** short or ambiguous names via the CLI’s own discovery path (see command descriptions in `dbt-tools schema`). Works across IDE and headless agents; prefer `--json` for machine parsing.
 ---
+<!-- markdownlint-disable MD013 MD060 -->
 
 # Explain and impact a resource
 

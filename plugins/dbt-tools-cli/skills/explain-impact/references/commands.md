@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # explain & impact — command cheat sheet
 
 ## Baseline (agent-friendly)
@@ -25,27 +26,27 @@ dbt-tools impact model.my_project.orders --dbt-target ./target --json --trace
 
 ## Bounding output
 
-- **`--fields`**: use to shrink the JSON when you *know* valid dotted paths from the schema. If uncertain, run **once without `--fields`**, or inspect **`dbt-tools schema explain`** for allowed paths.
+- **`--fields`**: use to shrink the JSON when you _know_ valid dotted paths from the schema. If uncertain, run **once without `--fields`**, or inspect **`dbt-tools schema explain`** for allowed paths.
 - Do not use **`--fields`** to hide errors—errors still surface in stderr; fix the **inputs** or **target** if results are empty.
 
 ## When to use which intent
 
-| User question | Start with |
-| ------------- | ---------- |
-| “What is this model/test/source?” | `explain` |
-| “What is the impact / who depends on this (high level)?” | `impact` |
-| “List upstream/downstream with depth and tree/flat” | `deps` |
-| “I only have a vague name or typo” | `discover` (then `explain` / `impact`) |
+| User question                                            | Start with                             |
+| -------------------------------------------------------- | -------------------------------------- |
+| “What is this model/test/source?”                        | `explain`                              |
+| “What is the impact / who depends on this (high level)?” | `impact`                               |
+| “List upstream/downstream with depth and tree/flat”      | `deps`                                 |
+| “I only have a vague name or typo”                       | `discover` (then `explain` / `impact`) |
 
 ## Common failure modes
 
-| Symptom | Likely cause | What to do |
-| ------- | ------------ | ---------- |
-| `usage:` / unknown command | Old CLI or typo | `dbt-tools schema`; upgrade `@dbt-tools/cli`. |
-| `VALIDATION_ERROR` | Malformed id or disallowed characters | Re-copy `unique_id` or resolve via `search`/`discover`. |
-| `ARTIFACT_BUNDLE_INCOMPLETE` | Missing `manifest.json` (or other required files) | Point `--dbt-target` at a directory with a manifest. |
-| Empty or null sections | **Fields** over-filtering | Drop `--fields` and re-run, or check schema. |
-| Ambiguous resolution in JSON | Multiple candidates | Tighten query or use `discover` first. |
+| Symptom                      | Likely cause                                      | What to do                                              |
+| ---------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
+| `usage:` / unknown command   | Old CLI or typo                                   | `dbt-tools schema`; upgrade `@dbt-tools/cli`.           |
+| `VALIDATION_ERROR`           | Malformed id or disallowed characters             | Re-copy `unique_id` or resolve via `search`/`discover`. |
+| `ARTIFACT_BUNDLE_INCOMPLETE` | Missing `manifest.json` (or other required files) | Point `--dbt-target` at a directory with a manifest.    |
+| Empty or null sections       | **Fields** over-filtering                         | Drop `--fields` and re-run, or check schema.            |
+| Ambiguous resolution in JSON | Multiple candidates                               | Tighten query or use `discover` first.                  |
 
 ## Confirmed current behavior (do this, do not guess)
 

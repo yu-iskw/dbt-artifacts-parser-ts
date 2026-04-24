@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD060 -->
 # deps — command cheat sheet
 
 ## Baseline
@@ -47,12 +48,12 @@ dbt-tools deps model.my_project.orders --dbt-target ./target --direction upstrea
 
 ## Common failure modes
 
-| Symptom | Likely cause | What to do |
-| ------- | ------------ | ---------- |
-| `VALIDATION_ERROR` on resource id | Malformed id, embedded `?`/`#`, or typos | Use `search` / `discover` to copy a real `unique_id`. |
-| `ARTIFACT_BUNDLE_INCOMPLETE` / parse errors | Bad `--dbt-target` or missing `manifest.json` | Fix target; ensure manifest exists. |
-| Empty or unexpected graph | Wrong direction or depth, or id not in project | Re-check id and project; try `--depth 1` first. |
-| Option not recognized | CLI version drift | `dbt-tools schema deps` and `dbt-tools deps --help`. |
+| Symptom                                     | Likely cause                                   | What to do                                            |
+| ------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------- |
+| `VALIDATION_ERROR` on resource id           | Malformed id, embedded `?`/`#`, or typos       | Use `search` / `discover` to copy a real `unique_id`. |
+| `ARTIFACT_BUNDLE_INCOMPLETE` / parse errors | Bad `--dbt-target` or missing `manifest.json`  | Fix target; ensure manifest exists.                   |
+| Empty or unexpected graph                   | Wrong direction or depth, or id not in project | Re-check id and project; try `--depth 1` first.       |
+| Option not recognized                       | CLI version drift                              | `dbt-tools schema deps` and `dbt-tools deps --help`.  |
 
 ## Introspect before scripting
 
