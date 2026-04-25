@@ -45,7 +45,7 @@ dbt-tools impact --help
 Identify the following before running:
 
 - **`unique_id`** — the resource's unique identifier (e.g. `model.my_project.orders`).
-  If unknown, use the [`discover-search`](../discover-search/SKILL.md) skill first.
+  If unknown, use the [`discover`](../discover/SKILL.md) skill first.
 - **`--dbt-target`** — artifact directory or remote prefix; required unless
   `DBT_TOOLS_DBT_TARGET` is set.
 
@@ -124,5 +124,5 @@ surface.
 
 - Command recipes and fallback recipes: [references/commands.md](references/commands.md)
 - Full CLI reference: [packages/dbt-tools/cli/README.md](../../../../packages/dbt-tools/cli/README.md)
-- Resolving `unique_id`: [`discover-search`](../discover-search/SKILL.md) skill
+- Resolving `unique_id`: [`discover`](../discover/SKILL.md) skill
 - Dependency tracing: [`deps`](../deps/SKILL.md) skill

@@ -1,5 +1,5 @@
 ---
-name: discover-search
+name: discover
 description:
   Find dbt resources by name, type, tag, package, path, or approximate user wording
   using dbt-tools discover or dbt-tools search. Use when you need to resolve a unique_id

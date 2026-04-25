@@ -5,7 +5,7 @@ description:
   Use when the user asks what a resource depends on, what uses it, or needs a build-order list.
 compatibility:
   dbt-tools on PATH; manifest.json required under --dbt-target; unique_id must
-  be known (use the discover-search skill first if it is not).
+  be known (use the discover skill first if it is not).
 ---
 
 # dbt dependency tracing
@@ -25,7 +25,7 @@ Use this skill when the user asks:
 Identify the following before running:
 
 - **`unique_id`** — the resource's unique identifier (e.g. `model.my_project.orders`).
-  If the user gives only a name, use the [`discover-search`](../discover-search/SKILL.md) skill
+  If the user gives only a name, use the [`discover`](../discover/SKILL.md) skill
   first to resolve it.
 - **Direction** — `downstream` (what uses this resource; default) or `upstream` (what this
   resource depends on).
@@ -108,5 +108,5 @@ dbt-tools deps model.my_project.orders --dbt-target ./target \
 - Command recipes and JSON shapes: [references/commands.md](references/commands.md)
 - Full CLI reference: [packages/dbt-tools/cli/README.md](../../../../packages/dbt-tools/cli/README.md)
   (`deps` section)
-- Resolving `unique_id`: [`discover-search`](../discover-search/SKILL.md) skill
+- Resolving `unique_id`: [`discover`](../discover/SKILL.md) skill
 - Explaining the resource once found: [`explain-impact`](../explain-impact/SKILL.md) skill

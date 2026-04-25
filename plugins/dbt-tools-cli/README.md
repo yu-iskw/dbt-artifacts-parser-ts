@@ -6,7 +6,7 @@ First-party plugin wrapping the **[`@dbt-tools/cli`](../../packages/dbt-tools/cl
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | [`dbt-artifacts-status`](skills/dbt-artifacts-status/SKILL.md) | Run `dbt-tools status` first; interpret `readiness` before other CLI commands.                              |
 | [`status`](skills/status/SKILL.md)                             | Check artifact presence, freshness, and readiness with `dbt-tools status`.                                  |
-| [`discover-search`](skills/discover-search/SKILL.md)           | Find dbt resources by name, type, tag, or approximate wording; resolve `unique_id` for downstream commands. |
+| [`discover`](skills/discover/SKILL.md)                         | Find dbt resources by name, type, tag, or approximate wording; resolve `unique_id` for downstream commands. |
 | [`deps`](skills/deps/SKILL.md)                                 | Trace upstream and downstream dependencies for a dbt resource with `dbt-tools deps`.                        |
 | [`explain-impact`](skills/explain-impact/SKILL.md)             | Explain a resource and reason about change impact using `dbt-tools explain` and `dbt-tools impact`.         |
 
