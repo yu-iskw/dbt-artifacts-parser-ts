@@ -43,6 +43,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm --filter @dbt-tools/web test:e2e",
     "trunk": "trunk",
+    "trunk:bootstrap": "pnpm exec trunk install && pnpm exec trunk git-hooks install",
     "verify:normalize": "pnpm format && pnpm lint"
   },
   "devDependencies": {
