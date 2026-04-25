@@ -54,7 +54,10 @@ Fields vary by CLI version; verify with `dbt-tools schema impact`:
 {
   "unique_id": "model.my_project.orders",
   "affected": [
-    { "unique_id": "model.my_project.revenue_summary", "resource_type": "model" },
+    {
+      "unique_id": "model.my_project.revenue_summary",
+      "resource_type": "model"
+    },
     { "unique_id": "test.my_project.orders_pk", "resource_type": "test" }
   ]
 }
@@ -77,18 +80,18 @@ dbt-tools deps model.my_project.orders --dbt-target ./target \
 
 ## Decision guidance
 
-| Goal                                      | Command                                                 |
-| ----------------------------------------- | ------------------------------------------------------- |
-| Understand what a resource does           | `explain` → fallback: `discover`                        |
-| Find affected downstream resources        | `impact` → fallback: `deps --direction downstream`      |
+| Goal                                       | Command                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| Understand what a resource does            | `explain` → fallback: `discover`                                    |
+| Find affected downstream resources         | `impact` → fallback: `deps --direction downstream`                  |
 | Limit impact surface to immediate children | `impact` (check if depth is supported) → fallback: `deps --depth 1` |
-| Check if a command exists before running  | `dbt-tools schema <command>`                            |
+| Check if a command exists before running   | `dbt-tools schema <command>`                                        |
 
 ## Failure responses
 
-| Symptom                                   | Likely cause                          | Response                                                        |
-| ----------------------------------------- | ------------------------------------- | --------------------------------------------------------------- |
-| Command absent from `dbt-tools schema`    | Not available in this CLI version     | Use fallback recipes above.                                     |
-| `VALIDATION_ERROR`: invalid resource ID   | Bad format or characters in unique_id | Re-run `discover` to get a clean ID.                            |
-| `ARTIFACT_BUNDLE_INCOMPLETE` on stderr    | `manifest.json` missing               | Run `dbt-tools status --json`; tell user to generate artifacts. |
-| Unknown option flag                       | CLI version changed                   | Check `dbt-tools schema explain` or `--help` for current flags. |
+| Symptom                                 | Likely cause                          | Response                                                        |
+| --------------------------------------- | ------------------------------------- | --------------------------------------------------------------- |
+| Command absent from `dbt-tools schema`  | Not available in this CLI version     | Use fallback recipes above.                                     |
+| `VALIDATION_ERROR`: invalid resource ID | Bad format or characters in unique_id | Re-run `discover` to get a clean ID.                            |
+| `ARTIFACT_BUNDLE_INCOMPLETE` on stderr  | `manifest.json` missing               | Run `dbt-tools status --json`; tell user to generate artifacts. |
+| Unknown option flag                     | CLI version changed                   | Check `dbt-tools schema explain` or `--help` for current flags. |

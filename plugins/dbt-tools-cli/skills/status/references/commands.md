@@ -48,20 +48,20 @@ dbt-tools freshness --dbt-target ./target --json
 
 ## Decision guidance
 
-| `readiness`     | Agent action                                                                           |
-| --------------- | -------------------------------------------------------------------------------------- |
-| `full`          | All analysis commands available; report `age_seconds` to user.                        |
+| `readiness`     | Agent action                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| `full`          | All analysis commands available; report `age_seconds` to user.                                  |
 | `manifest-only` | Manifest-only commands (deps, search, inventory, discover) available; skip run-result commands. |
-| `unavailable`   | No analysis possible; tell user to run `dbt` to generate artifacts at the checked path. |
+| `unavailable`   | No analysis possible; tell user to run `dbt` to generate artifacts at the checked path.         |
 
 ## Failure responses
 
-| Symptom                             | Likely cause                            | Response                                                      |
-| ----------------------------------- | --------------------------------------- | ------------------------------------------------------------- |
-| `readiness: unavailable`            | `manifest.json` absent at target path   | Report `target_dir`; suggest running `dbt compile` or `dbt run`. |
-| JSON error on stderr: `ARTIFACT_BUNDLE_INCOMPLETE` | Target dir exists but files missing | Same as above; show `details.missing`.                       |
-| Error: `--dbt-target` required      | Neither flag nor env var was set        | Ask user to provide the artifact directory path.              |
-| Remote fetch error (`s3://`/`gs://`) | Credentials or path wrong              | Check `error.message`; verify bucket/prefix and credentials. |
+| Symptom                                            | Likely cause                          | Response                                                         |
+| -------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| `readiness: unavailable`                           | `manifest.json` absent at target path | Report `target_dir`; suggest running `dbt compile` or `dbt run`. |
+| JSON error on stderr: `ARTIFACT_BUNDLE_INCOMPLETE` | Target dir exists but files missing   | Same as above; show `details.missing`.                           |
+| Error: `--dbt-target` required                     | Neither flag nor env var was set      | Ask user to provide the artifact directory path.                 |
+| Remote fetch error (`s3://`/`gs://`)               | Credentials or path wrong             | Check `error.message`; verify bucket/prefix and credentials.     |
 
 ## Notes
 

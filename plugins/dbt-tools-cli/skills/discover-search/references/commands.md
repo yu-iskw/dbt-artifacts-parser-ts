@@ -72,12 +72,12 @@ When `--limit` is set, the response includes `has_more`, `limit`, and `offset`.
 
 ## Decision guidance
 
-| Situation                                    | Preferred command                                   |
-| -------------------------------------------- | --------------------------------------------------- |
-| Need `unique_id` for deps/explain/impact      | `discover` — scores and `next_actions` help narrow  |
-| Filter-only browse (type, tag, package)       | Either; `search` is simpler                         |
-| `run_results.json` not available              | `discover` (manifest-only)                          |
-| User gave approximate / misspelled name       | `discover` (fuzzy matching)                         |
+| Situation                                | Preferred command                                  |
+| ---------------------------------------- | -------------------------------------------------- |
+| Need `unique_id` for deps/explain/impact | `discover` — scores and `next_actions` help narrow |
+| Filter-only browse (type, tag, package)  | Either; `search` is simpler                        |
+| `run_results.json` not available         | `discover` (manifest-only)                         |
+| User gave approximate / misspelled name  | `discover` (fuzzy matching)                        |
 
 ## Inline token syntax
 
@@ -92,10 +92,10 @@ Flag-based filters take precedence over inline tokens.
 
 ## Failure responses
 
-| Symptom                                    | Likely cause                     | Response                                                             |
-| ------------------------------------------ | -------------------------------- | -------------------------------------------------------------------- |
-| `ARTIFACT_BUNDLE_INCOMPLETE` on stderr     | `manifest.json` missing          | Run `dbt-tools status --json` to confirm; tell user to generate artifacts. |
-| `VALIDATION_ERROR` on stderr               | Invalid characters in query      | Remove `?`, `#`, `%`, path traversal segments from the query.       |
-| `total: 0`, no error                       | No resources match the query     | Broaden query; try `inventory` to browse all resources.              |
-| Multiple high-confidence matches           | Ambiguous resource name          | Surface candidates to user; check `disambiguation` array in `discover`. |
-| `command not found: dbt-tools discover`    | CLI version may not include it   | Fall back to `dbt-tools search`; verify with `dbt-tools schema`.    |
+| Symptom                                 | Likely cause                   | Response                                                                   |
+| --------------------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
+| `ARTIFACT_BUNDLE_INCOMPLETE` on stderr  | `manifest.json` missing        | Run `dbt-tools status --json` to confirm; tell user to generate artifacts. |
+| `VALIDATION_ERROR` on stderr            | Invalid characters in query    | Remove `?`, `#`, `%`, path traversal segments from the query.              |
+| `total: 0`, no error                    | No resources match the query   | Broaden query; try `inventory` to browse all resources.                    |
+| Multiple high-confidence matches        | Ambiguous resource name        | Surface candidates to user; check `disambiguation` array in `discover`.    |
+| `command not found: dbt-tools discover` | CLI version may not include it | Fall back to `dbt-tools search`; verify with `dbt-tools schema`.           |

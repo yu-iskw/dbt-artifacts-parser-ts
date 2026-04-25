@@ -1,10 +1,12 @@
 ---
 name: explain-impact
-description: Explain a selected dbt resource and reason about its change impact using
+description:
+  Explain a selected dbt resource and reason about its change impact using
   dbt-tools explain and dbt-tools impact. Use when the user wants to understand what a
   resource does or how a change to it ripples downstream. Check availability with
   dbt-tools schema before assuming commands exist.
-compatibility: dbt-tools on PATH; manifest.json required under --dbt-target; explain
+compatibility:
+  dbt-tools on PATH; manifest.json required under --dbt-target; explain
   and impact availability varies by CLI version — verify with dbt-tools schema or --help.
 ---
 

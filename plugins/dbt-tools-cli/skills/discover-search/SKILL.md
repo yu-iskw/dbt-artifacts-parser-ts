@@ -1,6 +1,7 @@
 ---
 name: discover-search
-description: Find dbt resources by name, type, tag, package, path, or approximate user wording
+description:
+  Find dbt resources by name, type, tag, package, path, or approximate user wording
   using dbt-tools discover or dbt-tools search. Use when you need to resolve a unique_id
   before running deps, explain, or impact commands.
 compatibility: dbt-tools on PATH; manifest.json required under --dbt-target.
@@ -31,14 +32,14 @@ Identify the following before running:
 
 Both commands accept the same query token syntax and flag-based filters.
 
-| Feature                     | `discover`                          | `search`                       |
-| --------------------------- | ----------------------------------- | ------------------------------ |
-| Ranked scoring              | Yes (`score`, `confidence`)         | No                             |
-| Reasons for each match      | Yes (`reasons` array)               | No                             |
-| Disambiguation peers        | Yes (`disambiguation`)              | No                             |
-| Suggested next steps        | Yes (`next_actions`, `primitive_commands`) | No                       |
-| Requires `run_results.json` | No (manifest-only)                  | Manifest + run_results         |
-| Best for agents             | Yes — prefer when parsing output    | Simpler filter queries         |
+| Feature                     | `discover`                                 | `search`               |
+| --------------------------- | ------------------------------------------ | ---------------------- |
+| Ranked scoring              | Yes (`score`, `confidence`)                | No                     |
+| Reasons for each match      | Yes (`reasons` array)                      | No                     |
+| Disambiguation peers        | Yes (`disambiguation`)                     | No                     |
+| Suggested next steps        | Yes (`next_actions`, `primitive_commands`) | No                     |
+| Requires `run_results.json` | No (manifest-only)                         | Manifest + run_results |
+| Best for agents             | Yes — prefer when parsing output           | Simpler filter queries |
 
 **Prefer `discover`** when you need scores, reasons, and suggested follow-up commands in JSON.
 Use `search` for straightforward filter-only queries where ranking is not needed.
@@ -66,13 +67,13 @@ dbt-tools discover --dbt-target ./target "orders" --json --limit 10
 
 Embed filters directly in the query string:
 
-| Token              | Meaning                   |
-| ------------------ | ------------------------- |
-| `type:model`       | Filter to models          |
-| `type:source`      | Filter to sources         |
-| `tag:finance`      | Filter by tag             |
-| `package:core`     | Filter by package         |
-| `source:stripe`    | Match as a text term      |
+| Token           | Meaning              |
+| --------------- | -------------------- |
+| `type:model`    | Filter to models     |
+| `type:source`   | Filter to sources    |
+| `tag:finance`   | Filter by tag        |
+| `package:core`  | Filter by package    |
+| `source:stripe` | Match as a text term |
 
 Example: `dbt-tools discover --dbt-target ./target "type:model finance" --json`
 
@@ -85,7 +86,11 @@ From **`discover`** JSON output, candidates are under `matches[].unique_id`:
 ```json
 {
   "matches": [
-    { "unique_id": "model.my_project.orders", "score": 0.95, "confidence": "high" }
+    {
+      "unique_id": "model.my_project.orders",
+      "score": 0.95,
+      "confidence": "high"
+    }
   ]
 }
 ```
@@ -94,9 +99,7 @@ From **`search`** JSON output, candidates are under `results[].unique_id`:
 
 ```json
 {
-  "results": [
-    { "unique_id": "model.my_project.orders" }
-  ]
+  "results": [{ "unique_id": "model.my_project.orders" }]
 }
 ```
 

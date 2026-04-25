@@ -1,8 +1,10 @@
 ---
 name: deps
-description: Trace upstream and downstream dependencies for a dbt resource using dbt-tools deps.
+description:
+  Trace upstream and downstream dependencies for a dbt resource using dbt-tools deps.
   Use when the user asks what a resource depends on, what uses it, or needs a build-order list.
-compatibility: dbt-tools on PATH; manifest.json required under --dbt-target; unique_id must
+compatibility:
+  dbt-tools on PATH; manifest.json required under --dbt-target; unique_id must
   be known (use the discover-search skill first if it is not).
 ---
 
@@ -42,10 +44,10 @@ dbt-tools deps model.my_project.orders --dbt-target ./target --direction upstrea
 
 ## Output styles
 
-| Style      | Flag                    | When to use                                              |
-| ---------- | ----------------------- | -------------------------------------------------------- |
-| Tree       | (default)               | Show hierarchical lineage; easy to read                  |
-| Flat list  | `--format flat`         | Simple list of all deps; easy to count or pipe           |
+| Style       | Flag                                 | When to use                                                  |
+| ----------- | ------------------------------------ | ------------------------------------------------------------ |
+| Tree        | (default)                            | Show hierarchical lineage; easy to read                      |
+| Flat list   | `--format flat`                      | Simple list of all deps; easy to count or pipe               |
 | Build order | `--direction upstream --build-order` | Topological order for upstream deps; shows what to run first |
 
 ```bash

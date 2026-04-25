@@ -1,6 +1,7 @@
 ---
 name: status
-description: Check dbt artifact presence, freshness, and readiness under a target directory
+description:
+  Check dbt artifact presence, freshness, and readiness under a target directory
   using dbt-tools status. Use when the user asks whether artifacts exist, how old they are,
   or whether they are ready for analysis.
 compatibility: dbt-tools on PATH; a dbt artifact directory or remote prefix (s3:// or gs://).
@@ -54,21 +55,21 @@ Always pass **`--json`** when you need to parse the result programmatically.
 
 Parse the JSON object on stdout:
 
-| Field                       | What to surface to the user                                                 |
-| --------------------------- | --------------------------------------------------------------------------- |
-| `readiness`                 | `full` · `manifest-only` · `unavailable` (see below)                       |
-| `manifest.exists`           | Whether `manifest.json` was found                                           |
-| `manifest.modified_at`      | ISO-8601 timestamp of last modification                                     |
-| `manifest.age_seconds`      | Age in seconds at command run time                                          |
-| `run_results.exists`        | Whether `run_results.json` was found                                        |
-| `run_results.modified_at`   | ISO-8601 timestamp                                                          |
-| `run_results.age_seconds`   | Age in seconds                                                              |
-| `summary`                   | Human-readable one-liner from the CLI (repeat to the user verbatim)        |
+| Field                     | What to surface to the user                                         |
+| ------------------------- | ------------------------------------------------------------------- |
+| `readiness`               | `full` · `manifest-only` · `unavailable` (see below)                |
+| `manifest.exists`         | Whether `manifest.json` was found                                   |
+| `manifest.modified_at`    | ISO-8601 timestamp of last modification                             |
+| `manifest.age_seconds`    | Age in seconds at command run time                                  |
+| `run_results.exists`      | Whether `run_results.json` was found                                |
+| `run_results.modified_at` | ISO-8601 timestamp                                                  |
+| `run_results.age_seconds` | Age in seconds                                                      |
+| `summary`                 | Human-readable one-liner from the CLI (repeat to the user verbatim) |
 
 **`readiness` values:**
 
-| Value           | Meaning                                                                                 |
-| --------------- | --------------------------------------------------------------------------------------- |
+| Value           | Meaning                                                                                |
+| --------------- | -------------------------------------------------------------------------------------- |
 | `full`          | `manifest.json` and `run_results.json` are both present. All analysis commands usable. |
 | `manifest-only` | `manifest.json` found; `run_results.json` missing. Run-result commands unavailable.    |
 | `unavailable`   | `manifest.json` not found. Most analysis commands will fail.                           |
