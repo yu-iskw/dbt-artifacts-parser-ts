@@ -38,7 +38,7 @@ Both commands accept the same query token syntax and flag-based filters.
 | Reasons for each match      | Yes (`reasons` array)                      | No                     |
 | Disambiguation peers        | Yes (`disambiguation`)                     | No                     |
 | Suggested next steps        | Yes (`next_actions`, `primitive_commands`) | No                     |
-| Requires `run_results.json` | No (manifest-only)                         | Manifest + run_results |
+| Requires `run_results.json` | No (manifest-only)                         | No (manifest-only)     |
 | Best for agents             | Yes — prefer when parsing output           | Simpler filter queries |
 
 **Prefer `discover`** when you need scores, reasons, and suggested follow-up commands in JSON.

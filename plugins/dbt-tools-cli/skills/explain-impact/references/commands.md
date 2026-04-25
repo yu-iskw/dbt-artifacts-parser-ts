@@ -52,16 +52,30 @@ Fields vary by CLI version; verify with `dbt-tools schema impact`:
 
 ```json
 {
-  "unique_id": "model.my_project.orders",
-  "affected": [
-    {
-      "unique_id": "model.my_project.revenue_summary",
-      "resource_type": "model"
-    },
-    { "unique_id": "test.my_project.orders_pk", "resource_type": "test" }
+  "intent": "impact",
+  "contract_version": 1,
+  "target": {
+    "input": "model.my_project.orders",
+    "resolved_unique_id": "model.my_project.orders"
+  },
+  "impact": {
+    "upstream_count": 2,
+    "downstream_count": 10,
+    "critical_dependents": [
+      "model.my_project.revenue_summary",
+      "model.my_project.customers"
+    ]
+  },
+  "why_it_matters": ["high downstream fanout"],
+  "next_actions": ["explain", "diagnose"],
+  "primitive_commands": [
+    "dbt-tools deps \"model.my_project.orders\" --direction downstream --format flat"
   ]
 }
 ```
+
+Parse impact results from `impact.upstream_count`, `impact.downstream_count`, and
+`impact.critical_dependents`. The resolved resource is at `target.resolved_unique_id`.
 
 ## Fallback recipes (when explain/impact are unavailable)
 

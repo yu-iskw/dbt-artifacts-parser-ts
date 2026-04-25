@@ -12,8 +12,8 @@ dbt-tools discover --dbt-target ./target "type:model finance" --json
 # Discovery: filter-only (empty query, flags required)
 dbt-tools discover --dbt-target ./target --type model --json
 
-# Discovery with paging
-dbt-tools discover --dbt-target ./target "orders" --json --limit 10 --offset 0
+# Discovery with paging (discover supports --limit only; --offset is not available)
+dbt-tools discover --dbt-target ./target "orders" --json --limit 10
 
 # Simple search
 dbt-tools search --dbt-target ./target "orders" --json
@@ -50,7 +50,7 @@ dbt-tools schema search
 }
 ```
 
-When `--limit` is set, the response includes `has_more`, `limit`, and `offset`.
+When `--limit` is set, the response includes `has_more` and `limit`. `--offset` is **not** supported by `discover`; use `search` when you need offset-based paging.
 
 ## `search` JSON output shape
 
@@ -76,7 +76,7 @@ When `--limit` is set, the response includes `has_more`, `limit`, and `offset`.
 | ---------------------------------------- | -------------------------------------------------- |
 | Need `unique_id` for deps/explain/impact | `discover` — scores and `next_actions` help narrow |
 | Filter-only browse (type, tag, package)  | Either; `search` is simpler                        |
-| `run_results.json` not available         | `discover` (manifest-only)                         |
+| `run_results.json` not available         | Either — both work manifest-only                   |
 | User gave approximate / misspelled name  | `discover` (fuzzy matching)                        |
 
 ## Inline token syntax
