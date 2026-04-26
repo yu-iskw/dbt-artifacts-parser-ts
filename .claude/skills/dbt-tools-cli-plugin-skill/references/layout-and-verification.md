@@ -36,3 +36,9 @@ pnpm knip
 ```
 
 Markdown-only changes usually do not affect coverage; keep the suite green before merging.
+
+## FQH vs YAML `name` (plugin skills)
+
+- **FQH:** Logical handle `dbt-tools-cli:<skill-folder>` for READMEs and disambiguation — see [`plugins/dbt-tools-cli/README.md`](../../../../plugins/dbt-tools-cli/README.md) (**Skill handles** and **Host compatibility**).
+- **YAML `name` in `SKILL.md`:** Must match the folder name only (`status`, `discover`, …). Per [Agent Skills](https://agentskills.io/specification) and [VS Code Agent Skills](https://code.visualstudio.com/docs/copilot/customization/agent-skills), do **not** put colons, slashes, or namespace prefixes in `name` (invalid skills may **silently** fail to load in VS Code).
+- **Gate vs investigation:** [`dbt-artifacts-status`](../../../../plugins/dbt-tools-cli/skills/dbt-artifacts-status/SKILL.md) links to [`status`](../../../../plugins/dbt-tools-cli/skills/status/SKILL.md) for field-level JSON; command matrix stays in [`references/readiness.md`](../../../../plugins/dbt-tools-cli/skills/dbt-artifacts-status/references/readiness.md).

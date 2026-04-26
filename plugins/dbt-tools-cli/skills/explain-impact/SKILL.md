@@ -12,6 +12,8 @@ compatibility:
 
 # dbt resource explanation and impact analysis
 
+**Skill handle (FQH):** `dbt-tools-cli:explain-impact` (plugin `dbt-tools-cli`, skill directory `explain-impact`). Use for documentation only; YAML `name` remains `explain-impact` per [Agent Skills](https://agentskills.io/specification).
+
 ## When to use
 
 Use this skill when the user asks:

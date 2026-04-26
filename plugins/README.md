@@ -2,6 +2,8 @@
 
 This monorepo ships **first-party agent plugins** under `plugins/<plugin-id>/`. Each plugin uses a shared layout (per-engine manifests and a `skills/` tree). For vendor-specific packaging rules, see upstream docs: [Claude Code](https://code.claude.com/docs/en/plugins), [Codex](https://developers.openai.com/codex/plugins/build), and the [cursor/plugins](https://github.com/cursor/plugins) reference for Cursor.
 
+**Referring to skills across plugins:** Use a **logical handle** `plugin-id:skill-directory` in docs and runbooks (for example `dbt-tools-cli:status`). That is **not** the YAML `name` inside `SKILL.md` — `name` must stay a single kebab-case segment matching the folder per the [Agent Skills specification](https://agentskills.io/specification). Hosts may add their own slash or picker prefix for plugin skills (see [dbt-tools-cli README](dbt-tools-cli/README.md#skill-handles-fqh) for vendor links).
+
 ## How to use these plugins
 
 ### Codex

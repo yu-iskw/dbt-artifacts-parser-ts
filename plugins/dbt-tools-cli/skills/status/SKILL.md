@@ -9,6 +9,8 @@ compatibility: dbt-tools on PATH; a dbt artifact directory or remote prefix (s3:
 
 # dbt artifacts status (investigation)
 
+**Skill handle (FQH):** `dbt-tools-cli:status` (plugin `dbt-tools-cli`, skill directory `status`). Use for documentation only; YAML `name` remains `status` per [Agent Skills](https://agentskills.io/specification).
+
 ## When to use
 
 Use this skill when the user asks:

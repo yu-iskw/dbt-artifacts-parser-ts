@@ -9,6 +9,8 @@ compatibility: dbt-tools on PATH; manifest.json required under --dbt-target.
 
 # dbt resource discovery and search
 
+**Skill handle (FQH):** `dbt-tools-cli:discover` (plugin `dbt-tools-cli`, skill directory `discover`). Use for documentation only; YAML `name` remains `discover` per [Agent Skills](https://agentskills.io/specification).
+
 ## When to use
 
 Use this skill when the user:

@@ -10,6 +10,8 @@ compatibility:
 
 # dbt dependency tracing
 
+**Skill handle (FQH):** `dbt-tools-cli:deps` (plugin `dbt-tools-cli`, skill directory `deps`). Use for documentation only; YAML `name` remains `deps` per [Agent Skills](https://agentskills.io/specification).
+
 ## When to use
 
 Use this skill when the user asks:
