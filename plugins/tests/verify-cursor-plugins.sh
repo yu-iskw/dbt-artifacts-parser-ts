@@ -24,10 +24,10 @@ cursor_marketplace_matches_codex_resolution() {
 		f1="$(mktemp)"
 		f2="$(mktemp)"
 		jq -r '.plugins[].name' "${MARKET}" >"${f1}.raw"
-		sort "${f1}.raw" >"${f1}"
+		sort <"${f1}.raw" >"${f1}"
 		rm -f "${f1}.raw"
 		jq -r '.plugins[].name' "${CURSOR_MARKET}" >"${f2}.raw"
-		sort "${f2}.raw" >"${f2}"
+		sort <"${f2}.raw" >"${f2}"
 		rm -f "${f2}.raw"
 		if ! diff -q "${f1}" "${f2}" >/dev/null; then
 			rm -f "${f1}" "${f2}"
@@ -134,5 +134,4 @@ cursor_run_plugin_validation() {
 	done
 
 	echo "verify-agent-plugins: Cursor Agent CLI verification OK."
-	return 0
 }

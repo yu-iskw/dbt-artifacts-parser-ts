@@ -41,5 +41,4 @@ claude_run_plugin_validation() {
 	done
 
 	echo "verify-agent-plugins: Claude Code verification OK."
-	return 0
 }

@@ -47,6 +47,9 @@ Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `tr
 ## Common gotchas (this monorepo)
 
 - **Sonar / ESLint:** Repeated string literals in CLI command definitions or schema descriptions often hit **`sonarjs/no-duplicate-string`** (threshold is typically **3** repeats). Fix by hoisting **`const`** descriptions next to existing option constants. Large functions may hit **`sonarjs/cognitive-complexity`** or **`sonarjs/cyclomatic-complexity`** — extract small pure helpers rather than disabling rules.
+- **Import graph rules:** `eslint-plugin-import` now enforces **`import/no-cycle`**, **`import/no-unresolved`**, and **`import/no-useless-path-segments`** on TypeScript files. Resolve cycles by moving shared types/helpers to a lower layer or introducing a facade, not by disabling the rule.
+- **Playwright linting:** `eslint-plugin-playwright` runs on `packages/dbt-tools/web/e2e/**/*.spec.ts`; prefer fixing flaky patterns directly. If a web-first assertion is intentionally unsuitable for a long flow, keep exceptions local to the test block.
+- **Disable directives:** `@eslint-community/eslint-plugin-eslint-comments` enforces `eslint-comments/no-unused-disable` and `eslint-comments/disable-enable-pair`; remove stale directives before re-running lint.
 - **Stylelint BEM:** Selectors after `__` must use **kebab-case** segments only (e.g. `__search-row`, not `__searchRow`). If Trunk reports **`stylelint/selector-class-pattern`**, rename the class in **both** TSX and CSS.
 - **Trunk markdown-link-check:** New or moved `*.md` files must not link to **missing** paths. Run **`pnpm exec trunk check path/to/file.md -y`** on edited docs before merge.
 - **`pnpm format` can fail on ESLint** even after Trunk fmt succeeds — the script runs **`format:eslint`** second; read the ESLint output and fix before re-running format.
@@ -57,7 +60,8 @@ Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `tr
 
 1. **Format first** — `pnpm format` (`trunk fmt` → `eslint . --fix` → `prettier --write .`).
 2. **Lint** — `pnpm lint` (`lint:trunk` → `lint:eslint` → `lint:stylelint` → `knip`), or a slimmer pass: `pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint` (omit Knip if not needed yet).
-3. **Build gate for broad shared TS refactors** — after the first green **`pnpm lint:eslint`** checkpoint, if the touched files include `packages/dbt-tools/core`, `packages/dbt-tools/cli`, shared TypeScript utilities, worker protocol layers, or exported types/helpers, run **`pnpm build`** from the repo root. If it fails, switch to [`.claude/skills/build-fix/SKILL.md`](../build-fix/SKILL.md) and follow its fixer loop before claiming the lint session is complete.
+3. **Import-cycle checkpoint before E2E** — when `packages/**` TypeScript modules changed, run `pnpm lint:eslint` and clear import-cycle/path issues before spending time in `pnpm test:e2e`.
+4. **Build gate for broad shared TS refactors** — after the first green **`pnpm lint:eslint`** checkpoint, if the touched files include `packages/dbt-tools/core`, `packages/dbt-tools/cli`, shared TypeScript utilities, worker protocol layers, or exported types/helpers, run **`pnpm build`** from the repo root. If it fails, switch to [`.claude/skills/build-fix/SKILL.md`](../build-fix/SKILL.md) and follow its fixer loop before claiming the lint session is complete.
 
 ### Path B — Escape hatch (`*:without-trunk`)
 
@@ -70,7 +74,7 @@ Do **not** treat `knip --fix` as a formatter. Prefer manual or reviewed edits fo
 
 ## Config pointers (this repo)
 
-- **ESLint:** [`eslint.config.mjs`](../../../eslint.config.mjs) — TypeScript recommended + `@typescript-eslint/no-unused-vars`, **`@typescript-eslint/no-unused-private-class-members`** on production `packages/**/*.ts(x)` (excludes `*.test.*` and e2e specs). React / a11y / hooks for web TSX. Fix via `pnpm format:eslint` and `pnpm lint:eslint`.
+- **ESLint:** [`eslint.config.mjs`](../../../eslint.config.mjs) — TypeScript recommended + `@typescript-eslint/no-unused-vars`, **`@typescript-eslint/no-unused-private-class-members`** on production `packages/**/*.ts(x)` (excludes `*.test.*` and e2e specs), plus `eslint-plugin-import` (cycles/unresolved/useless segments), `eslint-plugin-playwright` on e2e specs, and `eslint-comments` guardrails for disable directives. React / a11y / hooks for web TSX. Fix via `pnpm format:eslint` and `pnpm lint:eslint`.
 - **Knip:** [`knip.json`](../../../knip.json) — per-workspace entries (Vitest, parser, core, CLI, web + Vite/Playwright), **`ignoreExportsUsedInFile`**, targeted **`ignoreIssues`** / **`ignoreFiles`** / **`ignoreDependencies`** / **`ignoreBinaries`**. Decision record: [`docs/adr/0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md`](../../../docs/adr/0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md).
 
 ## Commands for this repo
@@ -107,7 +111,7 @@ pnpm format:without-trunk && pnpm lint:without-trunk
 If violations remain:
 
 1. **Identify:** Read ESLint / Trunk / Stylelint / Knip output.
-2. **Fix:** Minimal edits; for Knip, prefer removing dead code or narrowing **`knip.json`** with a short rationale (shell-only scripts, dynamic imports, published API).
+2. **Fix:** Minimal edits; for Knip, prefer removing dead code or narrowing **`knip.json`** when needed (shell-only scripts, dynamic imports, published API).
 3. **Verify:**
    - **Launcher present:** re-run `pnpm format` (or at least ESLint + Prettier), then `pnpm lint:eslint`, **`pnpm knip`**, **`pnpm lint:report`**.
    - For broad shared TypeScript refactors, run **`pnpm build`** after the first green **`pnpm lint:eslint`** pass; if build breaks, use the **`build-fix`** skill loop before final verification.
@@ -117,7 +121,7 @@ If violations remain:
    - Before relying on CI: run **`pnpm lint`** from a repo with **`pnpm install`** completed when possible.
 4. Repeat up to **3** iterations to avoid unbounded loops.
 
-**Policy:** Fix root causes; avoid blanket `eslint-disable` or widening ignores unless unavoidable (see [`AGENTS.md`](../../../AGENTS.md) quality gates).
+**Policy:** Fix root causes first; avoid blanket `eslint-disable` or widened ignore rules. If suppression is unavoidable, keep it narrowly scoped and do not require inline justification comments.
 
 ## Verifier integration
 

@@ -83,27 +83,21 @@ run_vendor_cli_validations() {
 	codex_run_plugin_validation
 	rc=$?
 	set -e
-	if [[ ${rc} -ne 0 ]]; then
-		failed_vendors+=(codex)
-	fi
+	((rc == 0)) || failed_vendors+=(codex)
 
 	echo "== START: Claude Code CLI plugin validation"
 	set +e
 	claude_run_plugin_validation
 	rc=$?
 	set -e
-	if [[ ${rc} -ne 0 ]]; then
-		failed_vendors+=(claude)
-	fi
+	((rc == 0)) || failed_vendors+=(claude)
 
 	echo "== START: Cursor Agent CLI plugin validation"
 	set +e
 	cursor_run_plugin_validation
 	rc=$?
 	set -e
-	if [[ ${rc} -ne 0 ]]; then
-		failed_vendors+=(cursor)
-	fi
+	((rc == 0)) || failed_vendors+=(cursor)
 
 	if ((${#failed_vendors[@]})); then
 		echo "verify-agent-plugins: vendor CLI validation failed for: ${failed_vendors[*]}" >&2
