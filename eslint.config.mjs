@@ -1,6 +1,9 @@
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
 import sonarjs from "eslint-plugin-sonarjs";
+import importPlugin from "eslint-plugin-import";
+import playwrightPlugin from "eslint-plugin-playwright";
+import eslintCommentsPlugin from "@eslint-community/eslint-plugin-eslint-comments";
 import vitestPlugin from "@vitest/eslint-plugin";
 import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -18,6 +21,16 @@ const tsProjectOptions = {
     "./packages/dbt-tools/web/tsconfig.node.json",
     "./packages/dbt-tools/web/tsconfig.e2e.json",
   ],
+};
+
+const importResolverSettings = {
+  "import/resolver": {
+    typescript: {
+      project: tsProjectOptions.project,
+      alwaysTryTypes: true,
+    },
+    node: true,
+  },
 };
 
 /**
@@ -55,6 +68,12 @@ const sharedTsRules = Object.assign({}, tseslint.configs.recommended.rules, {
   "no-unreachable": "error",
 });
 
+const sharedImportRules = {
+  "import/no-cycle": "error",
+  "import/no-unresolved": "error",
+  "import/no-useless-path-segments": "error",
+};
+
 export default [
   {
     ignores: [
@@ -72,6 +91,13 @@ export default [
       "**/playwright-report/**",
       "**/test-results/**",
     ],
+    plugins: {
+      "eslint-comments": eslintCommentsPlugin,
+    },
+    rules: {
+      "eslint-comments/no-unused-disable": "error",
+      "eslint-comments/disable-enable-pair": "error",
+    },
   },
   {
     files: ["packages/**/*.ts", "packages/**/*.tsx"],
@@ -86,9 +112,12 @@ export default [
     plugins: {
       "@typescript-eslint": tseslint,
       sonarjs,
+      import: importPlugin,
     },
+    settings: importResolverSettings,
     rules: {
       ...sharedTsRules,
+      ...sharedImportRules,
       "@typescript-eslint/no-unused-private-class-members": "error",
     },
   },
@@ -106,10 +135,13 @@ export default [
     plugins: {
       "@typescript-eslint": tseslint,
       sonarjs,
+      import: importPlugin,
       ...vitestPlugin.configs.recommended.plugins,
     },
+    settings: importResolverSettings,
     rules: {
       ...sharedTsRules,
+      ...sharedImportRules,
       ...vitestPlugin.configs.recommended.rules,
       // Tests often repeat string literals and use conditional expects; keep signal without noise.
       "vitest/no-conditional-expect": "off",
@@ -128,10 +160,16 @@ export default [
     plugins: {
       "@typescript-eslint": tseslint,
       sonarjs,
+      ...playwrightPlugin.configs["flat/recommended"].plugins,
+      import: importPlugin,
     },
+    settings: importResolverSettings,
     rules: {
       ...sharedTsRules,
+      ...sharedImportRules,
+      ...playwrightPlugin.configs["flat/recommended"].rules,
       // Long Playwright flows: relax structural limits without silencing security/type rules
+      "playwright/prefer-web-first-assertions": "off",
       "max-lines-per-function": ["error", { max: 400 }],
       "max-depth": ["error", { max: 10 }],
       "sonarjs/cognitive-complexity": ["error", 35],
@@ -283,7 +321,7 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ignores: ["**/dist/**", "**/node_modules/**"],
+    ignores: ["**/dist/**", "**/dist-serve/**", "**/node_modules/**"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",

@@ -84,19 +84,18 @@ codex_validate_plugin_structure() {
 	local skills_root="${plugin_root}/${skills_rel}"
 	[[ -d ${skills_root} ]] || fail "Codex skills directory missing (${plugin_id}): ${skills_root}"
 
-	local found=0
-	local d
+	local -a skill_names=()
+	local d base
 	shopt -s nullglob
 	for d in "${skills_root}"/*/; do
 		[[ -d ${d} ]] || continue
-		found=1
-		local base="${d%/}"
+		base="${d%/}"
 		[[ -f "${base}/SKILL.md" ]] || fail "Missing skill $(basename "${base}")/SKILL.md (${plugin_id})"
+		skill_names+=("$(basename "${base}")")
 	done
 	shopt -u nullglob
-	if [[ ${found} -eq 0 ]]; then
-		fail "No skill directories under ${skills_root}"
-	fi
+	((${#skill_names[@]})) || fail "No skill directories under ${skills_root}"
+	echo "  skills (${plugin_id}): ${skill_names[*]}"
 }
 
 # Codex CLI: per-plugin validation when `codex plugin validate` preflight passes (see plugins/CONTRIBUTING.md).
@@ -127,5 +126,4 @@ codex_run_plugin_validation() {
 	done
 
 	echo "verify-agent-plugins: Codex CLI verification OK."
-	return 0
 }
