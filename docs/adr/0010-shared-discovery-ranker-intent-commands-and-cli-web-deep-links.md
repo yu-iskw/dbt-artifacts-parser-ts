@@ -91,6 +91,7 @@ The dedicated browser **Discover** workspace (`view=discover`) and the analysis 
 
 ## References
 
+- [0011 — CLI stdout JSON envelope and introspection schemas for coding agents](./0011-cli-stdout-json-envelope-and-introspection-schemas-for-coding-agents.md)
 - [0008 — dbt-tools operational intelligence and positioning boundaries](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md)
 - [0003 — Large manifest web performance, dependency index, and lazy SQL](./0003-large-manifest-web-performance-dependency-index-and-lazy-sql.md)
 - [0005 — Knip and ESLint layers for monorepo dead-code detection](./0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md)

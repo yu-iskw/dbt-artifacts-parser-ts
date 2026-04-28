@@ -7,8 +7,6 @@ import {
   validateSafePath,
   validateDepth,
   validateResourceId,
-  shouldOutputJSON,
-  formatOutput,
   formatSummary,
   FieldFilter,
   ErrorHandler,
@@ -35,12 +33,15 @@ import {
   failuresAction,
 } from "./cli-actions";
 import { resolveCliArtifactPaths } from "./internal/cli-artifact-resolve";
+import { stringifyCliJsonForAction } from "./internal/cli-json-output";
+import { shouldOutputJsonForCli } from "./internal/cli-json-flags";
 import { CLI_PACKAGE_VERSION } from "./internal/version";
 
 const program = new Command();
 
 type ArtifactRootFlags = {
   dbtTarget?: string;
+  jsonEnvelope?: boolean;
 };
 
 /** CLI option/argument description constants (avoid no-duplicate-string) */
@@ -79,6 +80,9 @@ const DESC_OFFSET_REQUIRES_LIMIT = "Skip N rows after sort (requires --limit)";
 const DESC_FAILURES_LIMIT = "Max rows returned (default 50, max 200)";
 const DESC_FAILURES_OFFSET =
   "Skip N rows after stable sort (uses explicit or default --limit)";
+const OPT_JSON_ENVELOPE = "--json-envelope";
+const DESC_JSON_ENVELOPE =
+  "Wrap JSON stdout in {_meta,data} (CLI version, artifacts, command). Env: DBT_TOOLS_JSON_ENVELOPE=1";
 
 program
   .name("dbt-tools")
@@ -87,7 +91,7 @@ program
 
 /**
  * Handle errors: structured JSON on stderr only when `preferStructuredErrors`
- * (typically `shouldOutputJSON(--json, --no-json)`).
+ * (typically `shouldOutputJsonForCli(--json, --no-json)`).
  */
 function handleCliError(error: unknown, preferStructuredErrors: boolean): void {
   const formatted = ErrorHandler.formatError(
@@ -143,6 +147,38 @@ function tryApplyFieldLevelLineageToGraph(
   }
 }
 
+function formatGraphStdoutJson(params: {
+  graphOutput: string;
+  format?: string;
+  options: ArtifactRootFlags;
+  paths: Awaited<ReturnType<typeof resolveCliArtifactPaths>>;
+}): string {
+  const fmtGraph = (params.format ?? DEFAULT_GRAPH_FORMAT).toLowerCase();
+  if (fmtGraph !== "json") {
+    return params.graphOutput;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(params.graphOutput);
+  } catch (e) {
+    if (!(e instanceof SyntaxError)) throw e;
+    return params.graphOutput;
+  }
+
+  return stringifyCliJsonForAction(
+    "graph",
+    params.paths,
+    {
+      json: true,
+      noJson: false,
+      jsonEnvelope: params.options.jsonEnvelope,
+      dbtTarget: params.options.dbtTarget,
+    },
+    parsed,
+  );
+}
+
 /**
  * Summary command: Basic summary of project structure
  */
@@ -152,6 +188,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -185,15 +222,20 @@ program
         }
 
         // Format output
-        const useJson = shouldOutputJSON(options.json, options.noJson);
+        const useJson = shouldOutputJsonForCli(options.json, options.noJson);
 
         if (useJson) {
-          console.log(formatOutput(summary, true));
+          console.log(
+            stringifyCliJsonForAction("summary", paths, options, summary),
+          );
         } else {
           console.log(formatSummary(summary));
         }
       } catch (error) {
-        handleCliError(error, shouldOutputJSON(options.json, options.noJson));
+        handleCliError(
+          error,
+          shouldOutputJsonForCli(options.json, options.noJson),
+        );
       }
     },
   );
@@ -229,6 +271,7 @@ program
     "--resource-types <types>",
     "Comma-separated resource types to include (filters nodes when --focus is set)",
   )
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -298,14 +341,23 @@ program
           );
         }
 
-        const output = exportGraphToFormat(targetGraph, {
+        const graphOutput = exportGraphToFormat(targetGraph, {
           format: options.format,
           output: options.output,
           fields: options.fields,
         });
-        writeGraphOutput(output, options.output);
+        const stdoutOutput = formatGraphStdoutJson({
+          graphOutput,
+          format: options.format,
+          options,
+          paths,
+        });
+        writeGraphOutput(
+          options.output ? graphOutput : stdoutOutput,
+          options.output,
+        );
       } catch (error) {
-        handleCliError(error, shouldOutputJSON(undefined, undefined));
+        handleCliError(error, shouldOutputJsonForCli(undefined, undefined));
       }
     },
   );
@@ -369,6 +421,7 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -414,7 +467,7 @@ program
             new Error(
               `--adapter-top-by must be one of: ${[...allowed].join(", ")}`,
             ),
-            shouldOutputJSON(options.json, options.noJson),
+            shouldOutputJsonForCli(options.json, options.noJson),
           );
           return;
         }
@@ -445,6 +498,7 @@ program
           json: options.json,
           noJson: options.noJson,
           dbtTarget: options.dbtTarget,
+          jsonEnvelope: options.jsonEnvelope,
         },
         handleCliError,
       );
@@ -481,6 +535,7 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       resourceId: string,
@@ -515,6 +570,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -569,6 +625,7 @@ program
   .option(OPT_FIELDS, DESC_FIELDS)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -618,6 +675,7 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -655,6 +713,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       query: string | undefined,
@@ -695,6 +754,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .option(OPT_TRACE, DESC_TRACE)
   .action(
     async (
@@ -728,6 +788,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .option(OPT_TRACE, DESC_TRACE)
   .action(
     async (
@@ -756,6 +817,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .option(OPT_TRACE, DESC_TRACE)
   .action(
     async (
@@ -784,6 +846,7 @@ diagnoseCmd
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -804,6 +867,7 @@ diagnoseCmd
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       resource: string,
@@ -836,6 +900,7 @@ program
   )
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -864,6 +929,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -884,6 +950,7 @@ program
   .option(OPT_DBT_TARGET, DESC_DBT_TARGET)
   .option(OPT_JSON, DESC_JSON)
   .option(OPT_NO_JSON, DESC_NO_JSON)
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
   .action(
     async (
       options: {
@@ -891,7 +958,10 @@ program
         noJson?: boolean;
       } & ArtifactRootFlags,
     ) => {
-      await statusAction(options, handleCliError);
+      await statusAction(
+        { ...options, invokedAs: "freshness" },
+        handleCliError,
+      );
     },
   );
 
@@ -906,26 +976,43 @@ program
     "Command name (if omitted, returns all command schemas)",
   )
   .option("--json", "Force JSON output (always JSON by default)")
-  .action((command: string | undefined, _options: { json?: boolean }) => {
-    try {
-      let result: unknown;
+  .option(OPT_JSON_ENVELOPE, DESC_JSON_ENVELOPE)
+  .action(
+    (
+      command: string | undefined,
+      opts: { json?: boolean; jsonEnvelope?: boolean },
+    ) => {
+      try {
+        let result: unknown;
 
-      if (command) {
-        const schema = getCommandSchema(command);
-        if (!schema) {
-          throw new Error(`Unknown command: ${command}`);
+        if (command) {
+          const schema = getCommandSchema(command);
+          if (!schema) {
+            throw new Error(`Unknown command: ${command}`);
+          }
+          result = schema;
+        } else {
+          result = getAllSchemas();
         }
-        result = schema;
-      } else {
-        result = getAllSchemas();
-      }
 
-      // Schema command always outputs JSON
-      console.log(formatOutput(result, true));
-    } catch (error) {
-      handleCliError(error, false);
-    }
-  });
+        // Schema command always outputs JSON (`stringifyCliJson*` skips envelope for `schema`)
+        console.log(
+          stringifyCliJsonForAction(
+            "schema",
+            undefined,
+            {
+              json: true,
+              noJson: false,
+              jsonEnvelope: opts.jsonEnvelope,
+            },
+            result,
+          ),
+        );
+      } catch (error) {
+        handleCliError(error, false);
+      }
+    },
+  );
 
 export { program };
 

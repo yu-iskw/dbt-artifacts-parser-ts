@@ -14,12 +14,10 @@ import {
   buildAdapterTotals,
   detectAdapterHeavyNodes,
   searchRunResults,
-  formatOutput,
   formatRunReport,
   formatAdapterTotalsHuman,
   formatAdapterHeavyHuman,
   formatAdapterNodeDetailsHuman,
-  shouldOutputJSON,
   type ExecutionSummary,
   type NodeExecution,
   type AdapterHeavyMetric,
@@ -28,6 +26,8 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 import {
   parseListOffset,
   assertOffsetRequiresLimit,
@@ -289,7 +289,7 @@ export async function runReportAction(
       ) as ExecutionSummary;
     }
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
 
     if (useJson) {
       const report: Record<string, unknown> = { ...filteredSummary };
@@ -314,7 +314,9 @@ export async function runReportAction(
         report.node_executions_offset = off;
       }
 
-      console.log(formatOutput(report, true));
+      console.log(
+        stringifyCliJsonForAction("run-report", paths, options, report),
+      );
     } else {
       console.log(
         formatRunReport(
@@ -326,6 +328,6 @@ export async function runReportAction(
       );
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

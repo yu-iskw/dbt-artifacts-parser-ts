@@ -3,6 +3,7 @@ import {
   isTTY,
   shouldOutputJSON,
   formatOutput,
+  formatCliStdoutJson,
   formatSummary,
   formatDeps,
   formatRunReport,
@@ -89,6 +90,26 @@ describe("OutputFormatter", () => {
 
     it("should prioritize --no-json over --json", () => {
       expect(shouldOutputJSON(true, true)).toBe(false);
+    });
+  });
+
+  describe("formatCliStdoutJson", () => {
+    it("should wrap payload when envelopeMeta is set", () => {
+      const line = formatCliStdoutJson({
+        payload: { x: 1 },
+        forceJson: true,
+        envelopeMeta: {
+          version: 1,
+          cli_version: "0.0.0-test",
+          command: "summary",
+        },
+      });
+      const parsed = JSON.parse(line) as {
+        _meta: { cli_version: string };
+        data: { x: number };
+      };
+      expect(parsed._meta.cli_version).toBe("0.0.0-test");
+      expect(parsed.data.x).toBe(1);
     });
   });
 

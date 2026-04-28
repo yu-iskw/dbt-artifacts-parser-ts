@@ -11,15 +11,15 @@ import {
   DependencyService,
   SQLAnalyzer,
   sqlDialectFromDbtAdapterType,
-  formatOutput,
   formatDeps,
-  shouldOutputJSON,
 } from "@dbt-tools/core";
 import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 type DepsOptions = {
   direction?: string;
@@ -142,14 +142,14 @@ export async function depsAction(
       options.buildOrder,
     );
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
 
     if (useJson) {
-      console.log(formatOutput(result, true));
+      console.log(stringifyCliJsonForAction("deps", paths, options, result));
     } else {
       console.log(formatDeps(result, format));
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

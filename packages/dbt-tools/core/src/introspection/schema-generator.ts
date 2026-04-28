@@ -1,4 +1,11 @@
 import { COMMAND_STABILITY, type StabilityLevel } from "./command-stability";
+import { depsStdoutJsonSchema } from "./output-schemas/deps-stdout-schema";
+import { statusStdoutJsonSchema } from "./output-schemas/status-stdout-schema";
+import { summaryStdoutJsonSchema } from "./output-schemas/summary-stdout-schema";
+
+function jsonSchemaMvpCopy(value: unknown): Record<string, unknown> {
+  return structuredClone(value) as Record<string, unknown>;
+}
 
 /**
  * Command schema definition for runtime introspection
@@ -21,6 +28,11 @@ export interface CommandSchema {
   output_format: string;
   example: string;
   stability?: StabilityLevel;
+  /**
+   * JSON Schema (draft 2020-12) describing successful **JSON** stdout for this command
+   * when not using `--json-envelope`. With `--json-envelope`, the same payload appears under `data`.
+   */
+  stdout_json_schema?: Record<string, unknown>;
 }
 
 type SchemaOption = {
@@ -34,6 +46,7 @@ type SchemaOption = {
 const OPT_DBT_TARGET = "--dbt-target";
 const OPT_JSON = "--json";
 const OPT_NO_JSON = "--no-json";
+const OPT_JSON_ENVELOPE = "--json-envelope";
 const OPT_TRACE = "--trace";
 const TYPE_STRING = "string";
 const TYPE_BOOLEAN = "boolean";
@@ -44,6 +57,8 @@ const DESC_DBT_TARGET =
 const DESC_FORCE_JSON =
   "Force JSON stdout; with --json, errors on stderr use structured JSON";
 const DESC_FORCE_HUMAN = "Force human-readable output";
+const DESC_JSON_ENVELOPE =
+  "Wrap JSON stdout in {_meta,data} with CLI metadata for agents and logs";
 const DESC_TRACE =
   "Include investigation_transcript in JSON output (intent / discover)";
 const DESC_SCHEMA_FILTER_PACKAGE = "Filter by package name";
@@ -53,20 +68,35 @@ const DESC_SCHEMA_ARG_UNIQUE_DISCOVER = "unique_id or discover query string";
 const DESC_FIELDS =
   "Comma-separated list of fields to include in response (e.g., unique_id,name)";
 
-function getArtifactRootCliSchemaOptions(): SchemaOption[] {
-  return [
+function getJsonEnvelopeSchemaOption(): SchemaOption {
+  return {
+    name: OPT_JSON_ENVELOPE,
+    type: TYPE_BOOLEAN,
+    description: DESC_JSON_ENVELOPE,
+  };
+}
+
+function getArtifactRootCliSchemaOptions(params?: {
+  includeJsonEnvelope?: boolean;
+}): SchemaOption[] {
+  const options: SchemaOption[] = [
     {
       name: OPT_DBT_TARGET,
       type: TYPE_STRING,
       description: DESC_DBT_TARGET,
     },
   ];
+  if (params?.includeJsonEnvelope === true) {
+    options.push(getJsonEnvelopeSchemaOption());
+  }
+  return options;
 }
 
 function getSummarySchema(): CommandSchema {
   return {
     command: "summary",
     description: "Provide summary statistics for dbt manifest",
+    stdout_json_schema: jsonSchemaMvpCopy(summaryStdoutJsonSchema),
     arguments: [],
     options: [
       {
@@ -84,7 +114,7 @@ function getSummarySchema(): CommandSchema {
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_HUMAN,
       },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools summary --dbt-target ./target",
@@ -143,7 +173,7 @@ function getGraphSchema(): CommandSchema {
         description:
           "Comma-separated resource types to keep in the subgraph (e.g. model,test); focus node is always included",
       },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: "json, dot, or gexf",
     example: "dbt-tools graph --focus model.my_project.orders --focus-depth 2",
@@ -227,7 +257,7 @@ function getRunReportSchema(): CommandSchema {
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_HUMAN,
       },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools run-report --dbt-target ./target --bottlenecks",
@@ -274,7 +304,7 @@ function getDepsSchemaOptions(): SchemaOption[] {
     },
     { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
     { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-    ...getArtifactRootCliSchemaOptions(),
+    ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
   ];
 }
 
@@ -282,6 +312,7 @@ function getDepsSchema(): CommandSchema {
   return {
     command: "deps",
     description: "Get upstream or downstream dependencies for a dbt resource",
+    stdout_json_schema: jsonSchemaMvpCopy(depsStdoutJsonSchema),
     arguments: [
       {
         name: "resource-id",
@@ -313,6 +344,7 @@ function getSchemaCommandSchema(): CommandSchema {
         type: TYPE_BOOLEAN,
         description: DESC_FORCE_JSON,
       },
+      getJsonEnvelopeSchemaOption(),
     ],
     output_format: "json",
     example: "dbt-tools schema deps",
@@ -371,7 +403,7 @@ function getInventorySchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example:
@@ -433,7 +465,7 @@ function getFailuresSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools failures --dbt-target ./target --json --limit 20",
@@ -477,7 +509,7 @@ function getTimelineSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: "json, table, or csv",
     example:
@@ -532,7 +564,7 @@ function getDiscoverSchema(): CommandSchema {
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       { name: OPT_TRACE, type: TYPE_BOOLEAN, description: DESC_TRACE },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: 'dbt-tools discover --dbt-target ./target "orders"',
@@ -560,7 +592,7 @@ function getExplainSchema(): CommandSchema {
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       { name: OPT_TRACE, type: TYPE_BOOLEAN, description: DESC_TRACE },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example:
@@ -589,7 +621,7 @@ function getImpactSchema(): CommandSchema {
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
       { name: OPT_TRACE, type: TYPE_BOOLEAN, description: DESC_TRACE },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example:
@@ -611,7 +643,7 @@ function getDiagnoseRunSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools diagnose run --dbt-target ./target --json",
@@ -638,7 +670,7 @@ function getDiagnoseNodeSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example:
@@ -682,7 +714,7 @@ function getExportIntentSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example:
@@ -740,7 +772,7 @@ function getSearchSchema(): CommandSchema {
       },
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools search --dbt-target ./target orders",
@@ -752,11 +784,12 @@ function getStatusSchema(): CommandSchema {
     command: "status",
     description:
       "Report dbt artifact presence, modification times, and analysis readiness",
+    stdout_json_schema: jsonSchemaMvpCopy(statusStdoutJsonSchema),
     arguments: [],
     options: [
       { name: OPT_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_JSON },
       { name: OPT_NO_JSON, type: TYPE_BOOLEAN, description: DESC_FORCE_HUMAN },
-      ...getArtifactRootCliSchemaOptions(),
+      ...getArtifactRootCliSchemaOptions({ includeJsonEnvelope: true }),
     ],
     output_format: OUTPUT_JSON_OR_HUMAN,
     example: "dbt-tools status --dbt-target ./target",

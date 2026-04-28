@@ -35,6 +35,7 @@ export * from "./io/dbt-artifact-bundle";
 export * from "./validation/input-validator";
 
 // Formatting exports
+export * from "./formatting/cli-json-envelope";
 export * from "./formatting/output-formatter";
 export * from "./formatting/field-filter";
 export * from "./formatting/graph-export";

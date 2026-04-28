@@ -7,8 +7,6 @@ import {
   validateSafePath,
   validateNoControlChars,
   FieldFilter,
-  formatOutput,
-  shouldOutputJSON,
   discoverResources,
   buildDiscoverWebUrl,
   getDbtToolsWebBaseUrlFromEnv,
@@ -18,6 +16,8 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 export type DiscoverCliOptions = {
   type?: string;
@@ -153,7 +153,7 @@ export async function discoverAction(
       path: options.path,
     });
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
     const enriched = enrichDiscoverJson(output, {
       type: options.type,
       package: options.package,
@@ -170,7 +170,7 @@ export async function discoverAction(
           options.fields,
         );
       }
-      console.log(formatOutput(out, true));
+      console.log(stringifyCliJsonForAction("discover", paths, options, out));
     } else {
       let text = formatDiscoverHuman(output);
       if (enriched.web_url) {
@@ -179,6 +179,6 @@ export async function discoverAction(
       console.log(text);
     }
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

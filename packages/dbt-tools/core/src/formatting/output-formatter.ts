@@ -2,6 +2,10 @@ import {
   ADAPTER_METRIC_DESCRIPTORS,
   formatAdapterMetricValue,
 } from "../analysis/adapter-metric-descriptors";
+import {
+  envelopCliJsonStdout,
+  type CliJsonEnvelopeMetaV1,
+} from "./cli-json-envelope";
 import type { AdapterTotalsSnapshot } from "../analysis/adapter-response-metrics";
 import type { NodeExecution } from "../analysis/execution-analyzer";
 import type { AdapterHeavyResult } from "../analysis/run-results-search";
@@ -101,6 +105,23 @@ export function formatOutput(
   }
 
   return String(data);
+}
+
+/**
+ * Format CLI JSON stdout, optionally wrapping in `{ _meta, data }`.
+ * Human-readable branches should not pass `envelopeMeta`.
+ */
+export function formatCliStdoutJson(params: {
+  payload: unknown;
+  forceJson?: boolean;
+  forceNoJson?: boolean;
+  envelopeMeta?: CliJsonEnvelopeMetaV1;
+}): string {
+  const body =
+    params.envelopeMeta !== undefined
+      ? envelopCliJsonStdout(params.payload, params.envelopeMeta)
+      : params.payload;
+  return formatOutput(body, params.forceJson, params.forceNoJson);
 }
 
 /**

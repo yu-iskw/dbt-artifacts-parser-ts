@@ -7,8 +7,6 @@ import {
   loadManifest,
   validateSafePath,
   FieldFilter,
-  formatOutput,
-  shouldOutputJSON,
   validateResourceId,
   validateDepth,
   exportGraphToFormat,
@@ -18,6 +16,8 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 export type ExportCliOptions = {
   format?: string;
@@ -101,7 +101,7 @@ export async function exportAction(
       }${options.output ? ` --output ${JSON.stringify(options.output)}` : ""}`,
     ];
 
-    const useJson = shouldOutputJSON(options.json, options.noJson);
+    const useJson = shouldOutputJsonForCli(options.json, options.noJson);
 
     if (useJson) {
       if (options.output) {
@@ -124,12 +124,12 @@ export async function exportAction(
           options.fields,
         );
       }
-      console.log(formatOutput(out, true));
+      console.log(stringifyCliJsonForAction("export", paths, options, out));
       return;
     }
 
     writeGraphOutput(body, options.output);
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

@@ -13,8 +13,6 @@ import {
   getAdapterMetricValue,
   getPresentAdapterMetricDescriptors,
   searchRunResults,
-  formatOutput,
-  shouldOutputJSON,
   type NodeExecution,
   type AdapterResponseMetrics,
   type ArtifactPaths,
@@ -23,6 +21,8 @@ import {
   resolveCliArtifactPaths,
   type ArtifactRootCliOptions,
 } from "../../internal/cli-artifact-resolve";
+import { shouldOutputJsonForCli } from "../../internal/cli-json-flags";
+import { stringifyCliJsonForAction } from "../../internal/cli-json-output";
 
 export type TimelineOptions = {
   sort?: string;
@@ -321,16 +321,17 @@ function sortTimelineExecutions(
 function formatTimelineOutput(
   result: TimelineResult,
   options: TimelineOptions,
+  paths: ArtifactPaths,
 ): string {
   const outputFormat = (options.format ?? "").toLowerCase();
-  const useJson = shouldOutputJSON(options.json, options.noJson);
+  const useJson = shouldOutputJsonForCli(options.json, options.noJson);
   if (outputFormat === "csv") {
     return formatTimelineCsv(result.entries);
   }
   if (outputFormat === "table" || (!useJson && outputFormat !== "json")) {
     return formatTimeline(result);
   }
-  return formatOutput(result, true);
+  return stringifyCliJsonForAction("timeline", paths, options, result);
 }
 
 /**
@@ -363,8 +364,8 @@ export async function timelineAction(
 
     const entries = executions.map((e) => toTimelineEntry(e, context.lookup));
     const result: TimelineResult = { total: entries.length, entries };
-    console.log(formatTimelineOutput(result, options));
+    console.log(formatTimelineOutput(result, options, paths));
   } catch (error) {
-    handleError(error, shouldOutputJSON(options.json, options.noJson));
+    handleError(error, shouldOutputJsonForCli(options.json, options.noJson));
   }
 }

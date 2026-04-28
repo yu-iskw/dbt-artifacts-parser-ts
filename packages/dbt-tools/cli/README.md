@@ -674,7 +674,13 @@ The same patterns help **scripts and CI** and **coding agents** (e.g. discover r
 4. **Set `DBT_TOOLS_DBT_TARGET` in CI** so commands stay short and consistent.
 5. **Validate resource IDs** before querying (use schema introspection if unsure).
 6. **Pass `--json`** when scripts need **structured stderr** (do not rely on non-TTY heuristics for error JSON).
-7. **Use schema introspection** to discover command capabilities at runtime.
+7. **Use schema introspection** to discover command capabilities at runtime (`dbt-tools schema`, `dbt-tools schema deps`, …).
+8. **Stdout JSON Schema (summary, deps, status)** — each schema object may include **`stdout_json_schema`** (draft 2020-12 JSON Schema) describing successful **JSON** stdout **without** `--json-envelope`. When **`--json-envelope`** is on (or `DBT_TOOLS_JSON_ENVELOPE=1`), the same logical payload appears under **`data`**; **`_meta`** carries `cli_version`, `command`, `dbt_target`, and optional **artifact** path/mtime hints.
+9. **Optional `{ _meta, data }` envelope for agents** — append **`--json-envelope`** or set **`DBT_TOOLS_JSON_ENVELOPE`** to `1`, `true`, or `yes`. The **`schema`** introspection command never wraps stdout (even if the flag is present). **`graph`** / **`export`** wrap only when **`--format json`** (dot/gexf are unchanged). Example:
+
+```bash
+dbt-tools summary --dbt-target ./target --json --json-envelope | jq '.data.nodes_by_type'
+```
 
 Compose with other tooling as needed (e.g. warehouse job metadata, CI environment variables, or separate analysis of warehouse query logs)—`dbt-tools` stays artifact-grounded and does not execute warehouse queries.
 
@@ -722,6 +728,7 @@ dbt-tools schema deps | jq '.options[] | select(.name == "--direction")'
 ## Environment variables
 
 - **`DBT_TOOLS_DBT_TARGET`**: default artifact root for the CLI when **`--dbt-target`** is omitted (local path, or `s3://…` / `gs://…` with a strict scheme).
+- **`DBT_TOOLS_JSON_ENVELOPE`**: when set to **`1`**, **`true`**, or **`yes`**, JSON stdout uses the **`{ _meta, data }`** envelope (same as **`--json-envelope`**).
 - **Remote credentials / endpoint style** for `s3://` and `gs://` still follow **`DBT_TOOLS_REMOTE_SOURCE`** (see the artifact root section above).
 
 ---
