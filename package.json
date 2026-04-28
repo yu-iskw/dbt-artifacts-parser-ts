@@ -39,6 +39,7 @@
     "lint:semgrep": "semgrep ci",
     "lint:trunk": "pnpm exec trunk check -y",
     "lint:trunk-all": "pnpm exec trunk check --all -y",
+    "prepare": "if [ -z \"${CI:-}\" ]; then pnpm exec trunk git-hooks sync; fi",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm --filter @dbt-tools/web test:e2e",

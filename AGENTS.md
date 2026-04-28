@@ -137,6 +137,32 @@ If IT must enforce non-overridable rules (permissions, domains, MCP, marketplace
 
 ## Commands
 
+### Agent session startup (git hooks)
+
+Trunk's pre-commit (`trunk-fmt-pre-commit`) and pre-push (`trunk-check-pre-push`) actions
+auto-format code and run linters before each commit and push. These hooks must be installed
+once per workspace checkout — skipping this is the primary reason cloud agent sessions
+produce commits that fail the `trunk_check` CI job.
+
+Run once per fresh workspace (from the repo root):
+
+```sh
+pnpm exec trunk git-hooks sync
+```
+
+This is idempotent — safe to run on every session start. Per-agent coverage:
+
+| Agent                             | How hooks are installed                                                                                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Claude Code**                   | Automatic — `SessionStart` hook in [`.claude/settings.json`](.claude/settings.json) runs `pnpm exec trunk git-hooks sync` at the start of every session                                         |
+| **Codex**                         | Automatic — the `prepare` lifecycle script in `package.json` runs `trunk git-hooks sync` when `pnpm install` is executed during sandbox setup (CI-guarded so it does not run in GitHub Actions) |
+| **Cursor**                        | Manual — run `pnpm exec trunk install` once in Cursor's integrated terminal at the start of your workspace session                                                                              |
+| **GitHub Copilot / other agents** | Manual — run `pnpm exec trunk install` in the terminal before making your first commit                                                                                                          |
+
+If Trunk's hooks are missing and you cannot run `trunk install`, use
+`pnpm format:without-trunk` before committing as a fallback to handle ESLint and Prettier
+formatting; then push and let CI run the full Trunk check.
+
 - **Codex CLI:** Project defaults live in [`.codex/config.toml`](.codex/config.toml). Codex loads that file only when the project is **trusted**; otherwise it uses your user config ([Config basics](https://developers.openai.com/codex/config-basic)).
 - **Dead code (Knip):** `pnpm knip` (optional fix: `pnpm knip:fix`, review diffs). Uses workspace entry points in [`knip.json`](knip.json).
 - **Trunk (lint/format orchestration):** The root dev dependency `@trunkio/launcher` matches [Trunk’s documented pnpm install](https://docs.trunk.io/code-quality/overview/cli/getting-started/install) (`pnpm add -D @trunkio/launcher`) and supplies `trunk` on `PATH` for `pnpm run` / `pnpm exec` after `pnpm install`. **`pnpm format`** and **`pnpm lint`** run Trunk first (`format:trunk`, `lint:trunk`); **`pnpm trunk`** passes through to the CLI (Trunk's documented pattern). If Trunk cannot run, use **`pnpm format:without-trunk`** / **`pnpm lint:without-trunk`**. Config and CLI version: [`.trunk/trunk.yaml`](.trunk/trunk.yaml). CI: [`.github/workflows/trunk_check.yml`](.github/workflows/trunk_check.yml) (`trunk-io/trunk-action`). Prerequisites detail: [CONTRIBUTING.md](CONTRIBUTING.md).

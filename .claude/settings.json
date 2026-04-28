@@ -40,6 +40,16 @@
   },
   "_comment": "Project defaults (committed). Personal overrides: .claude/settings.local.json (gitignored). Verify layers with /status in Claude Code. Sandbox: /sandbox in REPL; autoAllowBashIfSandboxed trades fewer prompts for less review of sandboxed commands.",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec trunk git-hooks sync"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
