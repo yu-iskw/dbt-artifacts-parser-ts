@@ -7,7 +7,7 @@ This document is for **developers** who want to build, test, or contribute to th
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) — **22+** required for **pnpm 11**; use [`.node-version`](.node-version) for parity with CI (GitHub Actions uses `node-version-file: .node-version`)
-- [pnpm](https://pnpm.io/) **11.x** (aligned with root [`package.json`](package.json) `packageManager` and **CI** via `pnpm/action-setup`). Enable via Corepack (`corepack enable`) or install `pnpm@11` globally — matching CI avoids surprises.
+- [pnpm](https://pnpm.io/) **11.x** (aligned with root [`package.json`](package.json) `packageManager` and **CI** via `pnpm/action-setup`). Enable via Corepack (`corepack enable`) or install `pnpm@11` globally — matching CI avoids surprises. **CI** resolves the pnpm version only from that `packageManager` field; workflows do not pass a separate version to `pnpm/action-setup` (avoids dual-pin errors with Corepack).
 - Git
 
 ---
