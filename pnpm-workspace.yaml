@@ -1,6 +1,8 @@
 packages:
   - packages/dbt-artifacts-parser
   - packages/dbt-tools/*
+allowBuilds:
+  unrs-resolver: true
+blockExoticSubdeps: true
 
 minimumReleaseAge: 10080 # 7 days (minutes); supply-chain delay per pnpm 11 docs
-blockExoticSubdeps: true

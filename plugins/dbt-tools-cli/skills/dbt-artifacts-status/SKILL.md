@@ -5,6 +5,8 @@ description: Check local dbt artifact readiness with dbt-tools status before run
 
 # dbt artifacts status (readiness gate)
 
+**Skill handle (FQH):** `dbt-tools-cli:dbt-artifacts-status` (plugin `dbt-tools-cli`, skill directory `dbt-artifacts-status`). Use for documentation only; YAML `name` remains `dbt-artifacts-status` per [Agent Skills](https://agentskills.io/specification).
+
 ## When to use
 
 Use this workflow whenever you are about to run **`@dbt-tools/cli`** commands that read **`manifest.json`**, **`run_results.json`**, or both—unless the user has already confirmed those artifacts exist at known paths.
@@ -28,17 +30,10 @@ dbt-tools status --json
 
 ## Interpret `readiness`
 
-Parse the JSON object printed to stdout. The important field is **`readiness`**:
+Parse the JSON object printed to stdout. The gate depends on **`readiness`** and on **`manifest.path`**, **`run_results.path`**, and **`target_dir`** (resolved directory or temp download directory for remote targets).
 
-| Value           | Meaning                                                    |
-| --------------- | ---------------------------------------------------------- |
-| `full`          | `manifest.json` and `run_results.json` are both present.   |
-| `manifest-only` | `manifest.json` is present; `run_results.json` is missing. |
-| `unavailable`   | `manifest.json` is missing.                                |
-
-Also read **`manifest.path`**, **`run_results.path`**, and **`target_dir`** (resolved directory or temp download directory for remote targets) when reporting what was checked.
-
-Full command availability by readiness: [references/readiness.md](references/readiness.md).
+- **Value meanings** (`full`, `manifest-only`, `unavailable`) and **which CLI commands are safe** at each level: [references/readiness.md](references/readiness.md).
+- **Field-level** output for users (ages, `summary`, stderr JSON shapes): [`status`](../status/SKILL.md) investigation skill.
 
 ## Branching rules
 
