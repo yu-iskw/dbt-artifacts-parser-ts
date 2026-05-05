@@ -6,8 +6,8 @@ This document is for **developers** who want to build, test, or contribute to th
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) — **20+** required; use [`.node-version`](.node-version) for parity with CI (GitHub Actions uses `node-version-file: .node-version`)
-- [pnpm](https://pnpm.io/) **9+** (`npm install -g pnpm@9` or newer; lockfile format 9). **CI** workflows use **pnpm 10** via `pnpm/action-setup` — matching that major locally avoids surprises.
+- [Node.js](https://nodejs.org/) — **22+** required for **pnpm 11**; use [`.node-version`](.node-version) for parity with CI (GitHub Actions uses `node-version-file: .node-version`)
+- [pnpm](https://pnpm.io/) **11.x** (aligned with root [`package.json`](package.json) `packageManager` and **CI** via `pnpm/action-setup`). Enable via Corepack (`corepack enable`) or install `pnpm@11` globally — matching CI avoids surprises.
 - Git
 
 ---
