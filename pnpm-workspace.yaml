@@ -6,3 +6,25 @@ allowBuilds:
 blockExoticSubdeps: true
 
 minimumReleaseAge: 10080 # 7 days (minutes); supply-chain delay per pnpm 11 docs
+minimumReleaseAgeExclude:
+  - tar@7.5.7
+  - tar@7.5.3
+  - tar@7.5.8
+  - "@tootallnate/once@3.0.1"
+  - tar@7.5.10
+  - tar@7.5.11
+  - tar@7.5.4
+  - fast-xml-parser@5.7.0
+  - uuid@14.0.0
+  - postcss@8.5.10
+overrides:
+  "@tootallnate/once@<3.0.1": ^3.0.1
+  fast-xml-parser@<5.7.0: ^5.7.0
+  postcss@<8.5.10: ^8.5.10
+  tar@<7.5.7: ^7.5.7
+  tar@<7.5.8: ^7.5.8
+  tar@<=7.5.10: ^7.5.11
+  tar@<=7.5.2: ^7.5.3
+  tar@<=7.5.3: ^7.5.4
+  tar@<=7.5.9: ^7.5.10
+  uuid@<14.0.0: ^14.0.0
