@@ -6,6 +6,7 @@
   "keywords": [],
   "license": "SEE LICENSE IN LICENSE",
   "author": "yu-iskw",
+  "packageManager": "pnpm@11.0.5",
   "scripts": {
     "build": "pnpm --recursive --sequential run build",
     "clean": "rm -rf ./packages/dbt-tools/web/dist ./packages/dbt-tools/web/dist-serve ./packages/dbt-tools/web/playwright-report ./packages/dbt-tools/web/test-results",
