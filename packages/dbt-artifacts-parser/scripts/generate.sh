@@ -34,20 +34,21 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}Generating TypeScript types from JSON schemas...${NC}"
 
-# Clean and create src subdirectories
-echo -e "${BLUE}Cleaning src directory...${NC}"
-# Clean generated files but preserve tests
+# Ensure src subdirectories exist (do not blanket-delete v*.ts: partial schema
+# check-ins only regenerate the versions backed by resources/<category>/*.json)
 for dir in catalog manifest run_results sources semantic_manifest; do
 	mkdir -p "${SRC_DIR}/${dir}"
-	# Delete all .ts files except .test.ts and index.ts files
-	find "${SRC_DIR}/${dir}" -maxdepth 1 -type f -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" -delete 2>/dev/null || true
 done
 
 # Function to process a category
+# Args: category_name, src_output_dir, [schema_dir]
+# When schema_dir is omitted, defaults to resources/<category>/ (legacy layout).
+# JSON Schemas checked in for codegen live under resources/json-schema/<category>/
+# so they are not picked up as manifest/run_results artifact fixtures by test-utils.
 process_category() {
 	local category=$1
 	local output_dir=$2
-	local resource_dir="${RESOURCES_DIR}/${category}"
+	local resource_dir=${3:-"${RESOURCES_DIR}/${category}"}
 
 	if [[ ! -d ${resource_dir} ]]; then
 		echo -e "${BLUE}Skipping ${category} (directory not found)${NC}"
@@ -55,9 +56,7 @@ process_category() {
 	fi
 
 	echo -e "${BLUE}Processing ${category}...${NC}"
-
-	# Array to store generated version files for index.ts
-	local versions=()
+	mkdir -p "${output_dir}"
 
 	# Process each JSON file in the category
 	for json_file in "${resource_dir}"/*.json; do
@@ -102,33 +101,28 @@ process_category() {
 			continue
 		fi
 
+		# json-schema-to-typescript 15+ may emit a file-level eslint-disable; this repo
+		# requires paired eslint-comments directives, so drop the banner line.
 		if [[ -f ${output_file} ]]; then
-			versions+=("v${version}")
+			local first_line
+			first_line=$(head -n 1 "${output_file}") || true
+			if [[ ${first_line} == "/* eslint-disable */" ]]; then
+				local stripped_file
+				stripped_file="${TEMP_DIR}/stripped_$(basename "${output_file}")"
+				tail -n +2 "${output_file}" >"${stripped_file}"
+				mv "${stripped_file}" "${output_file}"
+			fi
 		fi
 	done
 
-	# Sort versions numerically
-	mapfile -t versions < <(printf '%s\n' "${versions[@]}" | sort -V || true)
-
-	# Generate index.ts for this category
-	# Export only the latest version to avoid naming conflicts
-	# Users can import specific versions directly: import { Type } from './manifest/v12'
-	if [[ ${#versions[@]} -gt 0 ]]; then
-		local index_file="${output_dir}/index.ts"
-		echo -e "  Generating ${index_file}"
-		local latest_version="${versions[-1]}"
-		{
-			echo "// Export latest version by default"
-			echo "// To use a specific version, import directly: import { Type } from './${latest_version}'"
-			echo "export * from './${latest_version}';"
-		} >"${index_file}"
-	fi
+	# Category index.ts files (re-exports, parse helpers, Parsed* unions) are
+	# hand-maintained — this script only regenerates vN.ts from *_vN.json.
 }
 
 # Process each category
 process_category "catalog" "${SRC_DIR}/catalog"
-process_category "manifest" "${SRC_DIR}/manifest"
-process_category "run-results" "${SRC_DIR}/run_results"
+process_category "manifest" "${SRC_DIR}/manifest" "${RESOURCES_DIR}/json-schema/manifest"
+process_category "run-results" "${SRC_DIR}/run_results" "${RESOURCES_DIR}/json-schema/run-results"
 process_category "sources" "${SRC_DIR}/sources"
 process_category "semantic_manifest" "${SRC_DIR}/semantic_manifest"
 

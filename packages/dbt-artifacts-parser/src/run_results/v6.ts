@@ -40,6 +40,7 @@ export interface RunResultOutput {
   compiled_code: string | null;
   relation_name: string | null;
   batch_results?: BatchResults | null;
+  overload_results?: OverloadResults | null;
 }
 export interface TimingInfo {
   name: string;
@@ -49,4 +50,8 @@ export interface TimingInfo {
 export interface BatchResults {
   successful?: [unknown, unknown][];
   failed?: [unknown, unknown][];
+}
+export interface OverloadResults {
+  successful?: string[];
+  failed?: string[];
 }
