@@ -321,6 +321,8 @@ export interface ColumnInfo {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension | ("categorical" | "time") | null;
+  entity?: ColumnEntity | ("foreign" | "natural" | "primary" | "unique") | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -348,6 +350,30 @@ export interface ColumnConfig {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams | null;
+}
+export interface ColumnDimensionValidityParams {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs1 {
   show?: boolean;
@@ -613,6 +639,11 @@ export interface ColumnInfo1 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension1 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity1
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -640,6 +671,30 @@ export interface ColumnConfig1 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension1 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams1 | null;
+}
+export interface ColumnDimensionValidityParams1 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity1 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs4 {
   show?: boolean;
@@ -736,6 +791,9 @@ export interface TestConfig {
   severity?: string;
   store_failures?: boolean | null;
   store_failures_as?: string | null;
+  sql_header?: {
+    [k: string]: unknown;
+  };
   where?: string | null;
   limit?: number | null;
   fail_calc?: string;
@@ -772,6 +830,11 @@ export interface ColumnInfo2 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension2 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity2
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -799,6 +862,30 @@ export interface ColumnConfig2 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension2 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams2 | null;
+}
+export interface ColumnDimensionValidityParams2 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity2 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs5 {
   show?: boolean;
@@ -977,6 +1064,11 @@ export interface ColumnInfo3 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension3 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity3
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -1004,6 +1096,30 @@ export interface ColumnConfig3 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension3 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams3 | null;
+}
+export interface ColumnDimensionValidityParams3 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity3 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs7 {
   show?: boolean;
@@ -1201,6 +1317,11 @@ export interface ColumnInfo4 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension4 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity4
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -1228,6 +1349,30 @@ export interface ColumnConfig4 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension4 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams4 | null;
+}
+export interface ColumnDimensionValidityParams4 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity4 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs9 {
   show?: boolean;
@@ -1532,6 +1677,11 @@ export interface ColumnInfo5 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension5 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity5
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -1559,6 +1709,30 @@ export interface ColumnConfig5 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension5 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams5 | null;
+}
+export interface ColumnDimensionValidityParams5 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity5 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs12 {
   show?: boolean;
@@ -1659,6 +1833,9 @@ export interface TestConfig1 {
   severity?: string;
   store_failures?: boolean | null;
   store_failures_as?: string | null;
+  sql_header?: {
+    [k: string]: unknown;
+  };
   where?: string | null;
   limit?: number | null;
   fail_calc?: string;
@@ -1695,6 +1872,11 @@ export interface ColumnInfo6 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension6 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity6
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -1722,6 +1904,30 @@ export interface ColumnConfig6 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension6 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams6 | null;
+}
+export interface ColumnDimensionValidityParams6 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity6 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs13 {
   show?: boolean;
@@ -1921,6 +2127,11 @@ export interface ColumnInfo7 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension7 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity7
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -1948,6 +2159,30 @@ export interface ColumnConfig7 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension7 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams7 | null;
+}
+export interface ColumnDimensionValidityParams7 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity7 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface Docs15 {
   show?: boolean;
@@ -2127,7 +2362,8 @@ export interface Function {
   _pre_injected_sql?: string | null;
   contract?: Contract7;
   arguments?: FunctionArgument[];
-  type?: "scalar" | "aggregate" | "table";
+  overloads?: FunctionOverload[];
+  defer_function?: DeferFunction | null;
 }
 export interface FunctionReturns {
   data_type: string;
@@ -2186,6 +2422,10 @@ export interface FunctionConfig {
   concurrent_batches?: {
     [k: string]: unknown;
   };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
   [k: string]: unknown;
 }
 export interface Hook18 {
@@ -2235,6 +2475,11 @@ export interface ColumnInfo8 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension8 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity8
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -2263,6 +2508,30 @@ export interface ColumnConfig8 {
   tags?: string[];
   [k: string]: unknown;
 }
+export interface ColumnDimension8 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams8 | null;
+}
+export interface ColumnDimensionValidityParams8 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity8 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
 export interface Docs18 {
   show?: boolean;
   node_color?: string | null;
@@ -2287,6 +2556,143 @@ export interface Contract7 {
 }
 export interface FunctionArgument {
   name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionOverload {
+  defined_in: string;
+  arguments?: FunctionArgument1[];
+  returns?: FunctionReturns1 | null;
+  description?: string | null;
+  raw_body?: string | null;
+  compiled_body?: string | null;
+}
+export interface FunctionArgument1 {
+  name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionReturns1 {
+  data_type: string;
+  description?: string | null;
+}
+export interface DeferFunction {
+  database: string | null;
+  schema: string;
+  alias: string;
+  resource_type:
+    | "model"
+    | "analysis"
+    | "test"
+    | "snapshot"
+    | "operation"
+    | "seed"
+    | "rpc"
+    | "sql_operation"
+    | "doc"
+    | "source"
+    | "macro"
+    | "exposure"
+    | "metric"
+    | "group"
+    | "saved_query"
+    | "semantic_model"
+    | "unit_test"
+    | "fixture"
+    | "function";
+  name: string;
+  description: string;
+  compiled_code: string | null;
+  meta: {
+    [k: string]: unknown;
+  };
+  tags: string[];
+  config: FunctionConfig1 | null;
+  arguments: FunctionArgument2[];
+  returns: FunctionReturns2;
+}
+export interface FunctionConfig1 {
+  _extra?: {
+    [k: string]: unknown;
+  };
+  enabled?: boolean;
+  alias?: string | null;
+  schema?: string | null;
+  database?: string | null;
+  tags?: string[] | string;
+  meta?: {
+    [k: string]: unknown;
+  };
+  group?: string | null;
+  materialized?: string;
+  incremental_strategy?: string | null;
+  batch_size?: {
+    [k: string]: unknown;
+  };
+  lookback?: number;
+  begin?: {
+    [k: string]: unknown;
+  };
+  persist_docs?: {
+    [k: string]: unknown;
+  };
+  "post-hook"?: Hook20[];
+  "pre-hook"?: Hook21[];
+  quoting?: {
+    [k: string]: unknown;
+  };
+  column_types?: {
+    [k: string]: unknown;
+  };
+  full_refresh?: boolean | null;
+  unique_key?: string | string[] | null;
+  on_schema_change?: string | null;
+  on_configuration_change?: "apply" | "continue" | "fail";
+  grants?: {
+    [k: string]: unknown;
+  };
+  packages?: string[];
+  docs?: Docs19;
+  contract?: ContractConfig10;
+  event_time?: {
+    [k: string]: unknown;
+  };
+  concurrent_batches?: {
+    [k: string]: unknown;
+  };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
+  [k: string]: unknown;
+}
+export interface Hook20 {
+  sql: string;
+  transaction?: boolean;
+  index?: number | null;
+}
+export interface Hook21 {
+  sql: string;
+  transaction?: boolean;
+  index?: number | null;
+}
+export interface Docs19 {
+  show?: boolean;
+  node_color?: string | null;
+}
+export interface ContractConfig10 {
+  enforced?: boolean;
+  alias_types?: boolean;
+}
+export interface FunctionArgument2 {
+  name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionReturns2 {
   data_type: string;
   description?: string | null;
 }
@@ -2402,6 +2808,11 @@ export interface ColumnInfo9 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension9 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity9
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -2429,6 +2840,30 @@ export interface ColumnConfig9 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension9 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams9 | null;
+}
+export interface ColumnDimensionValidityParams9 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity9 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface SourceConfig {
   _extra?: {
@@ -2473,7 +2908,8 @@ export interface Macro {
   meta?: {
     [k: string]: unknown;
   };
-  docs?: Docs19;
+  docs?: Docs20;
+  config?: MacroConfig;
   patch_path?: string | null;
   arguments?: MacroArgument[];
   created_at?: number;
@@ -2482,7 +2918,21 @@ export interface Macro {
 export interface MacroDependsOn1 {
   macros?: string[];
 }
-export interface Docs19 {
+export interface Docs20 {
+  show?: boolean;
+  node_color?: string | null;
+}
+export interface MacroConfig {
+  _extra?: {
+    [k: string]: unknown;
+  };
+  meta?: {
+    [k: string]: unknown;
+  };
+  docs?: Docs21;
+  [k: string]: unknown;
+}
+export interface Docs21 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -2568,13 +3018,9 @@ export interface Metric {
   label: string;
   type: "simple" | "ratio" | "cumulative" | "derived" | "conversion";
   type_params: MetricTypeParams;
-  filter?: WhereFilterIntersection8 | null;
+  filter?: WhereFilterIntersection10 | null;
   metadata?: SourceFileMetadata | null;
   time_granularity?: string | null;
-  meta?: {
-    [k: string]: unknown;
-  };
-  tags?: string[];
   config?: MetricConfig;
   unrendered_config?: {
     [k: string]: unknown;
@@ -2585,6 +3031,10 @@ export interface Metric {
   metrics?: string[][];
   created_at?: number;
   group?: string | null;
+  meta?: {
+    [k: string]: unknown;
+  };
+  tags?: string[];
 }
 export interface MetricTypeParams {
   measure?: MetricInputMeasure | null;
@@ -2612,6 +3062,9 @@ export interface MetricTypeParams {
   conversion_type_params?: ConversionTypeParams | null;
   cumulative_type_params?: CumulativeTypeParams | null;
   metric_aggregation_params?: MetricAggregationParams | null;
+  fill_nulls_with?: number | null;
+  join_to_timespine?: boolean;
+  is_private?: boolean | null;
 }
 export interface MetricInputMeasure {
   name: string;
@@ -2695,11 +3148,13 @@ export interface MetricTimeWindow3 {
   granularity: string;
 }
 export interface ConversionTypeParams {
-  base_measure: MetricInputMeasure2;
-  conversion_measure: MetricInputMeasure3;
   entity: string;
+  base_measure?: MetricInputMeasure2 | null;
+  conversion_measure?: MetricInputMeasure3 | null;
+  base_metric?: MetricInput3 | null;
+  conversion_metric?: MetricInput4 | null;
   calculation?: "conversions" | "conversion_rate";
-  window?: MetricTimeWindow4 | null;
+  window?: MetricTimeWindow6 | null;
   constant_properties?: ConstantPropertyInput[] | null;
 }
 export interface MetricInputMeasure2 {
@@ -2728,29 +3183,11 @@ export interface WhereFilterIntersection6 {
 export interface WhereFilter6 {
   where_sql_template: string;
 }
-export interface MetricTimeWindow4 {
-  count: number;
-  granularity: string;
-}
-export interface ConstantPropertyInput {
-  base_property: string;
-  conversion_property: string;
-}
-export interface CumulativeTypeParams {
-  window?: MetricTimeWindow5 | null;
-  grain_to_date?: string | null;
-  period_agg?: "first" | "last" | "average";
-  metric?: MetricInput3 | null;
-}
-export interface MetricTimeWindow5 {
-  count: number;
-  granularity: string;
-}
 export interface MetricInput3 {
   name: string;
   filter?: WhereFilterIntersection7 | null;
   alias?: string | null;
-  offset_window?: MetricTimeWindow6 | null;
+  offset_window?: MetricTimeWindow4 | null;
   offset_to_grain?: string | null;
 }
 export interface WhereFilterIntersection7 {
@@ -2759,7 +3196,59 @@ export interface WhereFilterIntersection7 {
 export interface WhereFilter7 {
   where_sql_template: string;
 }
+export interface MetricTimeWindow4 {
+  count: number;
+  granularity: string;
+}
+export interface MetricInput4 {
+  name: string;
+  filter?: WhereFilterIntersection8 | null;
+  alias?: string | null;
+  offset_window?: MetricTimeWindow5 | null;
+  offset_to_grain?: string | null;
+}
+export interface WhereFilterIntersection8 {
+  where_filters: WhereFilter8[];
+}
+export interface WhereFilter8 {
+  where_sql_template: string;
+}
+export interface MetricTimeWindow5 {
+  count: number;
+  granularity: string;
+}
 export interface MetricTimeWindow6 {
+  count: number;
+  granularity: string;
+}
+export interface ConstantPropertyInput {
+  base_property: string;
+  conversion_property: string;
+}
+export interface CumulativeTypeParams {
+  window?: MetricTimeWindow7 | null;
+  grain_to_date?: string | null;
+  period_agg?: "first" | "last" | "average";
+  metric?: MetricInput5 | null;
+}
+export interface MetricTimeWindow7 {
+  count: number;
+  granularity: string;
+}
+export interface MetricInput5 {
+  name: string;
+  filter?: WhereFilterIntersection9 | null;
+  alias?: string | null;
+  offset_window?: MetricTimeWindow8 | null;
+  offset_to_grain?: string | null;
+}
+export interface WhereFilterIntersection9 {
+  where_filters: WhereFilter9[];
+}
+export interface WhereFilter9 {
+  where_sql_template: string;
+}
+export interface MetricTimeWindow8 {
   count: number;
   granularity: string;
 }
@@ -2778,7 +3267,6 @@ export interface MetricAggregationParams {
   agg_params?: MeasureAggregationParameters | null;
   agg_time_dimension?: string | null;
   non_additive_dimension?: NonAdditiveDimension | null;
-  expr?: string | null;
 }
 export interface MeasureAggregationParameters {
   percentile?: number | null;
@@ -2799,10 +3287,10 @@ export interface NonAdditiveDimension {
     | "count";
   window_groupings: string[];
 }
-export interface WhereFilterIntersection8 {
-  where_filters: WhereFilter8[];
+export interface WhereFilterIntersection10 {
+  where_filters: WhereFilter10[];
 }
-export interface WhereFilter8 {
+export interface WhereFilter10 {
   where_sql_template: string;
 }
 export interface SourceFileMetadata {
@@ -2885,7 +3373,7 @@ export interface Seed1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs21;
+  docs?: Docs23;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -2934,8 +3422,8 @@ export interface SeedConfig1 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook20[];
-  "pre-hook"?: Hook21[];
+  "post-hook"?: Hook22[];
+  "pre-hook"?: Hook23[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -2950,8 +3438,8 @@ export interface SeedConfig1 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs20;
-  contract?: ContractConfig10;
+  docs?: Docs22;
+  contract?: ContractConfig11;
   event_time?: {
     [k: string]: unknown;
   };
@@ -2962,21 +3450,21 @@ export interface SeedConfig1 {
   quote_columns?: boolean | null;
   [k: string]: unknown;
 }
-export interface Hook20 {
+export interface Hook22 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook21 {
+export interface Hook23 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs20 {
+export interface Docs22 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig10 {
+export interface ContractConfig11 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -3009,6 +3497,11 @@ export interface ColumnInfo10 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension10 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity10
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -3037,7 +3530,31 @@ export interface ColumnConfig10 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs21 {
+export interface ColumnDimension10 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams10 | null;
+}
+export interface ColumnDimensionValidityParams10 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity10 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs23 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -3103,8 +3620,8 @@ export interface NodeConfig6 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook22[];
-  "pre-hook"?: Hook23[];
+  "post-hook"?: Hook24[];
+  "pre-hook"?: Hook25[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -3119,8 +3636,8 @@ export interface NodeConfig6 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs22;
-  contract?: ContractConfig11;
+  docs?: Docs24;
+  contract?: ContractConfig12;
   event_time?: {
     [k: string]: unknown;
   };
@@ -3129,21 +3646,21 @@ export interface NodeConfig6 {
   };
   [k: string]: unknown;
 }
-export interface Hook22 {
+export interface Hook24 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook23 {
+export interface Hook25 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs22 {
+export interface Docs24 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig11 {
+export interface ContractConfig12 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -3169,7 +3686,7 @@ export interface Analysis1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs24;
+  docs?: Docs26;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -3228,8 +3745,8 @@ export interface NodeConfig7 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook24[];
-  "pre-hook"?: Hook25[];
+  "post-hook"?: Hook26[];
+  "pre-hook"?: Hook27[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -3244,8 +3761,8 @@ export interface NodeConfig7 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs23;
-  contract?: ContractConfig12;
+  docs?: Docs25;
+  contract?: ContractConfig13;
   event_time?: {
     [k: string]: unknown;
   };
@@ -3254,21 +3771,21 @@ export interface NodeConfig7 {
   };
   [k: string]: unknown;
 }
-export interface Hook24 {
+export interface Hook26 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook25 {
+export interface Hook27 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs23 {
+export interface Docs25 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig12 {
+export interface ContractConfig13 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -3301,6 +3818,11 @@ export interface ColumnInfo11 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension11 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity11
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -3329,7 +3851,31 @@ export interface ColumnConfig11 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs24 {
+export interface ColumnDimension11 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams11 | null;
+}
+export interface ColumnDimensionValidityParams11 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity11 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs26 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -3373,7 +3919,7 @@ export interface SingularTest1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs25;
+  docs?: Docs27;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -3424,6 +3970,9 @@ export interface TestConfig2 {
   severity?: string;
   store_failures?: boolean | null;
   store_failures_as?: string | null;
+  sql_header?: {
+    [k: string]: unknown;
+  };
   where?: string | null;
   limit?: number | null;
   fail_calc?: string;
@@ -3460,6 +4009,11 @@ export interface ColumnInfo12 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension12 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity12
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -3488,7 +4042,31 @@ export interface ColumnConfig12 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs25 {
+export interface ColumnDimension12 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams12 | null;
+}
+export interface ColumnDimensionValidityParams12 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity12 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs27 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -3532,7 +4110,7 @@ export interface HookNode1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs27;
+  docs?: Docs29;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -3592,8 +4170,8 @@ export interface NodeConfig8 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook26[];
-  "pre-hook"?: Hook27[];
+  "post-hook"?: Hook28[];
+  "pre-hook"?: Hook29[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -3608,8 +4186,8 @@ export interface NodeConfig8 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs26;
-  contract?: ContractConfig13;
+  docs?: Docs28;
+  contract?: ContractConfig14;
   event_time?: {
     [k: string]: unknown;
   };
@@ -3618,21 +4196,21 @@ export interface NodeConfig8 {
   };
   [k: string]: unknown;
 }
-export interface Hook26 {
+export interface Hook28 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook27 {
+export interface Hook29 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs26 {
+export interface Docs28 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig13 {
+export interface ContractConfig14 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -3665,6 +4243,11 @@ export interface ColumnInfo13 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension13 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity13
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -3693,7 +4276,31 @@ export interface ColumnConfig13 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs27 {
+export interface ColumnDimension13 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams13 | null;
+}
+export interface ColumnDimensionValidityParams13 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity13 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs29 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -3737,7 +4344,7 @@ export interface Model1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs29;
+  docs?: Docs31;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -3804,8 +4411,8 @@ export interface ModelConfig1 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook28[];
-  "pre-hook"?: Hook29[];
+  "post-hook"?: Hook30[];
+  "pre-hook"?: Hook31[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -3820,8 +4427,8 @@ export interface ModelConfig1 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs28;
-  contract?: ContractConfig14;
+  docs?: Docs30;
+  contract?: ContractConfig15;
   event_time?: {
     [k: string]: unknown;
   };
@@ -3832,21 +4439,21 @@ export interface ModelConfig1 {
   freshness?: ModelFreshness1 | null;
   [k: string]: unknown;
 }
-export interface Hook28 {
+export interface Hook30 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook29 {
+export interface Hook31 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs28 {
+export interface Docs30 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig14 {
+export interface ContractConfig15 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -3889,6 +4496,11 @@ export interface ColumnInfo14 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension14 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity14
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -3917,7 +4529,31 @@ export interface ColumnConfig14 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs29 {
+export interface ColumnDimension14 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams14 | null;
+}
+export interface ColumnDimensionValidityParams14 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity14 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs31 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -4014,8 +4650,8 @@ export interface NodeConfig9 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook30[];
-  "pre-hook"?: Hook31[];
+  "post-hook"?: Hook32[];
+  "pre-hook"?: Hook33[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -4030,8 +4666,8 @@ export interface NodeConfig9 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs30;
-  contract?: ContractConfig15;
+  docs?: Docs32;
+  contract?: ContractConfig16;
   event_time?: {
     [k: string]: unknown;
   };
@@ -4040,21 +4676,21 @@ export interface NodeConfig9 {
   };
   [k: string]: unknown;
 }
-export interface Hook30 {
+export interface Hook32 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook31 {
+export interface Hook33 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs30 {
+export interface Docs32 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig15 {
+export interface ContractConfig16 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -4088,7 +4724,7 @@ export interface SqlOperation1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs32;
+  docs?: Docs34;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -4147,8 +4783,8 @@ export interface NodeConfig10 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook32[];
-  "pre-hook"?: Hook33[];
+  "post-hook"?: Hook34[];
+  "pre-hook"?: Hook35[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -4163,8 +4799,8 @@ export interface NodeConfig10 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs31;
-  contract?: ContractConfig16;
+  docs?: Docs33;
+  contract?: ContractConfig17;
   event_time?: {
     [k: string]: unknown;
   };
@@ -4173,21 +4809,21 @@ export interface NodeConfig10 {
   };
   [k: string]: unknown;
 }
-export interface Hook32 {
+export interface Hook34 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook33 {
+export interface Hook35 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs31 {
+export interface Docs33 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig16 {
+export interface ContractConfig17 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -4220,6 +4856,11 @@ export interface ColumnInfo15 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension15 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity15
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -4248,7 +4889,31 @@ export interface ColumnConfig15 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs32 {
+export interface ColumnDimension15 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams15 | null;
+}
+export interface ColumnDimensionValidityParams15 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity15 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs34 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -4292,7 +4957,7 @@ export interface GenericTest1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs33;
+  docs?: Docs35;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -4347,6 +5012,9 @@ export interface TestConfig3 {
   severity?: string;
   store_failures?: boolean | null;
   store_failures_as?: string | null;
+  sql_header?: {
+    [k: string]: unknown;
+  };
   where?: string | null;
   limit?: number | null;
   fail_calc?: string;
@@ -4383,6 +5051,11 @@ export interface ColumnInfo16 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension16 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity16
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -4411,7 +5084,31 @@ export interface ColumnConfig16 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs33 {
+export interface ColumnDimension16 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams16 | null;
+}
+export interface ColumnDimensionValidityParams16 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity16 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs35 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -4462,7 +5159,7 @@ export interface Snapshot1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs35;
+  docs?: Docs37;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -4522,8 +5219,8 @@ export interface SnapshotConfig1 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook34[];
-  "pre-hook"?: Hook35[];
+  "post-hook"?: Hook36[];
+  "pre-hook"?: Hook37[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -4538,8 +5235,8 @@ export interface SnapshotConfig1 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs34;
-  contract?: ContractConfig17;
+  docs?: Docs36;
+  contract?: ContractConfig18;
   event_time?: {
     [k: string]: unknown;
   };
@@ -4555,21 +5252,21 @@ export interface SnapshotConfig1 {
   dbt_valid_to_current?: string | null;
   [k: string]: unknown;
 }
-export interface Hook34 {
+export interface Hook36 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook35 {
+export interface Hook37 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs34 {
+export interface Docs36 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig17 {
+export interface ContractConfig18 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -4609,6 +5306,11 @@ export interface ColumnInfo17 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension17 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity17
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -4637,7 +5339,31 @@ export interface ColumnConfig17 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs35 {
+export interface ColumnDimension17 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams17 | null;
+}
+export interface ColumnDimensionValidityParams17 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity17 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs37 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -4718,8 +5444,8 @@ export interface NodeConfig11 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook36[];
-  "pre-hook"?: Hook37[];
+  "post-hook"?: Hook38[];
+  "pre-hook"?: Hook39[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -4734,8 +5460,8 @@ export interface NodeConfig11 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs36;
-  contract?: ContractConfig18;
+  docs?: Docs38;
+  contract?: ContractConfig19;
   event_time?: {
     [k: string]: unknown;
   };
@@ -4744,26 +5470,26 @@ export interface NodeConfig11 {
   };
   [k: string]: unknown;
 }
-export interface Hook36 {
+export interface Hook38 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook37 {
+export interface Hook39 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs36 {
+export interface Docs38 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig18 {
+export interface ContractConfig19 {
   enforced?: boolean;
   alias_types?: boolean;
 }
 export interface Function1 {
-  returns: FunctionReturns1;
+  returns: FunctionReturns3;
   database: string | null;
   schema: string;
   name: string;
@@ -4775,7 +5501,7 @@ export interface Function1 {
   fqn: string[];
   alias: string;
   checksum: FileHash17;
-  config: FunctionConfig1;
+  config: FunctionConfig2;
   tags?: string[];
   description?: string;
   columns?: {
@@ -4785,7 +5511,7 @@ export interface Function1 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs38;
+  docs?: Docs40;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -4814,10 +5540,11 @@ export interface Function1 {
   extra_ctes?: InjectedCTE15[];
   _pre_injected_sql?: string | null;
   contract?: Contract15;
-  arguments?: FunctionArgument1[];
-  type?: "scalar" | "aggregate" | "table";
+  arguments?: FunctionArgument3[];
+  overloads?: FunctionOverload1[];
+  defer_function?: DeferFunction1 | null;
 }
-export interface FunctionReturns1 {
+export interface FunctionReturns3 {
   data_type: string;
   description?: string | null;
 }
@@ -4825,7 +5552,7 @@ export interface FileHash17 {
   name: string;
   checksum: string;
 }
-export interface FunctionConfig1 {
+export interface FunctionConfig2 {
   _extra?: {
     [k: string]: unknown;
   };
@@ -4850,8 +5577,8 @@ export interface FunctionConfig1 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook38[];
-  "pre-hook"?: Hook39[];
+  "post-hook"?: Hook40[];
+  "pre-hook"?: Hook41[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -4866,31 +5593,35 @@ export interface FunctionConfig1 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs37;
-  contract?: ContractConfig19;
+  docs?: Docs39;
+  contract?: ContractConfig20;
   event_time?: {
     [k: string]: unknown;
   };
   concurrent_batches?: {
     [k: string]: unknown;
   };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
   [k: string]: unknown;
 }
-export interface Hook38 {
+export interface Hook40 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook39 {
+export interface Hook41 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs37 {
+export interface Docs39 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig19 {
+export interface ContractConfig20 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -4923,6 +5654,11 @@ export interface ColumnInfo18 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension18 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity18
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -4951,7 +5687,31 @@ export interface ColumnConfig18 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs38 {
+export interface ColumnDimension18 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams18 | null;
+}
+export interface ColumnDimensionValidityParams18 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity18 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs40 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -4973,8 +5733,145 @@ export interface Contract15 {
   alias_types?: boolean;
   checksum?: string | null;
 }
-export interface FunctionArgument1 {
+export interface FunctionArgument3 {
   name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionOverload1 {
+  defined_in: string;
+  arguments?: FunctionArgument4[];
+  returns?: FunctionReturns4 | null;
+  description?: string | null;
+  raw_body?: string | null;
+  compiled_body?: string | null;
+}
+export interface FunctionArgument4 {
+  name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionReturns4 {
+  data_type: string;
+  description?: string | null;
+}
+export interface DeferFunction1 {
+  database: string | null;
+  schema: string;
+  alias: string;
+  resource_type:
+    | "model"
+    | "analysis"
+    | "test"
+    | "snapshot"
+    | "operation"
+    | "seed"
+    | "rpc"
+    | "sql_operation"
+    | "doc"
+    | "source"
+    | "macro"
+    | "exposure"
+    | "metric"
+    | "group"
+    | "saved_query"
+    | "semantic_model"
+    | "unit_test"
+    | "fixture"
+    | "function";
+  name: string;
+  description: string;
+  compiled_code: string | null;
+  meta: {
+    [k: string]: unknown;
+  };
+  tags: string[];
+  config: FunctionConfig3 | null;
+  arguments: FunctionArgument5[];
+  returns: FunctionReturns5;
+}
+export interface FunctionConfig3 {
+  _extra?: {
+    [k: string]: unknown;
+  };
+  enabled?: boolean;
+  alias?: string | null;
+  schema?: string | null;
+  database?: string | null;
+  tags?: string[] | string;
+  meta?: {
+    [k: string]: unknown;
+  };
+  group?: string | null;
+  materialized?: string;
+  incremental_strategy?: string | null;
+  batch_size?: {
+    [k: string]: unknown;
+  };
+  lookback?: number;
+  begin?: {
+    [k: string]: unknown;
+  };
+  persist_docs?: {
+    [k: string]: unknown;
+  };
+  "post-hook"?: Hook42[];
+  "pre-hook"?: Hook43[];
+  quoting?: {
+    [k: string]: unknown;
+  };
+  column_types?: {
+    [k: string]: unknown;
+  };
+  full_refresh?: boolean | null;
+  unique_key?: string | string[] | null;
+  on_schema_change?: string | null;
+  on_configuration_change?: "apply" | "continue" | "fail";
+  grants?: {
+    [k: string]: unknown;
+  };
+  packages?: string[];
+  docs?: Docs41;
+  contract?: ContractConfig21;
+  event_time?: {
+    [k: string]: unknown;
+  };
+  concurrent_batches?: {
+    [k: string]: unknown;
+  };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
+  [k: string]: unknown;
+}
+export interface Hook42 {
+  sql: string;
+  transaction?: boolean;
+  index?: number | null;
+}
+export interface Hook43 {
+  sql: string;
+  transaction?: boolean;
+  index?: number | null;
+}
+export interface Docs41 {
+  show?: boolean;
+  node_color?: string | null;
+}
+export interface ContractConfig21 {
+  enforced?: boolean;
+  alias_types?: boolean;
+}
+export interface FunctionArgument5 {
+  name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionReturns5 {
   data_type: string;
   description?: string | null;
 }
@@ -5090,6 +5987,11 @@ export interface ColumnInfo19 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension19 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity19
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -5117,6 +6019,30 @@ export interface ColumnConfig19 {
   };
   tags?: string[];
   [k: string]: unknown;
+}
+export interface ColumnDimension19 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams19 | null;
+}
+export interface ColumnDimensionValidityParams19 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity19 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
 }
 export interface SourceConfig1 {
   _extra?: {
@@ -5216,13 +6142,9 @@ export interface Metric1 {
   label: string;
   type: "simple" | "ratio" | "cumulative" | "derived" | "conversion";
   type_params: MetricTypeParams1;
-  filter?: WhereFilterIntersection17 | null;
+  filter?: WhereFilterIntersection21 | null;
   metadata?: SourceFileMetadata1 | null;
   time_granularity?: string | null;
-  meta?: {
-    [k: string]: unknown;
-  };
-  tags?: string[];
   config?: MetricConfig1;
   unrendered_config?: {
     [k: string]: unknown;
@@ -5233,14 +6155,18 @@ export interface Metric1 {
   metrics?: string[][];
   created_at?: number;
   group?: string | null;
+  meta?: {
+    [k: string]: unknown;
+  };
+  tags?: string[];
 }
 export interface MetricTypeParams1 {
   measure?: MetricInputMeasure4 | null;
   input_measures?: MetricInputMeasure5[];
-  numerator?: MetricInput4 | null;
-  denominator?: MetricInput5 | null;
+  numerator?: MetricInput6 | null;
+  denominator?: MetricInput7 | null;
   expr?: string | null;
-  window?: MetricTimeWindow9 | null;
+  window?: MetricTimeWindow11 | null;
   grain_to_date?:
     | (
         | "nanosecond"
@@ -5256,43 +6182,20 @@ export interface MetricTypeParams1 {
         | "year"
       )
     | null;
-  metrics?: MetricInput6[] | null;
+  metrics?: MetricInput8[] | null;
   conversion_type_params?: ConversionTypeParams1 | null;
   cumulative_type_params?: CumulativeTypeParams1 | null;
   metric_aggregation_params?: MetricAggregationParams1 | null;
+  fill_nulls_with?: number | null;
+  join_to_timespine?: boolean;
+  is_private?: boolean | null;
 }
 export interface MetricInputMeasure4 {
   name: string;
-  filter?: WhereFilterIntersection9 | null;
-  alias?: string | null;
-  join_to_timespine?: boolean;
-  fill_nulls_with?: number | null;
-}
-export interface WhereFilterIntersection9 {
-  where_filters: WhereFilter9[];
-}
-export interface WhereFilter9 {
-  where_sql_template: string;
-}
-export interface MetricInputMeasure5 {
-  name: string;
-  filter?: WhereFilterIntersection10 | null;
-  alias?: string | null;
-  join_to_timespine?: boolean;
-  fill_nulls_with?: number | null;
-}
-export interface WhereFilterIntersection10 {
-  where_filters: WhereFilter10[];
-}
-export interface WhereFilter10 {
-  where_sql_template: string;
-}
-export interface MetricInput4 {
-  name: string;
   filter?: WhereFilterIntersection11 | null;
   alias?: string | null;
-  offset_window?: MetricTimeWindow7 | null;
-  offset_to_grain?: string | null;
+  join_to_timespine?: boolean;
+  fill_nulls_with?: number | null;
 }
 export interface WhereFilterIntersection11 {
   where_filters: WhereFilter11[];
@@ -5300,16 +6203,12 @@ export interface WhereFilterIntersection11 {
 export interface WhereFilter11 {
   where_sql_template: string;
 }
-export interface MetricTimeWindow7 {
-  count: number;
-  granularity: string;
-}
-export interface MetricInput5 {
+export interface MetricInputMeasure5 {
   name: string;
   filter?: WhereFilterIntersection12 | null;
   alias?: string | null;
-  offset_window?: MetricTimeWindow8 | null;
-  offset_to_grain?: string | null;
+  join_to_timespine?: boolean;
+  fill_nulls_with?: number | null;
 }
 export interface WhereFilterIntersection12 {
   where_filters: WhereFilter12[];
@@ -5317,19 +6216,11 @@ export interface WhereFilterIntersection12 {
 export interface WhereFilter12 {
   where_sql_template: string;
 }
-export interface MetricTimeWindow8 {
-  count: number;
-  granularity: string;
-}
-export interface MetricTimeWindow9 {
-  count: number;
-  granularity: string;
-}
 export interface MetricInput6 {
   name: string;
   filter?: WhereFilterIntersection13 | null;
   alias?: string | null;
-  offset_window?: MetricTimeWindow10 | null;
+  offset_window?: MetricTimeWindow9 | null;
   offset_to_grain?: string | null;
 }
 export interface WhereFilterIntersection13 {
@@ -5338,24 +6229,16 @@ export interface WhereFilterIntersection13 {
 export interface WhereFilter13 {
   where_sql_template: string;
 }
-export interface MetricTimeWindow10 {
+export interface MetricTimeWindow9 {
   count: number;
   granularity: string;
 }
-export interface ConversionTypeParams1 {
-  base_measure: MetricInputMeasure6;
-  conversion_measure: MetricInputMeasure7;
-  entity: string;
-  calculation?: "conversions" | "conversion_rate";
-  window?: MetricTimeWindow11 | null;
-  constant_properties?: ConstantPropertyInput1[] | null;
-}
-export interface MetricInputMeasure6 {
+export interface MetricInput7 {
   name: string;
   filter?: WhereFilterIntersection14 | null;
   alias?: string | null;
-  join_to_timespine?: boolean;
-  fill_nulls_with?: number | null;
+  offset_window?: MetricTimeWindow10 | null;
+  offset_to_grain?: string | null;
 }
 export interface WhereFilterIntersection14 {
   where_filters: WhereFilter14[];
@@ -5363,12 +6246,20 @@ export interface WhereFilterIntersection14 {
 export interface WhereFilter14 {
   where_sql_template: string;
 }
-export interface MetricInputMeasure7 {
+export interface MetricTimeWindow10 {
+  count: number;
+  granularity: string;
+}
+export interface MetricTimeWindow11 {
+  count: number;
+  granularity: string;
+}
+export interface MetricInput8 {
   name: string;
   filter?: WhereFilterIntersection15 | null;
   alias?: string | null;
-  join_to_timespine?: boolean;
-  fill_nulls_with?: number | null;
+  offset_window?: MetricTimeWindow12 | null;
+  offset_to_grain?: string | null;
 }
 export interface WhereFilterIntersection15 {
   where_filters: WhereFilter15[];
@@ -5376,7 +6267,81 @@ export interface WhereFilterIntersection15 {
 export interface WhereFilter15 {
   where_sql_template: string;
 }
-export interface MetricTimeWindow11 {
+export interface MetricTimeWindow12 {
+  count: number;
+  granularity: string;
+}
+export interface ConversionTypeParams1 {
+  entity: string;
+  base_measure?: MetricInputMeasure6 | null;
+  conversion_measure?: MetricInputMeasure7 | null;
+  base_metric?: MetricInput9 | null;
+  conversion_metric?: MetricInput10 | null;
+  calculation?: "conversions" | "conversion_rate";
+  window?: MetricTimeWindow15 | null;
+  constant_properties?: ConstantPropertyInput1[] | null;
+}
+export interface MetricInputMeasure6 {
+  name: string;
+  filter?: WhereFilterIntersection16 | null;
+  alias?: string | null;
+  join_to_timespine?: boolean;
+  fill_nulls_with?: number | null;
+}
+export interface WhereFilterIntersection16 {
+  where_filters: WhereFilter16[];
+}
+export interface WhereFilter16 {
+  where_sql_template: string;
+}
+export interface MetricInputMeasure7 {
+  name: string;
+  filter?: WhereFilterIntersection17 | null;
+  alias?: string | null;
+  join_to_timespine?: boolean;
+  fill_nulls_with?: number | null;
+}
+export interface WhereFilterIntersection17 {
+  where_filters: WhereFilter17[];
+}
+export interface WhereFilter17 {
+  where_sql_template: string;
+}
+export interface MetricInput9 {
+  name: string;
+  filter?: WhereFilterIntersection18 | null;
+  alias?: string | null;
+  offset_window?: MetricTimeWindow13 | null;
+  offset_to_grain?: string | null;
+}
+export interface WhereFilterIntersection18 {
+  where_filters: WhereFilter18[];
+}
+export interface WhereFilter18 {
+  where_sql_template: string;
+}
+export interface MetricTimeWindow13 {
+  count: number;
+  granularity: string;
+}
+export interface MetricInput10 {
+  name: string;
+  filter?: WhereFilterIntersection19 | null;
+  alias?: string | null;
+  offset_window?: MetricTimeWindow14 | null;
+  offset_to_grain?: string | null;
+}
+export interface WhereFilterIntersection19 {
+  where_filters: WhereFilter19[];
+}
+export interface WhereFilter19 {
+  where_sql_template: string;
+}
+export interface MetricTimeWindow14 {
+  count: number;
+  granularity: string;
+}
+export interface MetricTimeWindow15 {
   count: number;
   granularity: string;
 }
@@ -5385,29 +6350,29 @@ export interface ConstantPropertyInput1 {
   conversion_property: string;
 }
 export interface CumulativeTypeParams1 {
-  window?: MetricTimeWindow12 | null;
+  window?: MetricTimeWindow16 | null;
   grain_to_date?: string | null;
   period_agg?: "first" | "last" | "average";
-  metric?: MetricInput7 | null;
+  metric?: MetricInput11 | null;
 }
-export interface MetricTimeWindow12 {
+export interface MetricTimeWindow16 {
   count: number;
   granularity: string;
 }
-export interface MetricInput7 {
+export interface MetricInput11 {
   name: string;
-  filter?: WhereFilterIntersection16 | null;
+  filter?: WhereFilterIntersection20 | null;
   alias?: string | null;
-  offset_window?: MetricTimeWindow13 | null;
+  offset_window?: MetricTimeWindow17 | null;
   offset_to_grain?: string | null;
 }
-export interface WhereFilterIntersection16 {
-  where_filters: WhereFilter16[];
+export interface WhereFilterIntersection20 {
+  where_filters: WhereFilter20[];
 }
-export interface WhereFilter16 {
+export interface WhereFilter20 {
   where_sql_template: string;
 }
-export interface MetricTimeWindow13 {
+export interface MetricTimeWindow17 {
   count: number;
   granularity: string;
 }
@@ -5426,7 +6391,6 @@ export interface MetricAggregationParams1 {
   agg_params?: MeasureAggregationParameters1 | null;
   agg_time_dimension?: string | null;
   non_additive_dimension?: NonAdditiveDimension1 | null;
-  expr?: string | null;
 }
 export interface MeasureAggregationParameters1 {
   percentile?: number | null;
@@ -5447,10 +6411,10 @@ export interface NonAdditiveDimension1 {
     | "count";
   window_groupings: string[];
 }
-export interface WhereFilterIntersection17 {
-  where_filters: WhereFilter17[];
+export interface WhereFilterIntersection21 {
+  where_filters: WhereFilter21[];
 }
-export interface WhereFilter17 {
+export interface WhereFilter21 {
   where_sql_template: string;
 }
 export interface SourceFileMetadata1 {
@@ -5509,14 +6473,14 @@ export interface SavedQuery {
 export interface QueryParams {
   metrics: string[];
   group_by: string[];
-  where: WhereFilterIntersection18 | null;
+  where: WhereFilterIntersection22 | null;
   order_by?: string[];
   limit?: number | null;
 }
-export interface WhereFilterIntersection18 {
-  where_filters: WhereFilter18[];
+export interface WhereFilterIntersection22 {
+  where_filters: WhereFilter22[];
 }
-export interface WhereFilter18 {
+export interface WhereFilter22 {
   where_sql_template: string;
 }
 export interface Export {
@@ -5874,14 +6838,14 @@ export interface SavedQuery1 {
 export interface QueryParams1 {
   metrics: string[];
   group_by: string[];
-  where: WhereFilterIntersection19 | null;
+  where: WhereFilterIntersection23 | null;
   order_by?: string[];
   limit?: number | null;
 }
-export interface WhereFilterIntersection19 {
-  where_filters: WhereFilter19[];
+export interface WhereFilterIntersection23 {
+  where_filters: WhereFilter23[];
 }
-export interface WhereFilter19 {
+export interface WhereFilter23 {
   where_sql_template: string;
 }
 export interface Export1 {
@@ -6214,7 +7178,7 @@ export interface UnitTestNodeVersions1 {
   exclude?: (string | number)[] | null;
 }
 export interface Function2 {
-  returns: FunctionReturns2;
+  returns: FunctionReturns6;
   database: string | null;
   schema: string;
   name: string;
@@ -6226,7 +7190,7 @@ export interface Function2 {
   fqn: string[];
   alias: string;
   checksum: FileHash18;
-  config: FunctionConfig2;
+  config: FunctionConfig4;
   tags?: string[];
   description?: string;
   columns?: {
@@ -6236,7 +7200,7 @@ export interface Function2 {
     [k: string]: unknown;
   };
   group?: string | null;
-  docs?: Docs40;
+  docs?: Docs43;
   patch_path?: string | null;
   build_path?: string | null;
   unrendered_config?: {
@@ -6265,10 +7229,11 @@ export interface Function2 {
   extra_ctes?: InjectedCTE16[];
   _pre_injected_sql?: string | null;
   contract?: Contract16;
-  arguments?: FunctionArgument2[];
-  type?: "scalar" | "aggregate" | "table";
+  arguments?: FunctionArgument6[];
+  overloads?: FunctionOverload2[];
+  defer_function?: DeferFunction2 | null;
 }
-export interface FunctionReturns2 {
+export interface FunctionReturns6 {
   data_type: string;
   description?: string | null;
 }
@@ -6276,7 +7241,7 @@ export interface FileHash18 {
   name: string;
   checksum: string;
 }
-export interface FunctionConfig2 {
+export interface FunctionConfig4 {
   _extra?: {
     [k: string]: unknown;
   };
@@ -6301,8 +7266,8 @@ export interface FunctionConfig2 {
   persist_docs?: {
     [k: string]: unknown;
   };
-  "post-hook"?: Hook40[];
-  "pre-hook"?: Hook41[];
+  "post-hook"?: Hook44[];
+  "pre-hook"?: Hook45[];
   quoting?: {
     [k: string]: unknown;
   };
@@ -6317,31 +7282,35 @@ export interface FunctionConfig2 {
     [k: string]: unknown;
   };
   packages?: string[];
-  docs?: Docs39;
-  contract?: ContractConfig20;
+  docs?: Docs42;
+  contract?: ContractConfig22;
   event_time?: {
     [k: string]: unknown;
   };
   concurrent_batches?: {
     [k: string]: unknown;
   };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
   [k: string]: unknown;
 }
-export interface Hook40 {
+export interface Hook44 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Hook41 {
+export interface Hook45 {
   sql: string;
   transaction?: boolean;
   index?: number | null;
 }
-export interface Docs39 {
+export interface Docs42 {
   show?: boolean;
   node_color?: string | null;
 }
-export interface ContractConfig20 {
+export interface ContractConfig22 {
   enforced?: boolean;
   alias_types?: boolean;
 }
@@ -6374,6 +7343,11 @@ export interface ColumnInfo20 {
         | "year"
       )
     | null;
+  dimension?: ColumnDimension20 | ("categorical" | "time") | null;
+  entity?:
+    | ColumnEntity20
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
@@ -6402,7 +7376,31 @@ export interface ColumnConfig20 {
   tags?: string[];
   [k: string]: unknown;
 }
-export interface Docs40 {
+export interface ColumnDimension20 {
+  name: string;
+  type: "categorical" | "time";
+  description?: string | null;
+  label?: string | null;
+  is_partition?: boolean;
+  config?: {
+    [k: string]: unknown;
+  };
+  validity_params?: ColumnDimensionValidityParams20 | null;
+}
+export interface ColumnDimensionValidityParams20 {
+  is_start?: boolean;
+  is_end?: boolean;
+}
+export interface ColumnEntity20 {
+  name: string;
+  type: "foreign" | "natural" | "primary" | "unique";
+  description?: string | null;
+  label?: string | null;
+  config?: {
+    [k: string]: unknown;
+  };
+}
+export interface Docs43 {
   show?: boolean;
   node_color?: string | null;
 }
@@ -6424,8 +7422,145 @@ export interface Contract16 {
   alias_types?: boolean;
   checksum?: string | null;
 }
-export interface FunctionArgument2 {
+export interface FunctionArgument6 {
   name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionOverload2 {
+  defined_in: string;
+  arguments?: FunctionArgument7[];
+  returns?: FunctionReturns7 | null;
+  description?: string | null;
+  raw_body?: string | null;
+  compiled_body?: string | null;
+}
+export interface FunctionArgument7 {
+  name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionReturns7 {
+  data_type: string;
+  description?: string | null;
+}
+export interface DeferFunction2 {
+  database: string | null;
+  schema: string;
+  alias: string;
+  resource_type:
+    | "model"
+    | "analysis"
+    | "test"
+    | "snapshot"
+    | "operation"
+    | "seed"
+    | "rpc"
+    | "sql_operation"
+    | "doc"
+    | "source"
+    | "macro"
+    | "exposure"
+    | "metric"
+    | "group"
+    | "saved_query"
+    | "semantic_model"
+    | "unit_test"
+    | "fixture"
+    | "function";
+  name: string;
+  description: string;
+  compiled_code: string | null;
+  meta: {
+    [k: string]: unknown;
+  };
+  tags: string[];
+  config: FunctionConfig5 | null;
+  arguments: FunctionArgument8[];
+  returns: FunctionReturns8;
+}
+export interface FunctionConfig5 {
+  _extra?: {
+    [k: string]: unknown;
+  };
+  enabled?: boolean;
+  alias?: string | null;
+  schema?: string | null;
+  database?: string | null;
+  tags?: string[] | string;
+  meta?: {
+    [k: string]: unknown;
+  };
+  group?: string | null;
+  materialized?: string;
+  incremental_strategy?: string | null;
+  batch_size?: {
+    [k: string]: unknown;
+  };
+  lookback?: number;
+  begin?: {
+    [k: string]: unknown;
+  };
+  persist_docs?: {
+    [k: string]: unknown;
+  };
+  "post-hook"?: Hook46[];
+  "pre-hook"?: Hook47[];
+  quoting?: {
+    [k: string]: unknown;
+  };
+  column_types?: {
+    [k: string]: unknown;
+  };
+  full_refresh?: boolean | null;
+  unique_key?: string | string[] | null;
+  on_schema_change?: string | null;
+  on_configuration_change?: "apply" | "continue" | "fail";
+  grants?: {
+    [k: string]: unknown;
+  };
+  packages?: string[];
+  docs?: Docs44;
+  contract?: ContractConfig23;
+  event_time?: {
+    [k: string]: unknown;
+  };
+  concurrent_batches?: {
+    [k: string]: unknown;
+  };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
+  [k: string]: unknown;
+}
+export interface Hook46 {
+  sql: string;
+  transaction?: boolean;
+  index?: number | null;
+}
+export interface Hook47 {
+  sql: string;
+  transaction?: boolean;
+  index?: number | null;
+}
+export interface Docs44 {
+  show?: boolean;
+  node_color?: string | null;
+}
+export interface ContractConfig23 {
+  enforced?: boolean;
+  alias_types?: boolean;
+}
+export interface FunctionArgument8 {
+  name: string;
+  data_type: string;
+  description?: string | null;
+  default_value?: unknown;
+}
+export interface FunctionReturns8 {
   data_type: string;
   description?: string | null;
 }
