@@ -1,9 +1,9 @@
 packages:
   - packages/dbt-artifacts-parser
-  - packages/dbt-tools/*
 allowBuilds:
   unrs-resolver: true
 blockExoticSubdeps: true
+resolution-mode: highest
 
 minimumReleaseAge: 10080 # 7 days (minutes); supply-chain delay per pnpm 11 docs
 minimumReleaseAgeExclude:
@@ -17,6 +17,11 @@ minimumReleaseAgeExclude:
   - fast-xml-parser@5.7.0
   - uuid@14.0.0
   - postcss@8.5.10
+  - vite
+  - vite@8.0.5
+  - vite@8.0.7
+  - rolldown
+  - "@oxc-project/types"
 overrides:
   "@tootallnate/once@<3.0.1": ^3.0.1
   fast-xml-parser@<5.7.0: ^5.7.0

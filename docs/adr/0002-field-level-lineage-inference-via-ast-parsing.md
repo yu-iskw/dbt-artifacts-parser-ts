@@ -67,4 +67,3 @@ on proprietary or live-platform lineage systems.
 ## References
 
 - Legacy provenance: ADR-0005
-- Product boundaries: [0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md](./0008-dbt-tools-operational-intelligence-and-positioning-boundaries.md)

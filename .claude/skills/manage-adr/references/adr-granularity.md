@@ -57,12 +57,12 @@ If **YES** to any of these, document in design docs, README, or code.
 
 ### Timeline / Gantt focus edges
 
-| In the ADR                                                                                                                                                     | Elsewhere                                                                                                                              |
-| :------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
-| “Focus dependency edges are **ranked**, **capped**, and optionally **multi-hop**; defaults favor richer context with a user-visible way to reduce clutter.”    | Exact state field names (`dependencyDirection`, `dependencyDepthHops`), mapper functions, and filenames under `packages/dbt-tools/web` |
-| Boundaries: edges only between rows on the **current filtered** timeline; adjacency comes from the **manifest graph / analysis snapshot**, not ad hoc UI graph | `packages/dbt-tools/core` analysis snapshot and graph build                                                                            |
+| In the ADR                                                                                                      | Elsewhere                                                                                  |
+| :-------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
+| “Artifact version detection is table-driven and rejects unsupported schema versions with explicit errors.”      | Exact helper function names and generated file paths under `packages/dbt-artifacts-parser` |
+| Boundaries: parser exports are generated from schema resources, not hand-maintained duplicated type definitions | `packages/dbt-artifacts-parser` generation scripts                                         |
 
-Use at most one coarse pointer, e.g. “`@dbt-tools/web` timeline Gantt stack,” if disambiguation is needed.
+Use at most one coarse pointer, e.g. “parser schema generation,” if disambiguation is needed.
 
 ### Lint, coverage, and agent gates
 
@@ -72,9 +72,9 @@ Use at most one coarse pointer, e.g. “`@dbt-tools/web` timeline Gantt stack,�
 
 ### Theming / color
 
-| In the ADR                                                                                                  | Elsewhere                                                                                                                        |
-| :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
-| “We use **semantic roles**, separate **graph-local** tokens where needed, and a coherent light/dark story.” | Hex values and CSS custom properties in `packages/dbt-tools/web/src/styles/tokens.css` and mirrors in `constants/themeColors.ts` |
+| In the ADR                                                         | Elsewhere                                                        |
+| :----------------------------------------------------------------- | :--------------------------------------------------------------- |
+| “Generated parser types preserve dbt artifact version boundaries.” | Individual generated type member names copied from schema output |
 
 ### Heuristic
 

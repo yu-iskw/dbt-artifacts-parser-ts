@@ -1,26 +1,15 @@
+import eslintCommentsPlugin from "@eslint-community/eslint-plugin-eslint-comments";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
-import sonarjs from "eslint-plugin-sonarjs";
-import importPlugin from "eslint-plugin-import";
-import playwrightPlugin from "eslint-plugin-playwright";
-import eslintCommentsPlugin from "@eslint-community/eslint-plugin-eslint-comments";
 import vitestPlugin from "@vitest/eslint-plugin";
-import reactPlugin from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
-import jsxA11y from "eslint-plugin-jsx-a11y";
+import importPlugin from "eslint-plugin-import";
+import sonarjs from "eslint-plugin-sonarjs";
 
 /** @type {import("@typescript-eslint/parser").ParserOptions} */
 const tsProjectOptions = {
   ecmaVersion: 2022,
   sourceType: "module",
-  project: [
-    "./packages/dbt-artifacts-parser/tsconfig.eslint.json",
-    "./packages/dbt-tools/core/tsconfig.eslint.json",
-    "./packages/dbt-tools/cli/tsconfig.eslint.json",
-    "./packages/dbt-tools/web/tsconfig.eslint.json",
-    "./packages/dbt-tools/web/tsconfig.node.json",
-    "./packages/dbt-tools/web/tsconfig.e2e.json",
-  ],
+  project: ["./packages/dbt-artifacts-parser/tsconfig.eslint.json"],
 };
 
 const importResolverSettings = {
@@ -33,12 +22,6 @@ const importResolverSettings = {
   },
 };
 
-/**
- * Shared production + test rules (AI agent feedback).
- * Cyclomatic: only SonarJS (core `complexity` removed — duplicated sonarjs/cyclomatic-complexity).
- * Cognitive: sonarjs/cognitive-complexity (primary “hard to change” signal).
- * Structural: max-depth / max-params / max-nested-callbacks (catch wide APIs / deep nesting).
- */
 const sharedTsRules = Object.assign({}, tseslint.configs.recommended.rules, {
   "@typescript-eslint/no-explicit-any": "error",
   "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
@@ -51,7 +34,6 @@ const sharedTsRules = Object.assign({}, tseslint.configs.recommended.rules, {
     "error",
     { prefer: "type-imports", fixStyle: "separate-type-imports" },
   ],
-  // Security
   "no-eval": "error",
   "no-implied-eval": "error",
   "no-new-func": "error",
@@ -60,7 +42,6 @@ const sharedTsRules = Object.assign({}, tseslint.configs.recommended.rules, {
   "max-depth": ["error", { max: 6 }],
   "max-params": ["error", { max: 8 }],
   "max-nested-callbacks": ["error", { max: 4 }],
-  // SonarJS
   "sonarjs/cyclomatic-complexity": ["error", { threshold: 15 }],
   "sonarjs/cognitive-complexity": ["error", 15],
   "sonarjs/no-duplicate-string": "error",
@@ -79,7 +60,6 @@ export default [
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
-      "**/dist-serve/**",
       "**/codeql-db/**",
       "**/resources/**",
       ".claude/**",
@@ -88,8 +68,6 @@ export default [
       ".trunk/**",
       "**/*.generated.ts",
       "packages/dbt-artifacts-parser/resources/**/*.json",
-      "**/playwright-report/**",
-      "**/test-results/**",
     ],
     plugins: {
       "eslint-comments": eslintCommentsPlugin,
@@ -100,14 +78,11 @@ export default [
     },
   },
   {
-    files: ["packages/**/*.ts", "packages/**/*.tsx"],
-    ignores: ["**/dist/**", "**/*.test.ts", "**/*.test.tsx"],
+    files: ["packages/**/*.ts"],
+    ignores: ["**/dist/**", "**/*.test.ts"],
     languageOptions: {
       parser: tsparser,
-      parserOptions: {
-        ...tsProjectOptions,
-        ecmaFeatures: { jsx: true },
-      },
+      parserOptions: tsProjectOptions,
     },
     plugins: {
       "@typescript-eslint": tseslint,
@@ -122,14 +97,11 @@ export default [
     },
   },
   {
-    files: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
+    files: ["packages/**/*.test.ts"],
     ignores: ["**/dist/**"],
     languageOptions: {
       parser: tsparser,
-      parserOptions: {
-        ...tsProjectOptions,
-        ecmaFeatures: { jsx: true },
-      },
+      parserOptions: tsProjectOptions,
       globals: vitestPlugin.environments.env.globals,
     },
     plugins: {
@@ -143,185 +115,14 @@ export default [
       ...sharedTsRules,
       ...sharedImportRules,
       ...vitestPlugin.configs.recommended.rules,
-      // Tests often repeat string literals and use conditional expects; keep signal without noise.
       "vitest/no-conditional-expect": "off",
       "sonarjs/no-duplicate-string": "off",
       "max-lines-per-function": ["error", { max: 700 }],
     },
   },
   {
-    files: ["packages/dbt-tools/web/e2e/**/*.spec.ts"],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ...tsProjectOptions,
-      },
-    },
-    plugins: {
-      "@typescript-eslint": tseslint,
-      sonarjs,
-      ...playwrightPlugin.configs["flat/recommended"].plugins,
-      import: importPlugin,
-    },
-    settings: importResolverSettings,
-    rules: {
-      ...sharedTsRules,
-      ...sharedImportRules,
-      ...playwrightPlugin.configs["flat/recommended"].rules,
-      // Long Playwright flows: relax structural limits without silencing security/type rules
-      "playwright/prefer-web-first-assertions": "off",
-      "max-lines-per-function": ["error", { max: 400 }],
-      "max-depth": ["error", { max: 10 }],
-      "sonarjs/cognitive-complexity": ["error", 35],
-      "sonarjs/cyclomatic-complexity": ["error", { threshold: 30 }],
-      "max-nested-callbacks": ["error", { max: 8 }],
-    },
-  },
-  {
-    files: ["packages/dbt-tools/web/**/*.tsx"],
-    ignores: ["**/dist/**", "**/*.test.tsx"],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ...tsProjectOptions,
-        ecmaFeatures: { jsx: true },
-      },
-    },
-    plugins: {
-      react: reactPlugin,
-      "react-hooks": reactHooks,
-      "jsx-a11y": jsxA11y,
-    },
-    settings: {
-      react: { version: "18.3" },
-    },
-    rules: {
-      ...reactPlugin.configs.flat.recommended.rules,
-      ...reactPlugin.configs.flat["jsx-runtime"].rules,
-      ...reactHooks.configs.flat.recommended.rules,
-      ...jsxA11y.flatConfigs.recommended.rules,
-      "react/prop-types": "off",
-      "react-hooks/exhaustive-deps": "error",
-      "max-lines": [
-        "error",
-        { max: 1200, skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  /** @dbt-tools/web: cap non-test .ts modules (services, lib, workers, etc.) */
-  {
-    files: ["packages/dbt-tools/web/src/**/*.ts"],
-    ignores: ["**/dist/**", "**/*.test.ts"],
-    rules: {
-      "max-lines": [
-        "error",
-        { max: 1200, skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  /** Stricter than web TSX default — agent churn hotspots (must follow looser blocks above) */
-  {
-    files: [
-      "packages/dbt-tools/web/src/components/**/*.{ts,tsx}",
-      "packages/dbt-tools/web/src/hooks/**/*.{ts,tsx}",
-    ],
-    rules: {
-      "max-lines": [
-        "error",
-        { max: 900, skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  {
-    files: [
-      "packages/dbt-tools/web/src/components/**/*.ts",
-      "packages/dbt-tools/web/src/components/**/*.tsx",
-      "packages/dbt-tools/web/src/hooks/**/*.ts",
-      "packages/dbt-tools/web/src/hooks/**/*.tsx",
-    ],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "@dbt-tools/core",
-              message:
-                "React hooks/components must stay on the web facade side of the boundary. Use web services or @dbt-tools/core/browser only in non-React layers.",
-            },
-            {
-              name: "@dbt-tools/core/browser",
-              importNames: [
-                "ManifestGraph",
-                "ExecutionAnalyzer",
-                "detectBottlenecks",
-                "buildAnalysisSnapshotFromArtifacts",
-                "buildAnalysisSnapshotFromParsedArtifacts",
-              ],
-              message:
-                "React hooks/components must not import graph/engine primitives directly. Go through the worker-backed analysis service.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  /** @dbt-tools/web: keep analysis-workspace lib free of UI and worker graphs */
-  {
-    files: ["packages/dbt-tools/web/src/lib/**/*.ts"],
-    ignores: ["**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["@web/components/*", "@web/components/**/*"],
-              message:
-                "lib/analysis-workspace must not import UI components; keep domain logic UI-agnostic.",
-            },
-            {
-              group: ["@web/workers/*", "@web/workers/**/*"],
-              message: "lib must not import Vite worker entrypoints.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ["packages/dbt-tools/web/src/workers/**/*.ts"],
-    ignores: ["**/*.test.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "react",
-              message: "Workers must not import React.",
-            },
-            {
-              name: "react-dom",
-              message: "Workers must not import react-dom.",
-            },
-            {
-              name: "react/jsx-runtime",
-              message: "Workers must not import the JSX runtime.",
-            },
-            {
-              name: "@dbt-tools/core",
-              message:
-                "Workers must import @dbt-tools/core/browser only (Node/fs APIs must not enter the worker bundle).",
-            },
-          ],
-        },
-      ],
-    },
-  },
-  {
     files: ["**/*.js"],
-    ignores: ["**/dist/**", "**/dist-serve/**", "**/node_modules/**"],
+    ignores: ["**/dist/**", "**/node_modules/**"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",
