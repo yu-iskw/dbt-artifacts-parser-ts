@@ -127,15 +127,9 @@ function run() {
   }
 
   // Per-package breakdown: group file entries by package prefix
-  const packagePrefixes = [
-    "packages/dbt-artifacts-parser/",
-    "packages/dbt-tools/core/",
-    "packages/dbt-tools/cli/",
-  ];
+  const packagePrefixes = ["packages/dbt-artifacts-parser/"];
   const packageNames = {
     "packages/dbt-artifacts-parser/": "dbt-artifacts-parser",
-    "packages/dbt-tools/core/": "dbt-tools/core",
-    "packages/dbt-tools/cli/": "dbt-tools/cli",
   };
   const byPackage = {};
   for (const [filePath, data] of Object.entries(summary)) {

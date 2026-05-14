@@ -1,53 +1,26 @@
-# dbt-artifacts-parser-ts
+# dbt-artifacts-parser
 
-A TypeScript monorepo for **`dbt-artifacts-parser`**: typed parsing of [dbt](https://www.getdbt.com/) JSON artifacts with automatic version detection.
+TypeScript parser and generated type package for dbt artifact JSON files.
 
-## Packages
+## Package
 
-### dbt-artifacts-parser
-
-> `packages/dbt-artifacts-parser/` · npm: `dbt-artifacts-parser`
-
-A standalone TypeScript library for parsing dbt artifact files with full type safety and automatic version detection. Use this if you only need to read and type-check dbt JSON artifacts.
-
-Supported artifacts:
-
-| Artifact           | Versions |
-| ------------------ | -------- |
-| `manifest.json`    | v1–v12   |
-| `catalog.json`     | v1       |
-| `run_results.json` | v1–v6    |
-| `sources.json`     | v1–v3    |
-
-[Full documentation →](./packages/dbt-artifacts-parser/README.md)
-
----
-
-## Quick Start
-
-```bash
-npm install dbt-artifacts-parser
-```
-
-For API details and examples, see [packages/dbt-artifacts-parser/README.md](./packages/dbt-artifacts-parser/README.md).
-
----
+- [`packages/dbt-artifacts-parser`](packages/dbt-artifacts-parser) publishes `dbt-artifacts-parser`.
 
 ## Development
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to build, test, and contribute to this monorepo.
+```bash
+pnpm install
+pnpm build
+pnpm test
+pnpm lint:report
+pnpm knip
+pnpm coverage:report
+```
 
----
+## Type generation
+
+Parser schemas and generated sources live under [`packages/dbt-artifacts-parser`](packages/dbt-artifacts-parser). Use [`.claude/skills/dbt-parser-refresh/SKILL.md`](.claude/skills/dbt-parser-refresh/SKILL.md) for the refresh workflow.
 
 ## License
 
-This monorepo uses **two different licenses** for different parts of the tree. The **authoritative path map** is **[`LICENSES/README.md`](./LICENSES/README.md)**. The file at the repository root named [`LICENSE`](./LICENSE) is a **short manifest** only (not the Apache legal text). GitHub and other tools may not show multiple licenses correctly; use the manifest and the links below.
-
-| Area                                                                                               | License                                              | Full text                                                                                                                                                                 |
-| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/dbt-artifacts-parser/`](./packages/dbt-artifacts-parser/) (npm: `dbt-artifacts-parser`) | **Apache-2.0**                                       | [`LICENSES/Apache-2.0.txt`](./LICENSES/Apache-2.0.txt) (canonical); also [`packages/dbt-artifacts-parser/LICENSE`](./packages/dbt-artifacts-parser/LICENSE) (npm tarball) |
-| [`packages/dbt-tools/`](./packages/dbt-tools/)                                                     | **Source-available** (custom; not OSI “open source”) | [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE)                                                                                                              |
-
-Published npm tarballs ship a `LICENSE` file and `package.json` metadata appropriate to each package. For permissions beyond what the **source-available** license in [`packages/dbt-tools/LICENSE`](./packages/dbt-tools/LICENSE) grants, contact the maintainer via the repository.
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for how contributions are licensed per package.
+See [`LICENSE`](LICENSE) and [`LICENSES/README.md`](LICENSES/README.md).

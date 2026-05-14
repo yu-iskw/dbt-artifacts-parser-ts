@@ -2,18 +2,6 @@ import path from "node:path";
 
 export function createSharedSourceEntryAliases(projectRoot) {
   return {
-    "@dbt-tools/core/artifact-io": path.resolve(
-      projectRoot,
-      "packages/dbt-tools/core/src/artifact-io.ts",
-    ),
-    "@dbt-tools/core/browser": path.resolve(
-      projectRoot,
-      "packages/dbt-tools/core/src/browser.ts",
-    ),
-    "@dbt-tools/core": path.resolve(
-      projectRoot,
-      "packages/dbt-tools/core/src/index.ts",
-    ),
     "dbt-artifacts-parser/manifest": path.resolve(
       projectRoot,
       "packages/dbt-artifacts-parser/src/manifest/index.ts",

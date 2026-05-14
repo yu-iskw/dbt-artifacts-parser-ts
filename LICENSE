@@ -1,18 +1,13 @@
-This repository contains multiple licenses. The entire tree is NOT Apache-2.0.
+This repository is licensed under the Apache License, Version 2.0.
 
 Authoritative path-to-license map:
   LICENSES/README.md  (Markdown, detailed table and links)
 
-Full license texts:
+Full license text:
   LICENSES/Apache-2.0.txt
     Applies to packages/dbt-artifacts-parser/ (npm: dbt-artifacts-parser).
     The same text is copied to packages/dbt-artifacts-parser/LICENSE for npm tarballs.
 
-  packages/dbt-tools/LICENSE
-    Applies to packages/dbt-tools/ (@dbt-tools/core, @dbt-tools/cli, @dbt-tools/web).
-    This is NOT the Apache License. Do not use or redistribute under Apache-2.0 assumptions.
-
 The npm package dbt-artifacts-parser is Apache-2.0.
-The npm packages @dbt-tools/* are distributed under the source-available terms in packages/dbt-tools/LICENSE.
 
-For how to contribute under each license, see CONTRIBUTING.md.
+For how to contribute, see CONTRIBUTING.md.

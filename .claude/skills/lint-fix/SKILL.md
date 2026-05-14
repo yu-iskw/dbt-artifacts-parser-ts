@@ -42,13 +42,12 @@ Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `tr
 
 **Coverage gap (no Trunk):** [.trunk/trunk.yaml](../../../.trunk/trunk.yaml) enables additional checks (e.g. markdownlint, taplo, shellcheck, actionlint, Trivy, OSV, yamllint) that the no-Trunk path does **not** run. The no-Trunk path matches most **TypeScript / React / CSS / dead-code** work and aligns with agent gates in [`AGENTS.md`](../../../AGENTS.md) (`lint:report`, `knip`) **but** is not CI-identical. Before merge or when editing markdown, YAML, shell, or workflow files, run `pnpm lint` in an environment with Trunk when possible.
 
-**CSS note:** `pnpm lint:report` is **ESLint-only** (writes `lint-report.json`). It does **not** run Stylelint. After substantive edits to `packages/dbt-tools/web/src/**/*.css`, run **`pnpm lint:stylelint`** or full `pnpm lint` (with Trunk) so Stylelint rules (e.g. deprecated properties) are caught.
+**CSS note:** this parser repository does not run Stylelint as part of its normal gates; `pnpm lint:report` is ESLint-only and writes `lint-report.json`.
 
 ## Common gotchas (this monorepo)
 
 - **Sonar / ESLint:** Repeated string literals in CLI command definitions or schema descriptions often hit **`sonarjs/no-duplicate-string`** (threshold is typically **3** repeats). Fix by hoisting **`const`** descriptions next to existing option constants. Large functions may hit **`sonarjs/cognitive-complexity`** or **`sonarjs/cyclomatic-complexity`** — extract small pure helpers rather than disabling rules.
 - **Import graph rules:** `eslint-plugin-import` now enforces **`import/no-cycle`**, **`import/no-unresolved`**, and **`import/no-useless-path-segments`** on TypeScript files. Resolve cycles by moving shared types/helpers to a lower layer or introducing a facade, not by disabling the rule.
-- **Playwright linting:** `eslint-plugin-playwright` runs on `packages/dbt-tools/web/e2e/**/*.spec.ts`; prefer fixing flaky patterns directly. If a web-first assertion is intentionally unsuitable for a long flow, keep exceptions local to the test block.
 - **Disable directives:** `@eslint-community/eslint-plugin-eslint-comments` enforces `eslint-comments/no-unused-disable` and `eslint-comments/disable-enable-pair`; remove stale directives before re-running lint.
 - **Stylelint BEM:** Selectors after `__` must use **kebab-case** segments only (e.g. `__search-row`, not `__searchRow`). If Trunk reports **`stylelint/selector-class-pattern`**, rename the class in **both** TSX and CSS.
 - **Trunk markdown-link-check:** New or moved `*.md` files must not link to **missing** paths. Run **`pnpm exec trunk check path/to/file.md -y`** on edited docs before merge.
@@ -61,7 +60,7 @@ Do **not** run `pnpm format` or `pnpm lint` when the launcher cannot execute `tr
 1. **Format first** — `pnpm format` (`trunk fmt` → `eslint . --fix` → `prettier --write .`).
 2. **Lint** — `pnpm lint` (`lint:trunk` → `lint:eslint` → `lint:stylelint` → `knip`), or a slimmer pass: `pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint` (omit Knip if not needed yet).
 3. **Import-cycle checkpoint before E2E** — when `packages/**` TypeScript modules changed, run `pnpm lint:eslint` and clear import-cycle/path issues before spending time in `pnpm test:e2e`.
-4. **Build gate for broad shared TS refactors** — after the first green **`pnpm lint:eslint`** checkpoint, if the touched files include `packages/dbt-tools/core`, `packages/dbt-tools/cli`, shared TypeScript utilities, worker protocol layers, or exported types/helpers, run **`pnpm build`** from the repo root. If it fails, switch to [`.claude/skills/build-fix/SKILL.md`](../build-fix/SKILL.md) and follow its fixer loop before claiming the lint session is complete.
+4. **Build gate for broad shared TS refactors** — after the first green **`pnpm lint:eslint`** checkpoint, if the touched files include parser source, generated types, package exports, or shared TypeScript configuration, run **`pnpm build`** from the repo root. If it fails, switch to [`.claude/skills/build-fix/SKILL.md`](../build-fix/SKILL.md) and follow its fixer loop before claiming the lint session is complete.
 
 ### Path B — Escape hatch (`*:without-trunk`)
 
@@ -88,7 +87,6 @@ Run from the **repository root**.
 | Lint full (launcher path) | `pnpm lint`                 | `lint:trunk` → `lint:eslint` → `lint:stylelint` → **`knip`**      |
 | Lint full (escape hatch)  | `pnpm lint:without-trunk`   | `lint:eslint` → `lint:stylelint` → **`knip`** (no Trunk)          |
 | ESLint report (agents)    | `pnpm lint:report`          | Writes `lint-report.json`; ESLint-only; must exit **0** for green |
-| Stylelint (web CSS)       | `pnpm lint:stylelint`       | `packages/dbt-tools/web/src/**/*.css`                             |
 | Dead code (analyze)       | `pnpm knip`                 | Unused exports/files/deps; must exit **0** when clean             |
 | Dead code (assisted edit) | `pnpm knip:fix`             | Review diff before commit                                         |
 

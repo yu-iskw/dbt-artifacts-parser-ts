@@ -1,6 +1,6 @@
 {
   "name": "dbt-artifacts-parser",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "private": true,
   "description": "A community-driven TypeScript library for parsing dbt artifacts with full type safety and automatic version detection.",
   "keywords": [],
@@ -9,16 +9,13 @@
   "packageManager": "pnpm@11.0.5",
   "scripts": {
     "build": "pnpm --recursive --sequential run build",
-    "clean": "rm -rf ./packages/dbt-tools/web/dist ./packages/dbt-tools/web/dist-serve ./packages/dbt-tools/web/playwright-report ./packages/dbt-tools/web/test-results",
+    "clean": "rm -rf ./coverage ./coverage-report.json ./lint-report.json ./codeql-db ./codeql-results.sarif",
     "codeql": "pnpm codeql:db && pnpm codeql:analyze",
     "codeql:analyze": "node scripts/codeql-check.mjs codeql/javascript-queries && codeql database analyze ./codeql-db codeql/javascript-queries --format=sarif-latest --output=codeql-results.sarif",
     "codeql:analyze:download": "node scripts/codeql-check.mjs && codeql database analyze ./codeql-db codeql/javascript-queries --download --format=sarif-latest --output=codeql-results.sarif",
-    "codeql:clean": "pnpm clean && rm -rf ./codeql-db ./codeql-results.sarif",
+    "codeql:clean": "rm -rf ./codeql-db ./codeql-results.sarif",
     "codeql:db": "node scripts/codeql-check.mjs && pnpm codeql:clean && codeql database create ./codeql-db --language=javascript --source-root=.",
     "coverage:report": "node scripts/coverage-score.mjs",
-    "tokens:sync": "node scripts/sync-css-tokens-to-ts.mjs && prettier --write packages/dbt-tools/web/src/constants/themeColors.generated.ts",
-    "tokens:check": "pnpm tokens:sync && git diff --exit-code packages/dbt-tools/web/src/constants/themeColors.generated.ts",
-    "dev:web": "pnpm --filter @dbt-tools/web dev",
     "format": "pnpm format:trunk && pnpm format:eslint && pnpm format:prettier",
     "format:all": "pnpm format:trunk-all",
     "format:eslint": "eslint . --fix",
@@ -27,11 +24,10 @@
     "format:trunk-all": "pnpm exec trunk fmt --all",
     "format:without-trunk": "pnpm format:eslint && pnpm format:prettier",
     "json2ts": "./node_modules/.bin/json2ts",
-    "lint": "pnpm lint:trunk && pnpm lint:eslint && pnpm lint:stylelint && pnpm knip",
-    "lint:without-trunk": "pnpm lint:eslint && pnpm lint:stylelint && pnpm knip",
+    "lint": "pnpm lint:trunk && pnpm lint:eslint && pnpm knip",
+    "lint:without-trunk": "pnpm lint:eslint && pnpm knip",
     "lint:all": "pnpm lint:trunk-all",
     "lint:eslint": "eslint .",
-    "lint:stylelint": "stylelint \"packages/dbt-tools/web/src/**/*.css\"",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "lint:knip": "knip",
@@ -42,7 +38,6 @@
     "lint:trunk-all": "pnpm exec trunk check --all -y",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "pnpm --filter @dbt-tools/web test:e2e",
     "trunk": "trunk",
     "verify:normalize": "pnpm format && pnpm lint"
   },
@@ -56,17 +51,9 @@
     "eslint": "^10.2.0",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-playwright": "^2.10.2",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-sonarjs": "^4.0.2",
-    "jsdom": "^29.0.1",
     "json-schema-to-typescript": "^15.0.4",
     "knip": "^6.3.0",
-    "stylelint": "^17.6.0",
-    "stylelint-config-standard": "^40.0.0",
-    "stylelint-declaration-strict-value": "^1.11.1",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"
   },
@@ -84,10 +71,7 @@
     },
     "peerDependencyRules": {
       "allowedVersions": {
-        "typescript": "6",
-        "eslint-plugin-jsx-a11y>eslint": "10",
-        "eslint-plugin-react>eslint": "10",
-        "eslint-plugin-react-hooks>eslint": "10"
+        "typescript": "6"
       }
     }
   }

@@ -43,7 +43,7 @@ Canonical section headings and placeholders live in [`references/postmortem-repo
 ### Example: Changes for next session
 
 - **Must:** Run `pnpm lint:report` and `pnpm coverage:report` from repo root before claiming complete (per AGENTS.md).
-- **Should:** Read the relevant package README before editing `packages/dbt-tools/web`.
+- **Should:** Read the parser package README before editing `packages/dbt-artifacts-parser`.
 - **Consider:** Delegate broad codebase search to a subagent when the question spans many directories.
 
 ### Example: Suggested documentation or skill updates

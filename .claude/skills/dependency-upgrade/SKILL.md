@@ -17,10 +17,10 @@ Activate when the user says or implies:
 
 ## Not this skill
 
-| Topic                                                                                              | Use instead                                 |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Bumping **`"version"`** in workspace `package.json` files (parser / `@dbt-tools/*` release semver) | [version-bump](../version-bump/SKILL.md)    |
-| Editing **`workspace:*`** links                                                                    | Leave as-is unless adding/removing packages |
+| Topic                           | Use instead                                 |
+| ------------------------------- | ------------------------------------------- |
+| Bumping parser package versions | [version-bump](../version-bump/SKILL.md)    |
+| Editing **`workspace:*`** links | Leave as-is unless adding/removing packages |
 
 Dependencies live in **`dependencies`** / **`devDependencies`** / **`optionalDependencies`**. Release **package semver** is the `"version"` field—different workflow.
 
@@ -49,6 +49,6 @@ After **any** meaningful dependency or lockfile change:
 - `pnpm coverage:report`
 - `pnpm knip`
 
-All three must **exit 0**. If SDKs, bundlers, TypeScript, or ESLint majors moved, also run **`pnpm build`** and, for web, **`pnpm --filter @dbt-tools/web build`** (or full root build script). See [AGENTS.md](../../../AGENTS.md) quality gates.
+All three must **exit 0**. If SDKs, bundlers, TypeScript, or ESLint majors moved, also run **`pnpm build`** or full root build script. See [AGENTS.md](../../../AGENTS.md) quality gates.
 
 Full command notes, examples, and edge cases: [references/pnpm-upgrade-workflow.md](./references/pnpm-upgrade-workflow.md).

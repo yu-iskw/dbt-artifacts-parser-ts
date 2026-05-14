@@ -4,14 +4,14 @@ Operate from the **repository root** so **`pnpm-lock.yaml`** is updated consiste
 
 ## Command overview
 
-| Goal                                         | Command (root)                          | Effect                                                                                               |
-| -------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| See outdated deps                            | `pnpm outdated -r`                      | Lists newer versions vs lockfile / ranges for all workspace packages.                                |
-| Longer outdated view                         | `pnpm outdated -r --long`               | More columns if supported by your pnpm version.                                                      |
-| Update within current ranges                 | `pnpm -r update`                        | Bumps **lockfile** (and installs) to latest versions allowed by each **`package.json`** range.       |
-| One dependency to latest everywhere declared | `pnpm -r update <pkg>@latest`           | Example: `pnpm -r update @aws-sdk/client-s3@latest`.                                                 |
-| Single workspace package only                | `pnpm --filter <name> add <pkg>@latest` | Example: `pnpm --filter @dbt-tools/web add @aws-sdk/client-s3@latest`. Use `-D` for devDependencies. |
-| **All** deps to latest (risky)               | `pnpm -r update --latest`               | May upgrade **majors**; requires explicit maintainer approval before running in automation.          |
+| Goal                                         | Command (root)                          | Effect                                                                                                 |
+| -------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| See outdated deps                            | `pnpm outdated -r`                      | Lists newer versions vs lockfile / ranges for all workspace packages.                                  |
+| Longer outdated view                         | `pnpm outdated -r --long`               | More columns if supported by your pnpm version.                                                        |
+| Update within current ranges                 | `pnpm -r update`                        | Bumps **lockfile** (and installs) to latest versions allowed by each **`package.json`** range.         |
+| One dependency to latest everywhere declared | `pnpm -r update <pkg>@latest`           | Example: `pnpm -r update @aws-sdk/client-s3@latest`.                                                   |
+| Single workspace package only                | `pnpm --filter <name> add <pkg>@latest` | Example: `pnpm --filter dbt-artifacts-parser add @types/node@latest -D`. Use `-D` for devDependencies. |
+| **All** deps to latest (risky)               | `pnpm -r update --latest`               | May upgrade **majors**; requires explicit maintainer approval before running in automation.            |
 
 `-r` / `--recursive` applies the command to **all workspace packages** that participate in the operation (for `update`, packages that list the dependency; for bare `pnpm -r update`, all packages get their ranges honored).
 
@@ -27,8 +27,8 @@ pnpm -r update
 # 3) Push one library to latest across the whole workspace
 pnpm -r update @aws-sdk/client-s3@latest
 
-# 4) Only @dbt-tools/web, production dependency
-pnpm --filter @dbt-tools/web add react@latest
+# 4) Parser package dev dependency
+pnpm --filter dbt-artifacts-parser add @types/node@latest -D
 ```
 
 ## Lockfile and install
@@ -51,6 +51,6 @@ From repo root after upgrades:
 2. `pnpm coverage:report` (must exit 0; if coverage thresholds fail, add or adjust tests)
 3. `pnpm knip` (must exit 0)
 
-If web/tooling changed materially: `pnpm build` and/or `pnpm --filter @dbt-tools/web build`. E2E: `pnpm test:e2e` when UI or preview flows may break.
+If tooling changed materially: run `pnpm build`. This parser repository has no browser E2E suite.
 
 See [AGENTS.md](../../../../AGENTS.md) for full project context.

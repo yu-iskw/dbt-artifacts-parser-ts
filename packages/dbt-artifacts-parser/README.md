@@ -2,7 +2,7 @@
 
 TypeScript library for parsing dbt artifacts with full type safety and automatic version detection.
 
-This is a **standalone library** with no dependency on `@dbt-tools/*`. Use it whenever you need to read, validate, or type-check dbt JSON artifacts in TypeScript.
+This is a **standalone library**. Use it whenever you need to read, validate, or type-check dbt JSON artifacts in TypeScript.
 
 ## Supported Artifacts
 
@@ -265,9 +265,7 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the full developer guide.
 
 ## License
 
-**Apache License, Version 2.0.** See the full text in [`LICENSE`](./LICENSE) in this package (also published in the npm tarball). The same text is the canonical copy in [`../../LICENSES/Apache-2.0.txt`](../../LICENSES/Apache-2.0.txt).
-
-The `@dbt-tools/*` packages in this monorepo are under a separate source-available license; see [`../dbt-tools/LICENSE`](../dbt-tools/LICENSE). Repository-wide map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
+**Apache License, Version 2.0.** See the full text in [`LICENSE`](./LICENSE) in this package (also published in the npm tarball). Repository-wide map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
 
 ## Related Projects
 

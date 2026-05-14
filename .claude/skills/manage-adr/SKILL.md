@@ -51,7 +51,7 @@ Put these in code, package README, or config instead:
 ### Pointers
 
 - At most **one coarse pointer per concern** (package or subsystem), e.g. “timeline
-  focus-edge behavior in `@dbt-tools/web` Gantt stack”—not five relative paths.
+  parser schema-version detection behavior”—not five relative paths.
 
 ## Anti-patterns (do not)
 

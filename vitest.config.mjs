@@ -10,7 +10,6 @@ export default defineConfig({
   root: __dirname,
   resolve: {
     alias: {
-      "@web": path.resolve(__dirname, "packages/dbt-tools/web/src"),
       ...sharedAliases,
       "dbt-artifacts-parser/test-utils": path.resolve(
         __dirname,
@@ -19,19 +18,14 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
+    include: ["packages/**/*.test.ts"],
     exclude: [".trunk/**", "node_modules/**"],
     pool: "threads",
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "json"],
       include: ["packages/**/src/**/*.ts"],
-      exclude: [
-        "**/*.test.ts",
-        "**/*.test.tsx",
-        "**/*.generated.ts",
-        "**/test-utils.ts",
-      ],
+      exclude: ["**/*.test.ts", "**/*.generated.ts", "**/test-utils.ts"],
       reportsDirectory: "coverage",
       thresholds: {
         lines: 60,
