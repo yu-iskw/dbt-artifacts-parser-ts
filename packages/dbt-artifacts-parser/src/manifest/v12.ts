@@ -10,7 +10,16 @@ export interface WritableManifest {
    * The nodes defined in the dbt project and its dependencies
    */
   nodes: {
-    [k: string]: Seed | Analysis | SingularTest | HookNode | Model | SqlOperation | GenericTest | Snapshot | Function;
+    [k: string]:
+      | Seed
+      | Analysis
+      | SingularTest
+      | HookNode
+      | Model
+      | SqlOperation
+      | GenericTest
+      | Snapshot
+      | Function;
   };
   /**
    * The sources defined in the dbt project and its dependencies
@@ -318,7 +327,13 @@ export interface ColumnInfo {
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -625,12 +640,21 @@ export interface ColumnInfo1 {
       )
     | null;
   dimension?: ColumnDimension1 | ("categorical" | "time") | null;
-  entity?: ColumnEntity1 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity1
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint1 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -807,12 +831,21 @@ export interface ColumnInfo2 {
       )
     | null;
   dimension?: ColumnDimension2 | ("categorical" | "time") | null;
-  entity?: ColumnEntity2 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity2
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint2 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -1032,12 +1065,21 @@ export interface ColumnInfo3 {
       )
     | null;
   dimension?: ColumnDimension3 | ("categorical" | "time") | null;
-  entity?: ColumnEntity3 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity3
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint3 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -1276,12 +1318,21 @@ export interface ColumnInfo4 {
       )
     | null;
   dimension?: ColumnDimension4 | ("categorical" | "time") | null;
-  entity?: ColumnEntity4 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity4
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint4 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -1346,7 +1397,13 @@ export interface Contract3 {
   checksum?: string | null;
 }
 export interface ModelLevelConstraint {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -1621,12 +1678,21 @@ export interface ColumnInfo5 {
       )
     | null;
   dimension?: ColumnDimension5 | ("categorical" | "time") | null;
-  entity?: ColumnEntity5 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity5
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint5 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -1807,12 +1873,21 @@ export interface ColumnInfo6 {
       )
     | null;
   dimension?: ColumnDimension6 | ("categorical" | "time") | null;
-  entity?: ColumnEntity6 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity6
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint6 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -2053,12 +2128,21 @@ export interface ColumnInfo7 {
       )
     | null;
   dimension?: ColumnDimension7 | ("categorical" | "time") | null;
-  entity?: ColumnEntity7 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity7
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint7 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -2392,12 +2476,21 @@ export interface ColumnInfo8 {
       )
     | null;
   dimension?: ColumnDimension8 | ("categorical" | "time") | null;
-  entity?: ColumnEntity8 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity8
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint8 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -2716,12 +2809,21 @@ export interface ColumnInfo9 {
       )
     | null;
   dimension?: ColumnDimension9 | ("categorical" | "time") | null;
-  entity?: ColumnEntity9 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity9
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint9 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -3152,7 +3254,16 @@ export interface MetricTimeWindow8 {
 }
 export interface MetricAggregationParams {
   semantic_model: string;
-  agg: "sum" | "min" | "max" | "count_distinct" | "sum_boolean" | "average" | "percentile" | "median" | "count";
+  agg:
+    | "sum"
+    | "min"
+    | "max"
+    | "count_distinct"
+    | "sum_boolean"
+    | "average"
+    | "percentile"
+    | "median"
+    | "count";
   agg_params?: MeasureAggregationParameters | null;
   agg_time_dimension?: string | null;
   non_additive_dimension?: NonAdditiveDimension | null;
@@ -3387,12 +3498,21 @@ export interface ColumnInfo10 {
       )
     | null;
   dimension?: ColumnDimension10 | ("categorical" | "time") | null;
-  entity?: ColumnEntity10 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity10
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint10 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -3699,12 +3819,21 @@ export interface ColumnInfo11 {
       )
     | null;
   dimension?: ColumnDimension11 | ("categorical" | "time") | null;
-  entity?: ColumnEntity11 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity11
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint11 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -3881,12 +4010,21 @@ export interface ColumnInfo12 {
       )
     | null;
   dimension?: ColumnDimension12 | ("categorical" | "time") | null;
-  entity?: ColumnEntity12 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity12
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint12 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -4106,12 +4244,21 @@ export interface ColumnInfo13 {
       )
     | null;
   dimension?: ColumnDimension13 | ("categorical" | "time") | null;
-  entity?: ColumnEntity13 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity13
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint13 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -4350,12 +4497,21 @@ export interface ColumnInfo14 {
       )
     | null;
   dimension?: ColumnDimension14 | ("categorical" | "time") | null;
-  entity?: ColumnEntity14 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity14
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint14 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -4420,7 +4576,13 @@ export interface Contract11 {
   checksum?: string | null;
 }
 export interface ModelLevelConstraint1 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -4695,12 +4857,21 @@ export interface ColumnInfo15 {
       )
     | null;
   dimension?: ColumnDimension15 | ("categorical" | "time") | null;
-  entity?: ColumnEntity15 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity15
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint15 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -4881,12 +5052,21 @@ export interface ColumnInfo16 {
       )
     | null;
   dimension?: ColumnDimension16 | ("categorical" | "time") | null;
-  entity?: ColumnEntity16 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity16
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint16 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -5127,12 +5307,21 @@ export interface ColumnInfo17 {
       )
     | null;
   dimension?: ColumnDimension17 | ("categorical" | "time") | null;
-  entity?: ColumnEntity17 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity17
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint17 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -5466,12 +5655,21 @@ export interface ColumnInfo18 {
       )
     | null;
   dimension?: ColumnDimension18 | ("categorical" | "time") | null;
-  entity?: ColumnEntity18 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity18
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint18 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -5790,12 +5988,21 @@ export interface ColumnInfo19 {
       )
     | null;
   dimension?: ColumnDimension19 | ("categorical" | "time") | null;
-  entity?: ColumnEntity19 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity19
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint19 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
@@ -6171,7 +6378,16 @@ export interface MetricTimeWindow17 {
 }
 export interface MetricAggregationParams1 {
   semantic_model: string;
-  agg: "sum" | "min" | "max" | "count_distinct" | "sum_boolean" | "average" | "percentile" | "median" | "count";
+  agg:
+    | "sum"
+    | "min"
+    | "max"
+    | "count_distinct"
+    | "sum_boolean"
+    | "average"
+    | "percentile"
+    | "median"
+    | "count";
   agg_params?: MeasureAggregationParameters1 | null;
   agg_time_dimension?: string | null;
   non_additive_dimension?: NonAdditiveDimension1 | null;
@@ -6387,7 +6603,16 @@ export interface SemanticLayerElementConfig {
 }
 export interface Measure {
   name: string;
-  agg: "sum" | "min" | "max" | "count_distinct" | "sum_boolean" | "average" | "percentile" | "median" | "count";
+  agg:
+    | "sum"
+    | "min"
+    | "max"
+    | "count_distinct"
+    | "sum_boolean"
+    | "average"
+    | "percentile"
+    | "median"
+    | "count";
   description?: string | null;
   label?: string | null;
   create_metric?: boolean;
@@ -6743,7 +6968,16 @@ export interface SemanticLayerElementConfig3 {
 }
 export interface Measure1 {
   name: string;
-  agg: "sum" | "min" | "max" | "count_distinct" | "sum_boolean" | "average" | "percentile" | "median" | "count";
+  agg:
+    | "sum"
+    | "min"
+    | "max"
+    | "count_distinct"
+    | "sum_boolean"
+    | "average"
+    | "percentile"
+    | "median"
+    | "count";
   description?: string | null;
   label?: string | null;
   create_metric?: boolean;
@@ -7110,12 +7344,21 @@ export interface ColumnInfo20 {
       )
     | null;
   dimension?: ColumnDimension20 | ("categorical" | "time") | null;
-  entity?: ColumnEntity20 | ("foreign" | "natural" | "primary" | "unique") | null;
+  entity?:
+    | ColumnEntity20
+    | ("foreign" | "natural" | "primary" | "unique")
+    | null;
   doc_blocks?: string[];
   [k: string]: unknown;
 }
 export interface ColumnLevelConstraint20 {
-  type: "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  type:
+    | "check"
+    | "not_null"
+    | "unique"
+    | "primary_key"
+    | "foreign_key"
+    | "custom";
   name?: string | null;
   expression?: string | null;
   warn_unenforced?: boolean;
