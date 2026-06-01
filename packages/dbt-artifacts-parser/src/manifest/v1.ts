@@ -7,7 +7,7 @@
 /**
  * WritableManifest(metadata: dbt.contracts.graph.manifest.ManifestMetadata, nodes: Mapping[str, Union[dbt.contracts.graph.compiled.CompiledAnalysisNode, dbt.contracts.graph.compiled.CompiledDataTestNode, dbt.contracts.graph.compiled.CompiledModelNode, dbt.contracts.graph.compiled.CompiledHookNode, dbt.contracts.graph.compiled.CompiledRPCNode, dbt.contracts.graph.compiled.CompiledSchemaTestNode, dbt.contracts.graph.compiled.CompiledSeedNode, dbt.contracts.graph.compiled.CompiledSnapshotNode, dbt.contracts.graph.parsed.ParsedAnalysisNode, dbt.contracts.graph.parsed.ParsedDataTestNode, dbt.contracts.graph.parsed.ParsedHookNode, dbt.contracts.graph.parsed.ParsedModelNode, dbt.contracts.graph.parsed.ParsedRPCNode, dbt.contracts.graph.parsed.ParsedSchemaTestNode, dbt.contracts.graph.parsed.ParsedSeedNode, dbt.contracts.graph.parsed.ParsedSnapshotNode]], sources: Mapping[str, dbt.contracts.graph.parsed.ParsedSourceDefinition], macros: Mapping[str, dbt.contracts.graph.parsed.ParsedMacro], docs: Mapping[str, dbt.contracts.graph.parsed.ParsedDocumentation], exposures: Mapping[str, dbt.contracts.graph.parsed.ParsedExposure], selectors: Mapping[str, Any], disabled: Union[List[Union[dbt.contracts.graph.compiled.CompiledAnalysisNode, dbt.contracts.graph.compiled.CompiledDataTestNode, dbt.contracts.graph.compiled.CompiledModelNode, dbt.contracts.graph.compiled.CompiledHookNode, dbt.contracts.graph.compiled.CompiledRPCNode, dbt.contracts.graph.compiled.CompiledSchemaTestNode, dbt.contracts.graph.compiled.CompiledSeedNode, dbt.contracts.graph.compiled.CompiledSnapshotNode, dbt.contracts.graph.parsed.ParsedAnalysisNode, dbt.contracts.graph.parsed.ParsedDataTestNode, dbt.contracts.graph.parsed.ParsedHookNode, dbt.contracts.graph.parsed.ParsedModelNode, dbt.contracts.graph.parsed.ParsedRPCNode, dbt.contracts.graph.parsed.ParsedSchemaTestNode, dbt.contracts.graph.parsed.ParsedSeedNode, dbt.contracts.graph.parsed.ParsedSnapshotNode, dbt.contracts.graph.parsed.ParsedSourceDefinition]], NoneType], parent_map: Union[Dict[str, List[str]], NoneType], child_map: Union[Dict[str, List[str]], NoneType])
  */
-export interface Manifest {
+export interface HttpsSchemasGetdbtComDbtManifestV1Json {
   metadata: ManifestMetadata;
   /**
    * The nodes defined in the dbt project and its dependencies
@@ -129,7 +129,7 @@ export interface ManifestMetadata {
 /**
  * CompiledAnalysisNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledAnalysisNode".
  */
 export interface CompiledAnalysisNode {
@@ -174,7 +174,7 @@ export interface CompiledAnalysisNode {
 /**
  * FileHash(name: str, checksum: str)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "FileHash".
  */
 export interface FileHash {
@@ -211,7 +211,7 @@ export interface NodeConfig {
 /**
  * Hook(sql: str, transaction: bool = True, index: Union[int, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "Hook".
  */
 export interface Hook {
@@ -229,7 +229,7 @@ export interface DependsOn {
 /**
  * ColumnInfo(name: str, description: str = '', meta: Dict[str, Any] = <factory>, data_type: Union[str, NoneType] = None, quote: Union[bool, NoneType] = None, tags: List[str] = <factory>, _extra: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ColumnInfo".
  */
 export interface ColumnInfo {
@@ -252,7 +252,7 @@ export interface Docs {
 /**
  * InjectedCTE(id: str, sql: str)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "InjectedCTE".
  */
 export interface InjectedCTE {
@@ -262,7 +262,7 @@ export interface InjectedCTE {
 /**
  * CompiledDataTestNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledDataTestNode".
  */
 export interface CompiledDataTestNode {
@@ -348,7 +348,7 @@ export interface Docs1 {
 /**
  * CompiledModelNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledModelNode".
  */
 export interface CompiledModelNode {
@@ -433,7 +433,7 @@ export interface Docs2 {
 /**
  * CompiledHookNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, index: Union[int, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledHookNode".
  */
 export interface CompiledHookNode {
@@ -519,7 +519,7 @@ export interface Docs3 {
 /**
  * CompiledRPCNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledRPCNode".
  */
 export interface CompiledRPCNode {
@@ -604,7 +604,7 @@ export interface Docs4 {
 /**
  * CompiledSchemaTestNode(raw_sql: str, test_metadata: dbt.contracts.graph.parsed.TestMetadata, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, column_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledSchemaTestNode".
  */
 export interface CompiledSchemaTestNode {
@@ -651,7 +651,7 @@ export interface CompiledSchemaTestNode {
 /**
  * TestMetadata(namespace: Union[str, NoneType], name: str, kwargs: Dict[str, Any])
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "TestMetadata".
  */
 export interface TestMetadata {
@@ -705,7 +705,7 @@ export interface Docs5 {
 /**
  * CompiledSeedNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SeedConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledSeedNode".
  */
 export interface CompiledSeedNode {
@@ -791,7 +791,7 @@ export interface Docs6 {
 /**
  * CompiledSnapshotNode(raw_sql: str, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, compiled_sql: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CompiledSnapshotNode".
  */
 export interface CompiledSnapshotNode {
@@ -876,7 +876,7 @@ export interface Docs7 {
 /**
  * ParsedAnalysisNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedAnalysisNode".
  */
 export interface ParsedAnalysisNode {
@@ -956,7 +956,7 @@ export interface Docs8 {
 /**
  * ParsedDataTestNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedDataTestNode".
  */
 export interface ParsedDataTestNode {
@@ -1037,7 +1037,7 @@ export interface Docs9 {
 /**
  * ParsedHookNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, index: Union[int, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedHookNode".
  */
 export interface ParsedHookNode {
@@ -1118,7 +1118,7 @@ export interface Docs10 {
 /**
  * ParsedModelNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedModelNode".
  */
 export interface ParsedModelNode {
@@ -1198,7 +1198,7 @@ export interface Docs11 {
 /**
  * ParsedRPCNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedRPCNode".
  */
 export interface ParsedRPCNode {
@@ -1278,7 +1278,7 @@ export interface Docs12 {
 /**
  * ParsedSchemaTestNode(raw_sql: str, test_metadata: dbt.contracts.graph.parsed.TestMetadata, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, column_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedSchemaTestNode".
  */
 export interface ParsedSchemaTestNode {
@@ -1361,7 +1361,7 @@ export interface Docs13 {
 /**
  * ParsedSeedNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SeedConfig = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedSeedNode".
  */
 export interface ParsedSeedNode {
@@ -1442,7 +1442,7 @@ export interface Docs14 {
 /**
  * ParsedSnapshotNode(raw_sql: str, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: Union[ForwardRef('TimestampSnapshotConfig'), ForwardRef('CheckSnapshotConfig'), ForwardRef('GenericSnapshotConfig')], tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[Any]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedSnapshotNode".
  */
 export interface ParsedSnapshotNode {
@@ -1482,7 +1482,7 @@ export interface ParsedSnapshotNode {
 /**
  * TimestampSnapshotConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "TimestampSnapshotConfig".
  */
 export interface TimestampSnapshotConfig {
@@ -1517,7 +1517,7 @@ export interface TimestampSnapshotConfig {
 /**
  * CheckSnapshotConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "CheckSnapshotConfig".
  */
 export interface CheckSnapshotConfig {
@@ -1552,7 +1552,7 @@ export interface CheckSnapshotConfig {
 /**
  * GenericSnapshotConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "GenericSnapshotConfig".
  */
 export interface GenericSnapshotConfig {
@@ -1601,7 +1601,7 @@ export interface Docs15 {
 /**
  * ParsedSourceDefinition(fqn: List[str], database: Union[str, NoneType], schema: str, unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, source_name: str, source_description: str, loader: str, identifier: str, resource_type: dbt.node_types.NodeType, quoting: dbt.contracts.graph.unparsed.Quoting = <factory>, loaded_at_field: Union[str, NoneType] = None, freshness: Union[dbt.contracts.graph.unparsed.FreshnessThreshold, NoneType] = None, external: Union[dbt.contracts.graph.unparsed.ExternalTable, NoneType] = None, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, source_meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.SourceConfig = <factory>, patch_path: Union[pathlib.Path, NoneType] = None, unrendered_config: Dict[str, Any] = <factory>, relation_name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedSourceDefinition".
  */
 export interface ParsedSourceDefinition {
@@ -1653,7 +1653,7 @@ export interface Quoting {
 /**
  * FreshnessThreshold(warn_after: Union[dbt.contracts.graph.unparsed.Time, NoneType] = None, error_after: Union[dbt.contracts.graph.unparsed.Time, NoneType] = None, filter: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "FreshnessThreshold".
  */
 export interface FreshnessThreshold {
@@ -1664,7 +1664,7 @@ export interface FreshnessThreshold {
 /**
  * Time(count: int, period: dbt.contracts.graph.unparsed.TimePeriod)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "Time".
  */
 export interface Time {
@@ -1674,7 +1674,7 @@ export interface Time {
 /**
  * ExternalTable(_extra: Dict[str, Any] = <factory>, location: Union[str, NoneType] = None, file_format: Union[str, NoneType] = None, row_format: Union[str, NoneType] = None, tbl_properties: Union[str, NoneType] = None, partitions: Union[List[dbt.contracts.graph.unparsed.ExternalPartition], NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ExternalTable".
  */
 export interface ExternalTable {
@@ -1688,7 +1688,7 @@ export interface ExternalTable {
 /**
  * ExternalPartition(_extra: Dict[str, Any] = <factory>, name: str = '', description: str = '', data_type: str = '', meta: Dict[str, Any] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ExternalPartition".
  */
 export interface ExternalPartition {
@@ -1710,7 +1710,7 @@ export interface SourceConfig {
 /**
  * ParsedMacro(unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, macro_sql: str, resource_type: dbt.node_types.NodeType, tags: List[str] = <factory>, depends_on: dbt.contracts.graph.parsed.MacroDependsOn = <factory>, description: str = '', meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, arguments: List[dbt.contracts.graph.unparsed.MacroArgument] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedMacro".
  */
 export interface ParsedMacro {
@@ -1747,7 +1747,7 @@ export interface Docs16 {
 /**
  * MacroArgument(name: str, type: Union[str, NoneType] = None, description: str = '')
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "MacroArgument".
  */
 export interface MacroArgument {
@@ -1758,7 +1758,7 @@ export interface MacroArgument {
 /**
  * ParsedDocumentation(unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, block_contents: str)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedDocumentation".
  */
 export interface ParsedDocumentation {
@@ -1773,7 +1773,7 @@ export interface ParsedDocumentation {
 /**
  * ParsedExposure(fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, type: dbt.contracts.graph.unparsed.ExposureType, owner: dbt.contracts.graph.unparsed.ExposureOwner, resource_type: dbt.node_types.NodeType = <NodeType.Exposure: 'exposure'>, description: str = '', maturity: Union[dbt.contracts.graph.unparsed.MaturityType, NoneType] = None, url: Union[str, NoneType] = None, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ParsedExposure".
  */
 export interface ParsedExposure {
@@ -1808,7 +1808,7 @@ export interface ParsedExposure {
 /**
  * ExposureOwner(email: str, name: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ExposureOwner".
  */
 export interface ExposureOwner {
@@ -1825,7 +1825,7 @@ export interface DependsOn16 {
 /**
  * Metadata for the manifest.
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "ManifestMetadata".
  */
 export interface ManifestMetadata1 {
@@ -1856,7 +1856,7 @@ export interface ManifestMetadata1 {
 /**
  * NodeConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "NodeConfig".
  */
 export interface NodeConfig9 {
@@ -1886,7 +1886,7 @@ export interface NodeConfig9 {
 /**
  * DependsOn(macros: List[str] = <factory>, nodes: List[str] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "DependsOn".
  */
 export interface DependsOn17 {
@@ -1896,7 +1896,7 @@ export interface DependsOn17 {
 /**
  * Docs(show: bool = True)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "Docs".
  */
 export interface Docs17 {
@@ -1905,7 +1905,7 @@ export interface Docs17 {
 /**
  * TestConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "TestConfig".
  */
 export interface TestConfig4 {
@@ -1936,7 +1936,7 @@ export interface TestConfig4 {
 /**
  * SeedConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "SeedConfig".
  */
 export interface SeedConfig2 {
@@ -1967,7 +1967,7 @@ export interface SeedConfig2 {
 /**
  * Quoting(database: Union[bool, NoneType] = None, schema: Union[bool, NoneType] = None, identifier: Union[bool, NoneType] = None, column: Union[bool, NoneType] = None)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "Quoting".
  */
 export interface Quoting1 {
@@ -1979,7 +1979,7 @@ export interface Quoting1 {
 /**
  * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '0.19.0', generated_at: datetime.datetime = <factory>, invocation_id: Union[str, NoneType] = <factory>, env: Dict[str, str] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "FreshnessMetadata".
  */
 export interface FreshnessMetadata {
@@ -1994,7 +1994,7 @@ export interface FreshnessMetadata {
 /**
  * SourceFreshnessRuntimeError(unique_id: str, error: Union[str, int, NoneType], status: dbt.contracts.results.FreshnessErrorEnum)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "SourceFreshnessRuntimeError".
  */
 export interface SourceFreshnessRuntimeError {
@@ -2005,7 +2005,7 @@ export interface SourceFreshnessRuntimeError {
 /**
  * SourceFreshnessOutput(unique_id: str, max_loaded_at: datetime.datetime, snapshotted_at: datetime.datetime, max_loaded_at_time_ago_in_s: float, status: dbt.contracts.results.FreshnessStatus, criteria: dbt.contracts.graph.unparsed.FreshnessThreshold, adapter_response: Dict[str, Any])
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "SourceFreshnessOutput".
  */
 export interface SourceFreshnessOutput {
@@ -2022,7 +2022,7 @@ export interface SourceFreshnessOutput {
 /**
  * SourceConfig(*args, **kwds)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "SourceConfig".
  */
 export interface SourceConfig1 {
@@ -2032,7 +2032,7 @@ export interface SourceConfig1 {
 /**
  * MacroDependsOn(macros: List[str] = <factory>)
  *
- * This interface was referenced by `Manifest`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV1Json`'s JSON-Schema
  * via the `definition` "MacroDependsOn".
  */
 export interface MacroDependsOn1 {

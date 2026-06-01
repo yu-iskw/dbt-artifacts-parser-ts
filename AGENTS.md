@@ -85,13 +85,14 @@ From the repository root:
 - **Project rules:** [`.cursor/rules/`](.cursor/rules/) (`.mdc` files) — stack, quality gates, and a short no-secrets invariant. Prefer concise rules; narrative and cross-tool detail stay in this file.
 - **Agent sandbox:** [`.cursor/sandbox.json`](.cursor/sandbox.json) applies to **Cursor’s agent only** (not Claude Code or Codex). Network policy is **default deny** with an allowlist aligned with [`.claude/settings.json`](.claude/settings.json) `sandbox.network.allowedDomains`.
 
-| Host pattern              | Purpose                            |
-| ------------------------- | ---------------------------------- |
-| `registry.npmjs.org`      | pnpm/npm package installs          |
-| `registry.yarnpkg.com`    | Yarn compatibility                 |
-| `*.github.com`            | GitHub API, git HTTPS, releases    |
-| `*.githubusercontent.com` | Raw assets from GitHub             |
-| `*.googleapis.com`        | Google API clients used by tooling |
+| Host pattern              | Purpose                                                   |
+| ------------------------- | --------------------------------------------------------- |
+| `registry.npmjs.org`      | pnpm/npm package installs                                 |
+| `registry.yarnpkg.com`    | Yarn compatibility                                        |
+| `*.github.com`            | GitHub API, git HTTPS, releases                           |
+| `*.githubusercontent.com` | Raw assets from GitHub                                    |
+| `*.googleapis.com`        | Google API clients used by tooling                        |
+| `schemas.getdbt.com`      | dbt artifact JSON schema downloads (`pnpm fetch:schemas`) |
 
 When adding a host (for example a private registry), update **both** [`.cursor/sandbox.json`](.cursor/sandbox.json) and Claude’s `sandbox.network.allowedDomains` in [`.claude/settings.json`](.claude/settings.json), and add a row to this table.
 

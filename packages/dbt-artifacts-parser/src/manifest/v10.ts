@@ -609,7 +609,7 @@ export interface ModelNode {
   extra_ctes_injected?: boolean;
   extra_ctes?: InjectedCTE[];
   contract?: Contract3;
-  access?: "protected" | "private" | "public";
+  access?: "private" | "protected" | "public";
   constraints?: ModelLevelConstraint[];
   version?: string | number | null;
   latest_version?: string | number | null;
@@ -1573,7 +1573,7 @@ export interface MetricTypeParams {
   metrics?: MetricInput[] | null;
 }
 /**
- * MetricInputMeasure(name: str, filter: Union[dbt.contracts.graph.nodes.WhereFilter, NoneType] = None, alias: Union[str, NoneType] = None)
+ * MetricInputMeasure(name: str, filter: Union[dbt.contracts.graph.nodes.WhereFilter, NoneType] = None, alias: Union[str, NoneType] = None, join_to_timespine: bool = False, fill_nulls_with: Union[int, NoneType] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV10Json`'s JSON-Schema
  * via the `definition` "MetricInputMeasure".
@@ -1582,6 +1582,8 @@ export interface MetricInputMeasure {
   name: string;
   filter?: WhereFilter | null;
   alias?: string | null;
+  join_to_timespine?: boolean;
+  fill_nulls_with?: number | null;
 }
 /**
  * WhereFilter(where_sql_template: str)
@@ -1674,7 +1676,7 @@ export interface Group {
   owner: Owner;
 }
 /**
- * SemanticModel(name: str, resource_type: dbt.node_types.NodeType, package_name: str, path: str, original_file_path: str, unique_id: str, fqn: List[str], model: str, node_relation: Union[dbt.contracts.graph.nodes.NodeRelation, NoneType], description: Union[str, NoneType] = None, defaults: Union[dbt.contracts.graph.semantic_models.Defaults, NoneType] = None, entities: Sequence[dbt.contracts.graph.semantic_models.Entity] = <factory>, measures: Sequence[dbt.contracts.graph.semantic_models.Measure] = <factory>, dimensions: Sequence[dbt.contracts.graph.semantic_models.Dimension] = <factory>, metadata: Union[dbt.contracts.graph.semantic_models.SourceFileMetadata, NoneType] = None, depends_on: dbt.contracts.graph.nodes.DependsOn = <factory>, refs: List[dbt.contracts.graph.nodes.RefArgs] = <factory>, created_at: float = <factory>, config: dbt.contracts.graph.model_config.SemanticModelConfig = <factory>, primary_entity: Union[str, NoneType] = None)
+ * SemanticModel(name: str, resource_type: dbt.node_types.NodeType, package_name: str, path: str, original_file_path: str, unique_id: str, fqn: List[str], model: str, node_relation: Union[dbt.contracts.graph.nodes.NodeRelation, NoneType], description: Union[str, NoneType] = None, label: Union[str, NoneType] = None, defaults: Union[dbt.contracts.graph.semantic_models.Defaults, NoneType] = None, entities: Sequence[dbt.contracts.graph.semantic_models.Entity] = <factory>, measures: Sequence[dbt.contracts.graph.semantic_models.Measure] = <factory>, dimensions: Sequence[dbt.contracts.graph.semantic_models.Dimension] = <factory>, metadata: Union[dbt.contracts.graph.semantic_models.SourceFileMetadata, NoneType] = None, depends_on: dbt.contracts.graph.nodes.DependsOn = <factory>, refs: List[dbt.contracts.graph.nodes.RefArgs] = <factory>, created_at: float = <factory>, config: dbt.contracts.graph.model_config.SemanticModelConfig = <factory>, primary_entity: Union[str, NoneType] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV10Json`'s JSON-Schema
  * via the `definition` "SemanticModel".
@@ -1705,6 +1707,7 @@ export interface SemanticModel {
   model: string;
   node_relation?: NodeRelation | null;
   description?: string | null;
+  label?: string | null;
   defaults?: Defaults | null;
   entities?: Entity[];
   measures?: Measure[];
@@ -1738,7 +1741,7 @@ export interface Defaults {
   agg_time_dimension?: string | null;
 }
 /**
- * Entity(name: str, type: dbt_semantic_interfaces.type_enums.entity_type.EntityType, description: Union[str, NoneType] = None, role: Union[str, NoneType] = None, expr: Union[str, NoneType] = None)
+ * Entity(name: str, type: dbt_semantic_interfaces.type_enums.entity_type.EntityType, description: Union[str, NoneType] = None, label: Union[str, NoneType] = None, role: Union[str, NoneType] = None, expr: Union[str, NoneType] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV10Json`'s JSON-Schema
  * via the `definition` "Entity".
@@ -1747,11 +1750,12 @@ export interface Entity {
   name: string;
   type: "foreign" | "natural" | "primary" | "unique";
   description?: string | null;
+  label?: string | null;
   role?: string | null;
   expr?: string | null;
 }
 /**
- * Measure(name: str, agg: dbt_semantic_interfaces.type_enums.aggregation_type.AggregationType, description: Union[str, NoneType] = None, create_metric: bool = False, expr: Union[str, NoneType] = None, agg_params: Union[dbt.contracts.graph.semantic_models.MeasureAggregationParameters, NoneType] = None, non_additive_dimension: Union[dbt.contracts.graph.semantic_models.NonAdditiveDimension, NoneType] = None, agg_time_dimension: Union[str, NoneType] = None)
+ * Measure(name: str, agg: dbt_semantic_interfaces.type_enums.aggregation_type.AggregationType, description: Union[str, NoneType] = None, label: Union[str, NoneType] = None, create_metric: bool = False, expr: Union[str, NoneType] = None, agg_params: Union[dbt.contracts.graph.semantic_models.MeasureAggregationParameters, NoneType] = None, non_additive_dimension: Union[dbt.contracts.graph.semantic_models.NonAdditiveDimension, NoneType] = None, agg_time_dimension: Union[str, NoneType] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV10Json`'s JSON-Schema
  * via the `definition` "Measure".
@@ -1769,6 +1773,7 @@ export interface Measure {
     | "median"
     | "count";
   description?: string | null;
+  label?: string | null;
   create_metric?: boolean;
   expr?: string | null;
   agg_params?: MeasureAggregationParameters | null;
@@ -1807,7 +1812,7 @@ export interface NonAdditiveDimension {
   window_groupings: string[];
 }
 /**
- * Dimension(name: str, type: dbt_semantic_interfaces.type_enums.dimension_type.DimensionType, description: Union[str, NoneType] = None, is_partition: bool = False, type_params: Union[dbt.contracts.graph.semantic_models.DimensionTypeParams, NoneType] = None, expr: Union[str, NoneType] = None, metadata: Union[dbt.contracts.graph.semantic_models.SourceFileMetadata, NoneType] = None)
+ * Dimension(name: str, type: dbt_semantic_interfaces.type_enums.dimension_type.DimensionType, description: Union[str, NoneType] = None, label: Union[str, NoneType] = None, is_partition: bool = False, type_params: Union[dbt.contracts.graph.semantic_models.DimensionTypeParams, NoneType] = None, expr: Union[str, NoneType] = None, metadata: Union[dbt.contracts.graph.semantic_models.SourceFileMetadata, NoneType] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV10Json`'s JSON-Schema
  * via the `definition` "Dimension".
@@ -1816,6 +1821,7 @@ export interface Dimension {
   name: string;
   type: "categorical" | "time";
   description?: string | null;
+  label?: string | null;
   is_partition?: boolean;
   type_params?: DimensionTypeParams | null;
   expr?: string | null;

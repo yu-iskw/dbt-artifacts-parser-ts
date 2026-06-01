@@ -34,7 +34,8 @@
         "registry.yarnpkg.com",
         "*.github.com",
         "*.githubusercontent.com",
-        "*.googleapis.com"
+        "*.googleapis.com",
+        "schemas.getdbt.com"
       ]
     }
   },

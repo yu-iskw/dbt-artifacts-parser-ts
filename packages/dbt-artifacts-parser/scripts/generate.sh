@@ -102,27 +102,17 @@ process_category() {
 			continue
 		fi
 
+		# json2ts may prepend a file-level eslint-disable; strip it for repo lint rules.
+		if [[ -f ${output_file} ]] && head -n 1 "${output_file}" | grep -q '^/\* eslint-disable \*/'; then
+			tail -n +2 "${output_file}" >"${output_file}.tmp" && mv "${output_file}.tmp" "${output_file}"
+		fi
+
 		if [[ -f ${output_file} ]]; then
 			versions+=("v${version}")
 		fi
 	done
 
-	# Sort versions numerically
-	mapfile -t versions < <(printf '%s\n' "${versions[@]}" | sort -V || true)
-
-	# Generate index.ts for this category
-	# Export only the latest version to avoid naming conflicts
-	# Users can import specific versions directly: import { Type } from './manifest/v12'
-	if [[ ${#versions[@]} -gt 0 ]]; then
-		local index_file="${output_dir}/index.ts"
-		echo -e "  Generating ${index_file}"
-		local latest_version="${versions[-1]}"
-		{
-			echo "// Export latest version by default"
-			echo "// To use a specific version, import directly: import { Type } from './${latest_version}'"
-			echo "export * from './${latest_version}';"
-		} >"${index_file}"
-	fi
+	# Category index.ts (parseArtifact, unions, etc.) is hand-maintained; do not overwrite.
 }
 
 # Process each category

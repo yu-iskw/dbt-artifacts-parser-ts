@@ -1777,7 +1777,7 @@ export interface Quoting1 {
   column?: boolean | null;
 }
 /**
- * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '1.5.0b5', generated_at: datetime.datetime = <factory>, invocation_id: Optional[str] = <factory>, env: Dict[str, str] = <factory>)
+ * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '1.6.0a1', generated_at: datetime.datetime = <factory>, invocation_id: Optional[str] = <factory>, env: Dict[str, str] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV9Json`'s JSON-Schema
  * via the `definition` "FreshnessMetadata".

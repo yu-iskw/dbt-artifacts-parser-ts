@@ -7,7 +7,7 @@
 /**
  * RunResultsArtifact(metadata: dbt.contracts.util.BaseArtifactMetadata, results: Sequence[dbt.contracts.results.RunResultOutput], elapsed_time: float, args: Dict[str, Any] = <factory>)
  */
-export interface RunResults {
+export interface HttpsSchemasGetdbtComDbtRunResultsV2Json {
   metadata: BaseArtifactMetadata;
   results: RunResultOutput[];
   elapsed_time: number;
@@ -18,7 +18,7 @@ export interface RunResults {
 /**
  * BaseArtifactMetadata(dbt_schema_version: str, dbt_version: str = '0.20.0rc1', generated_at: datetime.datetime = <factory>, invocation_id: Union[str, NoneType] = <factory>, env: Dict[str, str] = <factory>)
  *
- * This interface was referenced by `RunResults`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtRunResultsV2Json`'s JSON-Schema
  * via the `definition` "BaseArtifactMetadata".
  */
 export interface BaseArtifactMetadata {
@@ -33,7 +33,7 @@ export interface BaseArtifactMetadata {
 /**
  * RunResultOutput(status: Union[dbt.contracts.results.RunStatus, dbt.contracts.results.TestStatus, dbt.contracts.results.FreshnessStatus], timing: List[dbt.contracts.results.TimingInfo], thread_id: str, execution_time: float, adapter_response: Dict[str, Any], message: Union[str, NoneType], failures: Union[int, NoneType], unique_id: str)
  *
- * This interface was referenced by `RunResults`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtRunResultsV2Json`'s JSON-Schema
  * via the `definition` "RunResultOutput".
  */
 export interface RunResultOutput {
@@ -54,7 +54,7 @@ export interface RunResultOutput {
 /**
  * TimingInfo(name: str, started_at: Union[datetime.datetime, NoneType] = None, completed_at: Union[datetime.datetime, NoneType] = None)
  *
- * This interface was referenced by `RunResults`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtRunResultsV2Json`'s JSON-Schema
  * via the `definition` "TimingInfo".
  */
 export interface TimingInfo {

@@ -51,6 +51,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "fetch:schemas": "bash scripts/fetch-schemas.sh",
     "gen:types": "bash scripts/generate.sh",
     "prepack": "npm run build",
     "test": "vitest run",

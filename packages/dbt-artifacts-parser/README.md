@@ -255,7 +255,10 @@ pnpm build
 # Run tests
 pnpm test
 
-# Regenerate TypeScript types from JSON schemas
+# Download JSON schemas from schemas.getdbt.com (pinned in scripts/schemas.json)
+pnpm fetch:schemas
+
+# Regenerate TypeScript types from vendored JSON schemas
 pnpm gen:types
 ```
 
@@ -271,4 +274,4 @@ The `@dbt-tools/*` packages in this monorepo are under a separate source-availab
 
 ## Related Projects
 
-Inspired by the Python [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) library.
+Inspired by the Python [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) library. JSON schemas are vendored from [schemas.getdbt.com](https://schemas.getdbt.com/) (the same canonical source as the Python package’s schema download workflow).

@@ -5,7 +5,7 @@
  */
 
 /**
- * WritableManifest(metadata: dbt.contracts.graph.manifest.ManifestMetadata, nodes: Mapping[str, Union[dbt.contracts.graph.compiled.CompiledAnalysisNode, dbt.contracts.graph.compiled.CompiledSingularTestNode, dbt.contracts.graph.compiled.CompiledModelNode, dbt.contracts.graph.compiled.CompiledHookNode, dbt.contracts.graph.compiled.CompiledRPCNode, dbt.contracts.graph.compiled.CompiledSqlNode, dbt.contracts.graph.compiled.CompiledGenericTestNode, dbt.contracts.graph.compiled.CompiledSeedNode, dbt.contracts.graph.compiled.CompiledSnapshotNode, dbt.contracts.graph.parsed.ParsedAnalysisNode, dbt.contracts.graph.parsed.ParsedSingularTestNode, dbt.contracts.graph.parsed.ParsedHookNode, dbt.contracts.graph.parsed.ParsedModelNode, dbt.contracts.graph.parsed.ParsedRPCNode, dbt.contracts.graph.parsed.ParsedSqlNode, dbt.contracts.graph.parsed.ParsedGenericTestNode, dbt.contracts.graph.parsed.ParsedSeedNode, dbt.contracts.graph.parsed.ParsedSnapshotNode]], sources: Mapping[str, dbt.contracts.graph.parsed.ParsedSourceDefinition], macros: Mapping[str, dbt.contracts.graph.parsed.ParsedMacro], docs: Mapping[str, dbt.contracts.graph.parsed.ParsedDocumentation], exposures: Mapping[str, dbt.contracts.graph.parsed.ParsedExposure], metrics: Mapping[str, dbt.contracts.graph.parsed.ParsedMetric], selectors: Mapping[str, Any], disabled: Union[Mapping[str, List[Union[dbt.contracts.graph.compiled.CompiledAnalysisNode, dbt.contracts.graph.compiled.CompiledSingularTestNode, dbt.contracts.graph.compiled.CompiledModelNode, dbt.contracts.graph.compiled.CompiledHookNode, dbt.contracts.graph.compiled.CompiledRPCNode, dbt.contracts.graph.compiled.CompiledSqlNode, dbt.contracts.graph.compiled.CompiledGenericTestNode, dbt.contracts.graph.compiled.CompiledSeedNode, dbt.contracts.graph.compiled.CompiledSnapshotNode, dbt.contracts.graph.parsed.ParsedAnalysisNode, dbt.contracts.graph.parsed.ParsedSingularTestNode, dbt.contracts.graph.parsed.ParsedHookNode, dbt.contracts.graph.parsed.ParsedModelNode, dbt.contracts.graph.parsed.ParsedRPCNode, dbt.contracts.graph.parsed.ParsedSqlNode, dbt.contracts.graph.parsed.ParsedGenericTestNode, dbt.contracts.graph.parsed.ParsedSeedNode, dbt.contracts.graph.parsed.ParsedSnapshotNode, dbt.contracts.graph.parsed.ParsedSourceDefinition]]], NoneType], parent_map: Union[Dict[str, List[str]], NoneType], child_map: Union[Dict[str, List[str]], NoneType])
+ * WritableManifest(metadata: dbt.contracts.graph.manifest.ManifestMetadata, nodes: Mapping[str, Union[dbt.contracts.graph.compiled.CompiledAnalysisNode, dbt.contracts.graph.compiled.CompiledSingularTestNode, dbt.contracts.graph.compiled.CompiledModelNode, dbt.contracts.graph.compiled.CompiledHookNode, dbt.contracts.graph.compiled.CompiledRPCNode, dbt.contracts.graph.compiled.CompiledSqlNode, dbt.contracts.graph.compiled.CompiledGenericTestNode, dbt.contracts.graph.compiled.CompiledSeedNode, dbt.contracts.graph.compiled.CompiledSnapshotNode, dbt.contracts.graph.parsed.ParsedAnalysisNode, dbt.contracts.graph.parsed.ParsedSingularTestNode, dbt.contracts.graph.parsed.ParsedHookNode, dbt.contracts.graph.parsed.ParsedModelNode, dbt.contracts.graph.parsed.ParsedRPCNode, dbt.contracts.graph.parsed.ParsedSqlNode, dbt.contracts.graph.parsed.ParsedGenericTestNode, dbt.contracts.graph.parsed.ParsedSeedNode, dbt.contracts.graph.parsed.ParsedSnapshotNode]], sources: Mapping[str, dbt.contracts.graph.parsed.ParsedSourceDefinition], macros: Mapping[str, dbt.contracts.graph.parsed.ParsedMacro], docs: Mapping[str, dbt.contracts.graph.parsed.ParsedDocumentation], exposures: Mapping[str, dbt.contracts.graph.parsed.ParsedExposure], metrics: Mapping[str, dbt.contracts.graph.parsed.ParsedMetric], selectors: Mapping[str, Any], disabled: Optional[Mapping[str, List[Union[dbt.contracts.graph.compiled.CompiledAnalysisNode, dbt.contracts.graph.compiled.CompiledSingularTestNode, dbt.contracts.graph.compiled.CompiledModelNode, dbt.contracts.graph.compiled.CompiledHookNode, dbt.contracts.graph.compiled.CompiledRPCNode, dbt.contracts.graph.compiled.CompiledSqlNode, dbt.contracts.graph.compiled.CompiledGenericTestNode, dbt.contracts.graph.compiled.CompiledSeedNode, dbt.contracts.graph.compiled.CompiledSnapshotNode, dbt.contracts.graph.parsed.ParsedAnalysisNode, dbt.contracts.graph.parsed.ParsedSingularTestNode, dbt.contracts.graph.parsed.ParsedHookNode, dbt.contracts.graph.parsed.ParsedModelNode, dbt.contracts.graph.parsed.ParsedRPCNode, dbt.contracts.graph.parsed.ParsedSqlNode, dbt.contracts.graph.parsed.ParsedGenericTestNode, dbt.contracts.graph.parsed.ParsedSeedNode, dbt.contracts.graph.parsed.ParsedSnapshotNode, dbt.contracts.graph.parsed.ParsedSourceDefinition]]]], parent_map: Optional[Dict[str, List[str]]], child_map: Optional[Dict[str, List[str]]])
  */
 export interface HttpsSchemasGetdbtComDbtManifestV7Json {
   metadata: ManifestMetadata;
@@ -137,7 +137,7 @@ export interface ManifestMetadata {
   adapter_type?: string | null;
 }
 /**
- * CompiledAnalysisNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledAnalysisNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledAnalysisNode".
@@ -199,7 +199,7 @@ export interface FileHash {
   checksum: string;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig {
   enabled?: boolean;
@@ -234,7 +234,7 @@ export interface NodeConfig {
   [k: string]: unknown;
 }
 /**
- * Hook(sql: str, transaction: bool = True, index: Union[int, NoneType] = None)
+ * Hook(sql: str, transaction: bool = True, index: Optional[int] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "Hook".
@@ -245,7 +245,7 @@ export interface Hook {
   index?: number | null;
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs {
   show?: boolean;
@@ -259,7 +259,7 @@ export interface DependsOn {
   nodes?: string[];
 }
 /**
- * ColumnInfo(name: str, description: str = '', meta: Dict[str, Any] = <factory>, data_type: Union[str, NoneType] = None, quote: Union[bool, NoneType] = None, tags: List[str] = <factory>, _extra: Dict[str, Any] = <factory>)
+ * ColumnInfo(name: str, description: str = '', meta: Dict[str, Any] = <factory>, data_type: Optional[str] = None, quote: Optional[bool] = None, tags: List[str] = <factory>, _extra: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ColumnInfo".
@@ -276,7 +276,7 @@ export interface ColumnInfo {
   [k: string]: unknown;
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs1 {
   show?: boolean;
@@ -293,7 +293,7 @@ export interface InjectedCTE {
   sql: string;
 }
 /**
- * CompiledSingularTestNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledSingularTestNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledSingularTestNode".
@@ -345,7 +345,7 @@ export interface CompiledSingularTestNode {
   relation_name?: string | null;
 }
 /**
- * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = 'dbt_test__audit', database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Union[bool, NoneType] = None, where: Union[str, NoneType] = None, limit: Union[int, NoneType] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
+ * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = 'dbt_test__audit', database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Optional[bool] = None, where: Optional[str] = None, limit: Optional[int] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
  */
 export interface TestConfig {
   enabled?: boolean;
@@ -374,14 +374,14 @@ export interface DependsOn1 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs2 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledModelNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledModelNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledModelNode".
@@ -433,7 +433,7 @@ export interface CompiledModelNode {
   relation_name?: string | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig1 {
   enabled?: boolean;
@@ -475,14 +475,14 @@ export interface DependsOn2 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs3 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledHookNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None, index: Union[int, NoneType] = None)
+ * CompiledHookNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None, index: Optional[int] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledHookNode".
@@ -535,7 +535,7 @@ export interface CompiledHookNode {
   index?: number | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig2 {
   enabled?: boolean;
@@ -577,14 +577,14 @@ export interface DependsOn3 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs4 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledRPCNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledRPCNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledRPCNode".
@@ -636,7 +636,7 @@ export interface CompiledRPCNode {
   relation_name?: string | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig3 {
   enabled?: boolean;
@@ -678,14 +678,14 @@ export interface DependsOn4 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs5 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledSqlNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledSqlNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledSqlNode".
@@ -737,7 +737,7 @@ export interface CompiledSqlNode {
   relation_name?: string | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig4 {
   enabled?: boolean;
@@ -779,14 +779,14 @@ export interface DependsOn5 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs6 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledGenericTestNode(test_metadata: dbt.contracts.graph.parsed.TestMetadata, compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None, column_name: Union[str, NoneType] = None, file_key_name: Union[str, NoneType] = None)
+ * CompiledGenericTestNode(test_metadata: dbt.contracts.graph.parsed.TestMetadata, compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None, column_name: Optional[str] = None, file_key_name: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledGenericTestNode".
@@ -841,7 +841,7 @@ export interface CompiledGenericTestNode {
   file_key_name?: string | null;
 }
 /**
- * TestMetadata(name: str, kwargs: Dict[str, Any] = <factory>, namespace: Union[str, NoneType] = None)
+ * TestMetadata(name: str, kwargs: Dict[str, Any] = <factory>, namespace: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "TestMetadata".
@@ -854,7 +854,7 @@ export interface TestMetadata {
   namespace?: string | null;
 }
 /**
- * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = 'dbt_test__audit', database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Union[bool, NoneType] = None, where: Union[str, NoneType] = None, limit: Union[int, NoneType] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
+ * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = 'dbt_test__audit', database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Optional[bool] = None, where: Optional[str] = None, limit: Optional[int] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
  */
 export interface TestConfig1 {
   enabled?: boolean;
@@ -883,14 +883,14 @@ export interface DependsOn6 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs7 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledSeedNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SeedConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledSeedNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SeedConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledSeedNode".
@@ -942,7 +942,7 @@ export interface CompiledSeedNode {
   relation_name?: string | null;
 }
 /**
- * SeedConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'seed', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, quote_columns: Union[bool, NoneType] = None)
+ * SeedConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'seed', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, quote_columns: Optional[bool] = None)
  */
 export interface SeedConfig {
   enabled?: boolean;
@@ -978,7 +978,7 @@ export interface SeedConfig {
   [k: string]: unknown;
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs8 {
   show?: boolean;
@@ -992,14 +992,14 @@ export interface DependsOn7 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs9 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * CompiledSnapshotNode(compiled: bool, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Union[str, NoneType] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Union[str, NoneType] = None, _pre_injected_sql: Union[str, NoneType] = None)
+ * CompiledSnapshotNode(compiled: bool, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, compiled_code: Optional[str] = None, extra_ctes_injected: bool = False, extra_ctes: List[dbt.contracts.graph.compiled.InjectedCTE] = <factory>, relation_name: Optional[str] = None, _pre_injected_sql: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "CompiledSnapshotNode".
@@ -1051,7 +1051,7 @@ export interface CompiledSnapshotNode {
   relation_name?: string | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig5 {
   enabled?: boolean;
@@ -1093,14 +1093,14 @@ export interface DependsOn8 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs10 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedAnalysisNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedAnalysisNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedAnalysisNode".
@@ -1147,7 +1147,7 @@ export interface ParsedAnalysisNode {
   };
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig6 {
   enabled?: boolean;
@@ -1189,14 +1189,14 @@ export interface DependsOn9 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs11 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedSingularTestNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedSingularTestNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedSingularTestNode".
@@ -1243,7 +1243,7 @@ export interface ParsedSingularTestNode {
   };
 }
 /**
- * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = 'dbt_test__audit', database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Union[bool, NoneType] = None, where: Union[str, NoneType] = None, limit: Union[int, NoneType] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
+ * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = 'dbt_test__audit', database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Optional[bool] = None, where: Optional[str] = None, limit: Optional[int] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
  */
 export interface TestConfig2 {
   enabled?: boolean;
@@ -1272,14 +1272,14 @@ export interface DependsOn10 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs12 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedHookNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, index: Union[int, NoneType] = None)
+ * ParsedHookNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, index: Optional[int] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedHookNode".
@@ -1327,7 +1327,7 @@ export interface ParsedHookNode {
   index?: number | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig7 {
   enabled?: boolean;
@@ -1369,14 +1369,14 @@ export interface DependsOn11 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs13 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedModelNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedModelNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedModelNode".
@@ -1423,7 +1423,7 @@ export interface ParsedModelNode {
   };
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig8 {
   enabled?: boolean;
@@ -1465,14 +1465,14 @@ export interface DependsOn12 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs14 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedRPCNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedRPCNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedRPCNode".
@@ -1519,7 +1519,7 @@ export interface ParsedRPCNode {
   };
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig9 {
   enabled?: boolean;
@@ -1561,14 +1561,14 @@ export interface DependsOn13 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs15 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedSqlNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedSqlNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.NodeConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedSqlNode".
@@ -1615,7 +1615,7 @@ export interface ParsedSqlNode {
   };
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  */
 export interface NodeConfig10 {
   enabled?: boolean;
@@ -1657,14 +1657,14 @@ export interface DependsOn14 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs16 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedGenericTestNode(test_metadata: dbt.contracts.graph.parsed.TestMetadata, database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, column_name: Union[str, NoneType] = None, file_key_name: Union[str, NoneType] = None)
+ * ParsedGenericTestNode(test_metadata: dbt.contracts.graph.parsed.TestMetadata, database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.TestConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>, column_name: Optional[str] = None, file_key_name: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedGenericTestNode".
@@ -1714,7 +1714,7 @@ export interface ParsedGenericTestNode {
   file_key_name?: string | null;
 }
 /**
- * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = 'dbt_test__audit', database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Union[bool, NoneType] = None, where: Union[str, NoneType] = None, limit: Union[int, NoneType] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
+ * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = 'dbt_test__audit', database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Optional[bool] = None, where: Optional[str] = None, limit: Optional[int] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
  */
 export interface TestConfig3 {
   enabled?: boolean;
@@ -1743,14 +1743,14 @@ export interface DependsOn15 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs17 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedSeedNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SeedConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedSeedNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SeedConfig = <factory>, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedSeedNode".
@@ -1797,7 +1797,7 @@ export interface ParsedSeedNode {
   };
 }
 /**
- * SeedConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'seed', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, quote_columns: Union[bool, NoneType] = None)
+ * SeedConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'seed', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, quote_columns: Optional[bool] = None)
  */
 export interface SeedConfig1 {
   enabled?: boolean;
@@ -1840,14 +1840,14 @@ export interface DependsOn16 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs18 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedSnapshotNode(database: Union[str, NoneType], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SnapshotConfig, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, compiled_path: Union[str, NoneType] = None, build_path: Union[str, NoneType] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
+ * ParsedSnapshotNode(database: Optional[str], schema: str, fqn: List[str], unique_id: str, raw_code: str, language: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, resource_type: dbt.node_types.NodeType, alias: str, checksum: dbt.contracts.files.FileHash, config: dbt.contracts.graph.model_config.SnapshotConfig, _event_status: Dict[str, Any] = <factory>, tags: List[str] = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, compiled_path: Optional[str] = None, build_path: Optional[str] = None, deferred: bool = False, unrendered_config: Dict[str, Any] = <factory>, created_at: float = <factory>, config_call_dict: Dict[str, Any] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedSnapshotNode".
@@ -1894,7 +1894,7 @@ export interface ParsedSnapshotNode {
   };
 }
 /**
- * SnapshotConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'snapshot', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, strategy: Union[str, NoneType] = None, target_schema: Union[str, NoneType] = None, target_database: Union[str, NoneType] = None, updated_at: Union[str, NoneType] = None, check_cols: Union[str, List[str], NoneType] = None)
+ * SnapshotConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'snapshot', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Optional[str] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, strategy: Optional[str] = None, target_schema: Optional[str] = None, target_database: Optional[str] = None, updated_at: Optional[str] = None, check_cols: Union[str, List[str], NoneType] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "SnapshotConfig".
@@ -1937,7 +1937,7 @@ export interface SnapshotConfig {
   [k: string]: unknown;
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs19 {
   show?: boolean;
@@ -1951,14 +1951,14 @@ export interface DependsOn17 {
   nodes?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs20 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * ParsedSourceDefinition(fqn: List[str], database: Union[str, NoneType], schema: str, unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, source_name: str, source_description: str, loader: str, identifier: str, resource_type: dbt.node_types.NodeType, _event_status: Dict[str, Any] = <factory>, quoting: dbt.contracts.graph.unparsed.Quoting = <factory>, loaded_at_field: Union[str, NoneType] = None, freshness: Union[dbt.contracts.graph.unparsed.FreshnessThreshold, NoneType] = None, external: Union[dbt.contracts.graph.unparsed.ExternalTable, NoneType] = None, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, source_meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.SourceConfig = <factory>, patch_path: Union[pathlib.Path, NoneType] = None, unrendered_config: Dict[str, Any] = <factory>, relation_name: Union[str, NoneType] = None, created_at: float = <factory>)
+ * ParsedSourceDefinition(fqn: List[str], database: Optional[str], schema: str, unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, source_name: str, source_description: str, loader: str, identifier: str, resource_type: dbt.node_types.NodeType, _event_status: Dict[str, Any] = <factory>, quoting: dbt.contracts.graph.unparsed.Quoting = <factory>, loaded_at_field: Optional[str] = None, freshness: Optional[dbt.contracts.graph.unparsed.FreshnessThreshold] = None, external: Optional[dbt.contracts.graph.unparsed.ExternalTable] = None, description: str = '', columns: Dict[str, dbt.contracts.graph.parsed.ColumnInfo] = <factory>, meta: Dict[str, Any] = <factory>, source_meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.SourceConfig = <factory>, patch_path: Optional[pathlib.Path] = None, unrendered_config: Dict[str, Any] = <factory>, relation_name: Optional[str] = None, created_at: float = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedSourceDefinition".
@@ -2002,7 +2002,7 @@ export interface ParsedSourceDefinition {
   created_at?: number;
 }
 /**
- * Quoting(database: Union[bool, NoneType] = None, schema: Union[bool, NoneType] = None, identifier: Union[bool, NoneType] = None, column: Union[bool, NoneType] = None)
+ * Quoting(database: Optional[bool] = None, schema: Optional[bool] = None, identifier: Optional[bool] = None, column: Optional[bool] = None)
  */
 export interface Quoting {
   database?: boolean | null;
@@ -2011,7 +2011,7 @@ export interface Quoting {
   column?: boolean | null;
 }
 /**
- * FreshnessThreshold(warn_after: Union[dbt.contracts.graph.unparsed.Time, NoneType] = <factory>, error_after: Union[dbt.contracts.graph.unparsed.Time, NoneType] = <factory>, filter: Union[str, NoneType] = None)
+ * FreshnessThreshold(warn_after: Optional[dbt.contracts.graph.unparsed.Time] = <factory>, error_after: Optional[dbt.contracts.graph.unparsed.Time] = <factory>, filter: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "FreshnessThreshold".
@@ -2022,7 +2022,7 @@ export interface FreshnessThreshold {
   filter?: string | null;
 }
 /**
- * Time(count: Union[int, NoneType] = None, period: Union[dbt.contracts.graph.unparsed.TimePeriod, NoneType] = None)
+ * Time(count: Optional[int] = None, period: Optional[dbt.contracts.graph.unparsed.TimePeriod] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "Time".
@@ -2032,7 +2032,7 @@ export interface Time {
   period?: ("minute" | "hour" | "day") | null;
 }
 /**
- * ExternalTable(_extra: Dict[str, Any] = <factory>, location: Union[str, NoneType] = None, file_format: Union[str, NoneType] = None, row_format: Union[str, NoneType] = None, tbl_properties: Union[str, NoneType] = None, partitions: Union[List[dbt.contracts.graph.unparsed.ExternalPartition], NoneType] = None)
+ * ExternalTable(_extra: Dict[str, Any] = <factory>, location: Optional[str] = None, file_format: Optional[str] = None, row_format: Optional[str] = None, tbl_properties: Optional[str] = None, partitions: Optional[List[dbt.contracts.graph.unparsed.ExternalPartition]] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ExternalTable".
@@ -2068,7 +2068,7 @@ export interface SourceConfig {
   [k: string]: unknown;
 }
 /**
- * ParsedMacro(unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, macro_sql: str, resource_type: dbt.node_types.NodeType, tags: List[str] = <factory>, depends_on: dbt.contracts.graph.parsed.MacroDependsOn = <factory>, description: str = '', meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Union[str, NoneType] = None, arguments: List[dbt.contracts.graph.unparsed.MacroArgument] = <factory>, created_at: float = <factory>, supported_languages: Union[List[dbt.node_types.ModelLanguage], NoneType] = None)
+ * ParsedMacro(unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, macro_sql: str, resource_type: dbt.node_types.NodeType, tags: List[str] = <factory>, depends_on: dbt.contracts.graph.parsed.MacroDependsOn = <factory>, description: str = '', meta: Dict[str, Any] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, patch_path: Optional[str] = None, arguments: List[dbt.contracts.graph.unparsed.MacroArgument] = <factory>, created_at: float = <factory>, supported_languages: Optional[List[dbt.node_types.ModelLanguage]] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedMacro".
@@ -2101,14 +2101,14 @@ export interface MacroDependsOn {
   macros?: string[];
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  */
 export interface Docs21 {
   show?: boolean;
   node_color?: string | null;
 }
 /**
- * MacroArgument(name: str, type: Union[str, NoneType] = None, description: str = '')
+ * MacroArgument(name: str, type: Optional[str] = None, description: str = '')
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "MacroArgument".
@@ -2134,7 +2134,7 @@ export interface ParsedDocumentation {
   block_contents: string;
 }
 /**
- * ParsedExposure(fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, type: dbt.contracts.graph.unparsed.ExposureType, owner: dbt.contracts.graph.unparsed.ExposureOwner, resource_type: dbt.node_types.NodeType = <NodeType.Exposure: 'exposure'>, description: str = '', label: Union[str, NoneType] = None, maturity: Union[dbt.contracts.graph.unparsed.MaturityType, NoneType] = None, meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.ExposureConfig = <factory>, unrendered_config: Dict[str, Any] = <factory>, url: Union[str, NoneType] = None, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, created_at: float = <factory>)
+ * ParsedExposure(fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, type: dbt.contracts.graph.unparsed.ExposureType, owner: dbt.contracts.graph.unparsed.ExposureOwner, resource_type: dbt.node_types.NodeType = <NodeType.Exposure: 'exposure'>, description: str = '', label: Optional[str] = None, maturity: Optional[dbt.contracts.graph.unparsed.MaturityType] = None, meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.ExposureConfig = <factory>, unrendered_config: Dict[str, Any] = <factory>, url: Optional[str] = None, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, refs: List[List[str]] = <factory>, sources: List[List[str]] = <factory>, created_at: float = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedExposure".
@@ -2181,7 +2181,7 @@ export interface ParsedExposure {
   created_at?: number;
 }
 /**
- * ExposureOwner(email: str, name: Union[str, NoneType] = None)
+ * ExposureOwner(email: str, name: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ExposureOwner".
@@ -2205,7 +2205,7 @@ export interface DependsOn18 {
   nodes?: string[];
 }
 /**
- * ParsedMetric(fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, description: str, label: str, calculation_method: str, expression: str, timestamp: Union[str, NoneType], filters: List[dbt.contracts.graph.unparsed.MetricFilter], time_grains: List[str], dimensions: List[str], window: Union[dbt.contracts.graph.unparsed.MetricTime, NoneType], model: Union[str, NoneType] = None, model_unique_id: Union[str, NoneType] = None, resource_type: dbt.node_types.NodeType = <NodeType.Metric: 'metric'>, meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.MetricConfig = <factory>, unrendered_config: Dict[str, Any] = <factory>, sources: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, refs: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, created_at: float = <factory>)
+ * ParsedMetric(fqn: List[str], unique_id: str, package_name: str, root_path: str, path: str, original_file_path: str, name: str, description: str, label: str, calculation_method: str, expression: str, timestamp: str, filters: List[dbt.contracts.graph.unparsed.MetricFilter], time_grains: List[str], dimensions: List[str], window: Optional[dbt.contracts.graph.unparsed.MetricTime] = None, model: Optional[str] = None, model_unique_id: Optional[str] = None, resource_type: dbt.node_types.NodeType = <NodeType.Metric: 'metric'>, meta: Dict[str, Any] = <factory>, tags: List[str] = <factory>, config: dbt.contracts.graph.model_config.MetricConfig = <factory>, unrendered_config: Dict[str, Any] = <factory>, sources: List[List[str]] = <factory>, depends_on: dbt.contracts.graph.parsed.DependsOn = <factory>, refs: List[List[str]] = <factory>, metrics: List[List[str]] = <factory>, created_at: float = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "ParsedMetric".
@@ -2222,7 +2222,7 @@ export interface ParsedMetric {
   label: string;
   calculation_method: string;
   expression: string;
-  timestamp?: string | null;
+  timestamp: string;
   filters: MetricFilter[];
   time_grains: string[];
   dimensions: string[];
@@ -2269,7 +2269,7 @@ export interface MetricFilter {
   value: string;
 }
 /**
- * MetricTime(count: Union[int, NoneType] = None, period: Union[dbt.contracts.graph.unparsed.MetricTimePeriod, NoneType] = None)
+ * MetricTime(count: Optional[int] = None, period: Optional[dbt.contracts.graph.unparsed.MetricTimePeriod] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "MetricTime".
@@ -2324,7 +2324,7 @@ export interface ManifestMetadata1 {
   adapter_type?: string | null;
 }
 /**
- * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
+ * NodeConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'view', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "NodeConfig".
@@ -2362,7 +2362,7 @@ export interface NodeConfig11 {
   [k: string]: unknown;
 }
 /**
- * Docs(show: bool = True, node_color: Union[str, NoneType] = None)
+ * Docs(show: bool = True, node_color: Optional[str] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "Docs".
@@ -2382,7 +2382,7 @@ export interface DependsOn20 {
   nodes?: string[];
 }
 /**
- * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = 'dbt_test__audit', database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Union[bool, NoneType] = None, where: Union[str, NoneType] = None, limit: Union[int, NoneType] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
+ * TestConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = 'dbt_test__audit', database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'test', severity: dbt.contracts.graph.model_config.Severity = 'ERROR', store_failures: Optional[bool] = None, where: Optional[str] = None, limit: Optional[int] = None, fail_calc: str = 'count(*)', warn_if: str = '!= 0', error_if: str = '!= 0')
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "TestConfig".
@@ -2407,7 +2407,7 @@ export interface TestConfig4 {
   [k: string]: unknown;
 }
 /**
- * SeedConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Union[str, NoneType] = None, schema: Union[str, NoneType] = None, database: Union[str, NoneType] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'seed', incremental_strategy: Union[str, NoneType] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Union[bool, NoneType] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Union[str, NoneType] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, quote_columns: Union[bool, NoneType] = None)
+ * SeedConfig(_extra: Dict[str, Any] = <factory>, enabled: bool = True, alias: Optional[str] = None, schema: Optional[str] = None, database: Optional[str] = None, tags: Union[List[str], str] = <factory>, meta: Dict[str, Any] = <factory>, materialized: str = 'seed', incremental_strategy: Optional[str] = None, persist_docs: Dict[str, Any] = <factory>, post_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, pre_hook: List[dbt.contracts.graph.model_config.Hook] = <factory>, quoting: Dict[str, Any] = <factory>, column_types: Dict[str, Any] = <factory>, full_refresh: Optional[bool] = None, unique_key: Union[str, List[str], NoneType] = None, on_schema_change: Optional[str] = 'ignore', grants: Dict[str, Any] = <factory>, packages: List[str] = <factory>, docs: dbt.contracts.graph.unparsed.Docs = <factory>, quote_columns: Optional[bool] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "SeedConfig".
@@ -2446,7 +2446,7 @@ export interface SeedConfig2 {
   [k: string]: unknown;
 }
 /**
- * Quoting(database: Union[bool, NoneType] = None, schema: Union[bool, NoneType] = None, identifier: Union[bool, NoneType] = None, column: Union[bool, NoneType] = None)
+ * Quoting(database: Optional[bool] = None, schema: Optional[bool] = None, identifier: Optional[bool] = None, column: Optional[bool] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "Quoting".
@@ -2458,7 +2458,7 @@ export interface Quoting1 {
   column?: boolean | null;
 }
 /**
- * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '1.3.0b2', generated_at: datetime.datetime = <factory>, invocation_id: Union[str, NoneType] = <factory>, env: Dict[str, str] = <factory>)
+ * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '1.3.0b2', generated_at: datetime.datetime = <factory>, invocation_id: Optional[str] = <factory>, env: Dict[str, str] = <factory>)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "FreshnessMetadata".
@@ -2504,7 +2504,7 @@ export interface SourceFreshnessOutput {
   execution_time: number;
 }
 /**
- * TimingInfo(name: str, started_at: Union[datetime.datetime, NoneType] = None, completed_at: Union[datetime.datetime, NoneType] = None)
+ * TimingInfo(name: str, started_at: Optional[datetime.datetime] = None, completed_at: Optional[datetime.datetime] = None)
  *
  * This interface was referenced by `HttpsSchemasGetdbtComDbtManifestV7Json`'s JSON-Schema
  * via the `definition` "TimingInfo".

@@ -11,34 +11,35 @@ compatibility: Requires pnpm, Node.js
 Activate this skill when the user says or implies:
 
 - Refresh parsers, update parsers, sync parsers
-- Update from dbt-core, sync with upstream dbt-core
+- Sync with upstream dbt artifact schemas
 - Regenerate TypeScript types, regenerate parser types, run codegen
-- Download dbt schemas, pull schemas from dbt-core (note: this repo has no download script; schemas live in `resources/`)
+- Download dbt schemas from schemas.getdbt.com
 
 ## Scripts and paths
 
 - Run commands from the **repository root**.
-- **Generate (only):** Regenerate TypeScript types from existing JSON schemas in `packages/dbt-artifacts-parser/resources/`.
-  - From repo root: `pnpm --filter @yu-iskw/dbt-artifacts-parser gen:types` or `bash packages/dbt-artifacts-parser/scripts/generate.sh`
-  - From package: `cd packages/dbt-artifacts-parser && pnpm gen:types`
-- **Schema location:** `packages/dbt-artifacts-parser/resources/{catalog,manifest,run-results,sources,semantic_manifest}/`. Each `*_vN.json` file is turned into `src/<category>/vN.ts`.
-- **Artifact categories:** `catalog`, `manifest`, `run-results`, `sources`, `semantic_manifest`.
-- The generate script does **not** accept artifact_type or version arguments; it processes all `*_vN.json` files in each category directory.
+- **Fetch schemas:** Download pinned JSON Schema files from [schemas.getdbt.com](https://schemas.getdbt.com/).
+  - `pnpm fetch:schemas` (or `pnpm --filter dbt-artifacts-parser fetch:schemas`)
+  - Manifest: `packages/dbt-artifacts-parser/scripts/schemas.json`
+- **Generate types:** Regenerate TypeScript from vendored schemas in `packages/dbt-artifacts-parser/resources/`.
+  - `pnpm --filter dbt-artifacts-parser gen:types` or `bash packages/dbt-artifacts-parser/scripts/generate.sh`
+- **Schema location:** `packages/dbt-artifacts-parser/resources/{catalog,manifest,run-results,sources}/` as top-level `*_vN.json` files. Each becomes `src/<category>/vN.ts` (run-results → `run_results` in `src/`).
+- **Fixtures:** Sample artifacts live under `resources/<category>/vN/<project>/` (not used by `gen:types`).
+- **Hand-maintained:** `src/<category>/index.ts` parsers are **not** overwritten by `generate.sh`.
+- The generate script processes all `*_vN.json` files in each category directory; it does not accept artifact_type or version arguments.
 
-## Adding new schemas
+## Adding new schema versions
 
-This repo has no download script. To add new schema versions, copy JSON schema files (e.g. from dbt-core or <https://schemas.getdbt.com/>) into the appropriate `packages/dbt-artifacts-parser/resources/<category>/` directory, then run the generate command above.
+1. Add `{ "url": "...", "out": "resources/..." }` to `scripts/schemas.json`.
+2. Run `pnpm fetch:schemas`.
+3. Run `pnpm gen:types`.
+4. Wire `parse*VN` and unions in `src/<category>/index.ts`, plus tests and optional fixtures.
 
 ## Example
 
-Full regenerate (all categories and versions):
+Full refresh (download + codegen):
 
 ```bash
-pnpm --filter @yu-iskw/dbt-artifacts-parser gen:types
-```
-
-Or from repo root using the script directly:
-
-```bash
-bash packages/dbt-artifacts-parser/scripts/generate.sh
+pnpm fetch:schemas
+pnpm --filter dbt-artifacts-parser gen:types
 ```

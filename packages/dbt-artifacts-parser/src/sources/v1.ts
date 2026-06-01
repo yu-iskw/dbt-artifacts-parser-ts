@@ -7,15 +7,15 @@
 /**
  * FreshnessExecutionResultArtifact(metadata: dbt.contracts.results.FreshnessMetadata, results: Sequence[Union[dbt.contracts.results.SourceFreshnessRuntimeError, dbt.contracts.results.SourceFreshnessOutput]], elapsed_time: float)
  */
-export interface Sources {
+export interface HttpsSchemasGetdbtComDbtSourcesV1Json {
   metadata: FreshnessMetadata;
   results: (SourceFreshnessRuntimeError | SourceFreshnessOutput)[];
   elapsed_time: number;
 }
 /**
- * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '0.19.0', generated_at: datetime.datetime = <factory>, invocation_id: Union[str, NoneType] = <factory>, env: Dict[str, str] = <factory>)
+ * FreshnessMetadata(dbt_schema_version: str = <factory>, dbt_version: str = '0.20.0rc1', generated_at: datetime.datetime = <factory>, invocation_id: Union[str, NoneType] = <factory>, env: Dict[str, str] = <factory>)
  *
- * This interface was referenced by `Sources`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtSourcesV1Json`'s JSON-Schema
  * via the `definition` "FreshnessMetadata".
  */
 export interface FreshnessMetadata {
@@ -30,7 +30,7 @@ export interface FreshnessMetadata {
 /**
  * SourceFreshnessRuntimeError(unique_id: str, error: Union[str, int, NoneType], status: dbt.contracts.results.FreshnessErrorEnum)
  *
- * This interface was referenced by `Sources`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtSourcesV1Json`'s JSON-Schema
  * via the `definition` "SourceFreshnessRuntimeError".
  */
 export interface SourceFreshnessRuntimeError {
@@ -41,7 +41,7 @@ export interface SourceFreshnessRuntimeError {
 /**
  * SourceFreshnessOutput(unique_id: str, max_loaded_at: datetime.datetime, snapshotted_at: datetime.datetime, max_loaded_at_time_ago_in_s: float, status: dbt.contracts.results.FreshnessStatus, criteria: dbt.contracts.graph.unparsed.FreshnessThreshold, adapter_response: Dict[str, Any])
  *
- * This interface was referenced by `Sources`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtSourcesV1Json`'s JSON-Schema
  * via the `definition` "SourceFreshnessOutput".
  */
 export interface SourceFreshnessOutput {
@@ -58,7 +58,7 @@ export interface SourceFreshnessOutput {
 /**
  * FreshnessThreshold(warn_after: Union[dbt.contracts.graph.unparsed.Time, NoneType] = None, error_after: Union[dbt.contracts.graph.unparsed.Time, NoneType] = None, filter: Union[str, NoneType] = None)
  *
- * This interface was referenced by `Sources`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtSourcesV1Json`'s JSON-Schema
  * via the `definition` "FreshnessThreshold".
  */
 export interface FreshnessThreshold {
@@ -69,7 +69,7 @@ export interface FreshnessThreshold {
 /**
  * Time(count: int, period: dbt.contracts.graph.unparsed.TimePeriod)
  *
- * This interface was referenced by `Sources`'s JSON-Schema
+ * This interface was referenced by `HttpsSchemasGetdbtComDbtSourcesV1Json`'s JSON-Schema
  * via the `definition` "Time".
  */
 export interface Time {

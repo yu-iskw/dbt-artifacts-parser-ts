@@ -2127,7 +2127,6 @@ export interface Function {
   _pre_injected_sql?: string | null;
   contract?: Contract7;
   arguments?: FunctionArgument[];
-  type?: "scalar" | "aggregate" | "table";
 }
 export interface FunctionReturns {
   data_type: string;
@@ -2186,6 +2185,10 @@ export interface FunctionConfig {
   concurrent_batches?: {
     [k: string]: unknown;
   };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
   [k: string]: unknown;
 }
 export interface Hook18 {
@@ -2289,6 +2292,7 @@ export interface FunctionArgument {
   name: string;
   data_type: string;
   description?: string | null;
+  default_value?: unknown;
 }
 export interface SourceDefinition {
   database: string | null;
@@ -4815,7 +4819,6 @@ export interface Function1 {
   _pre_injected_sql?: string | null;
   contract?: Contract15;
   arguments?: FunctionArgument1[];
-  type?: "scalar" | "aggregate" | "table";
 }
 export interface FunctionReturns1 {
   data_type: string;
@@ -4874,6 +4877,10 @@ export interface FunctionConfig1 {
   concurrent_batches?: {
     [k: string]: unknown;
   };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
   [k: string]: unknown;
 }
 export interface Hook38 {
@@ -4977,6 +4984,7 @@ export interface FunctionArgument1 {
   name: string;
   data_type: string;
   description?: string | null;
+  default_value?: unknown;
 }
 export interface SourceDefinition1 {
   database: string | null;
@@ -6266,7 +6274,6 @@ export interface Function2 {
   _pre_injected_sql?: string | null;
   contract?: Contract16;
   arguments?: FunctionArgument2[];
-  type?: "scalar" | "aggregate" | "table";
 }
 export interface FunctionReturns2 {
   data_type: string;
@@ -6325,6 +6332,10 @@ export interface FunctionConfig2 {
   concurrent_batches?: {
     [k: string]: unknown;
   };
+  type?: "scalar" | "aggregate" | "table";
+  volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
+  runtime_version?: string | null;
+  entry_point?: string | null;
   [k: string]: unknown;
 }
 export interface Hook40 {
@@ -6428,4 +6439,5 @@ export interface FunctionArgument2 {
   name: string;
   data_type: string;
   description?: string | null;
+  default_value?: unknown;
 }

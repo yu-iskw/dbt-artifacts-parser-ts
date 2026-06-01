@@ -99,16 +99,19 @@ pnpm format
 
 ## Generating TypeScript Types
 
-Types for `dbt-artifacts-parser` are generated from dbt's official JSON Schema files stored in `packages/dbt-artifacts-parser/resources/`.
+Types for `dbt-artifacts-parser` are generated from dbt's official JSON Schema files stored in `packages/dbt-artifacts-parser/resources/` (vendored from [schemas.getdbt.com](https://schemas.getdbt.com/) only—not from the dbt-core GitHub repo).
 
 ```bash
+# Download pinned schemas (see packages/dbt-artifacts-parser/scripts/schemas.json)
+pnpm fetch:schemas
+
 # Regenerate all TypeScript types from JSON schemas
 pnpm --filter dbt-artifacts-parser gen:types
 ```
 
 ### Adding a New dbt Artifact Version
 
-1. Download the new JSON schema from [schemas.getdbt.com](https://schemas.getdbt.com/) into `packages/dbt-artifacts-parser/resources/`.
+1. Add the new schema URL to `packages/dbt-artifacts-parser/scripts/schemas.json`, then run `pnpm fetch:schemas` (or download the raw JSON from [schemas.getdbt.com](https://schemas.getdbt.com/) into the matching `resources/<category>/` path).
 2. Run `pnpm gen:types` to regenerate types.
 3. Add a version-specific parser in `src/<artifact>/v<N>.ts` (follow existing patterns).
 4. Register the new version in `src/<artifact>/index.ts` (add to `parseArtifact` switch and union type).

@@ -26,6 +26,11 @@ export type ArtifactType = "manifest" | "run_results" | "sources" | "catalog";
  */
 export type ResourceLocation = "tests" | "resources";
 
+/** JSON Schema sources from schemas.getdbt.com (not artifact fixtures). */
+export function isVendoredJsonSchemaFile(filename: string): boolean {
+  return /^(manifest|catalog|run_results|sources)_v\d+\.json$/.test(filename);
+}
+
 /**
  * Root resources directory: packages/dbt-artifacts-parser/resources/
  * Single source of truth for test fixtures.
@@ -119,7 +124,8 @@ function findArtifactFiles(
     } else if (
       entry.isFile() &&
       entry.name.includes(nameIncludes) &&
-      entry.name.endsWith(".json")
+      entry.name.endsWith(".json") &&
+      !isVendoredJsonSchemaFile(entry.name)
     ) {
       files.push(fullPath);
     }

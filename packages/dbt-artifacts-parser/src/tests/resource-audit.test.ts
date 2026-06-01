@@ -6,6 +6,7 @@ import {
   discoverRunResultsFiles,
   discoverCatalogFiles,
   discoverSourcesFiles,
+  isVendoredJsonSchemaFile,
 } from "../test-utils";
 
 // @ts-expect-error - import.meta is available in Vitest ESM context
@@ -24,7 +25,11 @@ function listAllJsonFiles(dir: string): string[] {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       files.push(...listAllJsonFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith(".json")) {
+    } else if (
+      entry.isFile() &&
+      entry.name.endsWith(".json") &&
+      !isVendoredJsonSchemaFile(entry.name)
+    ) {
       files.push(path.resolve(fullPath));
     }
   }
@@ -35,11 +40,15 @@ describe("resource audit", () => {
   it("every JSON file in resources/ must be covered by parser test discovery", () => {
     const manifestDir = path.join(resourcesDir, "manifest");
     const runResultsDir = path.join(resourcesDir, "run_results");
+    const runResultsSchemasDir = path.join(resourcesDir, "run-results");
     const catalogDir = path.join(resourcesDir, "catalog");
     const sourcesDir = path.join(resourcesDir, "sources");
 
     const manifestFiles = listAllJsonFiles(manifestDir);
-    const runResultsFiles = listAllJsonFiles(runResultsDir);
+    const runResultsFiles = [
+      ...listAllJsonFiles(runResultsDir),
+      ...listAllJsonFiles(runResultsSchemasDir),
+    ];
     const catalogFiles = listAllJsonFiles(catalogDir);
     const sourcesFiles = listAllJsonFiles(sourcesDir);
 

@@ -18,6 +18,7 @@
     "tokens:sync": "node scripts/sync-css-tokens-to-ts.mjs && prettier --write packages/dbt-tools/web/src/constants/themeColors.generated.ts",
     "tokens:check": "pnpm tokens:sync && git diff --exit-code packages/dbt-tools/web/src/constants/themeColors.generated.ts",
     "dev:web": "pnpm --filter @dbt-tools/web dev",
+    "fetch:schemas": "pnpm --filter dbt-artifacts-parser fetch:schemas",
     "format": "pnpm format:trunk && pnpm format:eslint && pnpm format:prettier",
     "format:all": "pnpm format:trunk-all",
     "format:eslint": "eslint . --fix",

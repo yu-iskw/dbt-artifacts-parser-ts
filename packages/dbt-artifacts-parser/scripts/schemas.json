@@ -1,0 +1,90 @@
+[
+  {
+    "url": "https://schemas.getdbt.com/dbt/catalog/v1.json",
+    "out": "catalog/catalog_v1.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v1.json",
+    "out": "manifest/manifest_v1.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v2.json",
+    "out": "manifest/manifest_v2.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v3.json",
+    "out": "manifest/manifest_v3.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v4.json",
+    "out": "manifest/manifest_v4.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v5.json",
+    "out": "manifest/manifest_v5.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v6.json",
+    "out": "manifest/manifest_v6.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v7.json",
+    "out": "manifest/manifest_v7.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v8.json",
+    "out": "manifest/manifest_v8.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v9.json",
+    "out": "manifest/manifest_v9.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v10.json",
+    "out": "manifest/manifest_v10.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v11.json",
+    "out": "manifest/manifest_v11.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "out": "manifest/manifest_v12.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/run-results/v1.json",
+    "out": "run-results/run_results_v1.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/run-results/v2.json",
+    "out": "run-results/run_results_v2.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/run-results/v3.json",
+    "out": "run-results/run_results_v3.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/run-results/v4.json",
+    "out": "run-results/run_results_v4.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/run-results/v5.json",
+    "out": "run-results/run_results_v5.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+    "out": "run-results/run_results_v6.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/sources/v1.json",
+    "out": "sources/sources_v1.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/sources/v2.json",
+    "out": "sources/sources_v2.json"
+  },
+  {
+    "url": "https://schemas.getdbt.com/dbt/sources/v3.json",
+    "out": "sources/sources_v3.json"
+  }
+]
