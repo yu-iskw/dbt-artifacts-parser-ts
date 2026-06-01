@@ -19,6 +19,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ROOT_DIR="$(cd "${PACKAGE_DIR}/../.." && pwd)"
 RESOURCES_DIR="${PACKAGE_DIR}/resources"
 SCHEMAS_MANIFEST="${SCRIPT_DIR}/schemas.json"
 
@@ -76,5 +77,19 @@ for (const { url, out } of entries) {
   console.log('Downloaded ' + out);
 }
 " "${RESOURCES_DIR}" "${SCHEMAS_MANIFEST}"
+
+if [[ -d ${ROOT_DIR}/node_modules ]]; then
+	echo "Formatting vendored schemas (Trunk)..."
+	(
+		cd "${ROOT_DIR}"
+		pnpm exec trunk fmt \
+			"${RESOURCES_DIR}/catalog" \
+			"${RESOURCES_DIR}/manifest" \
+			"${RESOURCES_DIR}/run-results" \
+			"${RESOURCES_DIR}/sources"
+	)
+else
+	echo "Skipping Trunk format (run pnpm install at repo root, then re-run fetch:schemas)" >&2
+fi
 
 echo "Schema fetch complete."

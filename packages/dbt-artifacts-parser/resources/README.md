@@ -18,7 +18,7 @@ Top-level `*_vN.json` files match `isVendoredJsonSchemaFile()` in `src/test-util
 From the repository root:
 
 ```bash
-# Download pinned schemas (see scripts/schemas.json)
+# Download pinned schemas (see scripts/schemas.json); normalizes JSON via Trunk
 pnpm fetch:schemas
 
 # Regenerate TypeScript from vendored schemas
