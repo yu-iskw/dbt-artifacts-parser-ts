@@ -3,12 +3,15 @@
 export * from "./v3";
 import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
+import { warnFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
 
 /**
  * Union type of all supported sources versions
  */
 export type ParsedSources = SourcesV1 | SourcesV2 | SourcesV3;
+
+export type { ParseOptions } from "../parseOptions";
 
 const ERR_NOT_SOURCES = "Not a sources.json";
 
@@ -77,7 +80,10 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
 /**
  * Parse sources.json with automatic version detection
  */
-export function parseSources(parsed: Record<string, unknown>): ParsedSources {
+export function parseSources(
+  parsed: Record<string, unknown>,
+  options?: ParseOptions,
+): ParsedSources {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
   if (!metadata) throw new Error(ERR_NOT_SOURCES);
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
@@ -85,6 +91,7 @@ export function parseSources(parsed: Record<string, unknown>): ParsedSources {
     throw new Error(ERR_NOT_SOURCES);
   const version = extractVersion(schemaVersion);
   if (version === null) throw new Error(ERR_NOT_SOURCES);
+  const maxVersion = 3;
   switch (version) {
     case 1:
       return parseSourcesV1(parsed);
@@ -93,6 +100,10 @@ export function parseSources(parsed: Record<string, unknown>): ParsedSources {
     case 3:
       return parseSourcesV3(parsed);
     default:
+      if (options?.fallbackToLatest && version > maxVersion) {
+        warnFallbackToLatest(schemaVersion, `v${maxVersion}`);
+        return parsed as unknown as SourcesV3;
+      }
       throw new Error(`Unsupported sources version: ${version}`);
   }
 }

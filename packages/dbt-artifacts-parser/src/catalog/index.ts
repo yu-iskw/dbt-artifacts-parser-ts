@@ -1,12 +1,15 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v1'
 export * from "./v1";
+import { warnFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { CatalogArtifact } from "./v1";
 
 /**
  * Union type of all supported catalog versions
  */
 export type ParsedCatalog = CatalogArtifact;
+
+export type { ParseOptions } from "../parseOptions";
 
 const ERR_NOT_CATALOG = "Not a catalog.json";
 
@@ -49,7 +52,10 @@ export function parseCatalogV1(
  * @returns ParsedCatalog (union type of all supported versions)
  * @throws Error if not a catalog.json or unsupported version
  */
-export function parseCatalog(parsed: Record<string, unknown>): ParsedCatalog {
+export function parseCatalog(
+  parsed: Record<string, unknown>,
+  options?: ParseOptions,
+): ParsedCatalog {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
   if (!metadata) {
     throw new Error(ERR_NOT_CATALOG);
@@ -65,10 +71,15 @@ export function parseCatalog(parsed: Record<string, unknown>): ParsedCatalog {
     throw new Error(ERR_NOT_CATALOG);
   }
 
+  const maxVersion = 1;
   switch (version) {
     case 1:
       return parseCatalogV1(parsed);
     default:
+      if (options?.fallbackToLatest && version > maxVersion) {
+        warnFallbackToLatest(schemaVersion, `v${maxVersion}`);
+        return parsed as unknown as CatalogArtifact;
+      }
       throw new Error(`Unsupported catalog version: ${version}`);
   }
 }

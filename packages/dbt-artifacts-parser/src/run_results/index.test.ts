@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import type { ParsedRunResults } from "./index";
@@ -125,6 +125,29 @@ describe("run_results parser", () => {
       expect(() => parseRunResults(invalidRunResults)).toThrow(
         "Unsupported run-results version: 99",
       );
+    });
+
+    it("should fall back to latest when fallbackToLatest is true", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/run_results/v6/jaffle_shop/run_results.json",
+      );
+      const parsed = JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
+      const metadata = parsed.metadata as Record<string, unknown>;
+      metadata.dbt_schema_version =
+        "https://schemas.getdbt.com/dbt/run-results/v99.json";
+
+      const runResults = parseRunResults(parsed, { fallbackToLatest: true });
+
+      expect(runResults).toBeDefined();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("falling back to latest supported schema 'v6'"),
+      );
+      warnSpy.mockRestore();
     });
   });
 

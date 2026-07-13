@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import type { ParsedSources } from "./index";
@@ -144,6 +144,25 @@ describe("sources parser", () => {
       expect(() => parseSources(invalidSources)).toThrow(
         "Unsupported sources version: 4",
       );
+    });
+
+    it("should fall back to latest when fallbackToLatest is true", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const newerSources = {
+        ...mockSourcesV3,
+        metadata: {
+          ...mockSourcesV3.metadata,
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v99.json",
+        },
+      };
+
+      const sources = parseSources(newerSources, { fallbackToLatest: true });
+
+      expect(sources).toBeDefined();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("falling back to latest supported schema 'v3'"),
+      );
+      warnSpy.mockRestore();
     });
   });
 
