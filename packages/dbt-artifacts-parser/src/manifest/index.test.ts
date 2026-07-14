@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import type { ParsedManifest } from "./index";
@@ -128,6 +128,45 @@ describe("manifest parser", () => {
       expect(() => parseManifest(invalidManifest)).toThrow(
         "Unsupported manifest version: 99",
       );
+    });
+
+    it("should fall back to latest when fallbackToLatest is true", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/manifest/v12/jaffle_shop/manifest_1.11.json",
+      );
+      const parsed = JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
+      const metadata = parsed.metadata as Record<string, unknown>;
+      metadata.dbt_schema_version =
+        "https://schemas.getdbt.com/dbt/manifest/v99.json";
+
+      const manifest = parseManifest(parsed, { fallbackToLatest: true });
+
+      expect(manifest).toBeDefined();
+      expect(manifest.metadata.dbt_schema_version).toBe(
+        "https://schemas.getdbt.com/dbt/manifest/v99.json",
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "falling back to latest supported schema 'v12'",
+        ),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it("should not fall back for wrong artifact type even with fallbackToLatest", () => {
+      const invalidManifest = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/catalog/v99.json",
+        },
+      };
+      expect(() =>
+        parseManifest(invalidManifest, { fallbackToLatest: true }),
+      ).toThrow("Not a manifest.json");
     });
   });
 

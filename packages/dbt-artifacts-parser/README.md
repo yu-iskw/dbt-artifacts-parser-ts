@@ -178,9 +178,13 @@ import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sour
 
 ### Manifest Parsers
 
-#### `parseManifest(manifest: Record<string, unknown>): ParsedManifest`
+#### `parseManifest(manifest: Record<string, unknown>, options?: ParseOptions): ParsedManifest`
 
 Automatically detects version and returns typed manifest.
+
+**Options**:
+
+- `fallbackToLatest?: boolean` — When `true` and the schema version is newer than supported, parse as the latest known schema (best-effort) and emit a `console.warn`. Default is `false` (strict). Prefer refreshing parsers for full support of new dbt artifact versions.
 
 **Throws**: `Error` if manifest is invalid or version is unsupported
 
@@ -192,19 +196,25 @@ Version-specific parsers that validate the version matches before returning.
 
 ### Catalog Parsers
 
-#### `parseCatalog(catalog: Record<string, unknown>): ParsedCatalog`
+#### `parseCatalog(catalog: Record<string, unknown>, options?: ParseOptions): ParsedCatalog`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseCatalogV1(catalog: Record<string, unknown>): CatalogArtifactV1`
 
 ### RunResults Parsers
 
-#### `parseRunResults(runResults: Record<string, unknown>): ParsedRunResults`
+#### `parseRunResults(runResults: Record<string, unknown>, options?: ParseOptions): ParsedRunResults`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseRunResultsV1` … `parseRunResultsV6`
 
 ### Sources Parsers
 
-#### `parseSources(sources: Record<string, unknown>): ParsedSources`
+#### `parseSources(sources: Record<string, unknown>, options?: ParseOptions): ParsedSources`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseSourcesV1` / `parseSourcesV2` / `parseSourcesV3`
 
