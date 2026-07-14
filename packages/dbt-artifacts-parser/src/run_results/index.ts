@@ -6,7 +6,7 @@ import type { RunResults as RunResultsV2 } from "./v2";
 import type { HttpsSchemasGetdbtComDbtRunResultsV3Json as RunResultsV3 } from "./v3";
 import type { HttpsSchemasGetdbtComDbtRunResultsV4Json as RunResultsV4 } from "./v4";
 import type { RunResultsArtifact as RunResultsV5 } from "./v5";
-import { warnFallbackToLatest, type ParseOptions } from "../parseOptions";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { RunResultsArtifact as RunResultsV6 } from "./v6";
 
 /**
@@ -176,9 +176,15 @@ export function parseRunResults(
   if (parser) {
     return parser(parsed);
   }
-  if (options?.fallbackToLatest && version > RUN_RESULTS_PARSERS.length) {
-    warnFallbackToLatest(schemaVersion, `v${RUN_RESULTS_PARSERS.length}`);
-    return parsed as unknown as RunResultsV6;
+  const fallback = tryFallbackToLatest(
+    options,
+    version,
+    RUN_RESULTS_PARSERS.length,
+    schemaVersion,
+    parsed as unknown as RunResultsV6,
+  );
+  if (fallback !== undefined) {
+    return fallback;
   }
   throw new Error(`Unsupported run-results version: ${version}`);
 }

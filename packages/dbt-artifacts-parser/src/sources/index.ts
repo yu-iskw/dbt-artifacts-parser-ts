@@ -3,7 +3,7 @@
 export * from "./v3";
 import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
-import { warnFallbackToLatest, type ParseOptions } from "../parseOptions";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
 
 /**
@@ -77,6 +77,12 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
   return parsed as unknown as SourcesV3;
 }
 
+const SOURCES_PARSERS = [
+  parseSourcesV1,
+  parseSourcesV2,
+  parseSourcesV3,
+] as const;
+
 /**
  * Parse sources.json with automatic version detection
  */
@@ -91,19 +97,19 @@ export function parseSources(
     throw new Error(ERR_NOT_SOURCES);
   const version = extractVersion(schemaVersion);
   if (version === null) throw new Error(ERR_NOT_SOURCES);
-  const maxVersion = 3;
-  switch (version) {
-    case 1:
-      return parseSourcesV1(parsed);
-    case 2:
-      return parseSourcesV2(parsed);
-    case 3:
-      return parseSourcesV3(parsed);
-    default:
-      if (options?.fallbackToLatest && version > maxVersion) {
-        warnFallbackToLatest(schemaVersion, `v${maxVersion}`);
-        return parsed as unknown as SourcesV3;
-      }
-      throw new Error(`Unsupported sources version: ${version}`);
+  const parser = SOURCES_PARSERS[version - 1];
+  if (parser) {
+    return parser(parsed);
   }
+  const fallback = tryFallbackToLatest(
+    options,
+    version,
+    SOURCES_PARSERS.length,
+    schemaVersion,
+    parsed as unknown as SourcesV3,
+  );
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  throw new Error(`Unsupported sources version: ${version}`);
 }

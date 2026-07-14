@@ -1,7 +1,7 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v1'
 export * from "./v1";
-import { warnFallbackToLatest, type ParseOptions } from "../parseOptions";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { CatalogArtifact } from "./v1";
 
 /**
@@ -46,6 +46,8 @@ export function parseCatalogV1(
   return parsed as unknown as CatalogArtifact;
 }
 
+const CATALOG_PARSERS = [parseCatalogV1] as const;
+
 /**
  * Parse catalog.json with automatic version detection
  * @param parsed - Parsed JSON object
@@ -71,15 +73,19 @@ export function parseCatalog(
     throw new Error(ERR_NOT_CATALOG);
   }
 
-  const maxVersion = 1;
-  switch (version) {
-    case 1:
-      return parseCatalogV1(parsed);
-    default:
-      if (options?.fallbackToLatest && version > maxVersion) {
-        warnFallbackToLatest(schemaVersion, `v${maxVersion}`);
-        return parsed as unknown as CatalogArtifact;
-      }
-      throw new Error(`Unsupported catalog version: ${version}`);
+  const parser = CATALOG_PARSERS[version - 1];
+  if (parser) {
+    return parser(parsed);
   }
+  const fallback = tryFallbackToLatest(
+    options,
+    version,
+    CATALOG_PARSERS.length,
+    schemaVersion,
+    parsed as unknown as CatalogArtifact,
+  );
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  throw new Error(`Unsupported catalog version: ${version}`);
 }

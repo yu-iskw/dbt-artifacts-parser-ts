@@ -12,7 +12,7 @@ import type { HttpsSchemasGetdbtComDbtManifestV8Json as ManifestV8 } from "./v8"
 import type { HttpsSchemasGetdbtComDbtManifestV9Json as ManifestV9 } from "./v9";
 import type { HttpsSchemasGetdbtComDbtManifestV10Json as ManifestV10 } from "./v10";
 import type { WritableManifest as ManifestV11 } from "./v11";
-import { warnFallbackToLatest, type ParseOptions } from "../parseOptions";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { WritableManifest as ManifestV12 } from "./v12";
 
 /**
@@ -284,9 +284,15 @@ export function parseManifest(
   if (parser) {
     return parser(parsed);
   }
-  if (options?.fallbackToLatest && version > MANIFEST_PARSERS.length) {
-    warnFallbackToLatest(schemaVersion, `v${MANIFEST_PARSERS.length}`);
-    return parsed as unknown as ManifestV12;
+  const fallback = tryFallbackToLatest(
+    options,
+    version,
+    MANIFEST_PARSERS.length,
+    schemaVersion,
+    parsed as unknown as ManifestV12,
+  );
+  if (fallback !== undefined) {
+    return fallback;
   }
   throw new Error(`Unsupported manifest version: ${version}`);
 }
