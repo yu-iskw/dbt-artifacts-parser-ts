@@ -146,6 +146,8 @@ import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sour
 
 ## Supported Versions
 
+Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema majors are independent of Core semver: dbt Core 1.8–1.12 use manifest v12, catalog v1, run-results v6, and sources v3.
+
 ### Manifest
 
 - **v1–v2**: `Manifest` interface

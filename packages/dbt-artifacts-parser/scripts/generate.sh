@@ -120,11 +120,11 @@ process_category() {
 }
 
 # Process each category
-process_category "catalog" "${SRC_DIR}/catalog"
+process_category "catalog" "${SRC_DIR}/catalog" "${RESOURCES_DIR}/json-schema/catalog"
 process_category "manifest" "${SRC_DIR}/manifest" "${RESOURCES_DIR}/json-schema/manifest"
 process_category "run-results" "${SRC_DIR}/run_results" "${RESOURCES_DIR}/json-schema/run-results"
-process_category "sources" "${SRC_DIR}/sources"
-process_category "semantic_manifest" "${SRC_DIR}/semantic_manifest"
+process_category "sources" "${SRC_DIR}/sources" "${RESOURCES_DIR}/json-schema/sources"
+process_category "semantic_manifest" "${SRC_DIR}/semantic_manifest" "${RESOURCES_DIR}/json-schema/semantic_manifest"
 
 # Generate root index.ts
 # Don't re-export everything to avoid naming conflicts between categories
