@@ -12,28 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Build
+name: CI
 
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".vscode/**"
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".vscode/**"
 
 concurrency:
-  group: build-${{ github.head_ref || github.run_id }}
+  group: ci-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions:
+  contents: read
+  checks: write
 
 jobs:
-  build:
-    name: Build Package
+  ci:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    name: Test, analyze, and build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read # For repo checkout
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -49,8 +61,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build package
-        run: pnpm --filter ./packages/dbt-artifacts-parser build
+      - name: Build packages
+        run: pnpm build
       - name: Lint (ESLint report)
         run: pnpm lint:report
       - name: Upload lint report
@@ -58,3 +70,8 @@ jobs:
         with:
           name: lint-report
           path: lint-report.json
+      - name: Run tests with coverage
+        run: pnpm test:coverage && pnpm coverage:report
+      - name: Trunk Check
+        if: github.event_name != 'push'
+        uses: trunk-io/trunk-action@v1
