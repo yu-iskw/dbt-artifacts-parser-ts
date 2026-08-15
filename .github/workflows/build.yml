@@ -72,5 +72,4 @@ jobs:
       - name: Run tests with coverage
         run: pnpm test:coverage && pnpm coverage:report
       - name: Trunk Check
-        if: github.event_name != 'push'
         uses: trunk-io/trunk-action@v1
