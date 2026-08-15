@@ -18,10 +18,24 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "packages/**/*.ts"
+      - "packages/**/*.tsx"
+      - "*.json"
+      - "tsconfig*.json"
+      - .github/workflows/codeql.yml
   pull_request:
+    types: [opened, reopened, ready_for_review]
+    paths:
+      - "packages/**/*.ts"
+      - "packages/**/*.tsx"
+      - "*.json"
+      - "tsconfig*.json"
+      - .github/workflows/codeql.yml
+  workflow_dispatch:
 
 concurrency:
-  group: codeql-${{ github.head_ref || github.run_id }}
+  group: codeql-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -33,7 +47,6 @@ jobs:
   analyze:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,5 +54,6 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
+          build-mode: none
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
