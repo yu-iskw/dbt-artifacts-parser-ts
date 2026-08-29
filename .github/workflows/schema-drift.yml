@@ -17,7 +17,7 @@ name: Check dbt artifact schema drift
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 8 * * 1"
+    - cron: 17 8 * * 1
   pull_request:
     paths:
       - .github/workflows/schema-drift.yml
