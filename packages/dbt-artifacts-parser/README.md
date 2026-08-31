@@ -4,6 +4,10 @@ TypeScript library for parsing dbt artifacts with full type safety and automatic
 
 This is a **standalone library**. Use it whenever you need to read, validate, or type-check dbt JSON artifacts in TypeScript.
 
+## Related packages
+
+Python users should use [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) (PyPI package `dbt-artifacts-parser`).
+
 ## Supported Artifacts
 
 ```mermaid
@@ -278,7 +282,3 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the full developer guide.
 ## License
 
 **Apache License, Version 2.0.** See the full text in [`LICENSE`](./LICENSE) in this package (also published in the npm tarball). Repository-wide map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
-
-## Related Projects
-
-Inspired by the Python [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) library.

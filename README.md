@@ -2,6 +2,10 @@
 
 TypeScript parser and generated type package for dbt artifact JSON files.
 
+## Related packages
+
+Python users should use [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) (PyPI package `dbt-artifacts-parser`).
+
 ## Package
 
 - [`packages/dbt-artifacts-parser`](packages/dbt-artifacts-parser) publishes `dbt-artifacts-parser`.
