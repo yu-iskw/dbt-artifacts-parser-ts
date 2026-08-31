@@ -13,7 +13,7 @@
         },
         "dbt_version": {
           "type": "string",
-          "default": "1.12.0a1"
+          "default": "1.12.0b1"
         },
         "generated_at": {
           "type": "string"
@@ -295,13 +295,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -312,6 +312,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -1130,13 +1141,13 @@
                               "tags": {
                                 "anyOf": [
                                   {
+                                    "type": "string"
+                                  },
+                                  {
                                     "type": "array",
                                     "items": {
                                       "type": "string"
                                     }
-                                  },
-                                  {
-                                    "type": "string"
                                   }
                                 ]
                               },
@@ -1147,6 +1158,17 @@
                                 }
                               },
                               "group": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null
+                              },
+                              "static_analysis": {
                                 "anyOf": [
                                   {
                                     "type": "string"
@@ -1508,13 +1530,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -1525,6 +1547,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -2196,10 +2229,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -2466,13 +2502,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -2483,6 +2519,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -3025,10 +3072,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -3295,13 +3345,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -3312,6 +3362,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -3983,10 +4044,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -4264,13 +4328,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -4281,6 +4345,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -4540,6 +4615,46 @@
                       }
                     ],
                     "default": null
+                  },
+                  "on_error": {
+                    "anyOf": [
+                      {
+                        "enum": ["skip_children", "continue"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "latest_version_pointer": {
+                    "type": "object",
+                    "title": "LatestVersionPointer",
+                    "properties": {
+                      "enabled": {
+                        "anyOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      },
+                      "alias": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": true
@@ -5005,10 +5120,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -5232,10 +5350,13 @@
               "version": {
                 "anyOf": [
                   {
-                    "type": "string"
+                    "type": "integer"
                   },
                   {
                     "type": "number"
+                  },
+                  {
+                    "type": "string"
                   },
                   {
                     "type": "null"
@@ -5246,10 +5367,13 @@
               "latest_version": {
                 "anyOf": [
                   {
-                    "type": "string"
+                    "type": "integer"
                   },
                   {
                     "type": "number"
+                  },
+                  {
+                    "type": "string"
                   },
                   {
                     "type": "null"
@@ -5403,13 +5527,13 @@
                               "tags": {
                                 "anyOf": [
                                   {
+                                    "type": "string"
+                                  },
+                                  {
                                     "type": "array",
                                     "items": {
                                       "type": "string"
                                     }
-                                  },
-                                  {
-                                    "type": "string"
                                   }
                                 ]
                               },
@@ -5420,6 +5544,17 @@
                                 }
                               },
                               "group": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null
+                              },
+                              "static_analysis": {
                                 "anyOf": [
                                   {
                                     "type": "string"
@@ -5831,13 +5966,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -5848,6 +5983,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -6519,10 +6665,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -6789,13 +6938,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -6806,6 +6955,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -7348,10 +7508,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -7679,13 +7842,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -7696,6 +7859,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -8501,10 +8675,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -8782,13 +8959,13 @@
                               "tags": {
                                 "anyOf": [
                                   {
+                                    "type": "string"
+                                  },
+                                  {
                                     "type": "array",
                                     "items": {
                                       "type": "string"
                                     }
-                                  },
-                                  {
-                                    "type": "string"
                                   }
                                 ]
                               },
@@ -8799,6 +8976,17 @@
                                 }
                               },
                               "group": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null
+                              },
+                              "static_analysis": {
                                 "anyOf": [
                                   {
                                     "type": "string"
@@ -9183,13 +9371,13 @@
                   "tags": {
                     "anyOf": [
                       {
+                        "type": "string"
+                      },
+                      {
                         "type": "array",
                         "items": {
                           "type": "string"
                         }
-                      },
-                      {
-                        "type": "string"
                       }
                     ]
                   },
@@ -9200,6 +9388,17 @@
                     }
                   },
                   "group": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "static_analysis": {
                     "anyOf": [
                       {
                         "type": "string"
@@ -9443,6 +9642,17 @@
                       }
                     ],
                     "default": null
+                  },
+                  "snowflake": {
+                    "type": "object",
+                    "title": "SnowflakeFunctionConfig",
+                    "properties": {
+                      "quote_args": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": true
@@ -9908,10 +10118,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -10330,13 +10543,13 @@
                               "tags": {
                                 "anyOf": [
                                   {
+                                    "type": "string"
+                                  },
+                                  {
                                     "type": "array",
                                     "items": {
                                       "type": "string"
                                     }
-                                  },
-                                  {
-                                    "type": "string"
                                   }
                                 ]
                               },
@@ -10347,6 +10560,17 @@
                                 }
                               },
                               "group": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null
+                              },
+                              "static_analysis": {
                                 "anyOf": [
                                   {
                                     "type": "string"
@@ -10594,6 +10818,17 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "snowflake": {
+                                "type": "object",
+                                "title": "SnowflakeFunctionConfig",
+                                "properties": {
+                                  "quote_args": {
+                                    "type": "boolean",
+                                    "default": true
+                                  }
+                                },
+                                "additionalProperties": false
                               }
                             },
                             "additionalProperties": true
@@ -10997,41 +11232,42 @@
                       {
                         "type": "array",
                         "items": {
-                          "type": "string"
-                        }
-                      },
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "title": "ExternalPartition",
-                          "properties": {
-                            "_extra": {
+                          "anyOf": [
+                            {
                               "type": "object",
-                              "propertyNames": {
-                                "type": "string"
-                              }
+                              "title": "ExternalPartition",
+                              "properties": {
+                                "_extra": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  }
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "default": ""
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "default": ""
+                                },
+                                "data_type": {
+                                  "type": "string",
+                                  "default": ""
+                                },
+                                "meta": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "additionalProperties": true
                             },
-                            "name": {
-                              "type": "string",
-                              "default": ""
-                            },
-                            "description": {
-                              "type": "string",
-                              "default": ""
-                            },
-                            "data_type": {
-                              "type": "string",
-                              "default": ""
-                            },
-                            "meta": {
-                              "type": "object",
-                              "propertyNames": {
-                                "type": "string"
-                              }
+                            {
+                              "type": "string"
                             }
-                          },
-                          "additionalProperties": true
+                          ]
                         }
                       },
                       {
@@ -11534,6 +11770,17 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "static_analysis": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
               }
             },
             "additionalProperties": true
@@ -11781,7 +12028,14 @@
               {
                 "type": "array",
                 "items": {
-                  "enum": ["python", "sql"]
+                  "anyOf": [
+                    {
+                      "enum": ["python", "sql"]
+                    },
+                    {
+                      "enum": ["python", "javascript", "sql"]
+                    }
+                  ]
                 }
               },
               {
@@ -12051,10 +12305,13 @@
                 "version": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "integer"
                     },
                     {
                       "type": "number"
+                    },
+                    {
+                      "type": "string"
                     },
                     {
                       "type": "null"
@@ -13511,10 +13768,13 @@
                 "version": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "integer"
                     },
                     {
                       "type": "number"
+                    },
+                    {
+                      "type": "string"
                     },
                     {
                       "type": "null"
@@ -13818,13 +14078,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -13835,6 +14095,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -14658,13 +14929,13 @@
                                     "tags": {
                                       "anyOf": [
                                         {
+                                          "type": "string"
+                                        },
+                                        {
                                           "type": "array",
                                           "items": {
                                             "type": "string"
                                           }
-                                        },
-                                        {
-                                          "type": "string"
                                         }
                                       ]
                                     },
@@ -14675,6 +14946,17 @@
                                       }
                                     },
                                     "group": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "default": null
+                                    },
+                                    "static_analysis": {
                                       "anyOf": [
                                         {
                                           "type": "string"
@@ -15036,13 +15318,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -15053,6 +15335,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -15729,10 +16022,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -15999,13 +16295,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -16016,6 +16312,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -16563,10 +16870,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -16833,13 +17143,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -16850,6 +17160,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -17526,10 +17847,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -17807,13 +18131,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -17824,6 +18148,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -18083,6 +18418,46 @@
                             }
                           ],
                           "default": null
+                        },
+                        "on_error": {
+                          "anyOf": [
+                            {
+                              "enum": ["skip_children", "continue"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "latest_version_pointer": {
+                          "type": "object",
+                          "title": "LatestVersionPointer",
+                          "properties": {
+                            "enabled": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null
+                            },
+                            "alias": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null
+                            }
+                          },
+                          "additionalProperties": false
                         }
                       },
                       "additionalProperties": true
@@ -18553,10 +18928,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -18780,10 +19158,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -18794,10 +19175,13 @@
                     "latest_version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -18951,13 +19335,13 @@
                                     "tags": {
                                       "anyOf": [
                                         {
+                                          "type": "string"
+                                        },
+                                        {
                                           "type": "array",
                                           "items": {
                                             "type": "string"
                                           }
-                                        },
-                                        {
-                                          "type": "string"
                                         }
                                       ]
                                     },
@@ -18968,6 +19352,17 @@
                                       }
                                     },
                                     "group": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "default": null
+                                    },
+                                    "static_analysis": {
                                       "anyOf": [
                                         {
                                           "type": "string"
@@ -19379,13 +19774,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -19396,6 +19791,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -20072,10 +20478,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -20342,13 +20751,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -20359,6 +20768,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -20906,10 +21326,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -21237,13 +21660,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -21254,6 +21677,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -22064,10 +22498,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -22345,13 +22782,13 @@
                                     "tags": {
                                       "anyOf": [
                                         {
+                                          "type": "string"
+                                        },
+                                        {
                                           "type": "array",
                                           "items": {
                                             "type": "string"
                                           }
-                                        },
-                                        {
-                                          "type": "string"
                                         }
                                       ]
                                     },
@@ -22362,6 +22799,17 @@
                                       }
                                     },
                                     "group": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "default": null
+                                    },
+                                    "static_analysis": {
                                       "anyOf": [
                                         {
                                           "type": "string"
@@ -22746,13 +23194,13 @@
                         "tags": {
                           "anyOf": [
                             {
+                              "type": "string"
+                            },
+                            {
                               "type": "array",
                               "items": {
                                 "type": "string"
                               }
-                            },
-                            {
-                              "type": "string"
                             }
                           ]
                         },
@@ -22763,6 +23211,17 @@
                           }
                         },
                         "group": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "static_analysis": {
                           "anyOf": [
                             {
                               "type": "string"
@@ -23010,6 +23469,17 @@
                             }
                           ],
                           "default": null
+                        },
+                        "snowflake": {
+                          "type": "object",
+                          "title": "SnowflakeFunctionConfig",
+                          "properties": {
+                            "quote_args": {
+                              "type": "boolean",
+                              "default": true
+                            }
+                          },
+                          "additionalProperties": false
                         }
                       },
                       "additionalProperties": true
@@ -23480,10 +23950,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -23902,13 +24375,13 @@
                                     "tags": {
                                       "anyOf": [
                                         {
+                                          "type": "string"
+                                        },
+                                        {
                                           "type": "array",
                                           "items": {
                                             "type": "string"
                                           }
-                                        },
-                                        {
-                                          "type": "string"
                                         }
                                       ]
                                     },
@@ -23919,6 +24392,17 @@
                                       }
                                     },
                                     "group": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "default": null
+                                    },
+                                    "static_analysis": {
                                       "anyOf": [
                                         {
                                           "type": "string"
@@ -24166,6 +24650,17 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "snowflake": {
+                                      "type": "object",
+                                      "title": "SnowflakeFunctionConfig",
+                                      "properties": {
+                                        "quote_args": {
+                                          "type": "boolean",
+                                          "default": true
+                                        }
+                                      },
+                                      "additionalProperties": false
                                     }
                                   },
                                   "additionalProperties": true
@@ -24560,41 +25055,42 @@
                                 {
                                   "type": "array",
                                   "items": {
-                                    "type": "string"
-                                  }
-                                },
-                                {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "title": "ExternalPartition",
-                                    "properties": {
-                                      "_extra": {
+                                    "anyOf": [
+                                      {
                                         "type": "object",
-                                        "propertyNames": {
-                                          "type": "string"
-                                        }
+                                        "title": "ExternalPartition",
+                                        "properties": {
+                                          "_extra": {
+                                            "type": "object",
+                                            "propertyNames": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "type": "string",
+                                            "default": ""
+                                          },
+                                          "description": {
+                                            "type": "string",
+                                            "default": ""
+                                          },
+                                          "data_type": {
+                                            "type": "string",
+                                            "default": ""
+                                          },
+                                          "meta": {
+                                            "type": "object",
+                                            "propertyNames": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "additionalProperties": true
                                       },
-                                      "name": {
-                                        "type": "string",
-                                        "default": ""
-                                      },
-                                      "description": {
-                                        "type": "string",
-                                        "default": ""
-                                      },
-                                      "data_type": {
-                                        "type": "string",
-                                        "default": ""
-                                      },
-                                      "meta": {
-                                        "type": "object",
-                                        "propertyNames": {
-                                          "type": "string"
-                                        }
+                                      {
+                                        "type": "string"
                                       }
-                                    },
-                                    "additionalProperties": true
+                                    ]
                                   }
                                 },
                                 {
@@ -25107,6 +25603,17 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "static_analysis": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
                         }
                       },
                       "additionalProperties": true
@@ -25392,10 +25899,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -26870,10 +27380,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -27293,10 +27806,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -27312,13 +27828,13 @@
                     "tags": {
                       "anyOf": [
                         {
+                          "type": "string"
+                        },
+                        {
                           "type": "array",
                           "items": {
                             "type": "string"
                           }
-                        },
-                        {
-                          "type": "string"
                         }
                       ]
                     }
@@ -27991,10 +28507,13 @@
                           "version": {
                             "anyOf": [
                               {
-                                "type": "string"
+                                "type": "integer"
                               },
                               {
                                 "type": "number"
+                              },
+                              {
+                                "type": "string"
                               },
                               {
                                 "type": "null"
@@ -28316,6 +28835,17 @@
                         "enabled": {
                           "type": "boolean",
                           "default": true
+                        },
+                        "static_analysis": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
                         }
                       },
                       "additionalProperties": true
@@ -28358,10 +28888,13 @@
                                   "items": {
                                     "anyOf": [
                                       {
-                                        "type": "string"
+                                        "type": "integer"
                                       },
                                       {
                                         "type": "number"
+                                      },
+                                      {
+                                        "type": "string"
                                       }
                                     ]
                                   }
@@ -28379,10 +28912,13 @@
                                   "items": {
                                     "anyOf": [
                                       {
-                                        "type": "string"
+                                        "type": "integer"
                                       },
                                       {
                                         "type": "number"
+                                      },
+                                      {
+                                        "type": "string"
                                       }
                                     ]
                                   }
@@ -28405,10 +28941,13 @@
                     "version": {
                       "anyOf": [
                         {
-                          "type": "string"
+                          "type": "integer"
                         },
                         {
                           "type": "number"
+                        },
+                        {
+                          "type": "string"
                         },
                         {
                           "type": "null"
@@ -28862,10 +29401,13 @@
                 "version": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "integer"
                     },
                     {
                       "type": "number"
+                    },
+                    {
+                      "type": "string"
                     },
                     {
                       "type": "null"
@@ -28881,13 +29423,13 @@
           "tags": {
             "anyOf": [
               {
+                "type": "string"
+              },
+              {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
-              },
-              {
-                "type": "string"
               }
             ]
           }
@@ -29563,10 +30105,13 @@
                 "version": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "integer"
                     },
                     {
                       "type": "number"
+                    },
+                    {
+                      "type": "string"
                     },
                     {
                       "type": "null"
@@ -29895,6 +30440,17 @@
               "enabled": {
                 "type": "boolean",
                 "default": true
+              },
+              "static_analysis": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
               }
             },
             "additionalProperties": true
@@ -29937,10 +30493,13 @@
                         "items": {
                           "anyOf": [
                             {
-                              "type": "string"
+                              "type": "integer"
                             },
                             {
                               "type": "number"
+                            },
+                            {
+                              "type": "string"
                             }
                           ]
                         }
@@ -29958,10 +30517,13 @@
                         "items": {
                           "anyOf": [
                             {
-                              "type": "string"
+                              "type": "integer"
                             },
                             {
                               "type": "number"
+                            },
+                            {
+                              "type": "string"
                             }
                           ]
                         }
@@ -29984,10 +30546,13 @@
           "version": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "number"
+              },
+              {
+                "type": "string"
               },
               {
                 "type": "null"
@@ -30147,13 +30712,13 @@
               "tags": {
                 "anyOf": [
                   {
+                    "type": "string"
+                  },
+                  {
                     "type": "array",
                     "items": {
                       "type": "string"
                     }
-                  },
-                  {
-                    "type": "string"
                   }
                 ]
               },
@@ -30164,6 +30729,17 @@
                 }
               },
               "group": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "static_analysis": {
                 "anyOf": [
                   {
                     "type": "string"
@@ -30407,6 +30983,17 @@
                   }
                 ],
                 "default": null
+              },
+              "snowflake": {
+                "type": "object",
+                "title": "SnowflakeFunctionConfig",
+                "properties": {
+                  "quote_args": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": true
@@ -30867,10 +31454,13 @@
                 "version": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "type": "integer"
                     },
                     {
                       "type": "number"
+                    },
+                    {
+                      "type": "string"
                     },
                     {
                       "type": "null"
@@ -31289,13 +31879,13 @@
                           "tags": {
                             "anyOf": [
                               {
+                                "type": "string"
+                              },
+                              {
                                 "type": "array",
                                 "items": {
                                   "type": "string"
                                 }
-                              },
-                              {
-                                "type": "string"
                               }
                             ]
                           },
@@ -31306,6 +31896,17 @@
                             }
                           },
                           "group": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null
+                          },
+                          "static_analysis": {
                             "anyOf": [
                               {
                                 "type": "string"
@@ -31553,6 +32154,17 @@
                               }
                             ],
                             "default": null
+                          },
+                          "snowflake": {
+                            "type": "object",
+                            "title": "SnowflakeFunctionConfig",
+                            "properties": {
+                              "quote_args": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "additionalProperties": false
                           }
                         },
                         "additionalProperties": true

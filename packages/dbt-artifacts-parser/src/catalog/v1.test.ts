@@ -5,11 +5,18 @@ import path from "path";
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 import { parseCatalogV1 } from "./index";
 
+const FIXTURES = [
+  "catalog.json",
+  "catalog_1.11.json",
+  "catalog_1.12.json",
+] as const;
+
 describe("catalog v1", () => {
-  it("should parse catalog.json correctly", () => {
+  it.each(FIXTURES)("should parse %s correctly", (fixture) => {
     const jsonPath = path.join(
       __dirname,
-      "../../resources/catalog/v1/jaffle_shop/catalog.json",
+      "../../resources/catalog/v1/jaffle_shop",
+      fixture,
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
     const raw = JSON.parse(jsonContent) as Record<string, unknown>;

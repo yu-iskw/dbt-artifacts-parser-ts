@@ -5,11 +5,20 @@ import path from "path";
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 import { parseManifestV12 } from "./index";
 
+const FIXTURES = [
+  "manifest_1.8.json",
+  "manifest_1.9.json",
+  "manifest_1.10.json",
+  "manifest_1.11.json",
+  "manifest_1.12.json",
+] as const;
+
 describe("manifest v12", () => {
-  it("should parse manifest_1.8.json correctly", () => {
+  it.each(FIXTURES)("should parse %s correctly", (fixture) => {
     const jsonPath = path.join(
       __dirname,
-      "../../resources/manifest/v12/jaffle_shop/manifest_1.8.json",
+      "../../resources/manifest/v12/jaffle_shop",
+      fixture,
     );
     const jsonContent = fs.readFileSync(jsonPath, "utf-8");
     const raw = JSON.parse(jsonContent) as Record<string, unknown>;
@@ -33,45 +42,5 @@ describe("manifest v12", () => {
       expect(firstNode).toBeDefined();
       expect(firstNode.unique_id).toBeDefined();
     }
-  });
-
-  it("should parse manifest_1.9.json correctly", () => {
-    const jsonPath = path.join(
-      __dirname,
-      "../../resources/manifest/v12/jaffle_shop/manifest_1.9.json",
-    );
-    const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
-    const parsed = parseManifestV12(raw);
-
-    expect(parsed).toBeDefined();
-    expect(parsed.metadata).toBeDefined();
-    expect(parsed.metadata.dbt_schema_version).toBeDefined();
-    expect(parsed.nodes).toBeDefined();
-    expect(typeof parsed.nodes).toBe("object");
-    expect(parsed.sources).toBeDefined();
-    expect(typeof parsed.sources).toBe("object");
-    expect(parsed.macros).toBeDefined();
-    expect(typeof parsed.macros).toBe("object");
-  });
-
-  it("should parse manifest_1.10.json correctly", () => {
-    const jsonPath = path.join(
-      __dirname,
-      "../../resources/manifest/v12/jaffle_shop/manifest_1.10.json",
-    );
-    const jsonContent = fs.readFileSync(jsonPath, "utf-8");
-    const raw = JSON.parse(jsonContent) as Record<string, unknown>;
-    const parsed = parseManifestV12(raw);
-
-    expect(parsed).toBeDefined();
-    expect(parsed.metadata).toBeDefined();
-    expect(parsed.metadata.dbt_schema_version).toBeDefined();
-    expect(parsed.nodes).toBeDefined();
-    expect(typeof parsed.nodes).toBe("object");
-    expect(parsed.sources).toBeDefined();
-    expect(typeof parsed.sources).toBe("object");
-    expect(parsed.macros).toBeDefined();
-    expect(typeof parsed.macros).toBe("object");
   });
 });

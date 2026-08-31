@@ -229,11 +229,12 @@ export interface SeedConfig {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -424,11 +425,12 @@ export interface NodeConfig {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -549,11 +551,12 @@ export interface NodeConfig1 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -703,7 +706,7 @@ export interface Docs4 {
 export interface RefArgs {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn {
   macros?: string[];
@@ -782,11 +785,12 @@ export interface TestConfig {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   severity?: string;
   store_failures?: boolean | null;
@@ -894,7 +898,7 @@ export interface Docs5 {
 export interface RefArgs1 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn1 {
   macros?: string[];
@@ -974,11 +978,12 @@ export interface NodeConfig2 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -1128,7 +1133,7 @@ export interface Docs7 {
 export interface RefArgs2 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn2 {
   macros?: string[];
@@ -1196,8 +1201,8 @@ export interface Model {
   contract?: Contract3;
   access?: "private" | "protected" | "public";
   constraints?: ModelLevelConstraint[];
-  version?: string | number | null;
-  latest_version?: string | number | null;
+  version?: number | string | null;
+  latest_version?: number | string | null;
   deprecation_date?: string | null;
   defer_relation?: DeferRelation1 | null;
   primary_key?: string[];
@@ -1215,11 +1220,12 @@ export interface ModelConfig {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -1258,6 +1264,8 @@ export interface ModelConfig {
   };
   access?: "private" | "protected" | "public";
   freshness?: ModelFreshness | null;
+  on_error?: ("skip_children" | "continue") | null;
+  latest_version_pointer?: LatestVersionPointer;
   [k: string]: unknown;
 }
 export interface Hook8 {
@@ -1287,6 +1295,10 @@ export interface ModelBuildAfter {
   period?: ("minute" | "hour" | "day") | null;
   updates_on?: "all" | "any";
   [k: string]: unknown;
+}
+export interface LatestVersionPointer {
+  enabled?: boolean | null;
+  alias?: string | null;
 }
 export interface ColumnInfo4 {
   name: string;
@@ -1381,7 +1393,7 @@ export interface Docs9 {
 export interface RefArgs3 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn3 {
   macros?: string[];
@@ -1454,11 +1466,12 @@ export interface NodeConfig3 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -1587,11 +1600,12 @@ export interface NodeConfig4 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -1741,7 +1755,7 @@ export interface Docs12 {
 export interface RefArgs4 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn4 {
   macros?: string[];
@@ -1824,11 +1838,12 @@ export interface TestConfig1 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   severity?: string;
   store_failures?: boolean | null;
@@ -1936,7 +1951,7 @@ export interface Docs13 {
 export interface RefArgs5 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn5 {
   macros?: string[];
@@ -2023,11 +2038,12 @@ export interface SnapshotConfig {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -2191,7 +2207,7 @@ export interface Docs15 {
 export interface RefArgs6 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn6 {
   macros?: string[];
@@ -2248,11 +2264,12 @@ export interface NodeConfig5 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -2381,11 +2398,12 @@ export interface FunctionConfig {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -2426,6 +2444,7 @@ export interface FunctionConfig {
   volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
   runtime_version?: string | null;
   entry_point?: string | null;
+  snowflake?: SnowflakeFunctionConfig;
   [k: string]: unknown;
 }
 export interface Hook18 {
@@ -2445,6 +2464,9 @@ export interface Docs17 {
 export interface ContractConfig9 {
   enforced?: boolean;
   alias_types?: boolean;
+}
+export interface SnowflakeFunctionConfig {
+  quote_args?: boolean;
 }
 export interface ColumnInfo8 {
   name: string;
@@ -2539,7 +2561,7 @@ export interface Docs18 {
 export interface RefArgs7 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn7 {
   macros?: string[];
@@ -2621,11 +2643,12 @@ export interface FunctionConfig1 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -2666,6 +2689,7 @@ export interface FunctionConfig1 {
   volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
   runtime_version?: string | null;
   entry_point?: string | null;
+  snowflake?: SnowflakeFunctionConfig1;
   [k: string]: unknown;
 }
 export interface Hook20 {
@@ -2685,6 +2709,9 @@ export interface Docs19 {
 export interface ContractConfig10 {
   enforced?: boolean;
   alias_types?: boolean;
+}
+export interface SnowflakeFunctionConfig1 {
+  quote_args?: boolean;
 }
 export interface FunctionArgument2 {
   name: string;
@@ -2764,7 +2791,7 @@ export interface ExternalTable {
   file_format?: string | null;
   row_format?: string | null;
   tbl_properties?: string | null;
-  partitions?: string[] | ExternalPartition[] | null;
+  partitions?: (ExternalPartition | string)[] | null;
   [k: string]: unknown;
 }
 export interface ExternalPartition {
@@ -2880,6 +2907,7 @@ export interface SourceConfig {
     [k: string]: unknown;
   };
   tags?: string[];
+  static_analysis?: string | null;
   [k: string]: unknown;
 }
 export interface FreshnessThreshold1 {
@@ -2913,7 +2941,9 @@ export interface Macro {
   patch_path?: string | null;
   arguments?: MacroArgument[];
   created_at?: number;
-  supported_languages?: ("python" | "sql")[] | null;
+  supported_languages?:
+    | (("python" | "sql") | ("python" | "javascript" | "sql"))[]
+    | null;
 }
 export interface MacroDependsOn1 {
   macros?: string[];
@@ -3004,7 +3034,7 @@ export interface DependsOn8 {
 export interface RefArgs8 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface Metric {
   name: string;
@@ -3321,7 +3351,7 @@ export interface DependsOn9 {
 export interface RefArgs9 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface Group {
   name: string;
@@ -3405,11 +3435,12 @@ export interface SeedConfig1 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -3603,11 +3634,12 @@ export interface NodeConfig6 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -3728,11 +3760,12 @@ export interface NodeConfig7 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -3882,7 +3915,7 @@ export interface Docs26 {
 export interface RefArgs10 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn10 {
   macros?: string[];
@@ -3961,11 +3994,12 @@ export interface TestConfig2 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   severity?: string;
   store_failures?: boolean | null;
@@ -4073,7 +4107,7 @@ export interface Docs27 {
 export interface RefArgs11 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn11 {
   macros?: string[];
@@ -4153,11 +4187,12 @@ export interface NodeConfig8 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -4307,7 +4342,7 @@ export interface Docs29 {
 export interface RefArgs12 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn12 {
   macros?: string[];
@@ -4375,8 +4410,8 @@ export interface Model1 {
   contract?: Contract11;
   access?: "private" | "protected" | "public";
   constraints?: ModelLevelConstraint1[];
-  version?: string | number | null;
-  latest_version?: string | number | null;
+  version?: number | string | null;
+  latest_version?: number | string | null;
   deprecation_date?: string | null;
   defer_relation?: DeferRelation4 | null;
   primary_key?: string[];
@@ -4394,11 +4429,12 @@ export interface ModelConfig1 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -4437,6 +4473,8 @@ export interface ModelConfig1 {
   };
   access?: "private" | "protected" | "public";
   freshness?: ModelFreshness1 | null;
+  on_error?: ("skip_children" | "continue") | null;
+  latest_version_pointer?: LatestVersionPointer1;
   [k: string]: unknown;
 }
 export interface Hook30 {
@@ -4466,6 +4504,10 @@ export interface ModelBuildAfter1 {
   period?: ("minute" | "hour" | "day") | null;
   updates_on?: "all" | "any";
   [k: string]: unknown;
+}
+export interface LatestVersionPointer1 {
+  enabled?: boolean | null;
+  alias?: string | null;
 }
 export interface ColumnInfo14 {
   name: string;
@@ -4560,7 +4602,7 @@ export interface Docs31 {
 export interface RefArgs13 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn13 {
   macros?: string[];
@@ -4633,11 +4675,12 @@ export interface NodeConfig9 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -4766,11 +4809,12 @@ export interface NodeConfig10 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -4920,7 +4964,7 @@ export interface Docs34 {
 export interface RefArgs14 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn14 {
   macros?: string[];
@@ -5003,11 +5047,12 @@ export interface TestConfig3 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   severity?: string;
   store_failures?: boolean | null;
@@ -5115,7 +5160,7 @@ export interface Docs35 {
 export interface RefArgs15 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn15 {
   macros?: string[];
@@ -5202,11 +5247,12 @@ export interface SnapshotConfig1 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -5370,7 +5416,7 @@ export interface Docs37 {
 export interface RefArgs16 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn16 {
   macros?: string[];
@@ -5427,11 +5473,12 @@ export interface NodeConfig11 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -5560,11 +5607,12 @@ export interface FunctionConfig2 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -5605,6 +5653,7 @@ export interface FunctionConfig2 {
   volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
   runtime_version?: string | null;
   entry_point?: string | null;
+  snowflake?: SnowflakeFunctionConfig2;
   [k: string]: unknown;
 }
 export interface Hook40 {
@@ -5624,6 +5673,9 @@ export interface Docs39 {
 export interface ContractConfig20 {
   enforced?: boolean;
   alias_types?: boolean;
+}
+export interface SnowflakeFunctionConfig2 {
+  quote_args?: boolean;
 }
 export interface ColumnInfo18 {
   name: string;
@@ -5718,7 +5770,7 @@ export interface Docs40 {
 export interface RefArgs17 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn17 {
   macros?: string[];
@@ -5800,11 +5852,12 @@ export interface FunctionConfig3 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -5845,6 +5898,7 @@ export interface FunctionConfig3 {
   volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
   runtime_version?: string | null;
   entry_point?: string | null;
+  snowflake?: SnowflakeFunctionConfig3;
   [k: string]: unknown;
 }
 export interface Hook42 {
@@ -5864,6 +5918,9 @@ export interface Docs41 {
 export interface ContractConfig21 {
   enforced?: boolean;
   alias_types?: boolean;
+}
+export interface SnowflakeFunctionConfig3 {
+  quote_args?: boolean;
 }
 export interface FunctionArgument5 {
   name: string;
@@ -5943,7 +6000,7 @@ export interface ExternalTable1 {
   file_format?: string | null;
   row_format?: string | null;
   tbl_properties?: string | null;
-  partitions?: string[] | ExternalPartition1[] | null;
+  partitions?: (ExternalPartition1 | string)[] | null;
   [k: string]: unknown;
 }
 export interface ExternalPartition1 {
@@ -6059,6 +6116,7 @@ export interface SourceConfig1 {
     [k: string]: unknown;
   };
   tags?: string[];
+  static_analysis?: string | null;
   [k: string]: unknown;
 }
 export interface FreshnessThreshold3 {
@@ -6128,7 +6186,7 @@ export interface DependsOn18 {
 export interface RefArgs18 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface Metric1 {
   name: string;
@@ -6445,7 +6503,7 @@ export interface DependsOn19 {
 export interface RefArgs19 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface SavedQuery {
   name: string;
@@ -6468,7 +6526,7 @@ export interface SavedQuery {
   depends_on?: DependsOn20;
   created_at?: number;
   refs?: RefArgs20[];
-  tags?: string[] | string;
+  tags?: string | string[];
 }
 export interface QueryParams {
   metrics: string[];
@@ -6530,7 +6588,7 @@ export interface DependsOn20 {
 export interface RefArgs20 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface SemanticModel {
   name: string;
@@ -6708,7 +6766,7 @@ export interface DependsOn21 {
 export interface RefArgs21 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface SemanticModelConfig {
   _extra?: {
@@ -6759,7 +6817,7 @@ export interface UnitTestDefinition {
   schema?: string | null;
   created_at?: number;
   versions?: UnitTestNodeVersions | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface UnitTestInputFixture {
   input: string;
@@ -6806,11 +6864,12 @@ export interface UnitTestConfig {
     [k: string]: unknown;
   };
   enabled?: boolean;
+  static_analysis?: string | null;
   [k: string]: unknown;
 }
 export interface UnitTestNodeVersions {
-  include?: (string | number)[] | null;
-  exclude?: (string | number)[] | null;
+  include?: (number | string)[] | null;
+  exclude?: (number | string)[] | null;
 }
 export interface SavedQuery1 {
   name: string;
@@ -6833,7 +6892,7 @@ export interface SavedQuery1 {
   depends_on?: DependsOn23;
   created_at?: number;
   refs?: RefArgs22[];
-  tags?: string[] | string;
+  tags?: string | string[];
 }
 export interface QueryParams1 {
   metrics: string[];
@@ -6895,7 +6954,7 @@ export interface DependsOn23 {
 export interface RefArgs22 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface SemanticModel1 {
   name: string;
@@ -7073,7 +7132,7 @@ export interface DependsOn24 {
 export interface RefArgs23 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface SemanticModelConfig1 {
   _extra?: {
@@ -7124,7 +7183,7 @@ export interface UnitTestDefinition1 {
   schema?: string | null;
   created_at?: number;
   versions?: UnitTestNodeVersions1 | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface UnitTestInputFixture1 {
   input: string;
@@ -7171,11 +7230,12 @@ export interface UnitTestConfig1 {
     [k: string]: unknown;
   };
   enabled?: boolean;
+  static_analysis?: string | null;
   [k: string]: unknown;
 }
 export interface UnitTestNodeVersions1 {
-  include?: (string | number)[] | null;
-  exclude?: (string | number)[] | null;
+  include?: (number | string)[] | null;
+  exclude?: (number | string)[] | null;
 }
 export interface Function2 {
   returns: FunctionReturns6;
@@ -7249,11 +7309,12 @@ export interface FunctionConfig4 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -7294,6 +7355,7 @@ export interface FunctionConfig4 {
   volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
   runtime_version?: string | null;
   entry_point?: string | null;
+  snowflake?: SnowflakeFunctionConfig4;
   [k: string]: unknown;
 }
 export interface Hook44 {
@@ -7313,6 +7375,9 @@ export interface Docs42 {
 export interface ContractConfig22 {
   enforced?: boolean;
   alias_types?: boolean;
+}
+export interface SnowflakeFunctionConfig4 {
+  quote_args?: boolean;
 }
 export interface ColumnInfo20 {
   name: string;
@@ -7407,7 +7472,7 @@ export interface Docs43 {
 export interface RefArgs24 {
   name: string;
   package?: string | null;
-  version?: string | number | null;
+  version?: number | string | null;
 }
 export interface DependsOn26 {
   macros?: string[];
@@ -7489,11 +7554,12 @@ export interface FunctionConfig5 {
   alias?: string | null;
   schema?: string | null;
   database?: string | null;
-  tags?: string[] | string;
+  tags?: string | string[];
   meta?: {
     [k: string]: unknown;
   };
   group?: string | null;
+  static_analysis?: string | null;
   materialized?: string;
   incremental_strategy?: string | null;
   batch_size?: {
@@ -7534,6 +7600,7 @@ export interface FunctionConfig5 {
   volatility?: ("deterministic" | "stable" | "non-deterministic") | null;
   runtime_version?: string | null;
   entry_point?: string | null;
+  snowflake?: SnowflakeFunctionConfig5;
   [k: string]: unknown;
 }
 export interface Hook46 {
@@ -7553,6 +7620,9 @@ export interface Docs44 {
 export interface ContractConfig23 {
   enforced?: boolean;
   alias_types?: boolean;
+}
+export interface SnowflakeFunctionConfig5 {
+  quote_args?: boolean;
 }
 export interface FunctionArgument8 {
   name: string;
