@@ -24,7 +24,7 @@ export interface BaseArtifactMetadata {
 }
 export interface RunResultOutput {
   status:
-    | ("success" | "error" | "skipped" | "partial success" | "no-op")
+    | ("success" | "error" | "skipped" | "partial success" | "no-op" | "reused")
     | ("pass" | "error" | "fail" | "warn" | "skipped")
     | ("pass" | "warn" | "error" | "runtime error");
   timing: TimingInfo[];

@@ -3,12 +3,15 @@
 export * from "./v3";
 import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
 
 /**
  * Union type of all supported sources versions
  */
 export type ParsedSources = SourcesV1 | SourcesV2 | SourcesV3;
+
+export type { ParseOptions } from "../parseOptions";
 
 const ERR_NOT_SOURCES = "Not a sources.json";
 
@@ -74,10 +77,19 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
   return parsed as unknown as SourcesV3;
 }
 
+const SOURCES_PARSERS = [
+  parseSourcesV1,
+  parseSourcesV2,
+  parseSourcesV3,
+] as const;
+
 /**
  * Parse sources.json with automatic version detection
  */
-export function parseSources(parsed: Record<string, unknown>): ParsedSources {
+export function parseSources(
+  parsed: Record<string, unknown>,
+  options?: ParseOptions,
+): ParsedSources {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
   if (!metadata) throw new Error(ERR_NOT_SOURCES);
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
@@ -85,14 +97,19 @@ export function parseSources(parsed: Record<string, unknown>): ParsedSources {
     throw new Error(ERR_NOT_SOURCES);
   const version = extractVersion(schemaVersion);
   if (version === null) throw new Error(ERR_NOT_SOURCES);
-  switch (version) {
-    case 1:
-      return parseSourcesV1(parsed);
-    case 2:
-      return parseSourcesV2(parsed);
-    case 3:
-      return parseSourcesV3(parsed);
-    default:
-      throw new Error(`Unsupported sources version: ${version}`);
+  const parser = SOURCES_PARSERS[version - 1];
+  if (parser) {
+    return parser(parsed);
   }
+  const fallback = tryFallbackToLatest(
+    options,
+    version,
+    SOURCES_PARSERS.length,
+    schemaVersion,
+    parsed as unknown as SourcesV3,
+  );
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  throw new Error(`Unsupported sources version: ${version}`);
 }

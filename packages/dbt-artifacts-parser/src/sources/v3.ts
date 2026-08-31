@@ -14,6 +14,7 @@ export interface FreshnessMetadata {
   dbt_version?: string;
   generated_at?: string;
   invocation_id?: string | null;
+  invocation_started_at?: string | null;
   env?: {
     [k: string]: string;
   };

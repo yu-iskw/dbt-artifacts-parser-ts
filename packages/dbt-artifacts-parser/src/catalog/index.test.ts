@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import type { ParsedCatalog } from "./index";
@@ -116,6 +116,29 @@ describe("catalog parser", () => {
       expect(() => parseCatalog(invalidCatalog)).toThrow(
         "Unsupported catalog version: 2",
       );
+    });
+
+    it("should fall back to latest when fallbackToLatest is true", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/catalog/v1/jaffle_shop/catalog.json",
+      );
+      const parsed = JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
+      const metadata = parsed.metadata as Record<string, unknown>;
+      metadata.dbt_schema_version =
+        "https://schemas.getdbt.com/dbt/catalog/v99.json";
+
+      const catalog = parseCatalog(parsed, { fallbackToLatest: true });
+
+      expect(catalog).toBeDefined();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("falling back to latest supported schema 'v1'"),
+      );
+      warnSpy.mockRestore();
     });
   });
 

@@ -4,6 +4,10 @@ TypeScript library for parsing dbt artifacts with full type safety and automatic
 
 This is a **standalone library**. Use it whenever you need to read, validate, or type-check dbt JSON artifacts in TypeScript.
 
+## Related packages
+
+Python users should use [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) (PyPI package `dbt-artifacts-parser`).
+
 ## Supported Artifacts
 
 ```mermaid
@@ -146,6 +150,8 @@ import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sour
 
 ## Supported Versions
 
+Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema majors are independent of Core semver: dbt Core 1.8–1.12 use manifest v12, catalog v1, run-results v6, and sources v3.
+
 ### Manifest
 
 - **v1–v2**: `Manifest` interface
@@ -178,9 +184,13 @@ import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sour
 
 ### Manifest Parsers
 
-#### `parseManifest(manifest: Record<string, unknown>): ParsedManifest`
+#### `parseManifest(manifest: Record<string, unknown>, options?: ParseOptions): ParsedManifest`
 
 Automatically detects version and returns typed manifest.
+
+**Options**:
+
+- `fallbackToLatest?: boolean` — When `true` and the schema version is newer than supported, parse as the latest known schema (best-effort) and emit a `console.warn`. Default is `false` (strict). Prefer refreshing parsers for full support of new dbt artifact versions.
 
 **Throws**: `Error` if manifest is invalid or version is unsupported
 
@@ -192,19 +202,25 @@ Version-specific parsers that validate the version matches before returning.
 
 ### Catalog Parsers
 
-#### `parseCatalog(catalog: Record<string, unknown>): ParsedCatalog`
+#### `parseCatalog(catalog: Record<string, unknown>, options?: ParseOptions): ParsedCatalog`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseCatalogV1(catalog: Record<string, unknown>): CatalogArtifactV1`
 
 ### RunResults Parsers
 
-#### `parseRunResults(runResults: Record<string, unknown>): ParsedRunResults`
+#### `parseRunResults(runResults: Record<string, unknown>, options?: ParseOptions): ParsedRunResults`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseRunResultsV1` … `parseRunResultsV6`
 
 ### Sources Parsers
 
-#### `parseSources(sources: Record<string, unknown>): ParsedSources`
+#### `parseSources(sources: Record<string, unknown>, options?: ParseOptions): ParsedSources`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseSourcesV1` / `parseSourcesV2` / `parseSourcesV3`
 
@@ -266,7 +282,3 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for the full developer guide.
 ## License
 
 **Apache License, Version 2.0.** See the full text in [`LICENSE`](./LICENSE) in this package (also published in the npm tarball). Repository-wide map: [`../../LICENSES/README.md`](../../LICENSES/README.md).
-
-## Related Projects
-
-Inspired by the Python [dbt-artifacts-parser](https://github.com/yu-iskw/dbt-artifacts-parser) library.

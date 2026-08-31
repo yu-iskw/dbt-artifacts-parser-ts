@@ -12,6 +12,7 @@ import type { HttpsSchemasGetdbtComDbtManifestV8Json as ManifestV8 } from "./v8"
 import type { HttpsSchemasGetdbtComDbtManifestV9Json as ManifestV9 } from "./v9";
 import type { HttpsSchemasGetdbtComDbtManifestV10Json as ManifestV10 } from "./v10";
 import type { WritableManifest as ManifestV11 } from "./v11";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { WritableManifest as ManifestV12 } from "./v12";
 
 /**
@@ -30,6 +31,8 @@ export type ParsedManifest =
   | ManifestV10
   | ManifestV11
   | ManifestV12;
+
+export type { ParseOptions } from "../parseOptions";
 
 const ERR_NOT_MANIFEST = "Not a manifest.json";
 
@@ -266,7 +269,10 @@ const MANIFEST_PARSERS = [
 /**
  * Parse manifest.json with automatic version detection
  */
-export function parseManifest(parsed: Record<string, unknown>): ParsedManifest {
+export function parseManifest(
+  parsed: Record<string, unknown>,
+  options?: ParseOptions,
+): ParsedManifest {
   const metadata = parsed.metadata as Record<string, unknown> | undefined;
   if (!metadata) throw new Error(ERR_NOT_MANIFEST);
   const schemaVersion = metadata.dbt_schema_version as string | undefined;
@@ -275,6 +281,18 @@ export function parseManifest(parsed: Record<string, unknown>): ParsedManifest {
   const version = extractVersion(schemaVersion);
   if (version === null) throw new Error(ERR_NOT_MANIFEST);
   const parser = MANIFEST_PARSERS[version - 1];
-  if (!parser) throw new Error(`Unsupported manifest version: ${version}`);
-  return parser(parsed);
+  if (parser) {
+    return parser(parsed);
+  }
+  const fallback = tryFallbackToLatest(
+    options,
+    version,
+    MANIFEST_PARSERS.length,
+    schemaVersion,
+    parsed as unknown as ManifestV12,
+  );
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  throw new Error(`Unsupported manifest version: ${version}`);
 }
