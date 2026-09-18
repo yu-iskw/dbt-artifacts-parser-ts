@@ -3,15 +3,15 @@ name: dbt v2 artifact compatibility
 on:
   workflow_dispatch:
   schedule:
-    - cron: "29 7 * * 1"
+    - cron: 29 7 * * 1
   pull_request:
     paths:
-      - "packages/dbt-artifacts-parser/src/compatibility/**"
-      - "packages/dbt-artifacts-parser/src/sources/index.ts"
-      - "packages/dbt-artifacts-parser/src/run_results/index.ts"
-      - "tests/dbt_v2_canary/**"
-      - "scripts/check-dbt-v2-canary.mjs"
-      - ".github/workflows/dbt_v2_compatibility.yml"
+      - packages/dbt-artifacts-parser/src/compatibility/**
+      - packages/dbt-artifacts-parser/src/sources/index.ts
+      - packages/dbt-artifacts-parser/src/run_results/index.ts
+      - tests/dbt_v2_canary/**
+      - scripts/check-dbt-v2-canary.mjs
+      - .github/workflows/dbt_v2_compatibility.yml
 
 permissions:
   contents: read
@@ -23,8 +23,8 @@ jobs:
       fail-fast: false
       matrix:
         dbt-version:
-          - "2.0.0"
-          - "latest-2.0"
+          - 2.0.0
+          - latest-2.0
 
     steps:
       - uses: actions/checkout@v7
