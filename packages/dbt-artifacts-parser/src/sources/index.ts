@@ -3,6 +3,7 @@
 export * from "./v3";
 import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
+import { normalizeSourcesV3 } from "../compatibility/sources";
 import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
 
@@ -74,7 +75,7 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
     throw new Error("Not a sources.json v3");
   }
 
-  return parsed as unknown as SourcesV3;
+  return normalizeSourcesV3(parsed) as unknown as SourcesV3;
 }
 
 const SOURCES_PARSERS = [
