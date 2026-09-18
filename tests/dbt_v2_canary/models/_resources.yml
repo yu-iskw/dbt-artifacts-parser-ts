@@ -18,14 +18,14 @@ sources:
         config:
           loaded_at_field: loaded_at
           freshness:
-            warn_after: {count: 1, period: hour}
-            error_after: {count: 24, period: hour}
+            warn_after: { count: 1, period: hour }
+            error_after: { count: 24, period: hour }
       - name: stale_events
         config:
           loaded_at_field: loaded_at
           freshness:
-            warn_after: {count: 1, period: hour}
-            error_after: {count: 24, period: hour}
+            warn_after: { count: 1, period: hour }
+            error_after: { count: 24, period: hour }
 
 unit_tests:
   - name: unit_target_returns_one
@@ -36,7 +36,7 @@ unit_tests:
     given: []
     expect:
       rows:
-        - {id: 1}
+        - { id: 1 }
 
 groups:
   - name: analytics
