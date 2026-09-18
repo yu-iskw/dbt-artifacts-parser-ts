@@ -1,13 +1,21 @@
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { parseManifest } = require("../packages/dbt-artifacts-parser/dist/manifest/index.js");
-const { parseRunResults } = require("../packages/dbt-artifacts-parser/dist/run_results/index.js");
-const { parseSources } = require("../packages/dbt-artifacts-parser/dist/sources/index.js");
-const { parseCatalog } = require("../packages/dbt-artifacts-parser/dist/catalog/index.js");
+const { parseManifest } = require(
+  "../packages/dbt-artifacts-parser/dist/manifest/index.js",
+);
+const { parseRunResults } = require(
+  "../packages/dbt-artifacts-parser/dist/run_results/index.js",
+);
+const { parseSources } = require(
+  "../packages/dbt-artifacts-parser/dist/sources/index.js",
+);
+const { parseCatalog } = require(
+  "../packages/dbt-artifacts-parser/dist/catalog/index.js",
+);
 
 function loadJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -47,23 +55,33 @@ const unitTestId =
   "unit_test.dbt_v2_canary.unit_target.unit_target_returns_one";
 assert(rawManifest.unit_tests?.[unitTestId], "unit test missing from manifest");
 assert(
-  rawManifest.unit_tests[unitTestId].overrides?.vars?.compatibility_mode === "'v2'",
+  rawManifest.unit_tests[unitTestId].overrides?.vars?.compatibility_mode ===
+    "'v2'",
   "unit-test overrides were not preserved",
 );
 assert(
-  manifest.unit_tests?.[unitTestId]?.overrides?.vars?.compatibility_mode === "'v2'",
+  manifest.unit_tests?.[unitTestId]?.overrides?.vars?.compatibility_mode ===
+    "'v2'",
   "parsed unit-test overrides were not preserved",
 );
 
 const macroId = "macro.dbt_v2_canary.compat_macro";
-assert(rawManifest.macros?.[macroId]?.arguments?.length, "macro arguments missing");
-assert(manifest.macros?.[macroId]?.arguments?.length, "parsed macro arguments missing");
+assert(
+  rawManifest.macros?.[macroId]?.arguments?.length,
+  "macro arguments missing",
+);
+assert(
+  manifest.macros?.[macroId]?.arguments?.length,
+  "parsed macro arguments missing",
+);
 
 const rawRunResults = loadJson(path.join(artifactDir, "run_results.json"));
 const runResults = parseRunResults(rawRunResults);
 assert(runResults.results.length > 0, "run_results.json is empty");
 assert(
-  runResults.results.some((result) => result.static_analysis_off_reason != null),
+  runResults.results.some(
+    (result) => result.static_analysis_off_reason != null,
+  ),
   "expected a dbt v2 static_analysis_off_reason result field",
 );
 
