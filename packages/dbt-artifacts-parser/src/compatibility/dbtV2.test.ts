@@ -64,7 +64,7 @@ describe("dbt v2 producer compatibility", () => {
     );
 
     const parsed = parseRunResults(artifact);
-    const firstResult = parsed.results[0] as Record<string, unknown>;
+    const firstResult = parsed.results[0] as unknown as Record<string, unknown>;
 
     expect(firstResult.static_analysis_off_reason).toBe("configuredoff");
   });
