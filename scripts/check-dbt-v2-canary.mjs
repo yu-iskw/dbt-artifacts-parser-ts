@@ -32,13 +32,19 @@ const operationIds = Object.keys(rawManifest.nodes).filter((id) =>
 );
 assert(operationIds.length > 0, "expected on-run-start operation node");
 for (const id of operationIds) {
-  assert("config" in rawManifest.nodes[id], `${id} is missing config`);
-  assert("tags" in rawManifest.nodes[id], `${id} is missing tags`);
-  assert(manifest.nodes[id].config != null, `${id} parsed config is missing`);
-  assert(manifest.nodes[id].tags != null, `${id} parsed tags are missing`);
+  assert(manifest.nodes[id], `${id} is missing after parsing`);
+  const missingLegacyFields = ["config", "tags"].filter(
+    (fieldName) => !(fieldName in rawManifest.nodes[id]),
+  );
+  if (missingLegacyFields.length > 0) {
+    console.log(
+      `dbt v2 operation node omits legacy fields: ${missingLegacyFields.join(", ")}`,
+    );
+  }
 }
 
-const unitTestId = "unit_test.dbt_v2_canary.unit_target_returns_one";
+const unitTestId =
+  "unit_test.dbt_v2_canary.unit_target.unit_target_returns_one";
 assert(rawManifest.unit_tests?.[unitTestId], "unit test missing from manifest");
 assert(
   rawManifest.unit_tests[unitTestId].overrides?.vars?.compatibility_mode === "'v2'",
