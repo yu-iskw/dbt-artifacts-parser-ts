@@ -1,9 +1,10 @@
 // Export latest version by default
 // To use a specific version, import directly: import { Type } from './v3'
 export * from "./v3";
+import { normalizeSourcesV3ProducerStatus } from "../compatibility/sources";
+import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
-import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
 
 /**
@@ -74,7 +75,7 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
     throw new Error("Not a sources.json v3");
   }
 
-  return parsed as unknown as SourcesV3;
+  return normalizeSourcesV3ProducerStatus(parsed) as unknown as SourcesV3;
 }
 
 const SOURCES_PARSERS = [

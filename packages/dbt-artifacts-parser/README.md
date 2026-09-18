@@ -17,6 +17,7 @@ graph LR
   P --> C["catalog.json\nv1"]
   P --> R["run_results.json\nv1–v6"]
   P --> S["sources.json\nv1–v3"]
+  P --> F["freshness.json\nv0"]
 ```
 
 ---
@@ -44,6 +45,7 @@ import { WritableManifest } from "dbt-artifacts-parser/manifest";
 import { CatalogArtifact } from "dbt-artifacts-parser/catalog";
 import { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
 import { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
+import { FreshnessExecutionResultArtifact as FreshnessJsonV0 } from "dbt-artifacts-parser/freshness";
 ```
 
 #### 2. Version-Specific Imports
@@ -61,6 +63,7 @@ import {
 } from "dbt-artifacts-parser/run_results";
 import { parseCatalogV1 } from "dbt-artifacts-parser/catalog";
 import { parseSourcesV3 } from "dbt-artifacts-parser/sources";
+import { parseFreshnessV0 } from "dbt-artifacts-parser/freshness";
 ```
 
 ---
@@ -76,6 +79,7 @@ import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { parseCatalog } from "dbt-artifacts-parser/catalog";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import { parseSources } from "dbt-artifacts-parser/sources";
+import { parseFreshness } from "dbt-artifacts-parser/freshness";
 import fs from "fs";
 
 const manifest = parseManifest(
@@ -97,6 +101,11 @@ const sources = parseSources(
   JSON.parse(fs.readFileSync("sources.json", "utf-8")),
 );
 // Returns: ParsedSources
+
+const freshness = parseFreshness(
+  JSON.parse(fs.readFileSync("freshness.json", "utf-8")),
+);
+// Returns: ParsedFreshness
 ```
 
 #### Version-Specific Parsing
@@ -109,12 +118,14 @@ import {
 import { parseRunResultsV6 } from "dbt-artifacts-parser/run_results";
 import { parseCatalogV1 } from "dbt-artifacts-parser/catalog";
 import { parseSourcesV3 } from "dbt-artifacts-parser/sources";
+import { parseFreshnessV0 } from "dbt-artifacts-parser/freshness";
 
 const manifestV1 = parseManifestV1(manifestJson); // Returns: Manifest (v1)
 const manifestV12 = parseManifestV12(manifestJson); // Returns: WritableManifest (v12)
 const runResultsV6 = parseRunResultsV6(runResultsJson); // Returns: RunResultsArtifact (v6)
 const catalogV1 = parseCatalogV1(catalogJson); // Returns: CatalogArtifact (v1)
 const sourcesV3 = parseSourcesV3(sourcesJson); // Returns: FreshnessExecutionResultArtifact (v3)
+const freshnessV0 = parseFreshnessV0(freshnessJson); // Returns: FreshnessExecutionResultArtifact (freshness v0)
 ```
 
 ---
@@ -128,6 +139,7 @@ import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ParsedSources } from "dbt-artifacts-parser/sources";
+import type { ParsedFreshness } from "dbt-artifacts-parser/freshness";
 
 function processManifest(manifest: ParsedManifest) {
   console.log(manifest.metadata.dbt_schema_version);
@@ -144,13 +156,26 @@ import type { WritableManifest } from "dbt-artifacts-parser/manifest";
 import type { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
 import type { CatalogArtifact } from "dbt-artifacts-parser/catalog";
 import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
+import type { FreshnessExecutionResultArtifact as FreshnessJsonV0 } from "dbt-artifacts-parser/freshness";
 ```
 
 ---
 
 ## Supported Versions
 
-Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema majors are independent of Core semver: dbt Core 1.8–1.12 use manifest v12, catalog v1, run-results v6, and sources v3.
+Public types are versioned by **artifact schema URL**, not by dbt engine semver. The
+same schema major can be produced by dbt Core 1.8–1.12 and by dbt v2.
+
+| Claim            | Meaning                                                                         |
+| ---------------- | ------------------------------------------------------------------------------- |
+| Schema-supported | Generated types and parsers exist for that `dbt_schema_version`.                |
+| Producer-compat  | Known wire differences are covered by fixtures and, when needed, a narrow shim. |
+
+Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. dbt v2 JSON that still
+declares those schema URLs is accepted on the same parsers. dbt v2 also writes
+**`freshness.json` v0**, which is a separate public schema.
+
+This package does **not** read Fusion Parquet/index/metadata artifacts.
 
 ### Manifest
 
@@ -177,6 +202,16 @@ Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema
 - **v2**: Generated schema interface (`HttpsSchemasGetdbtComDbtSourcesV2Json`)
 - **v3**: `FreshnessExecutionResultArtifact` interface
 - **Latest**: v3 (`FreshnessExecutionResultArtifact`)
+- **Producer-compat:** Fusion `sources.json` may emit PascalCase freshness statuses
+  (`Pass` / `Warn` / `Error`). `parseSources` / `parseSourcesV3` map those onto the
+  published lowercase enum. They do not recursively rewrite other strings.
+
+### Freshness
+
+- **v0**: `FreshnessExecutionResultArtifact` interface from
+  `dbt-artifacts-parser/freshness` (`Pass` / `Warn` / `Error`, optional `resource_type`)
+- **Latest**: v0
+- Produced by dbt v2 `dbt freshness`. This is not a sources.json version.
 
 ---
 
@@ -221,8 +256,21 @@ Same auto-detect behavior as `parseManifest`, including optional `fallbackToLate
 #### `parseSources(sources: Record<string, unknown>, options?: ParseOptions): ParsedSources`
 
 Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
+`parseSourcesV3` also maps Fusion PascalCase freshness statuses to the published
+lowercase sources v3 enum.
 
 #### `parseSourcesV1` / `parseSourcesV2` / `parseSourcesV3`
+
+### Freshness Parsers
+
+#### `parseFreshness(freshness: Record<string, unknown>, options?: ParseOptions): ParsedFreshness`
+
+Auto-detects `freshness.json` schema versions. The current public schema is v0.
+Statuses stay `Pass` / `Warn` / `Error`.
+
+#### `parseFreshnessV0(freshness: Record<string, unknown>): FreshnessExecutionResultArtifact`
+
+**Throws**: `Error` with message `"Not a freshness.json v0"` if the schema URL does not match.
 
 ---
 
@@ -252,9 +300,11 @@ try {
 packages/dbt-artifacts-parser/
 ├── src/
 │   ├── catalog/          # Catalog artifact types and parsers
+│   ├── freshness/        # freshness.json types and parsers
 │   ├── manifest/         # Manifest artifact types and parsers
 │   ├── run_results/      # RunResults artifact types and parsers
 │   ├── sources/          # Sources artifact types and parsers
+│   ├── compatibility/    # Narrow producer shims (not generated)
 │   └── index.ts          # Main entry point
 ├── resources/            # JSON Schema source files (from schemas.getdbt.com)
 └── scripts/              # Type generation scripts

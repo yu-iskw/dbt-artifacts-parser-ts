@@ -18,5 +18,9 @@ export function createSharedSourceEntryAliases(projectRoot) {
       projectRoot,
       "packages/dbt-artifacts-parser/src/sources/index.ts",
     ),
+    "dbt-artifacts-parser/freshness": path.resolve(
+      projectRoot,
+      "packages/dbt-artifacts-parser/src/freshness/index.ts",
+    ),
   };
 }

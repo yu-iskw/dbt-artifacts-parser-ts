@@ -6,6 +6,7 @@
 //   import { CatalogArtifact } from 'dbt-artifacts-parser/catalog'
 //   import { RunResultsArtifact } from 'dbt-artifacts-parser/run_results'
 //   import { FreshnessExecutionResultArtifact } from 'dbt-artifacts-parser/sources'
+//   import { FreshnessExecutionResultArtifact } from 'dbt-artifacts-parser/freshness'
 
 // Re-export catalog (latest version)
 export * from "./catalog";
