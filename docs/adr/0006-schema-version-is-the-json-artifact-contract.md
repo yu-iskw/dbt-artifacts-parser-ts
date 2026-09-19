@@ -88,6 +88,5 @@ fields are untyped until they land in official schemas.
 ## References
 
 - Related: [0001](./0001-record-architecture-decisions.md) — ADR policy
-- Official schema registry: <https://schemas.getdbt.com/>
-- Schema source repository: <https://github.com/dbt-labs/schemas.getdbt.com>
-- Issue: <https://github.com/yu-iskw/dbt-artifacts-parser-ts/issues/190>
+- Official schema source: [dbt-labs/schemas.getdbt.com](https://github.com/dbt-labs/schemas.getdbt.com)
+- Issue: [yu-iskw/dbt-artifacts-parser-ts#190](https://github.com/yu-iskw/dbt-artifacts-parser-ts/issues/190)

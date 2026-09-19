@@ -134,6 +134,17 @@ describe("freshness parser", () => {
       );
     });
 
+    it("should throw when the freshness URL has no numeric version", () => {
+      expect(() =>
+        parseFreshness({
+          metadata: {
+            dbt_schema_version:
+              "https://schemas.getdbt.com/dbt/freshness/v.json",
+          },
+        }),
+      ).toThrow("Not a freshness.json");
+    });
+
     it("should throw error for unsupported version", () => {
       const invalidFreshness = {
         metadata: {
@@ -199,6 +210,10 @@ describe("freshness parser", () => {
           },
         }),
       ).toThrow("Not a freshness.json v0");
+    });
+
+    it("should throw when metadata is missing in parseFreshnessV0", () => {
+      expect(() => parseFreshnessV0({})).toThrow("Not a freshness.json v0");
     });
   });
 

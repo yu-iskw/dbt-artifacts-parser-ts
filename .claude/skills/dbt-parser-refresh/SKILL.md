@@ -29,7 +29,7 @@ Activate this skill when the user says or implies:
 
 ## Adding new schemas
 
-This repo has no download script. To add new schema versions, copy JSON schema files from the official registry (<https://schemas.getdbt.com/>, source repo `dbt-labs/schemas.getdbt.com`; historical copies also appear under `dbt-labs/dbt` / dbt-core) into the appropriate `packages/dbt-artifacts-parser/resources/json-schema/<category>/` directory (use `*_vN.json` filenames), then run the generate command above.
+This repo has no download script. To add new schema versions, copy JSON schema files from the official registry ([dbt-labs/schemas.getdbt.com](https://github.com/dbt-labs/schemas.getdbt.com); historical copies also appear under `dbt-labs/dbt` / dbt-core) into the appropriate `packages/dbt-artifacts-parser/resources/json-schema/<category>/` directory (use `*_vN.json` filenames), then run the generate command above.
 
 Parser dispatch is by `metadata.dbt_schema_version`. Do not add a new generated major because a dbt executable version changed; add one only when the registry publishes a new schema URL or a new artifact type (for example `freshness/v0.json` for `freshness.json`). `freshness` starts at v0, so its hand-maintained dispatcher must use an explicit version map rather than `parsers[version - 1]`.
 

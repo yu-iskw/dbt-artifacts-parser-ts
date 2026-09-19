@@ -45,7 +45,10 @@ import { WritableManifest } from "dbt-artifacts-parser/manifest";
 import { CatalogArtifact } from "dbt-artifacts-parser/catalog";
 import { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
 import { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
-import { parseFreshness, type FreshnessArtifact } from "dbt-artifacts-parser/freshness";
+import {
+  parseFreshness,
+  type FreshnessArtifact,
+} from "dbt-artifacts-parser/freshness";
 ```
 
 #### 2. Version-Specific Imports

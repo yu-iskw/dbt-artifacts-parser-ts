@@ -188,7 +188,9 @@ describe("sources parser", () => {
             "https://schemas.getdbt.com/dbt/freshness/v0.json",
         },
       };
-      expect(() => parseSources(freshnessArtifact)).toThrow("Not a sources.json");
+      expect(() => parseSources(freshnessArtifact)).toThrow(
+        "Not a sources.json",
+      );
     });
   });
 

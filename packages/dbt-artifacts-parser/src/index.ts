@@ -9,4 +9,4 @@
 //   import { parseFreshness, type FreshnessArtifact } from 'dbt-artifacts-parser/freshness'
 
 // Re-export catalog (latest version)
-export * from './catalog';
+export * from "./catalog";
