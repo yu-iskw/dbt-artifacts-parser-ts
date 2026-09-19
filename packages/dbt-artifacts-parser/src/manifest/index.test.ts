@@ -168,6 +168,25 @@ describe("manifest parser", () => {
         parseManifest(invalidManifest, { fallbackToLatest: true }),
       ).toThrow("Not a manifest.json");
     });
+
+    it("should dispatch a 2.x producer on schema v12, not dbt_version", () => {
+      const producerV2 = {
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/manifest/v12.json",
+          dbt_version: "2.0.0",
+        },
+        nodes: {},
+        sources: {},
+        macros: {},
+        extra_fusion_key: "nodes_with_ref_location",
+      };
+      const manifest = parseManifest(producerV2);
+      expect(manifest.metadata.dbt_schema_version).toBe(
+        "https://schemas.getdbt.com/dbt/manifest/v12.json",
+      );
+      expect(manifest.metadata.dbt_version).toBe("2.0.0");
+    });
   });
 
   describe("version-specific parsers", () => {

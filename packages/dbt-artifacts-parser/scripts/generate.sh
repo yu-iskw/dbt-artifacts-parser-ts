@@ -36,7 +36,7 @@ echo -e "${BLUE}Generating TypeScript types from JSON schemas...${NC}"
 
 # Ensure src subdirectories exist (do not blanket-delete v*.ts: partial schema
 # check-ins only regenerate the versions backed by resources/<category>/*.json)
-for dir in catalog manifest run_results sources semantic_manifest; do
+for dir in catalog manifest run_results sources semantic_manifest freshness; do
 	mkdir -p "${SRC_DIR}/${dir}"
 done
 
@@ -125,6 +125,7 @@ process_category "manifest" "${SRC_DIR}/manifest" "${RESOURCES_DIR}/json-schema/
 process_category "run-results" "${SRC_DIR}/run_results" "${RESOURCES_DIR}/json-schema/run-results"
 process_category "sources" "${SRC_DIR}/sources" "${RESOURCES_DIR}/json-schema/sources"
 process_category "semantic_manifest" "${SRC_DIR}/semantic_manifest" "${RESOURCES_DIR}/json-schema/semantic_manifest"
+process_category "freshness" "${SRC_DIR}/freshness" "${RESOURCES_DIR}/json-schema/freshness"
 
 # Generate root index.ts
 # Don't re-export everything to avoid naming conflicts between categories
@@ -139,6 +140,7 @@ echo -e "${BLUE}Generating root index.ts...${NC}"
 	echo "//   import { CatalogArtifact } from 'dbt-artifacts-parser/catalog'"
 	echo "//   import { RunResultsArtifact } from 'dbt-artifacts-parser/run_results'"
 	echo "//   import { FreshnessExecutionResultArtifact } from 'dbt-artifacts-parser/sources'"
+	echo "//   import { parseFreshness, type FreshnessArtifact } from 'dbt-artifacts-parser/freshness'"
 	echo ""
 	echo "// Re-export catalog (latest version)"
 	if [[ -f "${SRC_DIR}/catalog/index.ts" ]]; then
