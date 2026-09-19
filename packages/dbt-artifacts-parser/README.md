@@ -17,6 +17,7 @@ graph LR
   P --> C["catalog.json\nv1"]
   P --> R["run_results.json\nv1–v6"]
   P --> S["sources.json\nv1–v3"]
+  P --> F["freshness.json\nv0"]
 ```
 
 ---
@@ -44,6 +45,7 @@ import { WritableManifest } from "dbt-artifacts-parser/manifest";
 import { CatalogArtifact } from "dbt-artifacts-parser/catalog";
 import { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
 import { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
+import { parseFreshness, type FreshnessArtifact } from "dbt-artifacts-parser/freshness";
 ```
 
 #### 2. Version-Specific Imports
@@ -61,6 +63,7 @@ import {
 } from "dbt-artifacts-parser/run_results";
 import { parseCatalogV1 } from "dbt-artifacts-parser/catalog";
 import { parseSourcesV3 } from "dbt-artifacts-parser/sources";
+import { parseFreshnessV0 } from "dbt-artifacts-parser/freshness";
 ```
 
 ---
@@ -76,6 +79,7 @@ import { parseManifest } from "dbt-artifacts-parser/manifest";
 import { parseCatalog } from "dbt-artifacts-parser/catalog";
 import { parseRunResults } from "dbt-artifacts-parser/run_results";
 import { parseSources } from "dbt-artifacts-parser/sources";
+import { parseFreshness } from "dbt-artifacts-parser/freshness";
 import fs from "fs";
 
 const manifest = parseManifest(
@@ -97,6 +101,11 @@ const sources = parseSources(
   JSON.parse(fs.readFileSync("sources.json", "utf-8")),
 );
 // Returns: ParsedSources
+
+const freshness = parseFreshness(
+  JSON.parse(fs.readFileSync("freshness.json", "utf-8")),
+);
+// Returns: ParsedFreshness
 ```
 
 #### Version-Specific Parsing
@@ -109,12 +118,14 @@ import {
 import { parseRunResultsV6 } from "dbt-artifacts-parser/run_results";
 import { parseCatalogV1 } from "dbt-artifacts-parser/catalog";
 import { parseSourcesV3 } from "dbt-artifacts-parser/sources";
+import { parseFreshnessV0 } from "dbt-artifacts-parser/freshness";
 
 const manifestV1 = parseManifestV1(manifestJson); // Returns: Manifest (v1)
 const manifestV12 = parseManifestV12(manifestJson); // Returns: WritableManifest (v12)
 const runResultsV6 = parseRunResultsV6(runResultsJson); // Returns: RunResultsArtifact (v6)
 const catalogV1 = parseCatalogV1(catalogJson); // Returns: CatalogArtifact (v1)
-const sourcesV3 = parseSourcesV3(sourcesJson); // Returns: FreshnessExecutionResultArtifact (v3)
+const sourcesV3 = parseSourcesV3(sourcesJson); // Returns: FreshnessExecutionResultArtifact (legacy sources.json)
+const freshnessV0 = parseFreshnessV0(freshnessJson); // Returns: FreshnessArtifact (freshness.json)
 ```
 
 ---
@@ -128,6 +139,7 @@ import type { ParsedManifest } from "dbt-artifacts-parser/manifest";
 import type { ParsedCatalog } from "dbt-artifacts-parser/catalog";
 import type { ParsedRunResults } from "dbt-artifacts-parser/run_results";
 import type { ParsedSources } from "dbt-artifacts-parser/sources";
+import type { ParsedFreshness } from "dbt-artifacts-parser/freshness";
 
 function processManifest(manifest: ParsedManifest) {
   console.log(manifest.metadata.dbt_schema_version);
@@ -144,13 +156,14 @@ import type { WritableManifest } from "dbt-artifacts-parser/manifest";
 import type { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
 import type { CatalogArtifact } from "dbt-artifacts-parser/catalog";
 import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
+import type { FreshnessArtifact } from "dbt-artifacts-parser/freshness";
 ```
 
 ---
 
 ## Supported Versions
 
-Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema majors are independent of Core semver: dbt Core 1.8–1.12 use manifest v12, catalog v1, run-results v6, and sources v3.
+Parses artifact JSON produced by **dbt Core 0.19 through 1.12 and dbt 2.x**. Artifact schema majors are independent of executable semver: dbt Core 1.8–1.12 and dbt 2.x JSON use manifest v12, catalog v1, run-results v6, and sources v3. dbt 2.x also writes `freshness.json` (`freshness/v0`). Dispatch uses `metadata.dbt_schema_version`, never `metadata.dbt_version`. A new dbt release requires generated type changes only when it introduces a new artifact type or a new schema major.
 
 ### Manifest
 
@@ -173,10 +186,19 @@ Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema
 
 ### Sources
 
+`sources.json` is the legacy source-freshness artifact. Its v3 generated type is named `FreshnessExecutionResultArtifact`; that name does **not** mean `freshness.json`.
+
 - **v1**: `Sources` interface
 - **v2**: Generated schema interface (`HttpsSchemasGetdbtComDbtSourcesV2Json`)
-- **v3**: `FreshnessExecutionResultArtifact` interface
+- **v3**: `FreshnessExecutionResultArtifact` interface (legacy `sources.json`)
 - **Latest**: v3 (`FreshnessExecutionResultArtifact`)
+
+### Freshness
+
+`freshness.json` is a dbt 2.x artifact (models and sources). Import it from `dbt-artifacts-parser/freshness`, not from `sources`.
+
+- **v0**: `FreshnessArtifact` alias of generated `FreshnessExecutionResultArtifact`
+- **Latest**: v0 (`FreshnessArtifact`)
 
 ---
 
@@ -224,6 +246,14 @@ Same auto-detect behavior as `parseManifest`, including optional `fallbackToLate
 
 #### `parseSourcesV1` / `parseSourcesV2` / `parseSourcesV3`
 
+### Freshness Parsers
+
+#### `parseFreshness(freshness: Record<string, unknown>, options?: ParseOptions): ParsedFreshness`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`. Freshness versions start at **v0**, so dispatch uses an explicit version map rather than `parsers[version - 1]`.
+
+#### `parseFreshnessV0(freshness: Record<string, unknown>): FreshnessArtifact`
+
 ---
 
 ## Error Handling
@@ -255,6 +285,7 @@ packages/dbt-artifacts-parser/
 │   ├── manifest/         # Manifest artifact types and parsers
 │   ├── run_results/      # RunResults artifact types and parsers
 │   ├── sources/          # Sources artifact types and parsers
+│   ├── freshness/        # Freshness artifact types and parsers
 │   └── index.ts          # Main entry point
 ├── resources/            # JSON Schema source files (from schemas.getdbt.com)
 └── scripts/              # Type generation scripts
