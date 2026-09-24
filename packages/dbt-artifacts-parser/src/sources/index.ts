@@ -5,6 +5,7 @@ import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
 import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
+import { normalizeSourcesResultStatus } from "./normalizeStatus";
 
 /**
  * Union type of all supported sources versions
@@ -74,7 +75,7 @@ export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
     throw new Error("Not a sources.json v3");
   }
 
-  return parsed as unknown as SourcesV3;
+  return normalizeSourcesResultStatus(parsed) as unknown as SourcesV3;
 }
 
 const SOURCES_PARSERS = [
@@ -106,7 +107,7 @@ export function parseSources(
     version,
     SOURCES_PARSERS.length,
     schemaVersion,
-    parsed as unknown as SourcesV3,
+    normalizeSourcesResultStatus(parsed) as unknown as SourcesV3,
   );
   if (fallback !== undefined) {
     return fallback;

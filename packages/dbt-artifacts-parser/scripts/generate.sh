@@ -36,7 +36,7 @@ echo -e "${BLUE}Generating TypeScript types from JSON schemas...${NC}"
 
 # Ensure src subdirectories exist (do not blanket-delete v*.ts: partial schema
 # check-ins only regenerate the versions backed by resources/<category>/*.json)
-for dir in catalog manifest run_results sources semantic_manifest; do
+for dir in catalog manifest run_results sources freshness semantic_manifest; do
 	mkdir -p "${SRC_DIR}/${dir}"
 done
 
@@ -124,6 +124,7 @@ process_category "catalog" "${SRC_DIR}/catalog" "${RESOURCES_DIR}/json-schema/ca
 process_category "manifest" "${SRC_DIR}/manifest" "${RESOURCES_DIR}/json-schema/manifest"
 process_category "run-results" "${SRC_DIR}/run_results" "${RESOURCES_DIR}/json-schema/run-results"
 process_category "sources" "${SRC_DIR}/sources" "${RESOURCES_DIR}/json-schema/sources"
+process_category "freshness" "${SRC_DIR}/freshness" "${RESOURCES_DIR}/json-schema/freshness"
 process_category "semantic_manifest" "${SRC_DIR}/semantic_manifest" "${RESOURCES_DIR}/json-schema/semantic_manifest"
 
 # Generate root index.ts

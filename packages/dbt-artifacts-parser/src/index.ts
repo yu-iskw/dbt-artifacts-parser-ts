@@ -8,4 +8,4 @@
 //   import { FreshnessExecutionResultArtifact } from 'dbt-artifacts-parser/sources'
 
 // Re-export catalog (latest version)
-export * from "./catalog";
+export * from './catalog';

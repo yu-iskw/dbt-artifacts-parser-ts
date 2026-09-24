@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository owns the `dbt-artifacts-parser` TypeScript package only. It parses dbt artifact JSON with generated types, version-aware entry points, and test fixtures. Product/UI/CLI packages live outside this repository.
+This repository owns the `dbt-artifacts-parser` TypeScript package only. It parses dbt artifact JSON with generated types, version-aware entry points, and test fixtures. Supported engines are dbt v1.x and dbt v2; Fusion is not tracked as a separate artifact format. Product/UI/CLI packages live outside this repository.
 
 ## Tech stack
 

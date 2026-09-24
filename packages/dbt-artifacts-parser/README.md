@@ -17,6 +17,7 @@ graph LR
   P --> C["catalog.json\nv1"]
   P --> R["run_results.json\nv1–v6"]
   P --> S["sources.json\nv1–v3"]
+  P --> F["freshness.json\nv0"]
 ```
 
 ---
@@ -44,6 +45,7 @@ import { WritableManifest } from "dbt-artifacts-parser/manifest";
 import { CatalogArtifact } from "dbt-artifacts-parser/catalog";
 import { RunResultsArtifact } from "dbt-artifacts-parser/run_results";
 import { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sources";
+import { FreshnessExecutionResultArtifact as ProjectFreshness } from "dbt-artifacts-parser/freshness";
 ```
 
 #### 2. Version-Specific Imports
@@ -150,7 +152,7 @@ import type { FreshnessExecutionResultArtifact } from "dbt-artifacts-parser/sour
 
 ## Supported Versions
 
-Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema majors are independent of Core semver: dbt Core 1.8–1.12 use manifest v12, catalog v1, run-results v6, and sources v3.
+Parses artifact JSON produced by **dbt v1 (0.19 through 1.12) and dbt v2**. Artifact schema majors are independent of the product major: recent dbt v1 and dbt v2 use manifest v12, catalog v1, run-results v6, and sources v3. dbt v2 also writes `freshness.json` (schema v0). This package does not treat Fusion as a separate artifact format.
 
 ### Manifest
 
@@ -177,6 +179,11 @@ Parses artifact JSON produced by **dbt Core 0.19 through 1.12**. Artifact schema
 - **v2**: Generated schema interface (`HttpsSchemasGetdbtComDbtSourcesV2Json`)
 - **v3**: `FreshnessExecutionResultArtifact` interface
 - **Latest**: v3 (`FreshnessExecutionResultArtifact`)
+
+### Freshness
+
+- **v0**: `FreshnessExecutionResultArtifact` interface (dbt v2 `freshness.json`)
+- **Latest**: v0
 
 ---
 
@@ -223,6 +230,14 @@ Same auto-detect behavior as `parseManifest`, including optional `fallbackToLate
 Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
 
 #### `parseSourcesV1` / `parseSourcesV2` / `parseSourcesV3`
+
+### Freshness Parsers
+
+#### `parseFreshness(freshness: Record<string, unknown>, options?: ParseOptions): ParsedFreshness`
+
+Same auto-detect behavior as `parseManifest`, including optional `fallbackToLatest`.
+
+#### `parseFreshnessV0(freshness: Record<string, unknown>): FreshnessExecutionResultArtifact`
 
 ---
 
