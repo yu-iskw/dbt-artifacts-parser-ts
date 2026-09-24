@@ -62,11 +62,7 @@
             "type": "number"
           },
           "status": {
-            "enum": [
-              "Pass",
-              "Warn",
-              "Error"
-            ]
+            "enum": ["Pass", "Warn", "Error"]
           },
           "criteria": {
             "type": "object",
@@ -90,12 +86,7 @@
                   "period": {
                     "anyOf": [
                       {
-                        "enum": [
-                          "second",
-                          "minute",
-                          "hour",
-                          "day"
-                        ]
+                        "enum": ["second", "minute", "hour", "day"]
                       },
                       {
                         "type": "null"
@@ -105,10 +96,7 @@
                   }
                 },
                 "additionalProperties": false,
-                "required": [
-                  "count",
-                  "period"
-                ]
+                "required": ["count", "period"]
               },
               "warn_after": {
                 "type": "object",
@@ -128,12 +116,7 @@
                   "period": {
                     "anyOf": [
                       {
-                        "enum": [
-                          "second",
-                          "minute",
-                          "hour",
-                          "day"
-                        ]
+                        "enum": ["second", "minute", "hour", "day"]
                       },
                       {
                         "type": "null"
@@ -143,10 +126,7 @@
                   }
                 },
                 "additionalProperties": false,
-                "required": [
-                  "count",
-                  "period"
-                ]
+                "required": ["count", "period"]
               },
               "filter": {
                 "type": "string"
@@ -159,10 +139,7 @@
               }
             },
             "additionalProperties": false,
-            "required": [
-              "error_after",
-              "warn_after"
-            ]
+            "required": ["error_after", "warn_after"]
           },
           "adapter_response": {
             "type": "object",
@@ -190,9 +167,7 @@
                 }
               },
               "additionalProperties": false,
-              "required": [
-                "name"
-              ]
+              "required": ["name"]
             }
           },
           "thread_id": {
@@ -222,10 +197,6 @@
     }
   },
   "additionalProperties": false,
-  "required": [
-    "metadata",
-    "results",
-    "elapsed_time"
-  ],
+  "required": ["metadata", "results", "elapsed_time"],
   "$id": "https://schemas.getdbt.com/dbt/freshness/v0.json"
 }
