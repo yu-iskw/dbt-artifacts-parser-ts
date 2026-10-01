@@ -149,6 +149,24 @@ describe("run_results parser", () => {
       );
       warnSpy.mockRestore();
     });
+
+    it("should dispatch a 2.x producer on schema v6, not dbt_version", () => {
+      const producerV2 = {
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+          dbt_version: "2.0.0",
+        },
+        results: [],
+        elapsed_time: 0,
+        extra_fusion_key: "static_analysis_off_reason",
+      };
+      const runResults = parseRunResults(producerV2);
+      expect(runResults.metadata.dbt_schema_version).toBe(
+        "https://schemas.getdbt.com/dbt/run-results/v6.json",
+      );
+      expect(runResults.metadata.dbt_version).toBe("2.0.0");
+    });
   });
 
   describe("version-specific parsers", () => {

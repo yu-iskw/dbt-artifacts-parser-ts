@@ -140,6 +140,23 @@ describe("catalog parser", () => {
       );
       warnSpy.mockRestore();
     });
+
+    it("should dispatch a 2.x producer on schema v1, not dbt_version", () => {
+      const producerV2 = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/catalog/v1.json",
+          dbt_version: "2.0.0",
+        },
+        nodes: {},
+        sources: {},
+        extra_fusion_key: true,
+      };
+      const catalog = parseCatalog(producerV2);
+      expect(catalog.metadata.dbt_schema_version).toBe(
+        "https://schemas.getdbt.com/dbt/catalog/v1.json",
+      );
+      expect(catalog.metadata.dbt_version).toBe("2.0.0");
+    });
   });
 
   describe("version-specific parsers", () => {

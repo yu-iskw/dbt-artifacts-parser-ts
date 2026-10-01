@@ -19,7 +19,12 @@ try {
 /**
  * Artifact types supported by test utilities
  */
-export type ArtifactType = "manifest" | "run_results" | "sources" | "catalog";
+export type ArtifactType =
+  | "manifest"
+  | "run_results"
+  | "sources"
+  | "catalog"
+  | "freshness";
 
 /**
  * Resource location types
@@ -161,6 +166,14 @@ export function discoverSourcesFiles(): string[] {
 }
 
 /**
+ * Discover all freshness fixture files in resources/
+ */
+export function discoverFreshnessFiles(): string[] {
+  const freshnessDir = path.join(resourcesDir, "freshness");
+  return findArtifactFiles(freshnessDir, resourcesDir, "freshness");
+}
+
+/**
  * Load a test manifest file
  *
  * @param version - Schema version (e.g., "v12", "12")
@@ -253,5 +266,29 @@ export function loadTestCatalog(
     filename,
   );
   const content = fs.readFileSync(catalogPath, "utf-8");
+  return JSON.parse(content);
+}
+
+/**
+ * Load a test freshness file
+ *
+ * @param version - Schema version (e.g., "v0", "0")
+ * @param filename - Filename (e.g., "freshness.json")
+ * @param project - Project name (default: "jaffle_shop")
+ * @returns Parsed JSON content
+ */
+export function loadTestFreshness(
+  version: string,
+  filename: string,
+  project: string = "jaffle_shop",
+): unknown {
+  const freshnessPath = getTestResourcePath(
+    "freshness",
+    version,
+    "tests",
+    project,
+    filename,
+  );
+  const content = fs.readFileSync(freshnessPath, "utf-8");
   return JSON.parse(content);
 }

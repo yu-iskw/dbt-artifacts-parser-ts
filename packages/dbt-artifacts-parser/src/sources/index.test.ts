@@ -164,6 +164,34 @@ describe("sources parser", () => {
       );
       warnSpy.mockRestore();
     });
+
+    it("should dispatch a 2.x producer on schema v3, not dbt_version", () => {
+      const producerV2 = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+          dbt_version: "2.0.0",
+        },
+        results: [],
+        elapsed_time: 0,
+      };
+      const sources = parseSources(producerV2);
+      expect(sources.metadata.dbt_schema_version).toBe(
+        "https://schemas.getdbt.com/dbt/sources/v3.json",
+      );
+      expect(sources.metadata.dbt_version).toBe("2.0.0");
+    });
+
+    it("should reject freshness.json schema URLs", () => {
+      const freshnessArtifact = {
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/freshness/v0.json",
+        },
+      };
+      expect(() => parseSources(freshnessArtifact)).toThrow(
+        "Not a sources.json",
+      );
+    });
   });
 
   describe("version-specific parsers", () => {

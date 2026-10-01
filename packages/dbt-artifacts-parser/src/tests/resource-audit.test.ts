@@ -6,6 +6,7 @@ import {
   discoverRunResultsFiles,
   discoverCatalogFiles,
   discoverSourcesFiles,
+  discoverFreshnessFiles,
 } from "../test-utils";
 
 // @ts-expect-error - import.meta is available in Vitest ESM context
@@ -37,16 +38,19 @@ describe("resource audit", () => {
     const runResultsDir = path.join(resourcesDir, "run_results");
     const catalogDir = path.join(resourcesDir, "catalog");
     const sourcesDir = path.join(resourcesDir, "sources");
+    const freshnessDir = path.join(resourcesDir, "freshness");
 
     const manifestFiles = listAllJsonFiles(manifestDir);
     const runResultsFiles = listAllJsonFiles(runResultsDir);
     const catalogFiles = listAllJsonFiles(catalogDir);
     const sourcesFiles = listAllJsonFiles(sourcesDir);
+    const freshnessFiles = listAllJsonFiles(freshnessDir);
 
     const discoveredManifest = new Set(discoverManifestFiles());
     const discoveredRunResults = new Set(discoverRunResultsFiles());
     const discoveredCatalog = new Set(discoverCatalogFiles());
     const discoveredSources = new Set(discoverSourcesFiles());
+    const discoveredFreshness = new Set(discoverFreshnessFiles());
 
     const uncovered: string[] = [];
 
@@ -64,6 +68,10 @@ describe("resource audit", () => {
     }
     for (const f of sourcesFiles) {
       if (!discoveredSources.has(f))
+        uncovered.push(path.relative(resourcesDir, f));
+    }
+    for (const f of freshnessFiles) {
+      if (!discoveredFreshness.has(f))
         uncovered.push(path.relative(resourcesDir, f));
     }
 
