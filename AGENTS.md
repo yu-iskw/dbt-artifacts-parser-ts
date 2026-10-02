@@ -23,6 +23,12 @@ pnpm coverage:report
 pnpm lint
 ```
 
+## Trunk
+
+Trunk runs via **`@trunkio/launcher`** in root `devDependencies` (do not add the npm package `trunk`). After `pnpm install`, use `pnpm exec trunk …` or package scripts (`pnpm lint:trunk`, `pnpm format:trunk`). CLI version is pinned in [`.trunk/trunk.yaml`](.trunk/trunk.yaml).
+
+Verify: `pnpm exec trunk version`. Escape hatch when the launcher cannot run: `pnpm lint:without-trunk`, `pnpm format:without-trunk`.
+
 ## Quality gates
 
 Before claiming parser work complete, run `pnpm test`, `pnpm lint:report`, `pnpm knip`, and `pnpm coverage:report`. Run `pnpm build` when generated types, package exports, package metadata, or shared TypeScript configuration changes. Run full `pnpm lint` when Markdown, YAML, Trunk config, or broad formatting-sensitive files change.
