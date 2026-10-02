@@ -7,7 +7,7 @@ import type { HttpsSchemasGetdbtComDbtRunResultsV3Json as RunResultsV3 } from ".
 import type { HttpsSchemasGetdbtComDbtRunResultsV4Json as RunResultsV4 } from "./v4";
 import type { RunResultsArtifact as RunResultsV5 } from "./v5";
 import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
-import type { RunResultsArtifact as RunResultsV6 } from "./v6";
+import type { DbtV2CompatibleRunResultsV6 as RunResultsV6 } from "../compatibility/runResults";
 
 /**
  * Union type of all supported run_results versions
@@ -21,6 +21,10 @@ export type ParsedRunResults =
   | RunResultsV6;
 
 export type { ParseOptions } from "../parseOptions";
+export type {
+  DbtV2CompatibleRunResultOutput,
+  DbtV2CompatibleRunResultsV6,
+} from "../compatibility/runResults";
 
 const ERR_NOT_RUN_RESULTS = "Not a run-results.json";
 
