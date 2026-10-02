@@ -37,6 +37,10 @@
       "types": "./dist/sources/index.d.ts",
       "default": "./dist/sources/index.js"
     },
+    "./freshness": {
+      "types": "./dist/freshness/index.d.ts",
+      "default": "./dist/freshness/index.js"
+    },
     "./test-utils": {
       "types": "./dist/test-utils.d.ts",
       "default": "./dist/test-utils.js"
