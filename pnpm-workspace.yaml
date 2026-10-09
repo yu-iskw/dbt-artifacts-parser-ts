@@ -6,6 +6,7 @@ blockExoticSubdeps: true
 resolution-mode: highest
 
 minimumReleaseAge: 10080 # 7 days (minutes); supply-chain delay per pnpm 11 docs
+minimumReleaseAgeIgnoreMissingTime: true
 minimumReleaseAgeExclude:
   - tar@7.5.7
   - tar@7.5.3
@@ -22,6 +23,30 @@ minimumReleaseAgeExclude:
   - vite@8.0.7
   - rolldown
   - "@oxc-project/types"
+  # TS 7 dual-install: typescript@7 and platform binaries are <7 days old
+  - typescript
+  - "@typescript/typescript6"
+  - "@typescript/old"
+  - "@typescript/typescript-aix-ppc64"
+  - "@typescript/typescript-darwin-arm64"
+  - "@typescript/typescript-darwin-x64"
+  - "@typescript/typescript-freebsd-arm64"
+  - "@typescript/typescript-freebsd-x64"
+  - "@typescript/typescript-linux-arm"
+  - "@typescript/typescript-linux-arm64"
+  - "@typescript/typescript-linux-loong64"
+  - "@typescript/typescript-linux-mips64el"
+  - "@typescript/typescript-linux-ppc64"
+  - "@typescript/typescript-linux-riscv64"
+  - "@typescript/typescript-linux-s390x"
+  - "@typescript/typescript-linux-x64"
+  - "@typescript/typescript-netbsd-arm64"
+  - "@typescript/typescript-netbsd-x64"
+  - "@typescript/typescript-openbsd-arm64"
+  - "@typescript/typescript-openbsd-x64"
+  - "@typescript/typescript-sunos-x64"
+  - "@typescript/typescript-win32-arm64"
+  - "@typescript/typescript-win32-x64"
 overrides:
   "@tootallnate/once@<3.0.1": ^3.0.1
   fast-xml-parser@<5.7.0: ^5.7.0

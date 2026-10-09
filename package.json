@@ -54,7 +54,8 @@
     "eslint-plugin-sonarjs": "^4.0.2",
     "json-schema-to-typescript": "^15.0.4",
     "knip": "^6.3.0",
-    "typescript": "^6.0.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.2"
   },
   "pnpm": {
@@ -71,7 +72,7 @@
     },
     "peerDependencyRules": {
       "allowedVersions": {
-        "typescript": "6"
+        "typescript": "6 || 7"
       }
     }
   }
