@@ -190,7 +190,10 @@ describe("catalog parser", () => {
 
   describe("all catalog versions", () => {
     const catalogFiles = discoverCatalogFiles();
-    const versionParsers = [parseCatalogV1];
+    const versionParsers = new Map<
+      number,
+      (parsed: Record<string, unknown>) => ParsedCatalog
+    >([[1, parseCatalogV1]]);
 
     // Test parseCatalog() with all versions
     for (const [version, files] of catalogFiles.entries()) {
@@ -216,15 +219,15 @@ describe("catalog parser", () => {
           it(`should parse ${fileName} with version-specific parser`, () => {
             const jsonContent = fs.readFileSync(filePath, "utf-8");
             const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
-            const parser = versionParsers[version - 1];
-
-            if (parser) {
-              const catalog = parser(parsed);
-              expect(catalog).toBeDefined();
-              expect(catalog.metadata.dbt_schema_version).toContain(
-                `/catalog/v${version}.json`,
-              );
+            const parser = versionParsers.get(version);
+            if (parser === undefined) {
+              throw new Error(`No catalog parser for version ${version}`);
             }
+            const catalog = parser(parsed);
+            expect(catalog).toBeDefined();
+            expect(catalog.metadata.dbt_schema_version).toContain(
+              `/catalog/v${version}.json`,
+            );
           });
 
           it(`should accept ${fileName} as ParsedCatalog union type`, () => {

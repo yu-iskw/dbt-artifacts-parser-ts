@@ -3,8 +3,15 @@
 export * from "./v3";
 import type { Sources as SourcesV1 } from "./v1";
 import type { HttpsSchemasGetdbtComDbtSourcesV2Json as SourcesV2 } from "./v2";
-import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
+import type { ParseOptions } from "../parseOptions";
 import type { FreshnessExecutionResultArtifact as SourcesV3 } from "./v3";
+import {
+  identityCast,
+  parseByVersion,
+  slot,
+  typedExact,
+  versionTable,
+} from "../versionTable";
 
 /**
  * Union type of all supported sources versions
@@ -13,103 +20,92 @@ export type ParsedSources = SourcesV1 | SourcesV2 | SourcesV3;
 
 export type { ParseOptions } from "../parseOptions";
 
-const ERR_NOT_SOURCES = "Not a sources.json";
+const SOURCES_SCHEMA = /\/sources\/v(\d+)\.json$/;
 
-/**
- * Extract version number from dbt_schema_version URL
- */
-function extractVersion(schemaVersion: string | undefined): number | null {
-  if (!schemaVersion) {
-    return null;
-  }
-  const match = schemaVersion.match(/\/sources\/v(\d+)\.json$/);
-  return match ? parseInt(match[1], 10) : null;
+const SOURCE_V3_STATUS_REWRITE: ReadonlyMap<string, "pass" | "warn" | "error"> =
+  new Map([
+    ["Pass", "pass"],
+    ["Warn", "warn"],
+    ["Error", "error"],
+  ]);
+
+function sourcesSlot<T>(
+  version: number,
+  cast: (parsed: Record<string, unknown>) => T,
+) {
+  return slot({
+    version,
+    exactFragment: `/sources/v${version}.json`,
+    mismatch: `Not a sources.json v${version}`,
+    cast,
+  });
 }
 
-/**
- * Parse sources.json v1
- */
-export function parseSourcesV1(parsed: Record<string, unknown>): SourcesV1 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a sources.json v1");
+function rowWithSourcesV3Status(row: unknown): unknown {
+  if (typeof row !== "object" || row === null || Array.isArray(row)) {
+    return row;
   }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/sources/v1.json")) {
-    throw new Error("Not a sources.json v1");
+  const record = row as Record<string, unknown>;
+  const status = record.status;
+  if (typeof status !== "string") {
+    return row;
   }
-
-  return parsed as unknown as SourcesV1;
+  const rewritten = SOURCE_V3_STATUS_REWRITE.get(status);
+  if (rewritten === undefined) {
+    return row;
+  }
+  return { ...record, status: rewritten };
 }
 
-/**
- * Parse sources.json v2
- */
-export function parseSourcesV2(parsed: Record<string, unknown>): SourcesV2 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a sources.json v2");
+function copyRewrittenResults(results: unknown[]): unknown[] | undefined {
+  let copied: unknown[] | undefined;
+  for (let index = 0; index < results.length; index += 1) {
+    const row = results[index];
+    const next = rowWithSourcesV3Status(row);
+    if (next === row) {
+      copied?.push(row);
+      continue;
+    }
+    if (copied === undefined) {
+      copied = results.slice(0, index);
+    }
+    copied.push(next);
   }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/sources/v2.json")) {
-    throw new Error("Not a sources.json v2");
-  }
-
-  return parsed as unknown as SourcesV2;
+  return copied;
 }
 
-/**
- * Parse sources.json v3
- */
-export function parseSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a sources.json v3");
+function castSourcesV3(parsed: Record<string, unknown>): SourcesV3 {
+  const results = parsed.results;
+  if (!Array.isArray(results)) {
+    return parsed as unknown as SourcesV3;
   }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/sources/v3.json")) {
-    throw new Error("Not a sources.json v3");
+  const copied = copyRewrittenResults(results);
+  if (copied === undefined) {
+    return parsed as unknown as SourcesV3;
   }
-
-  return parsed as unknown as SourcesV3;
+  return { ...parsed, results: copied } as unknown as SourcesV3;
 }
 
-const SOURCES_PARSERS = [
-  parseSourcesV1,
-  parseSourcesV2,
-  parseSourcesV3,
-] as const;
+const SOURCES = versionTable<ParsedSources>([
+  sourcesSlot(1, identityCast<SourcesV1>()),
+  sourcesSlot(2, identityCast<SourcesV2>()),
+  sourcesSlot(3, castSourcesV3),
+]);
 
-/**
- * Parse sources.json with automatic version detection
- */
+export const parseSourcesV1 = typedExact<SourcesV1, ParsedSources>(SOURCES, 1);
+export const parseSourcesV2 = typedExact<SourcesV2, ParsedSources>(SOURCES, 2);
+export const parseSourcesV3 = typedExact<SourcesV3, ParsedSources>(SOURCES, 3);
+
 export function parseSources(
   parsed: Record<string, unknown>,
   options?: ParseOptions,
 ): ParsedSources {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) throw new Error(ERR_NOT_SOURCES);
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/sources/v"))
-    throw new Error(ERR_NOT_SOURCES);
-  const version = extractVersion(schemaVersion);
-  if (version === null) throw new Error(ERR_NOT_SOURCES);
-  const parser = SOURCES_PARSERS[version - 1];
-  if (parser) {
-    return parser(parsed);
-  }
-  const fallback = tryFallbackToLatest(
+  return parseByVersion({
+    table: SOURCES,
+    schemaPattern: SOURCES_SCHEMA,
+    notArtifactMessage: "Not a sources.json",
+    unsupportedLabel: "sources",
+    parsed,
     options,
-    version,
-    SOURCES_PARSERS.length,
-    schemaVersion,
-    parsed as unknown as SourcesV3,
-  );
-  if (fallback !== undefined) {
-    return fallback;
-  }
-  throw new Error(`Unsupported sources version: ${version}`);
+  });
 }

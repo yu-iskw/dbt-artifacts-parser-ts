@@ -34,11 +34,9 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}Generating TypeScript types from JSON schemas...${NC}"
 
-# Ensure src subdirectories exist (do not blanket-delete v*.ts: partial schema
-# check-ins only regenerate the versions backed by resources/<category>/*.json)
-for dir in catalog manifest run_results sources semantic_manifest; do
-	mkdir -p "${SRC_DIR}/${dir}"
-done
+# Category directories come from resources/json-schema/*/ so a new schema folder
+# is generated without a second hand-kept list. Hyphens in the directory name
+# become underscores in src/ (run-results -> run_results).
 
 # Function to process a category
 # Args: category_name, src_output_dir, [schema_dir]
@@ -119,12 +117,15 @@ process_category() {
 	# hand-maintained — this script only regenerates vN.ts from *_vN.json.
 }
 
-# Process each category
-process_category "catalog" "${SRC_DIR}/catalog" "${RESOURCES_DIR}/json-schema/catalog"
-process_category "manifest" "${SRC_DIR}/manifest" "${RESOURCES_DIR}/json-schema/manifest"
-process_category "run-results" "${SRC_DIR}/run_results" "${RESOURCES_DIR}/json-schema/run-results"
-process_category "sources" "${SRC_DIR}/sources" "${RESOURCES_DIR}/json-schema/sources"
-process_category "semantic_manifest" "${SRC_DIR}/semantic_manifest" "${RESOURCES_DIR}/json-schema/semantic_manifest"
+# Process each category directory under resources/json-schema/.
+SCHEMA_ROOT="${RESOURCES_DIR}/json-schema"
+shopt -s nullglob
+for schema_dir in "${SCHEMA_ROOT}"/*/; do
+	category="$(basename "${schema_dir}")"
+	src_name="${category//-/_}"
+	process_category "${category}" "${SRC_DIR}/${src_name}" "${schema_dir%/}"
+done
+shopt -u nullglob
 
 # Generate root index.ts
 # Don't re-export everything to avoid naming conflicts between categories
@@ -139,10 +140,13 @@ echo -e "${BLUE}Generating root index.ts...${NC}"
 	echo "//   import { CatalogArtifact } from 'dbt-artifacts-parser/catalog'"
 	echo "//   import { RunResultsArtifact } from 'dbt-artifacts-parser/run_results'"
 	echo "//   import { FreshnessExecutionResultArtifact } from 'dbt-artifacts-parser/sources'"
+	if [[ -d "${RESOURCES_DIR}/json-schema/freshness" ]]; then
+		echo "//   import { FreshnessArtifact } from 'dbt-artifacts-parser/freshness'"
+	fi
 	echo ""
 	echo "// Re-export catalog (latest version)"
 	if [[ -f "${SRC_DIR}/catalog/index.ts" ]]; then
-		echo "export * from './catalog';"
+		echo 'export * from "./catalog";'
 	fi
 } >"${SRC_DIR}/index.ts"
 

@@ -16,10 +16,18 @@ try {
   baseDir = path.resolve(process.cwd(), "packages/dbt-artifacts-parser/src");
 }
 
+const ARTIFACT_TYPES = [
+  "manifest",
+  "run_results",
+  "sources",
+  "catalog",
+  "freshness",
+] as const;
+
 /**
  * Artifact types supported by test utilities
  */
-export type ArtifactType = "manifest" | "run_results" | "sources" | "catalog";
+export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 
 /**
  * Resource location types
@@ -127,37 +135,50 @@ function findArtifactFiles(
   return files;
 }
 
+function discoverArtifactFiles(type: ArtifactType): string[] {
+  const artifactDir = path.join(resourcesDir, type);
+  return findArtifactFiles(artifactDir, resourcesDir, type);
+}
+
+export const artifactDiscoverers: Record<ArtifactType, () => string[]> =
+  Object.fromEntries(
+    ARTIFACT_TYPES.map((type) => [type, () => discoverArtifactFiles(type)]),
+  ) as Record<ArtifactType, () => string[]>;
+
 /**
  * Discover all manifest fixture files in resources/
  * Returns absolute paths (same logic as manifest/index.test.ts)
  */
 export function discoverManifestFiles(): string[] {
-  const manifestDir = path.join(resourcesDir, "manifest");
-  return findArtifactFiles(manifestDir, resourcesDir, "manifest");
+  return artifactDiscoverers.manifest();
 }
 
 /**
  * Discover all run_results fixture files in resources/
  */
 export function discoverRunResultsFiles(): string[] {
-  const runResultsDir = path.join(resourcesDir, "run_results");
-  return findArtifactFiles(runResultsDir, resourcesDir, "run_results");
+  return artifactDiscoverers.run_results();
 }
 
 /**
  * Discover all catalog fixture files in resources/
  */
 export function discoverCatalogFiles(): string[] {
-  const catalogDir = path.join(resourcesDir, "catalog");
-  return findArtifactFiles(catalogDir, resourcesDir, "catalog");
+  return artifactDiscoverers.catalog();
 }
 
 /**
  * Discover all sources fixture files in resources/
  */
 export function discoverSourcesFiles(): string[] {
-  const sourcesDir = path.join(resourcesDir, "sources");
-  return findArtifactFiles(sourcesDir, resourcesDir, "sources");
+  return artifactDiscoverers.sources();
+}
+
+/**
+ * Discover all freshness fixture files in resources/
+ */
+export function discoverFreshnessFiles(): string[] {
+  return artifactDiscoverers.freshness();
 }
 
 /**

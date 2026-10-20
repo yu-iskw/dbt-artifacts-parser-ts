@@ -7,6 +7,7 @@
 - [0001](./0001-record-architecture-decisions.md) - ADR policy and canonical location
 - [0002](./0002-field-level-lineage-inference-via-ast-parsing.md) - artifact-derived field-level lineage
 - [0005](./0005-knip-and-eslint-layers-for-monorepo-dead-code-detection.md) - deterministic quality and dead-code gates
+- [0006](./0006-freshness-artifact-and-version-keyed-dispatch.md) - freshness v0 and version-keyed dispatch
 
 ## Supporting Docs
 

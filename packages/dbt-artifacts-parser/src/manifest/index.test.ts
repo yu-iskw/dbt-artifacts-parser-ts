@@ -214,20 +214,23 @@ describe("manifest parser", () => {
 
   describe("all manifest versions", () => {
     const manifestFiles = discoverManifestFiles();
-    const versionParsers = [
-      parseManifestV1,
-      parseManifestV2,
-      parseManifestV3,
-      parseManifestV4,
-      parseManifestV5,
-      parseManifestV6,
-      parseManifestV7,
-      parseManifestV8,
-      parseManifestV9,
-      parseManifestV10,
-      parseManifestV11,
-      parseManifestV12,
-    ];
+    const versionParsers = new Map<
+      number,
+      (parsed: Record<string, unknown>) => ParsedManifest
+    >([
+      [1, parseManifestV1],
+      [2, parseManifestV2],
+      [3, parseManifestV3],
+      [4, parseManifestV4],
+      [5, parseManifestV5],
+      [6, parseManifestV6],
+      [7, parseManifestV7],
+      [8, parseManifestV8],
+      [9, parseManifestV9],
+      [10, parseManifestV10],
+      [11, parseManifestV11],
+      [12, parseManifestV12],
+    ]);
 
     // Test parseManifest() with all versions
     for (const [version, files] of manifestFiles.entries()) {
@@ -255,15 +258,15 @@ describe("manifest parser", () => {
           it(`should parse ${fileName} with version-specific parser`, () => {
             const jsonContent = fs.readFileSync(filePath, "utf-8");
             const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
-            const parser = versionParsers[version - 1];
-
-            if (parser) {
-              const manifest = parser(parsed);
-              expect(manifest).toBeDefined();
-              expect(manifest.metadata.dbt_schema_version).toContain(
-                `/manifest/v${version}.json`,
-              );
+            const parser = versionParsers.get(version);
+            if (parser === undefined) {
+              throw new Error(`No manifest parser for version ${version}`);
             }
+            const manifest = parser(parsed);
+            expect(manifest).toBeDefined();
+            expect(manifest.metadata.dbt_schema_version).toContain(
+              `/manifest/v${version}.json`,
+            );
           });
 
           it(`should accept ${fileName} as ParsedManifest union type`, () => {

@@ -6,8 +6,15 @@ import type { RunResults as RunResultsV2 } from "./v2";
 import type { HttpsSchemasGetdbtComDbtRunResultsV3Json as RunResultsV3 } from "./v3";
 import type { HttpsSchemasGetdbtComDbtRunResultsV4Json as RunResultsV4 } from "./v4";
 import type { RunResultsArtifact as RunResultsV5 } from "./v5";
-import { tryFallbackToLatest, type ParseOptions } from "../parseOptions";
+import type { ParseOptions } from "../parseOptions";
 import type { RunResultsArtifact as RunResultsV6 } from "./v6";
+import {
+  identityCast,
+  parseByVersion,
+  slot,
+  typedExact,
+  versionTable,
+} from "../versionTable";
 
 /**
  * Union type of all supported run_results versions
@@ -22,169 +29,64 @@ export type ParsedRunResults =
 
 export type { ParseOptions } from "../parseOptions";
 
-const ERR_NOT_RUN_RESULTS = "Not a run-results.json";
+const RUN_RESULTS_SCHEMA = /\/run-results\/v(\d+)\.json$/;
 
-/**
- * Extract version number from dbt_schema_version URL
- */
-function extractVersion(schemaVersion: string | undefined): number | null {
-  if (!schemaVersion) {
-    return null;
-  }
-  const match = schemaVersion.match(/\/run-results\/v(\d+)\.json$/);
-  return match ? parseInt(match[1], 10) : null;
+function runResultsSlot<T>(
+  version: number,
+  cast: (parsed: Record<string, unknown>) => T,
+) {
+  return slot({
+    version,
+    exactFragment: `/run-results/v${version}.json`,
+    mismatch: `Not a run-results.json v${version}`,
+    cast,
+  });
 }
 
-/**
- * Parse run-results.json v1
- */
-export function parseRunResultsV1(
-  parsed: Record<string, unknown>,
-): RunResultsV1 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json v1");
-  }
+const RUN_RESULTS = versionTable<ParsedRunResults>([
+  runResultsSlot(1, identityCast<RunResultsV1>()),
+  runResultsSlot(2, identityCast<RunResultsV2>()),
+  runResultsSlot(3, identityCast<RunResultsV3>()),
+  runResultsSlot(4, identityCast<RunResultsV4>()),
+  runResultsSlot(5, identityCast<RunResultsV5>()),
+  runResultsSlot(6, identityCast<RunResultsV6>()),
+]);
 
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v1.json")) {
-    throw new Error("Not a run-results.json v1");
-  }
+export const parseRunResultsV1 = typedExact<RunResultsV1, ParsedRunResults>(
+  RUN_RESULTS,
+  1,
+);
+export const parseRunResultsV2 = typedExact<RunResultsV2, ParsedRunResults>(
+  RUN_RESULTS,
+  2,
+);
+export const parseRunResultsV3 = typedExact<RunResultsV3, ParsedRunResults>(
+  RUN_RESULTS,
+  3,
+);
+export const parseRunResultsV4 = typedExact<RunResultsV4, ParsedRunResults>(
+  RUN_RESULTS,
+  4,
+);
+export const parseRunResultsV5 = typedExact<RunResultsV5, ParsedRunResults>(
+  RUN_RESULTS,
+  5,
+);
+export const parseRunResultsV6 = typedExact<RunResultsV6, ParsedRunResults>(
+  RUN_RESULTS,
+  6,
+);
 
-  return parsed as unknown as RunResultsV1;
-}
-
-/**
- * Parse run-results.json v2
- */
-export function parseRunResultsV2(
-  parsed: Record<string, unknown>,
-): RunResultsV2 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json v2");
-  }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v2.json")) {
-    throw new Error("Not a run-results.json v2");
-  }
-
-  return parsed as unknown as RunResultsV2;
-}
-
-/**
- * Parse run-results.json v3
- */
-export function parseRunResultsV3(
-  parsed: Record<string, unknown>,
-): RunResultsV3 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json v3");
-  }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v3.json")) {
-    throw new Error("Not a run-results.json v3");
-  }
-
-  return parsed as unknown as RunResultsV3;
-}
-
-/**
- * Parse run-results.json v4
- */
-export function parseRunResultsV4(
-  parsed: Record<string, unknown>,
-): RunResultsV4 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json v4");
-  }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v4.json")) {
-    throw new Error("Not a run-results.json v4");
-  }
-
-  return parsed as unknown as RunResultsV4;
-}
-
-/**
- * Parse run-results.json v5
- */
-export function parseRunResultsV5(
-  parsed: Record<string, unknown>,
-): RunResultsV5 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json v5");
-  }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v5.json")) {
-    throw new Error("Not a run-results.json v5");
-  }
-
-  return parsed as unknown as RunResultsV5;
-}
-
-/**
- * Parse run-results.json v6
- */
-export function parseRunResultsV6(
-  parsed: Record<string, unknown>,
-): RunResultsV6 {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) {
-    throw new Error("Not a run-results.json v6");
-  }
-
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v6.json")) {
-    throw new Error("Not a run-results.json v6");
-  }
-
-  return parsed as unknown as RunResultsV6;
-}
-
-const RUN_RESULTS_PARSERS = [
-  parseRunResultsV1,
-  parseRunResultsV2,
-  parseRunResultsV3,
-  parseRunResultsV4,
-  parseRunResultsV5,
-  parseRunResultsV6,
-] as const;
-
-/**
- * Parse run-results.json with automatic version detection
- */
 export function parseRunResults(
   parsed: Record<string, unknown>,
   options?: ParseOptions,
 ): ParsedRunResults {
-  const metadata = parsed.metadata as Record<string, unknown> | undefined;
-  if (!metadata) throw new Error(ERR_NOT_RUN_RESULTS);
-  const schemaVersion = metadata.dbt_schema_version as string | undefined;
-  if (!schemaVersion || !schemaVersion.includes("/run-results/v"))
-    throw new Error(ERR_NOT_RUN_RESULTS);
-  const version = extractVersion(schemaVersion);
-  if (version === null) throw new Error(ERR_NOT_RUN_RESULTS);
-  const parser = RUN_RESULTS_PARSERS[version - 1];
-  if (parser) {
-    return parser(parsed);
-  }
-  const fallback = tryFallbackToLatest(
+  return parseByVersion({
+    table: RUN_RESULTS,
+    schemaPattern: RUN_RESULTS_SCHEMA,
+    notArtifactMessage: "Not a run-results.json",
+    unsupportedLabel: "run-results",
+    parsed,
     options,
-    version,
-    RUN_RESULTS_PARSERS.length,
-    schemaVersion,
-    parsed as unknown as RunResultsV6,
-  );
-  if (fallback !== undefined) {
-    return fallback;
-  }
-  throw new Error(`Unsupported run-results version: ${version}`);
+  });
 }
