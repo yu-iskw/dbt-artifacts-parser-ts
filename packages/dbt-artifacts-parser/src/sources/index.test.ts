@@ -25,7 +25,6 @@ function sanitizePathComponent(name: string): string {
 /**
  * Discover all sources files in the test resources directory
  * Returns a map of version number to array of file paths
- * Note: Currently no sources test resources exist, so this returns empty map
  */
 function discoverSourcesFiles(): Map<number, string[]> {
   const resourcesDir = path.join(__dirname, "../../resources/sources");
@@ -146,6 +145,188 @@ describe("sources parser", () => {
       );
     });
 
+    it("rewrites only Pass, Warn, and Error onto a copy", () => {
+      const unchanged = {
+        unique_id: "source.jaffle_shop.raw.already",
+        status: "pass",
+      };
+      const runtimeError = {
+        unique_id: "source.jaffle_shop.raw.runtime",
+        status: "runtime error",
+      };
+      const unknown = {
+        unique_id: "source.jaffle_shop.raw.unknown",
+        status: "PASS",
+      };
+      const criteria = { warn_after: { count: 1, period: "hour" } };
+      const input = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+        },
+        results: [
+          {
+            unique_id: "source.jaffle_shop.raw.pass",
+            status: "Pass",
+            criteria,
+          },
+          { unique_id: "source.jaffle_shop.raw.warn", status: "Warn" },
+          { unique_id: "source.jaffle_shop.raw.error", status: "Error" },
+          runtimeError,
+          unknown,
+          unchanged,
+        ],
+      };
+
+      const sources = parseSourcesV3(input);
+
+      expect(sources).not.toBe(input);
+      expect(sources.results).not.toBe(input.results);
+      expect(sources.results.map((row) => row.status)).toEqual([
+        "pass",
+        "warn",
+        "error",
+        "runtime error",
+        "PASS",
+        "pass",
+      ]);
+      expect(sources.results[0]).not.toBe(input.results[0]);
+      expect((sources.results[0] as { criteria?: unknown }).criteria).toBe(
+        criteria,
+      );
+      expect(sources.results[3]).toBe(runtimeError);
+      expect(sources.results[4]).toBe(unknown);
+      expect(sources.results[5]).toBe(unchanged);
+      expect(input.results.map((row) => row.status)).toEqual([
+        "Pass",
+        "Warn",
+        "Error",
+        "runtime error",
+        "PASS",
+        "pass",
+      ]);
+      expect(parseSourcesV3(sources)).toBe(sources);
+    });
+
+    it("rewrites the dbt 2 jaffle_shop sources fixture and leaves the file object unchanged", () => {
+      const jsonPath = path.join(
+        __dirname,
+        "../../resources/sources/v3/jaffle_shop/sources.json",
+      );
+      const input = JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as {
+        metadata: { dbt_schema_version: string; dbt_version: string };
+        results: { status: string }[];
+      };
+      const sources = parseSources(input);
+
+      expect(input.metadata.dbt_schema_version).toBe(
+        "https://schemas.getdbt.com/dbt/sources/v3.json",
+      );
+      expect(input.metadata.dbt_version).toBe("2.0.6");
+      expect(input.results.map((row) => row.status).sort()).toEqual([
+        "Error",
+        "Pass",
+        "Warn",
+      ]);
+      expect(sources).not.toBe(input);
+      expect(sources.results.map((row) => row.status).sort()).toEqual([
+        "error",
+        "pass",
+        "warn",
+      ]);
+      expect(input.results.map((row) => row.status).sort()).toEqual([
+        "Error",
+        "Pass",
+        "Warn",
+      ]);
+    });
+
+    it("returns the same object when every status is already lowercase", () => {
+      const input = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+        },
+        results: [
+          { unique_id: "source.jaffle_shop.raw.pass", status: "pass" },
+          { unique_id: "source.jaffle_shop.raw.warn", status: "warn" },
+          { unique_id: "source.jaffle_shop.raw.error", status: "error" },
+        ],
+      };
+
+      expect(parseSources(input)).toBe(input);
+      expect(parseSourcesV3(input)).toBe(input);
+    });
+
+    it("rewrites title-case statuses when falling back to sources v3", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const input = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v4.json",
+        },
+        results: [{ unique_id: "source.jaffle_shop.raw.warn", status: "Warn" }],
+      };
+
+      const sources = parseSources(input, { fallbackToLatest: true });
+
+      expect(sources).not.toBe(input);
+      expect(sources.results[0].status).toBe("warn");
+      expect(input.results[0].status).toBe("Warn");
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("falling back to latest supported schema 'v3'"),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it("rejects a freshness document", () => {
+      const freshness = {
+        metadata: {
+          dbt_schema_version:
+            "https://schemas.getdbt.com/dbt/freshness/v0.json",
+        },
+        results: [{ unique_id: "source.jaffle_shop.raw", status: "Pass" }],
+      };
+
+      expect(() => parseSources(freshness)).toThrow("Not a sources.json");
+      expect(freshness.results[0].status).toBe("Pass");
+    });
+
+    it("returns the same object when results is not an array", () => {
+      const input = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+        },
+      };
+
+      expect(parseSourcesV3(input)).toBe(input);
+    });
+
+    it("rewrites a title-case row and leaves non-object rows unchanged", () => {
+      const arrayRow = ["Pass"];
+      const numericStatus = {
+        unique_id: "source.jaffle_shop.raw.numeric",
+        status: 1,
+      };
+      const input = {
+        metadata: {
+          dbt_schema_version: "https://schemas.getdbt.com/dbt/sources/v3.json",
+        },
+        results: [
+          null,
+          arrayRow,
+          numericStatus,
+          { unique_id: "source.jaffle_shop.raw.pass", status: "Pass" },
+        ],
+      };
+
+      const sources = parseSourcesV3(input);
+
+      expect(sources).not.toBe(input);
+      expect(sources.results[0]).toBeNull();
+      expect(sources.results[1]).toBe(arrayRow);
+      expect(sources.results[2]).toBe(numericStatus);
+      expect(sources.results[3].status).toBe("pass");
+      expect(input.results[3].status).toBe("Pass");
+    });
+
     it("should fall back to latest when fallbackToLatest is true", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const newerSources = {
@@ -221,7 +402,14 @@ describe("sources parser", () => {
 
   describe("all sources versions", () => {
     const sourcesFiles = discoverSourcesFiles();
-    const versionParsers = [parseSourcesV1, parseSourcesV2, parseSourcesV3];
+    const versionParsers = new Map<
+      number,
+      (parsed: Record<string, unknown>) => ParsedSources
+    >([
+      [1, parseSourcesV1],
+      [2, parseSourcesV2],
+      [3, parseSourcesV3],
+    ]);
 
     // Test parseSources() with all versions from test resources (if available)
     if (sourcesFiles.size > 0) {
@@ -246,15 +434,15 @@ describe("sources parser", () => {
             it(`should parse ${fileName} with version-specific parser`, () => {
               const jsonContent = fs.readFileSync(filePath, "utf-8");
               const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
-              const parser = versionParsers[version - 1];
-
-              if (parser) {
-                const sources = parser(parsed);
-                expect(sources).toBeDefined();
-                expect(sources.metadata.dbt_schema_version).toContain(
-                  `/sources/v${version}.json`,
-                );
+              const parser = versionParsers.get(version);
+              if (parser === undefined) {
+                throw new Error(`No sources parser for version ${version}`);
               }
+              const sources = parser(parsed);
+              expect(sources).toBeDefined();
+              expect(sources.metadata.dbt_schema_version).toContain(
+                `/sources/v${version}.json`,
+              );
             });
 
             it(`should accept ${fileName} as ParsedSources union type`, () => {

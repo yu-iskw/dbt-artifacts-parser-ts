@@ -272,14 +272,17 @@ describe("run_results parser", () => {
 
   describe("all run_results versions", () => {
     const runResultsFiles = discoverRunResultsFiles();
-    const versionParsers = [
-      parseRunResultsV1,
-      parseRunResultsV2,
-      parseRunResultsV3,
-      parseRunResultsV4,
-      parseRunResultsV5,
-      parseRunResultsV6,
-    ];
+    const versionParsers = new Map<
+      number,
+      (parsed: Record<string, unknown>) => ParsedRunResults
+    >([
+      [1, parseRunResultsV1],
+      [2, parseRunResultsV2],
+      [3, parseRunResultsV3],
+      [4, parseRunResultsV4],
+      [5, parseRunResultsV5],
+      [6, parseRunResultsV6],
+    ]);
 
     // Test parseRunResults() with all versions
     for (const [version, files] of runResultsFiles.entries()) {
@@ -303,15 +306,15 @@ describe("run_results parser", () => {
           it(`should parse ${fileName} with version-specific parser`, () => {
             const jsonContent = fs.readFileSync(filePath, "utf-8");
             const parsed = JSON.parse(jsonContent) as Record<string, unknown>;
-            const parser = versionParsers[version - 1];
-
-            if (parser) {
-              const runResults = parser(parsed);
-              expect(runResults).toBeDefined();
-              expect(runResults.metadata.dbt_schema_version).toContain(
-                `/run-results/v${version}.json`,
-              );
+            const parser = versionParsers.get(version);
+            if (parser === undefined) {
+              throw new Error(`No run_results parser for version ${version}`);
             }
+            const runResults = parser(parsed);
+            expect(runResults).toBeDefined();
+            expect(runResults.metadata.dbt_schema_version).toContain(
+              `/run-results/v${version}.json`,
+            );
           });
 
           it(`should accept ${fileName} as ParsedRunResults union type`, () => {

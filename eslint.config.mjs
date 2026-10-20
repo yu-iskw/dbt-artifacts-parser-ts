@@ -60,6 +60,7 @@ export default [
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/dist-serve/**",
       "**/codeql-db/**",
       "**/resources/**",
       ".claude/**",
@@ -122,7 +123,7 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ignores: ["**/dist/**", "**/node_modules/**"],
+    ignores: ["**/dist/**", "**/dist-serve/**", "**/node_modules/**"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",

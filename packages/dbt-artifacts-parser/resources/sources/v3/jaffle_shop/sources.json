@@ -1,0 +1,75 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/sources/v3.json",
+    "dbt_version": "2.0.6",
+    "generated_at": "2026-10-20T07:18:10.380388Z",
+    "invocation_id": "01a1582c-bf4c-7810-b5d6-1665c5705d7d",
+    "env": {}
+  },
+  "results": [
+    {
+      "unique_id": "source.jaffle_shop.jaffle_raw.orders_error",
+      "max_loaded_at": "2018-04-09T00:00:00Z",
+      "snapshotted_at": "2026-10-20T07:18:10.375648Z",
+      "max_loaded_at_time_ago_in_s": 269248690,
+      "status": "Error",
+      "criteria": {
+        "error_after": {
+          "count": 1,
+          "period": "day"
+        },
+        "warn_after": {
+          "count": 1,
+          "period": "day"
+        }
+      },
+      "adapter_response": {},
+      "timing": [],
+      "thread_id": "Thread-13",
+      "execution_time": 0
+    },
+    {
+      "unique_id": "source.jaffle_shop.jaffle_raw.orders_pass",
+      "max_loaded_at": "2026-10-20T07:18:10.378016Z",
+      "snapshotted_at": "2026-10-20T07:18:10.378016Z",
+      "max_loaded_at_time_ago_in_s": 0,
+      "status": "Pass",
+      "criteria": {
+        "error_after": {
+          "count": 2,
+          "period": "day"
+        },
+        "warn_after": {
+          "count": 1,
+          "period": "day"
+        }
+      },
+      "adapter_response": {},
+      "timing": [],
+      "thread_id": "Thread-13",
+      "execution_time": 0
+    },
+    {
+      "unique_id": "source.jaffle_shop.jaffle_raw.orders_warn",
+      "max_loaded_at": "2018-04-09T00:00:00Z",
+      "snapshotted_at": "2026-10-20T07:18:10.379746Z",
+      "max_loaded_at_time_ago_in_s": 269248690,
+      "status": "Warn",
+      "criteria": {
+        "error_after": {
+          "count": 10000,
+          "period": "day"
+        },
+        "warn_after": {
+          "count": 1,
+          "period": "day"
+        }
+      },
+      "adapter_response": {},
+      "timing": [],
+      "thread_id": "Thread-13",
+      "execution_time": 0
+    }
+  ],
+  "elapsed_time": 0
+}

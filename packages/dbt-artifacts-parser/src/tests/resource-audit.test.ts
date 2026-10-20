@@ -1,12 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import {
-  discoverManifestFiles,
-  discoverRunResultsFiles,
-  discoverCatalogFiles,
-  discoverSourcesFiles,
-} from "../test-utils";
+import { artifactDiscoverers, type ArtifactType } from "../test-utils";
 
 // @ts-expect-error - import.meta is available in Vitest ESM context
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -33,38 +28,15 @@ function listAllJsonFiles(dir: string): string[] {
 
 describe("resource audit", () => {
   it("every JSON file in resources/ must be covered by parser test discovery", () => {
-    const manifestDir = path.join(resourcesDir, "manifest");
-    const runResultsDir = path.join(resourcesDir, "run_results");
-    const catalogDir = path.join(resourcesDir, "catalog");
-    const sourcesDir = path.join(resourcesDir, "sources");
-
-    const manifestFiles = listAllJsonFiles(manifestDir);
-    const runResultsFiles = listAllJsonFiles(runResultsDir);
-    const catalogFiles = listAllJsonFiles(catalogDir);
-    const sourcesFiles = listAllJsonFiles(sourcesDir);
-
-    const discoveredManifest = new Set(discoverManifestFiles());
-    const discoveredRunResults = new Set(discoverRunResultsFiles());
-    const discoveredCatalog = new Set(discoverCatalogFiles());
-    const discoveredSources = new Set(discoverSourcesFiles());
-
     const uncovered: string[] = [];
 
-    for (const f of manifestFiles) {
-      if (!discoveredManifest.has(f))
-        uncovered.push(path.relative(resourcesDir, f));
-    }
-    for (const f of runResultsFiles) {
-      if (!discoveredRunResults.has(f))
-        uncovered.push(path.relative(resourcesDir, f));
-    }
-    for (const f of catalogFiles) {
-      if (!discoveredCatalog.has(f))
-        uncovered.push(path.relative(resourcesDir, f));
-    }
-    for (const f of sourcesFiles) {
-      if (!discoveredSources.has(f))
-        uncovered.push(path.relative(resourcesDir, f));
+    for (const type of Object.keys(artifactDiscoverers) as ArtifactType[]) {
+      const discovered = new Set(artifactDiscoverers[type]());
+      for (const filePath of listAllJsonFiles(path.join(resourcesDir, type))) {
+        if (!discovered.has(filePath)) {
+          uncovered.push(path.relative(resourcesDir, filePath));
+        }
+      }
     }
 
     expect(
